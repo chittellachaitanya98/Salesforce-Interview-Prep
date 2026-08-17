@@ -1,0 +1,1005 @@
+{
+  "topic_id": "SEC-002",
+  "slug": "users-licenses-profiles-permission-sets-and-permission-",
+  "title": "Users, licenses, profiles, permission sets, and permission-set groups",
+  "track": "Identity, access, and security",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "SEC-001"
+  ],
+  "objectives": [
+    "Explain that a Salesforce user needs one user license, exactly one profile, and optional permission sets or permission-set groups.",
+    "Choose a permission set or permission-set group to extend functional access instead of cloning a new profile for every job variant.",
+    "Separate user-license entitlements from profile and permission-set grants, and from roles that control record access.",
+    "Troubleshoot a missing feature by checking license, then profile, then permission set assignment—not MFA and not organization-wide defaults."
+  ],
+  "diagnostic_question": "LAB_Analyst needs Delete on Lead for a two-week project. They already authenticate. Do you clone a profile, assign a permission set, change their user license, or open sharing? What would you verify first?",
+  "definition": "Every Salesforce user requires one user license that sets a baseline of features. Each user has exactly one profile. Permission sets extend functional access without changing that profile and are the recommended way to manage permissions. Permission-set groups bundle permission sets for a job. Profiles and permission sets control object and field capability; roles are a different layer for record access. ([User Licenses](https://help.salesforce.com/s/articleView?id=platform.users_understanding_license_types.htm); [Permission Sets](https://help.salesforce.com/s/articleView?id=perm_sets_overview.htm); [Control Who Sees What](https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm))",
+  "why_it_matters": "Cloning a profile for every exception creates an unmaintainable authorization catalog. Changing a user license can strip existing permission-set assignments. Interviewers listen for least-privilege permission sets, one-profile-per-user, and the refusal to use roles or sharing as a substitute for a missing license or user permission.",
+  "sixty_second_explanation": "Think of a factory badge office. The employment contract is the user license: one contract per person, and it caps what tools they may ever hold. The issued uniform is the profile: everyone in that job gets one default kit. Extra keys on a ring are permission sets; a labeled ring that holds several keys is a permission-set group. Changing the contract can take the extra keys back. The org chart on the wall is the role hierarchy—it is not the uniform.",
+  "deeper_explanation": [
+    "User Licenses Help: every user requires a user license. Each user can have only one user license. The license provides a baseline of access; permission-set licenses, feature licenses, and usage-based entitlements can add functionality. When you change an existing user's license, Salesforce removes currently assigned permission sets and permission-set licenses. ([User Licenses](https://help.salesforce.com/s/articleView?id=platform.users_understanding_license_types.htm))",
+    "A permission set is a collection of settings and permissions that give access to tools and functions. Permission sets extend functional access without changing profiles and are the recommended way to manage permissions. Users have only one profile but, depending on edition, can have multiple permission sets. If a permission is off in the profile but on in a permission set, the user has it. ([Permission Sets](https://help.salesforce.com/s/articleView?id=perm_sets_overview.htm))",
+    "User Permissions Help recommends permission sets and permission-set groups as reusable building blocks so you avoid dozens or hundreds of profiles per job function. Enable user permissions in permission sets and custom profiles. ([User Permissions](https://help.salesforce.com/s/articleView?id=admin_userperms.htm))",
+    "Control Who Sees What: permission sets, permission-set groups, and profiles provide object-level and field-level security. Roles primarily control record-level access through the role hierarchy and sharing rules. Do not treat a role as a profile. ([Control Who Sees What](https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm))",
+    "To assign a permission via a permission set, the user must have a user license or permission-set license that supports it. Assignment can fail if the license cannot carry the permission. ([Manage Permission Set Assignments](https://help.salesforce.com/s/articleView?id=perm_sets_assigning.htm))"
+  ],
+  "mental_model": {
+    "analogy": "A factory badge office: employment contract = user license, uniform = profile, extra keys = permission sets, labeled key ring = permission-set group.",
+    "useful_mapping": [
+      "employment contract → one user license per user",
+      "uniform → one profile per user",
+      "extra keys → permission sets that extend the uniform",
+      "labeled key ring → permission-set group bundling several permission sets",
+      "changing contracts takes keys back → changing a user license removes current permission-set assignments",
+      "org-chart posting → role, not a profile"
+    ],
+    "where_it_breaks": [
+      "A permission-set license is a purchased entitlement, not just another key on the ring.",
+      "Muting inside a permission-set group can hide a permission that is present in a bundled set; the ring is not a simple union if muting is used.",
+      "The analogy does not encode edition limits on how many permission sets a user may hold."
+    ]
+  },
+  "teach_back_prompt": "Explain to a Java-security teammate why you would not clone a profile for a two-week Lead Delete need, and what happens if you change the user's license instead.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: one user license, one profile, many permission sets, groups as bundles."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify: missing feature, wrong license, role confusion, sharing confusion."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "What is removed when you change a user license?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk an assignment failure: permission set requires a license the user does not have."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: profiles vs permission sets vs roles."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-USER-LICENSES",
+      "title": "User Licenses",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.users_understanding_license_types.htm",
+      "supports": "One user license per user; baseline access; changing license removes current permission sets and permission-set licenses.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Available license types depend on product, edition, and add-ons."
+    },
+    {
+      "source_id": "SF-HELP-PERM-SETS",
+      "title": "Permission Sets",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=perm_sets_overview.htm",
+      "supports": "Permission sets extend functional access without changing profiles; one profile, multiple permission sets; additive over the profile.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "How many permission sets a user may hold depends on edition; do not invent a number."
+    },
+    {
+      "source_id": "SF-HELP-PERM-SET-GROUPS",
+      "title": "Permission Set Groups",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=perm_set_groups.htm",
+      "supports": "Permission-set groups bundle permission sets for job-based assignment.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Muting behavior should be re-read in current Help before an interview deep-dive."
+    },
+    {
+      "source_id": "SF-HELP-USER-PERMS",
+      "title": "User Permissions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=admin_userperms.htm",
+      "supports": "Recommend permission sets and permission-set groups instead of dozens of profiles.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Dependent permissions are evaluated on save."
+    },
+    {
+      "source_id": "SF-HELP-DATA-ACCESS",
+      "title": "Control Who Sees What",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm",
+      "supports": "Profiles and permission sets control object and field access; roles primarily control record-level access.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Record-sharing mechanics belong to SEC-003 and SEC-004."
+    },
+    {
+      "source_id": "SF-HELP-PERM-ASSIGN",
+      "title": "Manage Permission Set Assignments",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=perm_sets_assigning.htm",
+      "supports": "A user must have a supporting user license or permission-set license to receive a permission via a permission set.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Automatic unassignment of licenses has documented exceptions."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "User record is the person",
+        "One user license",
+        "One profile",
+        "Many permission sets",
+        "Permission-set groups bundle jobs",
+        "Roles are not profiles"
+      ],
+      "accessible_description": "Portrait map from user license through profile and additive permission sets to a permission-set group, with roles called out as record access."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-USER-LICENSES",
+        "SF-HELP-PERM-SETS",
+        "SF-HELP-PERM-SET-GROUPS",
+        "SF-HELP-USER-PERMS",
+        "SF-HELP-DATA-ACCESS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "License, profile, permission sets, then roles later"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  User[User record] --> Lic[One user license baseline]\n  User --> Prof[One profile]\n  User --> PS[Zero or more permission sets]\n  PSG[Permission-set group] --> PS\n  User --> PSG\n  Lic --> Entitled[Which permissions the license can carry]\n  Prof --> ObjField[Object and field settings]\n  PS --> ObjField\n  Role[Role: record access later] -.-> User",
+      "decision": "flowchart TD\n  Need[Need more capability] --> Q1{Does the user license allow it?}\n  Q1 -->|No| Lic[Change or add the correct license or permission-set license]\n  Q1 -->|Yes| Q2{Is it the job's default kit?}\n  Q2 -->|Yes for many users| Prof[Profile baseline]\n  Q2 -->|Task or project overlay| PS[Permission set]\n  Q2 -->|A whole job bundle| PSG[Permission-set group]\n  Q2 -->|Which records they see| Role[Stop: role and sharing are not this lesson]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Every user requires one user license. Changing a user's license removes currently assigned permission sets and permission-set licenses.",
+      "source_ids": ["SF-HELP-USER-LICENSES"],
+      "scope": "User licenses",
+      "validation": "User Licenses Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Users have one profile and, depending on edition, multiple permission sets. Permission sets extend functional access without changing the profile and are the recommended management model.",
+      "source_ids": ["SF-HELP-PERM-SETS", "SF-HELP-USER-PERMS"],
+      "scope": "Profiles and permission sets",
+      "validation": "Permission Sets and User Permissions Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "If a permission is disabled in the profile but enabled in a permission set, the user has the permission.",
+      "source_ids": ["SF-HELP-PERM-SETS"],
+      "scope": "Additive authorization",
+      "validation": "Permission Sets Help example of Manage Password Policies.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Profiles and permission sets control object and field access. Roles primarily control record-level access.",
+      "source_ids": ["SF-HELP-DATA-ACCESS"],
+      "scope": "Layer boundary",
+      "validation": "Control Who Sees What.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "A user must have a supporting user license or permission-set license to receive a permission via a permission set.",
+      "source_ids": ["SF-HELP-PERM-ASSIGN"],
+      "scope": "Assignment constraints",
+      "validation": "Manage Permission Set Assignments Help.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Permission-set-led administration remains current Help guidance. Reverify edition-specific assignment limits in the target org.",
+  "unresolved_uncertainty": [
+    "Maximum permission sets per user is edition-sensitive; do not invent a number.",
+    "Muting permission sets inside a group should be confirmed in current Permission Set Groups Help before a design review."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Profile",
+      "telugu": "వినియోగదారుకు ఒకటే ఇచ్చే డిఫాల్ట్ అనుమతి కిట్."
+    },
+    {
+      "english": "Permission set",
+      "telugu": "ప్రొఫైల్ మార్చకుండా అదనపు అనుమతులు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "One user license, one profile, additive permission sets, permission-set groups as job bundles. Change the license only with care because assignments can be stripped. Roles are not profiles.",
+    "two_minutes": "I start from entitlement: does the user license even allow the permission? Then I keep a minimum-access profile and grant overlays with permission sets or a permission-set group. I do not clone a profile for a two-week task. If the symptom is missing records, I leave this lesson for sharing. If they cannot log in, I go back to authentication."
+  },
+  "terminology": [
+    {
+      "term": "User",
+      "plain": "The person (or integration identity) who logs in to the org.",
+      "precise": "A Salesforce user record that must be assigned a user license and a profile, and may be assigned permission sets or permission-set groups.",
+      "example": "LAB_Analyst is a synthetic user with a Salesforce license and the Minimum Access profile.",
+      "non_example": "A Contact record is not a Salesforce user.",
+      "confusable_neighbor": "Guest user: an unauthenticated Experience Cloud identity (SEC-008).",
+      "boundary": "Creating users is data/identity administration; permission metadata is configuration."
+    },
+    {
+      "term": "User license",
+      "plain": "The purchased seat that sets the baseline of what this user may use.",
+      "precise": "Each user has only one user license. It provides baseline access. Changing it removes currently assigned permission sets and permission-set licenses.",
+      "example": "LAB_Analyst has a Salesforce license, not a Salesforce Platform license, because the job needs standard CRM objects the Platform license may not include. Needs verification of the exact license comparison in the target org.",
+      "non_example": "A permission set is not a user license.",
+      "confusable_neighbor": "Permission set license: add-on entitlement for a feature.",
+      "boundary": "Do not recite unofficial edition matrices; inspect Company Information in the org."
+    },
+    {
+      "term": "Profile",
+      "plain": "The one default kit of settings and permissions for the user.",
+      "precise": "You can assign one profile to many users, but only one profile per user. Profiles typically follow job function.",
+      "example": "LAB_Minimum_Access as the baseline profile for employees who then receive permission sets.",
+      "non_example": "Assigning two profiles to one user is not supported.",
+      "confusable_neighbor": "Role: record-level access, not the profile kit.",
+      "boundary": "Help recommends not creating dozens of profiles for each variant."
+    },
+    {
+      "term": "Permission set",
+      "plain": "An extra bundle of permissions you add without changing the profile.",
+      "precise": "A collection of settings and permissions that extend functional access. If enabled here and not on the profile, the user still has the permission.",
+      "example": "LAB_Delete_Leads permission set assigned to LAB_Analyst for a project.",
+      "non_example": "A sharing rule is not a permission set.",
+      "confusable_neighbor": "Permission-set group: a bundle of permission sets.",
+      "boundary": "Assignment requires a supporting license."
+    },
+    {
+      "term": "Permission-set group",
+      "plain": "A job-shaped bundle of permission sets assigned as one unit.",
+      "precise": "A grouping of permission sets so you assign a persona rather than many individual sets. Muting can reduce permissions inside the group; confirm current Help before relying on muting in an interview.",
+      "example": "LAB_Sales_Operations group containing several task-sized permission sets.",
+      "non_example": "A public group used in sharing is not a permission-set group.",
+      "confusable_neighbor": "Profile: still one per user; groups do not replace the profile.",
+      "boundary": "SEC-003 owns object vs field details inside those sets."
+    },
+    {
+      "term": "Permission set license",
+      "plain": "An add-on entitlement that allows certain feature permissions.",
+      "precise": "Users need both the permission-set license and a permission set containing the feature permissions to use licensed functionality.",
+      "example": "A feature that requires a named permission-set license before the matching permission set can be assigned. Needs verification of the specific product in the org.",
+      "non_example": "The core user license is not a permission-set license.",
+      "confusable_neighbor": "Feature license: another add-on path mentioned in User Licenses Help.",
+      "boundary": "Do not invent which products include which permission-set licenses."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Create or identify the user",
+      "actor": "Admin",
+      "trigger": "A person needs org access",
+      "before": "No user record",
+      "after": "User with a license and profile",
+      "observe": "Company Information shows a consumed user license",
+      "failure": "Assigning permissions the license cannot carry"
+    },
+    {
+      "step": 2,
+      "transition": "Keep a lean profile",
+      "actor": "Admin",
+      "trigger": "Designing the default kit",
+      "before": "Temptation to clone System Administrator",
+      "after": "Minimum-access style baseline plus overlays",
+      "observe": "One profile per user",
+      "failure": "A unique profile per exception"
+    },
+    {
+      "step": 3,
+      "transition": "Assign permission sets or a group",
+      "actor": "Admin",
+      "trigger": "Task- or job-level extras",
+      "before": "Profile only",
+      "after": "Additive functional access",
+      "observe": "User Access Summary shows the sets",
+      "failure": "Changing the user license casually and wiping assignments"
+    },
+    {
+      "step": 4,
+      "transition": "Refuse the wrong layer",
+      "actor": "Admin",
+      "trigger": "Still missing records or still cannot log in",
+      "before": "License and permissions look correct",
+      "after": "Hand off to authentication or sharing topics",
+      "observe": "Symptom is login or a specific record, not a feature",
+      "failure": "Granting Modify All Data to hide a sharing design"
+    }
+  ],
+  "when_to_use": [
+    "When onboarding users and you must pick a user license, a profile, and optional permission sets.",
+    "When a job needs extra tools and you should assign a permission set instead of cloning a profile.",
+    "When several permission sets form a persona and a permission-set group is the assignment unit.",
+    "When an assignment fails and you must check whether the user license supports the permission."
+  ],
+  "when_not_to_use": [
+    "Do not use a new profile for every short-lived permission overlay; that fights Help's permission-set recommendation.",
+    "Do not change a user license as a casual fix; it removes current permission-set assignments.",
+    "Do not treat roles or sharing rules as a substitute for a missing profile or permission set.",
+    "Do not use this users-and-licenses lesson to design MFA or session timeout (SEC-001/SEC-007)."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Users to assign license, profile, and permission sets.",
+    "Setup → Permission Sets and Permission Set Groups.",
+    "Setup → Profiles for the one default kit.",
+    "Setup → Company Information for user licenses and permission-set licenses."
+  ],
+  "worked_example": {
+    "scenario": "LAB_Analyst already authenticates. For two weeks they must Delete Leads. A teammate cloned a custom profile last time. Another teammate wants to switch the user license to 'get more power.' Disposable LAB_ org only.",
+    "inputs": [
+      "LAB_Analyst has a valid user license and a lean profile",
+      "Lead Delete is off on the profile",
+      "The task is temporary and task-shaped"
+    ],
+    "decisions": [
+      {
+        "decision": "Create LAB_Delete_Leads as a permission set and assign it.",
+        "because": "Permission sets extend functional access without changing the profile and are the recommended model.",
+        "rejected": "Clone yet another profile for a two-week overlay"
+      },
+      {
+        "decision": "Do not change the user license.",
+        "because": "Changing a license removes currently assigned permission sets and permission-set licenses.",
+        "rejected": "License swap as a shortcut"
+      },
+      {
+        "decision": "Do not add a role or sharing rule for this symptom.",
+        "because": "The need is object capability (Delete), not a missing record path.",
+        "rejected": "Public Read/Write OWD"
+      }
+    ],
+    "configuration_or_code": [
+      "Confirm the user license can carry Lead Delete.",
+      "Create permission set LAB_Delete_Leads with Lead Delete only.",
+      "Assign it to LAB_Analyst; retest as that user.",
+      "Plan expiration or removal after the two-week window (assignment expiration exists in current assignment Help; confirm UI in the org)."
+    ],
+    "output": "LAB_Analyst deletes LAB_ leads while the permission set is assigned. Profile unchanged. License unchanged. Sharing unchanged.",
+    "verification": [
+      "Lead Delete is absent on the profile and present on the permission set.",
+      "A second LAB user with the same profile but no permission set cannot delete.",
+      "User license assignment count did not change as a side effect."
+    ],
+    "self_explanation": "I used additive permission-set authorization. I treated the license as an entitlement constraint, not a privilege knob."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox or Playground; synthetic LAB_ users only.",
+    "starting_state_checks": [
+      "Non-production org.",
+      "You can create users and permission sets."
+    ],
+    "steps": [
+      "Create LAB_Analyst with a lean profile and a user license you are allowed to consume.",
+      "Confirm a baseline task fails (for example Lead Delete) as LAB_Analyst.",
+      "Create permission set LAB_Delete_Leads and assign it.",
+      "Retest as LAB_Analyst; compare a twin user without the set.",
+      "Read User Licenses Help and write one sentence about what a license change would remove."
+    ],
+    "guided_completion": [
+      "If assignment fails, inspect whether the license supports the permission.",
+      "If you created a new profile, undo it and use a permission set."
+    ],
+    "independent_challenge": "Bundle two task-sized permission sets into a LAB permission-set group and assign the group instead of the individual sets.",
+    "evidence": [
+      "User Access Summary showing the permission set or group.",
+      "The written sentence about license-change side effects."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate LAB users and delete LAB permission sets/groups you created.",
+      "Do not change production licenses."
+    ],
+    "limitations": "Does not prove edition caps on permission-set count."
+  },
+  "decision_table": [
+    {
+      "signal": "A whole job family needs the same default kit.",
+      "choose": "One profile as the baseline for those users.",
+      "not": "A unique profile per person.",
+      "why": "One profile per user; Help warns against profile explosion."
+    },
+    {
+      "signal": "A subset of users needs an extra task for a project.",
+      "choose": "A permission set assigned to those users.",
+      "not": "Clone the profile.",
+      "why": "Permission sets extend functional access without changing profiles."
+    },
+    {
+      "signal": "Several permission sets always travel together as a persona.",
+      "choose": "A permission-set group.",
+      "not": "Remember to click six individual assignments every time.",
+      "why": "Groups are the job-bundle assignment unit in Help."
+    },
+    {
+      "signal": "The permission set will not assign; the error mentions licenses.",
+      "choose": "Inspect user license and permission-set license entitlements.",
+      "not": "Force the permission onto a Salesforce Platform user if the license forbids it.",
+      "why": "Assignment Help requires a supporting license."
+    },
+    {
+      "signal": "Someone asks to 'give them a role' so they can Delete Leads.",
+      "choose": "Keep roles for record access; grant Delete via permission set if the license allows.",
+      "not": "Use a role as a profile.",
+      "why": "Control Who Sees What separates profiles/permission sets from roles."
+    }
+  ],
+  "limitations": [
+    "Edition and purchased licenses constrain available user licenses and permission-set licenses.",
+    "Does not design OWD or sharing rules.",
+    "Does not replace authentication troubleshooting."
+  ],
+  "security_notes": [
+    "Least privilege: task-sized permission sets, not System Administrator clones.",
+    "License changes can silently drop permission-set assignments.",
+    "Never use production users or real email addresses in the lab."
+  ],
+  "common_mistakes": [
+    "Cloning profiles for every exception.",
+    "Confusing roles with profiles.",
+    "Changing user licenses without expecting assignment loss.",
+    "Assigning a permission the license cannot carry."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Permission set assignment fails.",
+      "check": [
+        "User license and permission-set licenses on the user.",
+        "Whether the permission is allowed for that license."
+      ],
+      "do_not_assume": "The permission set metadata failed to save."
+    },
+    {
+      "symptom": "User lost several permission sets after an edit.",
+      "check": [
+        "Whether the user license was changed.",
+        "User Licenses Help note on removal of current assignments."
+      ],
+      "do_not_assume": "Someone deleted the permission sets themselves."
+    },
+    {
+      "symptom": "User still cannot see a record after a permission set grant.",
+      "check": [
+        "Object Read is present.",
+        "Then leave this topic for record sharing."
+      ],
+      "do_not_assume": "Another permission set is required for that one record."
+    }
+  ],
+  "production_notes": [
+    "Prefer permission-set-led models in new designs.",
+    "Document license-change impact before moving users between licenses.",
+    "This lesson does not authorize production user-license purchases."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How many user licenses can one user have?",
+      "options": {
+        "A": "Only one user license",
+        "B": "Unlimited user licenses",
+        "C": "One per permission set",
+        "D": "None if they have a profile"
+      },
+      "answer": "A",
+      "rationale": "User Licenses Help: each user can have only one user license.",
+      "distractor_explanations": {
+        "B": "There is a one-license rule for the user license type.",
+        "C": "Permission sets are not user licenses.",
+        "D": "A profile does not replace the user license."
+      },
+      "concept": "User license cardinality",
+      "citation_ids": ["SF-HELP-USER-LICENSES"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How many profiles can you assign to one user?",
+      "options": {
+        "A": "Exactly one",
+        "B": "One per app",
+        "C": "Unlimited",
+        "D": "Zero if permission sets exist"
+      },
+      "answer": "A",
+      "rationale": "You can assign only one profile per user.",
+      "distractor_explanations": {
+        "B": "Apps are not a profile cardinality rule.",
+        "C": "Multiple permission sets, not multiple profiles.",
+        "D": "Users still have a profile."
+      },
+      "concept": "One profile",
+      "citation_ids": ["SF-HELP-DATA-ACCESS", "SF-HELP-PERM-SETS"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What happens if a permission is off in the profile but on in a permission set?",
+      "options": {
+        "A": "The user has the permission",
+        "B": "The profile always wins and the user lacks it",
+        "C": "Salesforce disables the permission set",
+        "D": "The user license is removed"
+      },
+      "answer": "A",
+      "rationale": "Permission Sets Help: if not enabled in the profile but enabled in a permission set, the user has it.",
+      "distractor_explanations": {
+        "B": "Permission sets extend the profile; they are additive for that example.",
+        "C": "The set remains.",
+        "D": "Licenses are not removed by this additive rule."
+      },
+      "concept": "Additive permission sets",
+      "citation_ids": ["SF-HELP-PERM-SETS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You change an existing user's user license. What does Help say happens to current permission-set assignments?",
+      "options": {
+        "A": "They are removed, along with permission-set licenses currently assigned",
+        "B": "They are automatically upgraded",
+        "C": "They convert into a second profile",
+        "D": "Nothing; licenses and permission sets are independent"
+      },
+      "answer": "A",
+      "rationale": "Changing the current user license removes currently assigned permission sets and permission-set licenses.",
+      "distractor_explanations": {
+        "B": "Removal, not upgrade.",
+        "C": "Still one profile.",
+        "D": "Help documents a coupling on license change."
+      },
+      "concept": "License change side effect",
+      "citation_ids": ["SF-HELP-USER-LICENSES"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why does Help recommend permission sets and permission-set groups?",
+      "options": {
+        "A": "To reuse smaller building blocks and avoid dozens or hundreds of profiles",
+        "B": "To replace user licenses",
+        "C": "To replace the role hierarchy",
+        "D": "To disable MFA"
+      },
+      "answer": "A",
+      "rationale": "User Permissions Help recommends permission sets and groups so you do not create a profile per job variant.",
+      "distractor_explanations": {
+        "B": "Every user still needs a user license.",
+        "C": "Roles remain a record-access layer.",
+        "D": "MFA is authentication."
+      },
+      "concept": "Permission-set-led model",
+      "citation_ids": ["SF-HELP-USER-PERMS"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A permission set includes Author Apex. Assignment to a Salesforce Platform user fails. Likely reason?",
+      "options": {
+        "A": "The user license does not allow that permission",
+        "B": "Profiles cannot exist for Platform users",
+        "C": "Permission sets never contain user permissions",
+        "D": "OWD is Private"
+      },
+      "answer": "A",
+      "rationale": "Manage Permission Set Assignments Help uses Author Apex on Salesforce Platform users as an example of a license mismatch.",
+      "distractor_explanations": {
+        "B": "Platform users still have profiles.",
+        "C": "Permission sets include user, object, and field permissions.",
+        "D": "Sharing is a different layer."
+      },
+      "concept": "License must support the permission",
+      "citation_ids": ["SF-HELP-PERM-ASSIGN"]
+    },
+    {
+      "id": "Q7",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Profiles and permission sets versus roles?",
+      "options": {
+        "A": "Profiles and permission sets control object and field access; roles primarily control record-level access",
+        "B": "Roles grant object CRUD; profiles only set login hours",
+        "C": "They are interchangeable metadata",
+        "D": "Permission sets replace roles in all orgs"
+      },
+      "answer": "A",
+      "rationale": "Control Who Sees What draws this boundary explicitly.",
+      "distractor_explanations": {
+        "B": "Reversed.",
+        "C": "Different layers.",
+        "D": "Roles remain for hierarchy and sharing."
+      },
+      "concept": "Profile vs role",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "LAB_Analyst needs a two-week extra capability. Best first design?",
+      "options": {
+        "A": "Assign a permission set (or group) that contains only that capability",
+        "B": "Clone System Administrator",
+        "C": "Change organization-wide defaults",
+        "D": "Disable MFA"
+      },
+      "answer": "A",
+      "rationale": "Task overlay is the permission-set use case.",
+      "distractor_explanations": {
+        "B": "Violates least privilege.",
+        "C": "Sharing is the wrong layer for a capability.",
+        "D": "Authentication is already assumed."
+      },
+      "concept": "Temporary overlay",
+      "citation_ids": ["SF-HELP-PERM-SETS"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A teammate wants to give record visibility by assigning a second profile. What is wrong?",
+      "options": {
+        "A": "A user can have only one profile; record visibility is primarily roles and sharing",
+        "B": "Users cannot have profiles if they have permission sets",
+        "C": "Profiles never include object permissions",
+        "D": "Second profiles are required for MFA"
+      },
+      "answer": "A",
+      "rationale": "One profile per user; record access is a different layer.",
+      "distractor_explanations": {
+        "B": "They coexist.",
+        "C": "Profiles do include object and field settings.",
+        "D": "MFA is authentication."
+      },
+      "concept": "Cannot assign two profiles",
+      "citation_ids": ["SF-HELP-DATA-ACCESS", "SF-HELP-PERM-SETS"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is a permission set, in Help wording?",
+      "options": {
+        "A": "A collection of settings and permissions that give users access to tools and functions",
+        "B": "A sharing rule for guest users",
+        "C": "A session timeout policy",
+        "D": "A SAML identity provider"
+      },
+      "answer": "A",
+      "rationale": "Opening definition of the Permission Sets article.",
+      "distractor_explanations": {
+        "B": "Sharing is later.",
+        "C": "Sessions are SEC-001/007.",
+        "D": "IdP is authentication."
+      },
+      "concept": "Permission set definition",
+      "citation_ids": ["SF-HELP-PERM-SETS"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You need both a permission-set license and a permission set for a licensed feature. Why both?",
+      "options": {
+        "A": "The license entitles the feature; the permission set turns the feature permissions on for the user",
+        "B": "The permission set replaces the user license",
+        "C": "The permission-set license replaces the profile",
+        "D": "Only one of them is ever required"
+      },
+      "answer": "A",
+      "rationale": "Help on permission sets associated with permission-set licenses: users need the license and a permission set containing the feature permissions.",
+      "distractor_explanations": {
+        "B": "User license remains.",
+        "C": "Profile remains.",
+        "D": "Help describes both."
+      },
+      "concept": "Permission set license pairing",
+      "citation_ids": ["SF-HELP-PERM-ASSIGN"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Permission set versus permission-set group?",
+      "options": {
+        "A": "A set is a building block of permissions; a group bundles sets for a job assignment",
+        "B": "A group is assigned as the user's only profile",
+        "C": "A set is only for guest users",
+        "D": "They are identical"
+      },
+      "answer": "A",
+      "rationale": "Sets are reusable blocks; groups package them for personas.",
+      "distractor_explanations": {
+        "B": "The user still has one profile.",
+        "C": "Internal users use them too.",
+        "D": "Different objects and assignment models."
+      },
+      "concept": "Set vs group",
+      "citation_ids": ["SF-HELP-PERM-SETS", "SF-HELP-PERM-SET-GROUPS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "license",
+      "front": "How many user licenses per user?",
+      "back": "One. It provides baseline access to features."
+    },
+    {
+      "id": "F2",
+      "category": "license",
+      "front": "Side effect of changing a user's license?",
+      "back": "Currently assigned permission sets and permission-set licenses are removed."
+    },
+    {
+      "id": "F3",
+      "category": "profile",
+      "front": "How many profiles per user?",
+      "back": "Exactly one. Many users may share that profile."
+    },
+    {
+      "id": "F4",
+      "category": "permset",
+      "front": "Why use a permission set instead of a new profile?",
+      "back": "It extends functional access without changing the profile and is the recommended model."
+    },
+    {
+      "id": "F5",
+      "category": "permset",
+      "front": "Profile off, permission set on. Result?",
+      "back": "The user has the permission."
+    },
+    {
+      "id": "F6",
+      "category": "group",
+      "front": "What is a permission-set group for?",
+      "back": "Bundling permission sets so you assign a job persona as one unit."
+    },
+    {
+      "id": "F7",
+      "category": "boundary",
+      "front": "Profile vs role?",
+      "back": "Profile/permission sets: object and field capability. Role: primarily record-level access."
+    },
+    {
+      "id": "F8",
+      "category": "assignment",
+      "front": "Why might a permission set refuse to assign?",
+      "back": "The user's user license or permission-set license does not support the permission."
+    },
+    {
+      "id": "F9",
+      "category": "license",
+      "front": "User license vs permission-set license?",
+      "back": "User license is the one seat baseline. A permission-set license is an add-on entitlement for feature permissions."
+    },
+    {
+      "id": "F10",
+      "category": "scenario",
+      "front": "Two-week extra Delete on Lead?",
+      "back": "Permission set overlay, not a cloned profile and not a license swap."
+    },
+    {
+      "id": "F11",
+      "category": "scenario",
+      "front": "User cannot log in. Is this the license/profile lesson first?",
+      "back": "No. Prove authentication first (SEC-001)."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "User has object Read but cannot see a record.",
+      "back": "Not a missing second profile. Go to record access (SEC-003/004)."
+    },
+    {
+      "id": "F13",
+      "category": "admin",
+      "front": "Where do you see remaining user licenses?",
+      "back": "Company Information (and related license views) in Setup."
+    },
+    {
+      "id": "F14",
+      "category": "admin",
+      "front": "Recommended building blocks for user permissions?",
+      "back": "Permission sets and permission-set groups, not a profile per variant."
+    },
+    {
+      "id": "F15",
+      "category": "confusable",
+      "front": "Public group vs permission-set group?",
+      "back": "Public groups are sharing recipients. Permission-set groups bundle permission sets for capability."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do user licenses, profiles, permission sets, and permission-set groups fit together?",
+      "answer_30_seconds": "One user license as entitlement, one profile as the default kit, permission sets as additive overlays, permission-set groups as job bundles. Roles are not in that kit; they are record access.",
+      "answer_2_minutes": "I start with the seat: every user needs one user license, and a license change can strip current permission-set assignments. I keep profiles few and lean. I put task and feature grants in permission sets because Help says they extend access without changing the profile. When several sets always travel together, I assign a permission-set group. If the interviewer asks about missing records, I switch layers.",
+      "example": "LAB_Analyst: Salesforce license, Minimum Access profile, LAB_Delete_Leads permission set, no extra profile clone.",
+      "tradeoffs": [
+        "Few profiles vs many permission sets to govern",
+        "License flexibility vs assignment loss on change"
+      ],
+      "follow_ups": [
+        "What is a permission-set license?",
+        "Why not one profile per user?"
+      ],
+      "weak_answer_warnings": [
+        "Equating roles with profiles"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why not clone a profile for every exception?",
+      "answer_30_seconds": "Help recommends permission sets and groups as reusable blocks so you do not create dozens or hundreds of profiles. Users still have only one profile.",
+      "answer_2_minutes": "Profile cloning looks fast and becomes a drift problem: every security review has to inspect dozens of near-duplicates. A permission set can be assigned, expired, and reused. I still need a sensible baseline profile. I also check that the user license can carry the permission before I promise the overlay.",
+      "example": "Two-week Lead Delete becomes LAB_Delete_Leads, not Profile_Analyst_Plus_Delete_v3.",
+      "tradeoffs": [
+        "Operational overhead of sets vs profile sprawl",
+        "Baseline profile richness vs overlay complexity"
+      ],
+      "follow_ups": [
+        "When is a new profile still justified?",
+        "How do permission-set groups help?"
+      ],
+      "weak_answer_warnings": [
+        "Saying profiles are deprecated with no Help citation"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A user lost all extra access after someone 'fixed their license.' What happened?",
+      "answer_30_seconds": "Changing a user license removes currently assigned permission sets and permission-set licenses. I would restore the correct license, then reassign the sets.",
+      "answer_2_minutes": "I treat license edits as entitlement changes, not permission tweaks. I inspect the user's current license, Company Information counts, and the User Access Summary. I re-assign only what the new license can carry. I do not open OWD. I document that this is a known Help side effect so the team stops using license swaps as a privilege knob.",
+      "example": "LAB_Analyst moved between license types in a sandbox; LAB_Delete_Leads disappeared until reassigned.",
+      "tradeoffs": [
+        "Correcting a wrong license vs disrupting overlays",
+        "Manual reassignment vs user access policies (Needs verification in org)"
+      ],
+      "follow_ups": [
+        "What is not automatically unassigned?",
+        "How would you test before a production license move?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming a Salesforce outage"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Assignment of a permission set fails. Walk the diagnosis.",
+      "answer_30_seconds": "I check whether the user license or permission-set license supports the permission. Help's example is Author Apex on a Salesforce Platform user.",
+      "answer_2_minutes": "I read the assignment error rather than widening the profile. I compare the permission set's license field and the user's licenses. If the feature needs a permission-set license, both the license and a permission set with the feature permissions are required. I will not 'fix' it by cloning System Administrator. If they needed record access, I would have already confirmed object CRUD and left sharing for the next topics.",
+      "example": "A Platform-licensed LAB user cannot take a permission set that includes Author Apex.",
+      "tradeoffs": [
+        "Buying the right license vs reducing the permission set",
+        "Standard permission sets vs custom"
+      ],
+      "follow_ups": [
+        "Where is the permission set license assigned?",
+        "What is a standard permission set?"
+      ],
+      "weak_answer_warnings": [
+        "Granting Modify All Data to bypass the error"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "How do you design a permission-set-led org without ignoring profiles?",
+      "answer_30_seconds": "Keep a small number of lean profiles as defaults. Put job and task grants in permission sets and bundle personas as permission-set groups. Still assign exactly one profile per user.",
+      "answer_2_minutes": "I separate baseline from overlay. Login hours and some defaults still live on the profile (later SEC-007). Object and user permissions I prefer in sets so they compose. A sales persona might be a permission-set group. I review least privilege: a group should not be a hidden System Administrator. I keep roles out of this design conversation except to say they are not profiles.",
+      "example": "LAB_Minimum_Access profile plus LAB_Sales_Operations permission-set group for operations analysts.",
+      "tradeoffs": [
+        "Composable sets vs harder mental model for new admins",
+        "Rich baseline profile vs many required overlays"
+      ],
+      "follow_ups": [
+        "Where does muting fit?",
+        "How do you report on assignments?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming profiles can be omitted"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A stakeholder says 'give them the Sales role so they can export reports.' Response?",
+      "answer_30_seconds": "A role does not grant report-export user permissions. I check the user license and a permission set for the feature, and I keep roles for record access.",
+      "answer_2_minutes": "This is the classic layer mix. Control Who Sees What: profiles and permission sets are capability; roles are record-level. I ask whether they cannot run the feature or cannot see certain records. Feature: permission set if the license allows. Records: later sharing topics. I also refuse to clone System Administrator because they used the word role.",
+      "example": "LAB_Analyst already has a role for hierarchy tests but still cannot export until the export-related user permission is in a permission set. Needs verification of the exact permission name in the target org.",
+      "tradeoffs": [
+        "Teaching the model vs just clicking what they asked",
+        "Role design vs permission design"
+      ],
+      "follow_ups": [
+        "What if they meant a public group?",
+        "What if they cannot see the report folder?"
+      ],
+      "weak_answer_warnings": [
+        "Assigning a role and declaring the ticket done"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you still create a new profile?",
+      "answer_30_seconds": "When a population needs a different default kit that is not a task overlay—often license-aligned defaults or login restrictions that belong on the profile—after you have ruled out a permission set.",
+      "answer_2_minutes": "I do not create a profile for a two-week permission. I consider a new profile when the baseline is truly different for a large population and the user license family differs, or when profile-owned settings such as login hours must differ (SEC-007). I still assign permission sets on top. I verify edition and license constraints rather than inventing limits. I never use a second profile because a user can have only one.",
+      "example": "A lab integration user on a different license family with a dedicated lean profile, plus a narrow API permission set.",
+      "tradeoffs": [
+        "Clear baseline vs profile count",
+        "Login-hour differences vs permission-set overlays"
+      ],
+      "follow_ups": [
+        "What settings are profile-only?",
+        "How do you keep the new profile lean?"
+      ],
+      "weak_answer_warnings": [
+        "New profile as the default answer for every request"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "A Java teammate says 'profile equals role equals group.' Untangle it.",
+      "answer_30_seconds": "Profile is the one capability kit. Permission sets add capability. Permission-set groups bundle those sets. Roles and public groups are record-sharing principals, not capability kits.",
+      "answer_2_minutes": "I draw three columns: entitlement (user license), capability (profile, permission sets, groups), record reach (roles, sharing). I give the Help sentence that people confuse permission sets and profiles with roles. I add the license-change landmine. I finish with least privilege: extra keys, not a second uniform, and never a master key because naming was confusing.",
+      "example": "LAB_Analyst in role East (sharing tests) with Minimum Access profile and LAB_Delete_Leads permission set—three different objects in Setup.",
+      "tradeoffs": [
+        "Vocabulary precision vs stakeholder language",
+        "Speed of granting vs auditability"
+      ],
+      "follow_ups": [
+        "Where do permission-set licenses sit?",
+        "Where do sharing rules sit?"
+      ],
+      "weak_answer_warnings": [
+        "Using library or labeled-drawer filler",
+        "Leaving roles mixed into profiles"
+      ]
+    }
+  ]
+}

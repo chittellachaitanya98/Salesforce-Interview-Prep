@@ -1,0 +1,1276 @@
+{
+  "topic_id": "SEC-004",
+  "slug": "organization-wide-defaults-role-hierarchy-sharing-rules",
+  "title": "Organization-wide defaults, role hierarchy, sharing rules, teams, territories, and manual sharing",
+  "track": "Identity, access, and security",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "SEC-003"
+  ],
+  "objectives": [
+    "Separate the object-permission and field-security gate from record visibility before diagnosing access.",
+    "Explain the record-sharing stack in order: organization-wide defaults, role hierarchy, sharing rules, then teams, territories, and manual sharing.",
+    "Choose the narrowest repeatable access mechanism for a realistic account or opportunity requirement.",
+    "Test an access design with synthetic LAB_ users and records, then state the evidence that proves or disproves the design."
+  ],
+  "diagnostic_question": "LAB_AE_East can open LAB_Opportunity_Orion, but cannot see Amount; LAB_Manager_East needs oversight; LAB_Legal_Reviewer needs one temporary read-only exception. What do you test first, which layer solves each need, and which evidence would make you change your answer?",
+  "definition": "Salesforce access has separate gates. Object permissions and field-level security decide whether a user can act on an object and see or edit a field. For records that pass those gates, organization-wide defaults (OWD) establish the per-object baseline; the role hierarchy, sharing rules, teams, territories, and manual sharing can widen record access above that baseline. A record share never substitutes for missing CRUD or FLS.",
+  "why_it_matters": "A visibility request is often treated as one permission problem when it is actually two questions: can this user perform the object or field action, and can this user reach this record? Solving the wrong layer can overexpose a whole object, leave a user blocked, or create hundreds of fragile one-off shares. A deliberate sharing stack keeps least privilege understandable, testable, and reversible.",
+  "sixty_second_explanation": "For record visibility, start with organization-wide defaults: they set the per-object floor. Next, the role hierarchy can open access upward to managers where hierarchy-based sharing applies. Then sharing rules widen access automatically for repeatable owner- or criteria-based populations. Finally, Account and Opportunity teams, Sales Territories, and manual sharing add targeted access for collaborators, segments, or a single record. These are additive record-access paths: they cannot reduce access below OWD and they never grant missing object CRUD or field-level security.",
+  "deeper_explanation": [
+    "First ask the capability question: does the person have the required object permission (Create, Read, Update, or Delete) and field-level security for the field they need? A record share cannot make a hidden Amount field visible or make a user able to edit an object they cannot update.",
+    "For the record-visibility question, begin at OWD. OWD is the per-object baseline before the sharing layers widen access. It is the place to make peer access restrictive by default; a sharing rule is not a tool for hiding records that OWD already makes visible.",
+    "After OWD, evaluate the role hierarchy for manager-style, upward access, then sharing rules for a repeatable set of owners or records. A role hierarchy follows organizational reporting positions; a sharing rule follows an ownership or criteria pattern.",
+    "Use Account Teams or Opportunity Teams for named collaborators on one record, Sales Territories for a sales-segmentation model, and manual sharing for a single exceptional grant. Each choice should be narrower than making the object broadly visible.",
+    "Teams and Sales Territories are not universal entitlements. Treat their feature availability, edition or license prerequisites, configuration, and current naming as Needs verification in the target org. Parent-child implicit sharing is outside this lesson and belongs with FOUND-003."
+  ],
+  "mental_model": {
+    "analogy": "Think of a secure office building. Your badge must allow the building and the room type first (object CRUD and FLS). OWD is the default lock on every office of one type. The role hierarchy gives managers an upward access path, sharing rules issue repeatable keys, and teams, territories, or a manual share issue targeted keys for a person, segment, or one office.",
+    "useful_mapping": [
+      "badge capability and room-label visibility -> object permissions and field-level security",
+      "default office lock -> organization-wide defaults",
+      "manager access path -> role hierarchy",
+      "repeatable key-issuance policy -> owner- or criteria-based sharing rule",
+      "named visitor, sales zone, or one-off key -> team, territory, or manual sharing"
+    ],
+    "where_it_breaks": [
+      "Salesforce grants can accumulate from several access paths; the office-key analogy does not calculate a user's complete effective access.",
+      "Hierarchy behavior, manual-share availability, and sharing settings are object- and org-dependent; do not infer them from a job title or a screen label.",
+      "The analogy does not cover parent-child implicit sharing, override permissions, or custom Apex-managed sharing."
+    ]
+  },
+  "visual_model": {
+    "title": "Capability gate before an additive record-sharing stack",
+    "steps": [
+      "Check object CRUD and field-level security",
+      "Read the OWD baseline",
+      "Evaluate role-hierarchy access where applicable",
+      "Evaluate owner- or criteria-based sharing rules",
+      "Evaluate Account Team, Opportunity Team, territory, or manual-share grants",
+      "Verify the result as the intended LAB_ user"
+    ],
+    "invariant": "A user needs both a permitted object or field action and a record-access path. Adding a record share cannot compensate for a missing CRUD or FLS grant, and a sharing rule cannot make access narrower than OWD."
+  },
+  "teach_back_prompt": "Without using the word permissions until the end, explain why LAB_AE_East could see LAB_Opportunity_Orion but not Amount. Then state the record-sharing stack in order, identify the narrowest way to give LAB_Legal_Reviewer one read-only exception, and name one fact you would verify before using Sales Territories.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, draw two lanes: CRUD/FLS gate and record-sharing stack. Put OWD, hierarchy, rules, teams, territories, and manual sharing in the correct order."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify these signals without notes: peer privacy, manager oversight, a repeatable group, one Account collaborator, one Opportunity collaborator, a sales segment, and a single legal-review exception."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain why a sharing rule cannot hide a record that OWD already exposes, then give the correct design for LAB_AE_East and LAB_Legal_Reviewer."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Troubleshoot: a user can open LAB_Opportunity_Orion but cannot see Amount. State the first three checks and what each result proves."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Deliver a 60-second STAR answer for a least-privilege sharing design. Include the evidence you would retain and one Needs verification item for teams or territories."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-OWD",
+      "title": "Salesforce Help - Organization-Wide Defaults",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_sharing_owd_about.htm&language=en_US&type=5",
+      "supports": "OWD as the per-object baseline for record access before sharing layers widen access.",
+      "release_or_version": "Salesforce Help live page (verified 2026-08-09)",
+      "last_verified": "2026-08-09",
+      "limits": "Available defaults and behavior vary by object and org configuration; verify the target object's sharing settings."
+    },
+    {
+      "source_id": "SF-HELP-ROLE",
+      "title": "Salesforce Help - Create a User Role",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.admin_roles.htm&language=en_US&type=5",
+      "supports": "Role-hierarchy access where hierarchy-based sharing applies and users can access records owned by or shared with users below them.",
+      "release_or_version": "Salesforce Help live page (verified 2026-08-09)",
+      "last_verified": "2026-08-09",
+      "limits": "Grant Access Using Hierarchies is object- and org-configurable; for custom objects it can be disabled. A job title is not evidence of a role assignment."
+    },
+    {
+      "source_id": "SF-HELP-RULES",
+      "title": "Salesforce Help - Sharing Rules",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=security_about_sharing_rules.htm&language=en_US&type=5",
+      "supports": "Automatic owner-based and criteria-based sharing rules that widen access above OWD.",
+      "release_or_version": "Salesforce Help live page (verified 2026-08-09)",
+      "last_verified": "2026-08-09",
+      "limits": "Supported source populations, recipients, and access levels depend on the object and org configuration."
+    },
+    {
+      "source_id": "SF-HELP-ACCOUNT-TEAMS",
+      "title": "Salesforce Help - Account Teams",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.accountteam_def.htm&language=en_US&type=5",
+      "supports": "Account Team record-sharing mechanics for named collaborators on specific Account records.",
+      "release_or_version": "Salesforce Help live page (verified 2026-08-09)",
+      "last_verified": "2026-08-09",
+      "limits": "Needs verification: feature availability, edition or license entitlement, org enablement, team roles, and access options."
+    },
+    {
+      "source_id": "SF-HELP-OPPORTUNITY-TEAMS",
+      "title": "Salesforce Help - Considerations and Guidelines for Using Opportunity Teams",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=salesteam_def.htm&language=en_US&type=5",
+      "supports": "Opportunity Team record-sharing mechanics for named collaborators on specific Opportunity records.",
+      "release_or_version": "Salesforce Help live page (verified 2026-08-09)",
+      "last_verified": "2026-08-09",
+      "limits": "Needs verification: feature availability, edition or license entitlement, org enablement, team roles, and access options."
+    },
+    {
+      "source_id": "SF-HELP-TERRITORIES",
+      "title": "Salesforce Help - Define Default User Access for Territory Records",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sales.tm2_define_default_record_access.htm&language=en_US&type=5",
+      "supports": "Sales Territory settings define default access that users receive to records associated with configured territories.",
+      "release_or_version": "Salesforce Help live page (verified 2026-08-09)",
+      "last_verified": "2026-08-09",
+      "limits": "Needs verification: current feature naming, edition or license entitlement, enablement, and territory-model configuration."
+    },
+    {
+      "source_id": "SF-HELP-MANUAL",
+      "title": "Salesforce Help - Manual Sharing",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.granting_access_to_records.htm&language=en_US&type=5",
+      "supports": "Manual, record-specific grants to selected users, public groups, or roles.",
+      "release_or_version": "Salesforce Help live page (verified 2026-08-09)",
+      "last_verified": "2026-08-09",
+      "limits": "Supported objects, eligible grantors, recipients, and lifecycle behavior depend on the sharing model and target org."
+    },
+    {
+      "source_id": "SF-HELP-DATA-ACCESS",
+      "title": "Salesforce Help - Data Access",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.security_data_access.htm&language=en_US&type=5",
+      "supports": "The boundary between object permissions, field-level security, and record-level access.",
+      "release_or_version": "Salesforce Help live page (verified 2026-08-09)",
+      "last_verified": "2026-08-09",
+      "limits": "This source explains access layers; confirm the actual effective permissions and field visibility for the intended user."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No source-reviewed official video selected for this topic",
+      "channel": "Official Salesforce video sources not selected as claim evidence",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "Use the eight cited Salesforce Help articles and the synthetic LAB_ exercise for this draft.",
+      "gaps": "No video is used to support a technical claim in this topic.",
+      "free_or_paid": "Not applicable",
+      "last_verified": "2026-08-09"
+    },
+    {
+      "status": "not_verified",
+      "title": "No source-reviewed Telugu video selected for this topic",
+      "channel": "No endorsed candidate",
+      "url": "",
+      "language": "Telugu",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "A concise Telugu glossary is included for terminology recall.",
+      "gaps": "No Telugu video is used to support a technical claim in this topic.",
+      "free_or_paid": "Not applicable",
+      "last_verified": "2026-08-09"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Capability gate: object CRUD and field-level security",
+        "Baseline: organization-wide defaults",
+        "Upward path: role hierarchy where applicable",
+        "Automatic expansion: owner- or criteria-based sharing rules",
+        "Targeted expansion: Account Team, Opportunity Team, territory, or manual share",
+        "Proof: test each LAB_ user against each LAB_ record"
+      ]
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-OWD",
+        "SF-HELP-ROLE",
+        "SF-HELP-RULES",
+        "SF-HELP-ACCOUNT-TEAMS",
+        "SF-HELP-OPPORTUNITY-TEAMS",
+        "SF-HELP-TERRITORIES",
+        "SF-HELP-MANUAL",
+        "SF-HELP-DATA-ACCESS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "CRUD/FLS gate to the record-sharing stack"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Gate[Object CRUD and FLS gate] --> OWD[Organization-wide defaults baseline]\n  OWD --> Role[Role hierarchy upward path]\n  Role --> Rules[Owner or criteria sharing rules]\n  Rules --> Targeted[Teams territories or manual sharing]\n  Targeted --> Record[Record the user can reach]\n  Gate -->|Missing CRUD or FLS| Blocked[Share cannot repair the missing permission]",
+      "decision": "flowchart TD\n  Need[Record visibility need] --> Q1{Peers must not see each other by default?}\n  Q1 -->|Yes| OWD[Set a restrictive OWD baseline]\n  Q1 -->|No| Q2{Does access follow the org chart?}\n  Q2 -->|Manager oversight| Role[Role hierarchy if object allows it]\n  Q2 -->|Repeatable owner or criteria| Rule[Sharing rule]\n  Q2 -->|Named Account collaborator| AT[Account Team if entitled]\n  Q2 -->|Named Opportunity collaborator| OT[Opportunity Team if entitled]\n  Q2 -->|One-record exception| Manual[Manual sharing]\n  Q2 -->|Configured sales segment| Terr[Territory model Needs verification]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "OWD is the per-object baseline for record access before sharing layers can widen access.",
+      "source_ids": [
+        "SF-HELP-OWD"
+      ],
+      "scope": "Record-level access baseline for an object; verify the target object's available OWD options.",
+      "validation": "Read the OWD Help article, then inspect the object's Sharing Settings in an authorized non-production org.",
+      "last_verified": "2026-08-09"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Role hierarchy grants upward access from subordinate users to manager-level users to records owned by or shared with users below them when hierarchy-based sharing is in scope.",
+      "source_ids": [
+        "SF-HELP-ROLE"
+      ],
+      "scope": "Role-based upward access only where the target object's hierarchy setting and the users' role assignments support it.",
+      "validation": "Inspect roles and test a subordinate-owned LAB_ record as the intended manager-level LAB_ user.",
+      "last_verified": "2026-08-09"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Sharing rules are automatic owner/criteria exceptions that widen access above OWD.",
+      "source_ids": [
+        "SF-HELP-RULES"
+      ],
+      "scope": "Repeatable owner-based or criteria-based record populations supported by the object and org configuration.",
+      "validation": "Test both a matching and a non-matching LAB_ record after confirming the rule recipient and access level.",
+      "last_verified": "2026-08-09"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Account and Opportunity teams add record-level access on specific records without changing OWD.",
+      "source_ids": [
+        "SF-HELP-ACCOUNT-TEAMS",
+        "SF-HELP-OPPORTUNITY-TEAMS"
+      ],
+      "scope": "Specific Account or Opportunity records where the corresponding team feature is enabled and configured; entitlement is not asserted.",
+      "validation": "In an approved LAB_ org where the feature is available, compare access before and after adding one named team member to one record.",
+      "last_verified": "2026-08-09"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Sales Territory settings define default access that users receive to records associated with configured territories.",
+      "source_ids": [
+        "SF-HELP-TERRITORIES"
+      ],
+      "scope": "Territory-enabled orgs with an active model; feature naming and entitlement remain Needs verification. This source does not by itself establish user/account assignment mechanics.",
+      "validation": "Confirm current feature availability and configuration, then test a synthetic LAB_ record tied to a configured territory in an approved non-production org.",
+      "last_verified": "2026-08-09"
+    },
+    {
+      "claim_id": "C-006",
+      "claim": "Manual sharing is a one-off, record-specific grant to specific users, public groups, or roles.",
+      "source_ids": [
+        "SF-HELP-MANUAL"
+      ],
+      "scope": "Supported records and authorized grantors in the target sharing model; verify recipient eligibility and which documented parent-account and ownership-transfer deletion cases apply to the target record and actor.",
+      "validation": "Use an approved LAB_ record, an eligible grantor, and a single named recipient; verify only that record's access changes.",
+      "last_verified": "2026-08-09"
+    },
+    {
+      "claim_id": "C-007",
+      "claim": "Object permissions and FLS still gate what users can do and see even when record sharing grants record access.",
+      "source_ids": [
+        "SF-HELP-DATA-ACCESS"
+      ],
+      "scope": "All access diagnoses must distinguish object action, field visibility or editability, and record visibility.",
+      "validation": "Test an allowed record with a user whose object action or field visibility differs, rather than adding a broader sharing grant.",
+      "last_verified": "2026-08-09"
+    }
+  ],
+  "changed_in_release": "No release-note-backed change claim is added in this topic cycle. The content is rechecked against live Help pages on 2026-08-09; revalidate release notes before using this topic design in a target org.",
+  "unresolved_uncertainty": [
+    "Needs verification: whether Account Teams and Opportunity Teams are entitled, enabled, and available with the required roles and access options in the target org.",
+    "Needs verification: whether Grant Access Using Hierarchies is enabled for relevant objects and whether View All/Modify All-style permissions are present.",
+    "Needs verification: whether Sales Territories is enabled in the target org, its current product naming, and any edition, license, or configuration prerequisites. Do not state a minimum entitlement as a universal fact.",
+    "Needs verification: object-specific hierarchy behavior, object restrictions on sharing, supported sharing-rule recipients, manual-sharing eligibility, and effective access for the named target users.",
+    "Needs verification: The verified Manual Sharing page documents parent-account access implications when manually sharing Opportunity, Contact, or Case; verify which documented case applies to the target record and actor.",
+    "Needs verification: The verified Manual Sharing page documents deletion cases including ownership transfer; verify which documented case applies to the target record and actor.",
+    "Out of scope: broader implicit parent-child sharing, custom Apex-managed sharing, restriction rules, and scoping rules are intentionally out of this topic scope; reconcile separately before operational use.",
+    "Stable Help IDs support the lesson claims, but target-org rollout impact must be tested with synthetic records and intended user contexts."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Organization-Wide Defaults (OWD)",
+      "telugu": "ఒక ఆబ్జెక్ట్ రికార్డులకు అదనపు షేరింగ్‌కు ముందు ఉండే ప్రాథమిక ప్రాప్యత స్థాయి."
+    },
+    {
+      "english": "Role hierarchy",
+      "telugu": "కింది పాత్రల నుంచి మేనేజర్ స్థాయి పాత్రలకు పైకి వెళ్లే రికార్డ్ ప్రాప్యత మార్గం."
+    },
+    {
+      "english": "Sharing rule",
+      "telugu": "ఓనర్ లేదా ప్రమాణానికి సరిపడే రికార్డులకు స్వయంచాలకంగా అదనపు ప్రాప్యత ఇచ్చే నియమం."
+    },
+    {
+      "english": "Manual sharing",
+      "telugu": "ఒక నిర్దిష్ట రికార్డుకు ఒక వ్యక్తి లేదా గుంపుకు ఇచ్చే ఒకసారి ప్రాప్యత."
+    },
+    {
+      "english": "CRUD/FLS gate",
+      "telugu": "ఆబ్జెక్ట్‌పై చర్యలు మరియు ఫీల్డ్ కనిపింపు లేదా సవరణకు స్వతంత్ర అనుమతి గేట్లు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I separate capability from visibility. First I verify object CRUD and FLS. For record visibility, I start with OWD, then check hierarchy, rules, and finally the narrowest targeted grant: a team, territory if the org supports it, or manual sharing. I prove the design with a matching and non-matching LAB_ user and record, rather than broadening access until the symptom disappears.",
+    "two_minutes": "Situation: a user cannot see a record or field. Task: restore only the intended access without exposing peer data. Action: I test the CRUD/FLS gate first; then I trace record access in order from OWD through hierarchy, sharing rules, and targeted grants. I choose a repeatable rule for a repeatable population, a team for a named collaborator, a territory only after entitlement and model verification, and manual sharing for one exception. Result: the intended LAB_ user succeeds, the comparison user remains blocked, and the team retains a documented access matrix and rollback step."
+  },
+  "terminology": [
+    {
+      "term": "Organization-Wide Defaults (OWD)",
+      "plain": "The default access people have to other users' records of one object before extra sharing opens access.",
+      "precise": "A per-object baseline for record access. Other record-sharing mechanisms can widen the baseline but cannot use sharing to make access more restrictive than OWD.",
+      "example": "In a disposable LAB_ org, set Opportunity OWD to Private so LAB_AE_East does not automatically open a peer's LAB_Opportunity_Orion; add only the access the scenario requires.",
+      "non_example": "Giving a user Read on Opportunity through a permission set. That is an object permission, not the default visibility of other users' Opportunity records.",
+      "confusable_neighbor": "Sharing rule: an automatic exception above OWD. OWD is the starting baseline, not an exception.",
+      "boundary": "OWD does not decide whether Amount is visible or editable. Object permissions and FLS remain separate gates."
+    },
+    {
+      "term": "Role hierarchy",
+      "plain": "An access path that can let managers see records from people below their role in the organization.",
+      "precise": "A role-position-based, upward access path from subordinate users to manager-level users when hierarchy-based sharing applies to the object and org model.",
+      "example": "LAB_Manager_East is above LAB_AE_East in the tested role branch and can inspect LAB_AE_East's LAB_Opportunity_Orion when the object's hierarchy behavior supports it.",
+      "non_example": "Putting LAB_Manager_East in a public group and sharing one selected record. That is group-based or manual access, not hierarchy inheritance.",
+      "confusable_neighbor": "Sales Territories: territories model sales coverage by segment; roles model an organizational hierarchy.",
+      "boundary": "A managerial job title alone proves nothing. Verify the actual role assignment and object behavior before relying on hierarchy access."
+    },
+    {
+      "term": "Sharing rules",
+      "plain": "Automatic extra access for a repeatable set of records and recipients.",
+      "precise": "Owner-based or criteria-based record-sharing rules that grant access above OWD to a qualifying population; they are additive rather than a way to restrict access.",
+      "example": "Use an owner-based rule in a LAB_ org to give LAB_Deal_Desk read access to Opportunities owned by LAB_AE_East, then verify a different owner's record does not match.",
+      "non_example": "Sharing only LAB_Opportunity_Orion with LAB_Legal_Reviewer for a short review. That is a one-record manual share.",
+      "confusable_neighbor": "Role hierarchy: it follows role position; a sharing rule follows record ownership or criteria.",
+      "boundary": "Do not use a sharing rule to hide a record already visible through OWD. It can only widen access and must be tested for both matching and non-matching records."
+    },
+    {
+      "term": "Account Teams",
+      "plain": "Named collaborators added to one Account so they can participate on that specific customer record.",
+      "precise": "Account Team membership is a record-level collaboration mechanism for Accounts that can grant supported access without changing the Account OWD baseline.",
+      "example": "If the feature is available in the LAB_ org, add LAB_Finance_Analyst to the Account Team for LAB_Account_Aurora and verify the analyst's access to that Account only.",
+      "non_example": "Adding LAB_Finance_Analyst to the Opportunity Team for LAB_Opportunity_Orion. That is an Opportunity Team, not an Account Team.",
+      "confusable_neighbor": "Opportunity Teams: both are named-collaborator models, but each applies to its own record type.",
+      "boundary": "Needs verification: feature entitlement, enablement, available team roles, and access options. An Account Team is not a replacement for a sharing rule across many Accounts."
+    },
+    {
+      "term": "Opportunity Teams",
+      "plain": "Named collaborators added to one Opportunity so they can help with that specific deal.",
+      "precise": "Opportunity Team membership is a record-level collaboration mechanism for Opportunities that can grant supported access without changing the Opportunity OWD baseline.",
+      "example": "If the feature is available in the LAB_ org, add LAB_Solution_Engineer to the Opportunity Team for LAB_Opportunity_Orion and test only that deal's intended access.",
+      "non_example": "Sharing every Opportunity owned by LAB_AE_East with LAB_Deal_Desk. That repeatable population calls for a sharing rule, not a team row on each deal.",
+      "confusable_neighbor": "Account Teams: they apply to Accounts; Opportunity Teams apply to Opportunities.",
+      "boundary": "Needs verification: feature entitlement, enablement, available team roles, and access options. Team membership does not grant missing object CRUD or FLS."
+    },
+    {
+      "term": "Sales Territories",
+      "plain": "A way to organize sales access around a segment such as geography, product, or market rather than only a manager chain.",
+      "precise": "A territory-based access model that assigns users and accounts to territories to support sales-segmentation access separately from the role hierarchy and OWD baseline.",
+      "example": "In an already enabled LAB_ territory model, assign LAB_AE_West and LAB_Account_Aurora to LAB_West, then test the configured territory access without changing the role hierarchy.",
+      "non_example": "Putting a sales manager above representatives in the role hierarchy. That is organization-chart access, not territory segmentation.",
+      "confusable_neighbor": "Role hierarchy: roles describe reporting positions; territories describe a sales coverage model.",
+      "boundary": "Needs verification: current feature naming, edition or license entitlement, enablement, and territory-model configuration. Do not claim it is available in every org or replaces all other sharing controls."
+    },
+    {
+      "term": "Manual sharing",
+      "plain": "A one-off decision to give selected people access to one specific record.",
+      "precise": "An explicit, record-level grant by an eligible actor to one or more supported users, public groups, or roles; it is suited to an exception rather than a recurring population.",
+      "example": "An eligible LAB_AE_East grantor shares LAB_Opportunity_Orion read-only with LAB_Legal_Reviewer for a single contract review and verifies another Opportunity remains unavailable.",
+      "non_example": "Giving LAB_Deal_Desk access to every Opportunity owned by LAB_AE_East. That repeatable pattern is an owner-based sharing rule.",
+      "confusable_neighbor": "Opportunity Team: a team names ongoing deal collaborators; a manual share grants a one-record exception without making the recipient a team member.",
+      "boundary": "Verify object support, eligible grantor, recipients, and lifecycle behavior in the target org. Do not treat a manual share as durable automation or as a substitute for missing CRUD or FLS."
+    },
+    {
+      "term": "Object permissions and field-level security",
+      "plain": "The independent gate that controls what a user can do on an object and which fields the user can see or edit.",
+      "precise": "Object permissions govern Create, Read, Update, and Delete actions; field-level security governs field visibility and editability. Record sharing does not create either kind of permission.",
+      "example": "LAB_AE_East receives record access to LAB_Opportunity_Orion but still cannot see Amount until the user's Opportunity Read permission and Amount field visibility are appropriate under the LAB_ policy.",
+      "non_example": "Clicking Share on LAB_Opportunity_Orion. That can grant record access but cannot grant Opportunity Update or Amount field visibility.",
+      "confusable_neighbor": "Record sharing: it decides which records can be reached after the object and field gate; it does not decide whether a field is visible.",
+      "boundary": "SEC-003 covers permission-set design in more detail. Parent-child implicit sharing is outside this topic and must be reconciled with FOUND-003."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Verify the CRUD/FLS gate",
+      "actor": "Admin or support analyst",
+      "trigger": "A LAB_ user reports a missing record action or field",
+      "before": "The symptom could be an object, field, or record-access problem",
+      "after": "The required object action and field visibility are confirmed or ruled out",
+      "observe": "Permission assignment, field accessibility, and a user-context test for the intended LAB_ user",
+      "failure": "Adding more sharing when the user lacks the required object permission or field visibility."
+    },
+    {
+      "step": 2,
+      "transition": "Read the OWD baseline",
+      "actor": "Admin or security designer",
+      "trigger": "The CRUD/FLS gate passes but the user still cannot reach the record",
+      "before": "Peer record visibility is unknown",
+      "after": "The object baseline is identified as the floor for later grants",
+      "observe": "Sharing Settings and a peer-owned LAB_ record test",
+      "failure": "Trying to use a sharing rule to make records less visible than OWD."
+    },
+    {
+      "step": 3,
+      "transition": "Evaluate the role hierarchy",
+      "actor": "Admin or security designer",
+      "trigger": "A manager-style oversight requirement is stated",
+      "before": "The manager's access path is not proven",
+      "after": "The design either uses a verified upward role path or rejects it for this object/model",
+      "observe": "Actual LAB_ role assignments and a subordinate-owned LAB_ record test",
+      "failure": "Assuming a job title or reporting relationship is automatically a Salesforce role grant."
+    },
+    {
+      "step": 4,
+      "transition": "Evaluate a sharing rule",
+      "actor": "Admin or security designer",
+      "trigger": "A repeatable owner or criteria population needs the same additional access",
+      "before": "The team is considering many manual grants",
+      "after": "A matching population and recipient are defined, or the pattern is rejected as non-repeatable",
+      "observe": "One matching and one non-matching LAB_ record plus recipient membership",
+      "failure": "Building a broad rule without proving its record criteria, recipient, and least-privilege access level."
+    },
+    {
+      "step": 5,
+      "transition": "Choose targeted access",
+      "actor": "Record owner, manager, or authorized admin",
+      "trigger": "The requirement is a named collaborator, sales segment, or one-record exception",
+      "before": "No targeted record-access path has been selected",
+      "after": "The design selects an Account Team, Opportunity Team, territory model, or manual share only when its scope fits",
+      "observe": "The specific LAB_ Account, Opportunity, territory assignment, or manual-share recipient",
+      "failure": "Using a team or manual share for a population that should be a rule, or assuming team/territory entitlement without verification."
+    },
+    {
+      "step": 6,
+      "transition": "Prove least privilege and clean up",
+      "actor": "Tester and security owner",
+      "trigger": "The configuration is ready for validation",
+      "before": "The proposed path is only a design hypothesis",
+      "after": "The intended LAB_ user succeeds, the comparison LAB_ user remains blocked, and LAB_ artifacts have a recovery plan",
+      "observe": "Access matrix, as-user tests, matching/non-matching record results, and cleanup evidence",
+      "failure": "Treating an administrator view or one successful user test as proof that all effective access is correct."
+    }
+  ],
+  "when_to_use": [
+    "Use this stack when a requirement asks who can reach specific Account, Opportunity, or other object records after object and field access are known.",
+    "Use OWD plus deliberate widening paths when peers should not automatically see one another's records.",
+    "Use a sharing rule when ownership or business criteria repeatedly determine the same recipient access.",
+    "Use a team for a named collaborator on one Account or Opportunity, manual sharing for a one-record exception, and a territory model only when verified sales-segmentation requirements and entitlements justify it."
+  ],
+  "when_not_to_use": [
+    "Do not use record sharing to repair missing Create, Read, Update, Delete, or field-level security; correct the appropriate gate under least-privilege policy.",
+    "Do not use a sharing rule to hide records below OWD; choose a more restrictive OWD baseline and then add deliberate grants.",
+    "Do not build a role hierarchy around geography or product coverage merely because a territory feature is unavailable or unverified.",
+    "Do not enable or test team or territory features in production just to make a lab scenario work."
+  ],
+  "configuration_or_code_location": [
+    "Setup -> Sharing Settings to inspect organization-wide defaults and sharing rules. Navigation and available options are release- and org-sensitive; reverify in the target org.",
+    "Setup -> Roles to inspect the role hierarchy and the actual role positions of comparison users.",
+    "Object and field access configuration for the intended users or permission assignments; verify effective CRUD/FLS before changing record sharing.",
+    "The Account, Opportunity, territory, and Share record experiences only after confirming the relevant feature, object support, and authority in a non-production LAB_ environment."
+  ],
+  "worked_example": {
+    "scenario": "A sales-operations team must protect peer-owned deals while supporting manager oversight and a few narrow collaboration needs. In a disposable LAB_ org, LAB_AE_East owns LAB_Opportunity_Orion. LAB_AE_Peer should not open it, LAB_Manager_East needs oversight, LAB_Deal_Desk needs read access to a repeatable owner population, LAB_Solution_Engineer needs access to this one deal, and LAB_Legal_Reviewer needs a temporary read-only exception.",
+    "inputs": [
+      "LAB_AE_East, LAB_AE_Peer, LAB_Manager_East, LAB_Deal_Desk, LAB_Solution_Engineer, and LAB_Legal_Reviewer are synthetic test principals.",
+      "LAB_Opportunity_Orion is a synthetic Opportunity owned by LAB_AE_East; Amount is used only as a field-security test, never as real business data.",
+      "The team needs a comparison record, LAB_Opportunity_Comet, that does not match the repeatable sharing-rule population.",
+      "Sales Territories may be available in the org, but entitlement, naming, and configuration are Needs verification rather than assumptions."
+    ],
+    "decisions": [
+      {
+        "decision": "Keep Opportunity OWD private in the disposable LAB_ scenario, then add only proved access paths.",
+        "because": "Peer privacy is the baseline requirement. OWD establishes the floor before any sharing mechanism can widen it.",
+        "rejected": "Make Opportunities broadly visible and try to hide exceptions with a sharing rule; sharing rules do not reduce access below OWD."
+      },
+      {
+        "decision": "Use the verified role hierarchy for LAB_Manager_East's manager-style oversight if the role branch and object behavior support it.",
+        "because": "The need follows an organizational manager path, not a record-by-record exception.",
+        "rejected": "Create a manual share for every deal owned by LAB_AE_East; that would be fragile and not manager-scaled."
+      },
+      {
+        "decision": "Use an owner-based sharing rule for the repeatable LAB_AE_East to LAB_Deal_Desk access population.",
+        "because": "The recipient and owner population repeat across deals, so an automatic rule is more auditable than many manual grants.",
+        "rejected": "Add LAB_Deal_Desk to each Opportunity Team; the requirement is a repeatable owner population, not named collaborators on a few deals."
+      },
+      {
+        "decision": "Use an Opportunity Team for LAB_Solution_Engineer on LAB_Opportunity_Orion only if the feature is enabled and its access options fit.",
+        "because": "The solution engineer is a named collaborator on one deal, which is narrower than changing OWD or creating a broad rule.",
+        "rejected": "Give the engineer object-wide access to all Opportunities or assume an Account Team automatically governs the opportunity."
+      },
+      {
+        "decision": "Use a manual read-only share for LAB_Legal_Reviewer on LAB_Opportunity_Orion when the object and grantor support it.",
+        "because": "The legal review is one record and one exception, not a repeatable pattern.",
+        "rejected": "Create a permanent global sharing rule for Legal without a defined recurring population."
+      },
+      {
+        "decision": "Keep a territory design out of the base solution until its feature and model are verified; use it only if sales coverage truly follows a configured segment such as LAB_West.",
+        "because": "Territory access is a distinct segmentation model, not a fallback label for role hierarchy.",
+        "rejected": "Claim that every org has the same territory feature, name, or entitlement."
+      }
+    ],
+    "configuration_or_code": [
+      "Confirm the intended LAB_ users have the required Opportunity object permissions and field-level security before testing record sharing.",
+      "Record the current Opportunity OWD and, only in the disposable LAB_ org, use a Private baseline if it is safe and reversible.",
+      "Place LAB_Manager_East above LAB_AE_East in the intended LAB_ role branch only if that is part of the lab design.",
+      "Create a least-privilege owner-based rule from the LAB_AE_East population to LAB_Deal_Desk, then retain the matching rule definition as evidence.",
+      "If Opportunity Teams are verified available, add LAB_Solution_Engineer only to LAB_Opportunity_Orion; otherwise record the feature gap instead of broadening access.",
+      "If manual sharing is supported for the lab record and grantor, add LAB_Legal_Reviewer to LAB_Opportunity_Orion with the minimum required access."
+    ],
+    "output": "LAB_AE_Peer: cannot open LAB_Opportunity_Orion.\nLAB_Manager_East: receives only the verified manager-style access path.\nLAB_Deal_Desk: reads matching LAB_AE_East-owned records, not LAB_Opportunity_Comet.\nLAB_Solution_Engineer: receives only the intended LAB_Opportunity_Orion collaboration access.\nLAB_Legal_Reviewer: reads only LAB_Opportunity_Orion.\nAmount: remains controlled by each user's CRUD/FLS, not by the share itself.",
+    "verification": [
+      "As LAB_AE_Peer, attempt to open LAB_Opportunity_Orion before and after targeted grants; the peer must remain blocked if no valid path was added.",
+      "As LAB_Manager_East, verify access only after confirming the actual role branch and the object's hierarchy behavior.",
+      "As LAB_Deal_Desk, test one matching LAB_AE_East-owned record and LAB_Opportunity_Comet as a deliberate non-match.",
+      "As LAB_Solution_Engineer and LAB_Legal_Reviewer, compare LAB_Opportunity_Orion with another synthetic Opportunity to prove the grants are record-scoped.",
+      "For a user with different Amount field visibility, test that the record can be reached while Amount remains hidden or non-editable according to FLS.",
+      "Record whether Account Teams, Opportunity Teams, and Sales Territories were available; do not count unavailable features as failed security controls."
+    ],
+    "self_explanation": "For each successful test, name both sides of the proof: the CRUD/FLS gate and the specific record-access path. Which requirement would change the design from manual sharing to a sharing rule, and which evidence would justify a territory model?"
+  },
+  "hands_on_lab": {
+    "title": "Prove a least-privilege sharing stack with LAB_ records",
+    "environment": "A disposable Trailhead Playground, scratch org, Developer Edition, or approved sandbox with only synthetic LAB_ users, groups, Accounts, and Opportunities. Never use production or real customer data.",
+    "starting_state_checks": [
+      "Confirm the org is non-production and you are authorized to inspect or change its sharing settings.",
+      "Use only synthetic names such as LAB_AE_East, LAB_AE_Peer, LAB_Manager_East, LAB_Deal_Desk, LAB_Account_Aurora, and LAB_Opportunity_Orion. Do not copy customer, employee, or deal data.",
+      "Record the current Opportunity OWD, role assignments, team/territory availability, and a cleanup plan before changing a lab setting.",
+      "Confirm whether the lab users have the intended Opportunity object permissions and field visibility. Do not loosen CRUD/FLS solely to make a sharing test pass."
+    ],
+    "steps": [
+      "Write an access matrix before opening Setup: LAB_AE_Peer = no access; LAB_Manager_East = manager oversight if hierarchy applies; LAB_Deal_Desk = repeatable read population; LAB_Solution_Engineer = one-deal collaborator; LAB_Legal_Reviewer = one temporary read-only exception.",
+      "Create LAB_Account_Aurora, LAB_Opportunity_Orion, and a comparison LAB_Opportunity_Comet with synthetic values only. Make LAB_AE_East the owner of Orion and use a different owner or non-matching condition for Comet.",
+      "Test the CRUD/FLS gate first. As each LAB_ user, record whether Opportunity Read is present and whether the chosen non-sensitive test field is visible or editable. Separate this result from record visibility.",
+      "In the disposable lab only, inspect Opportunity OWD. If Private is safe and reversible for the lab, use it as the peer-privacy baseline; otherwise leave the setting unchanged and document why the scenario cannot prove a private baseline there.",
+      "If the role hierarchy and object behavior support the test, place LAB_Manager_East above LAB_AE_East and verify access to Orion without giving the manager a manual share.",
+      "Create a least-privilege owner-based sharing rule for the LAB_AE_East population to LAB_Deal_Desk. Test both Orion as a match and Comet as a deliberate non-match.",
+      "If Account Teams or Opportunity Teams are already entitled and enabled, add a named LAB_ collaborator to one corresponding record and prove that another synthetic record is not automatically opened. If unavailable, record Needs verification and skip rather than enabling a feature blindly.",
+      "If manual sharing is supported for the lab record and grantor, give LAB_Legal_Reviewer the minimum required access to Orion only. Confirm that Comet remains unavailable.",
+      "Do not enable Sales Territories for this exercise. If an approved lab already has a territory model, inspect its LAB_ assignment design and record entitlement, naming, and configuration as Needs verification before testing it.",
+      "Capture the access matrix, matching/non-matching test results, and cleanup record. Remove only the LAB_ artifacts you created and restore any reversible sharing setting to its recorded starting state."
+    ],
+    "guided_completion": [
+      "For LAB_AE_Peer seeing Orion unexpectedly, state the OWD result you would inspect before looking for a sharing rule.",
+      "For LAB_Manager_East seeing Orion, identify the evidence that distinguishes a real hierarchy path from a broad override permission.",
+      "For LAB_Deal_Desk, explain why both Orion and Comet are required to validate an owner- or criteria-based rule.",
+      "For LAB_Legal_Reviewer, explain why a manual share is narrower than an object-wide permission or an unbounded rule."
+    ],
+    "independent_challenge": "Change the context: a finance analyst needs ongoing collaboration on LAB_Account_Aurora, while a solution engineer needs access only to LAB_Opportunity_Orion. Choose Account Team, Opportunity Team, a sharing rule, or manual sharing for each. Then explain whether a territory model is justified, what entitlement fact remains Needs verification, and how you would prove FLS is not the hidden blocker.",
+    "evidence": [
+      "A synthetic LAB_ access matrix listing each principal, target record, expected result, actual result, CRUD/FLS gate result, and identified record-access path.",
+      "A screenshot or configuration export of each LAB_ rule, team membership, or manual share that was actually created; never include real data.",
+      "A matching and non-matching record test result for any sharing rule.",
+      "A note that states whether Account Teams, Opportunity Teams, and Sales Territories were available, unverified, or intentionally not tested."
+    ],
+    "stop_recovery_cleanup": [
+      "Stop immediately if the org is production, contains real customer data in the lab records, or the requested action would alter an existing non-LAB_ sharing design.",
+      "If OWD or hierarchy changes would affect users outside the disposable lab, do not proceed; document the blocked test and use a safer isolated environment.",
+      "Remove only records, groups, rules, team rows, and manual shares prefixed or documented as LAB_ artifacts that you created. Inspect dependencies before deleting anything.",
+      "Restore the recorded baseline only after confirming the restore itself does not remove intended unrelated lab work."
+    ],
+    "limitations": "This lab proves a small, synthetic access hypothesis. It does not establish production entitlement, all object-specific sharing behavior, parent-child implicit sharing, large-volume recalculation impact, or a deployment-ready security design."
+  },
+  "decision_table": [
+    {
+      "signal": "Peers must not automatically see one another's Opportunity records.",
+      "choose": "Set the Opportunity OWD to the least-privilege baseline, such as Private in a suitable design, then add deliberate grants.",
+      "not": "Create a sharing rule to hide peer records.",
+      "why": "OWD establishes the per-object floor; sharing rules widen access and cannot reduce an overly broad baseline."
+    },
+    {
+      "signal": "LAB_Manager_East needs recurring oversight of LAB_AE_East's records because the relationship follows the organization chart.",
+      "choose": "Use the role hierarchy only after verifying the actual role branch and the target object's hierarchy behavior.",
+      "not": "Create a manual share for every subordinate-owned record.",
+      "why": "Hierarchy can scale manager-style upward access; manual shares are record-by-record exceptions."
+    },
+    {
+      "signal": "LAB_Deal_Desk needs the same read access to every Opportunity owned by LAB_AE_East or every record matching a stable criterion.",
+      "choose": "Use an owner-based or criteria-based sharing rule with a narrowly defined recipient and access level.",
+      "not": "Manually share each current and future record.",
+      "why": "The record population and recipient are repeatable, so automatic additive access is more maintainable and testable."
+    },
+    {
+      "signal": "LAB_Finance_Analyst is a named collaborator on LAB_Account_Aurora, not on every Account.",
+      "choose": "Use an Account Team if the feature is entitled, enabled, and its access options fit.",
+      "not": "Broaden Account OWD or create a rule for all Accounts.",
+      "why": "An Account Team is a record-specific collaborator model; verify entitlement and prove that another Account remains outside the grant."
+    },
+    {
+      "signal": "LAB_Solution_Engineer needs collaboration access on LAB_Opportunity_Orion, not on every Opportunity.",
+      "choose": "Use an Opportunity Team if the feature is entitled, enabled, and its access options fit.",
+      "not": "Assume an Account Team automatically grants the needed Opportunity access.",
+      "why": "Opportunity Teams are scoped to Opportunity collaboration; Account and Opportunity Teams are separate mechanisms."
+    },
+    {
+      "signal": "Sales access follows a verified geographic, product, or market coverage model such as LAB_West rather than the reporting hierarchy.",
+      "choose": "Use Sales Territories only after confirming feature naming, entitlement, enablement, and the territory model in the target org.",
+      "not": "Distort the role hierarchy to imitate sales segmentation.",
+      "why": "Territories are a separate segment-based access path; their availability is Needs verification, not a universal assumption."
+    },
+    {
+      "signal": "LAB_Legal_Reviewer needs read-only access to LAB_Opportunity_Orion for one exceptional review.",
+      "choose": "Use manual sharing when the record, recipient, and authorized grantor support it.",
+      "not": "Create a broad permanent sharing rule with no repeatable population.",
+      "why": "Manual sharing is a one-record exception and should be proven against a comparison record."
+    },
+    {
+      "signal": "A user can open LAB_Opportunity_Orion but cannot see Amount or cannot edit the record.",
+      "choose": "Check object CRUD and field-level security before changing record sharing.",
+      "not": "Add a wider OWD, sharing rule, team, territory, or manual share.",
+      "why": "Record access and capability or field visibility are separate gates; sharing cannot grant missing object or field access."
+    }
+  ],
+  "limitations": [
+    "OWD, role hierarchy, sharing rules, teams, territories, and manual sharing explain important record-access paths but do not calculate every possible effective-access outcome by themselves.",
+    "Object-specific hierarchy behavior, sharing-rule options, manual-share support, and user authority must be verified in the target org.",
+    "Needs verification: Account Team and Opportunity Team entitlement, enablement, roles, and access options are not universal claims.",
+    "Needs verification: Sales Territories feature naming, edition or license entitlement, enablement, and model configuration are not universal claims.",
+    "Implicit parent-child sharing, custom Apex-managed sharing, override permissions, and large-scale sharing recalculation design are outside this topic's core model."
+  ],
+  "security_notes": [
+    "Apply least privilege in both layers: give only the needed object/field action and only the needed record-access path.",
+    "A successful administrator test is not proof of a least-privilege design; test as the intended LAB_ user and a deliberately unauthorized comparison LAB_ user.",
+    "Do not widen OWD, object permissions, or FLS to solve a single-record symptom without documenting the population that becomes newly exposed.",
+    "For every sharing rule, document the source population, recipient, access level, matching test, non-matching test, owner, and rollback action.",
+    "Treat team membership and manual sharing as privilege-expansion controls. Review who may add them and remove LAB_ grants after testing.",
+    "Use synthetic LAB_ records only in labs, screenshots, exports, and interview examples; never use customer, employee, contract, or production deal data."
+  ],
+  "common_mistakes": [
+    "Starting with sharing when the real symptom is missing object CRUD or field-level security.",
+    "Trying to use a sharing rule to make records less visible than an overly broad OWD.",
+    "Treating a manager's job title as proof that the person sits above an owner in the Salesforce role hierarchy.",
+    "Using manual sharing for a recurring population that should have a narrow, tested owner- or criteria-based rule.",
+    "Confusing Account Teams with Opportunity Teams or assuming either is entitled and enabled in every org.",
+    "Using a role hierarchy to represent sales geography or product coverage without evaluating a territory model.",
+    "Testing only a user who should succeed and never testing a peer or non-matching record that should remain blocked.",
+    "Leaving temporary LAB_ rules, team rows, territory assignments, or manual shares behind after the exercise."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "LAB_AE_East can open LAB_Opportunity_Orion but cannot see Amount or cannot edit the record.",
+      "check": [
+        "Confirm the required Opportunity object permission for the exact action: Read versus Update is not the same test.",
+        "Confirm the user's field-level visibility and editability for Amount or the chosen non-sensitive test field.",
+        "Only after the gate passes, inspect page presentation or record visibility if the symptom remains."
+      ],
+      "do_not_assume": "Do not assume a missing field or disabled edit action proves that OWD, a rule, a team, a territory, or manual sharing is wrong."
+    },
+    {
+      "symptom": "LAB_AE_Peer can see a peer-owned Opportunity that should be private.",
+      "check": [
+        "Inspect the Opportunity OWD baseline first.",
+        "Then trace possible widening paths in order: role hierarchy, sharing rules, team membership, territory assignment, and manual sharing.",
+        "Use a comparison LAB_ user and record to identify whether the behavior is broad or record-specific."
+      ],
+      "do_not_assume": "Do not assume the role hierarchy is the only possible source of access or that a permission set alone explains record visibility."
+    },
+    {
+      "symptom": "LAB_Manager_East cannot see LAB_AE_East's record even though the business calls the user a manager.",
+      "check": [
+        "Confirm Opportunity Read and relevant FLS first.",
+        "Inspect the actual role assignments and whether LAB_Manager_East is above LAB_AE_East in the tested branch.",
+        "Verify that hierarchy-based sharing applies to the target object and that the record owner is the expected LAB_ user."
+      ],
+      "do_not_assume": "Do not assume a job title, reporting line in another system, or dashboard label is a Salesforce role-hierarchy grant."
+    },
+    {
+      "symptom": "LAB_Deal_Desk does not receive access from a new sharing rule, or receives access to unexpected records.",
+      "check": [
+        "Verify the exact owner or criteria condition with one intended match and one deliberate non-match.",
+        "Verify the recipient group, role, or territory membership and the selected access level.",
+        "Recheck the OWD baseline and other widening paths before attributing every result to the new rule."
+      ],
+      "do_not_assume": "Do not assume a rule can restrict existing visibility or that a record label proves the rule condition matched."
+    },
+    {
+      "symptom": "A collaborator added to a team still cannot access the intended record.",
+      "check": [
+        "Confirm whether the collaborator was added to the Account Team or Opportunity Team that matches the record type.",
+        "Confirm the feature is enabled and its available access options support the intended result.",
+        "Check the collaborator's object CRUD and FLS separately from the team row."
+      ],
+      "do_not_assume": "Do not assume an Account Team grants Opportunity access, an Opportunity Team grants Account access, or either feature is universally available."
+    },
+    {
+      "symptom": "The design calls for a territory but the expected feature or setup label is unavailable.",
+      "check": [
+        "Stop and record Needs verification for current feature naming, entitlement, enablement, and model configuration.",
+        "Confirm that the real requirement is segment-based sales coverage rather than a manager hierarchy or a repeatable sharing rule.",
+        "Use an approved non-production org for any further feature investigation."
+      ],
+      "do_not_assume": "Do not enable a feature, change a role tree, or promise a minimum license just to force a territory-shaped lab answer."
+    },
+    {
+      "symptom": "A manual-share design no longer gives the expected one-record access or seems too broad for the request.",
+      "check": [
+        "Confirm object support, recipient, grantor authority, access level, and the exact LAB_ record before recreating the grant.",
+        "Check whether ownership or record changes affect the sharing model in the target org.",
+        "If the need now repeats, redesign it as a narrow owner- or criteria-based rule rather than multiplying manual shares."
+      ],
+      "do_not_assume": "Do not assume manual sharing is permanent automation, survives every record lifecycle event, or grants missing CRUD/FLS."
+    }
+  ],
+  "production_notes": [
+    "Write the access contract before configuration: target object, actor, required CRUD/FLS, target record population, recipient, access level, expected deny case, owner, and rollback action.",
+    "Assess OWD changes as broad security changes. Inventory affected objects, internal and external audiences where relevant, existing rules, manager paths, teams, territories, manual-share processes, and downstream reporting or automation assumptions.",
+    "For a sharing rule, validate a matching record, a non-matching record, a recipient, and a non-recipient in non-production before release.",
+    "For teams and territories, obtain explicit confirmation of entitlement, enablement, naming, and configuration before design or deployment. Mark an unavailable feature as a constraint rather than silently widening another access layer.",
+    "Keep a rollback plan that names the exact rule, team membership, manual share, role assignment, or OWD change to remove or restore. Do not use a broad permission expansion as rollback.",
+    "Retest in the target release after sharing-setting changes, role changes, user transfers, data migrations, or configuration changes that can alter the relevant record population."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "prompt": "What does an organization-wide default establish for an object?",
+      "options": {
+        "A": "The per-object baseline for record access before sharing layers widen it",
+        "B": "The maximum field visibility every user receives",
+        "C": "A one-record exception for a named reviewer",
+        "D": "The reporting hierarchy for managers"
+      },
+      "answer": "A",
+      "rationale": "OWD is the record-access floor for an object. Other sharing mechanisms can widen that floor; CRUD and FLS are separate gates.",
+      "distractor_explanations": {
+        "B": "Field visibility comes from FLS, not OWD.",
+        "C": "A one-record exception is the shape of manual sharing.",
+        "D": "Managers' upward access is associated with the role hierarchy, where applicable."
+      },
+      "concept": "Organization-Wide Defaults",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-HELP-OWD"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "prompt": "After LAB_AE_East receives record access to LAB_Opportunity_Orion, which layer still decides whether Amount is visible?",
+      "options": {
+        "A": "The sharing rule's recipient group",
+        "B": "Field-level security",
+        "C": "The opportunity owner's role only",
+        "D": "The Account Team"
+      },
+      "answer": "B",
+      "rationale": "FLS controls field visibility and editability. Record sharing can make the record reachable but cannot make a field visible.",
+      "distractor_explanations": {
+        "A": "A sharing-rule recipient can gain record access, not field visibility by itself.",
+        "C": "The owner's role may affect record access, but it does not set another user's field visibility.",
+        "D": "An Account Team is a record-collaboration mechanism for Accounts, not an FLS setting."
+      },
+      "concept": "Object permissions and field-level security",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-HELP-DATA-ACCESS"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "prompt": "Which requirement most closely matches the role hierarchy?",
+      "options": {
+        "A": "A manager needs upward access to records owned by users below the manager's role, where hierarchy sharing applies",
+        "B": "Legal needs access to one Opportunity",
+        "C": "A public group needs all records matching a stable criterion",
+        "D": "A rep needs coverage by geography rather than reporting line"
+      },
+      "answer": "A",
+      "rationale": "The role hierarchy is a role-position-based upward access path. The other options describe manual sharing, a sharing rule, and a territory model respectively.",
+      "distractor_explanations": {
+        "B": "One exceptional record points to manual sharing when supported.",
+        "C": "A stable recipient and record criterion point to a sharing rule.",
+        "D": "Geographic coverage is territory-shaped, subject to feature verification."
+      },
+      "concept": "Role hierarchy",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-HELP-ROLE"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "prompt": "Peers must not automatically see one another's Opportunities, but LAB_Manager_East needs manager-style oversight of LAB_AE_East's records. What is the best starting design?",
+      "options": {
+        "A": "Make Opportunity public and create rules to hide peer records",
+        "B": "Use a least-privilege Opportunity OWD baseline, then verify a role-hierarchy path for the manager",
+        "C": "Give every manager a manual share on every Opportunity",
+        "D": "Use an Opportunity Team for every user in the sales department"
+      },
+      "answer": "B",
+      "rationale": "OWD establishes peer visibility first. If the manager requirement follows a verified role path, hierarchy can supply the upward access without broad peer visibility.",
+      "distractor_explanations": {
+        "A": "Sharing rules widen access; they do not hide an already public baseline.",
+        "C": "Manual shares are fragile for a recurring manager relationship.",
+        "D": "A team is for named record collaborators, not a substitute for an organization-wide manager path."
+      },
+      "concept": "OWD plus role hierarchy",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-HELP-OWD",
+        "SF-HELP-ROLE"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "prompt": "LAB_Deal_Desk needs read access to every Opportunity owned by LAB_AE_East, including future matching records. Which mechanism best fits?",
+      "options": {
+        "A": "An owner-based sharing rule",
+        "B": "A manual share on LAB_Opportunity_Orion only",
+        "C": "An Account Team on LAB_Account_Aurora only",
+        "D": "A field-level security change on Opportunity Amount"
+      },
+      "answer": "A",
+      "rationale": "The same recipient needs access to a repeatable owner population, so an owner-based sharing rule can automatically widen access for matching records.",
+      "distractor_explanations": {
+        "B": "A manual share covers one exception, not future matching records.",
+        "C": "An Account Team is record-specific and applies to Accounts, not a repeatable Opportunity owner population.",
+        "D": "FLS controls fields, not which Opportunity records the group can reach."
+      },
+      "concept": "Sharing rules",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-HELP-RULES"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "prompt": "LAB_Finance_Analyst needs collaboration access only on LAB_Account_Aurora. Which choice is narrowest when the feature is verified available?",
+      "options": {
+        "A": "Account Team membership on LAB_Account_Aurora",
+        "B": "Make all Accounts public",
+        "C": "Add the analyst to every Opportunity Team",
+        "D": "Change the analyst's Opportunity Amount FLS"
+      },
+      "answer": "A",
+      "rationale": "An Account Team is a named-collaborator mechanism for a specific Account. It avoids widening the Account baseline for unrelated records.",
+      "distractor_explanations": {
+        "B": "Public access is much broader than one Account collaborator.",
+        "C": "Opportunity Teams apply to Opportunities, not the Account requirement.",
+        "D": "FLS cannot grant record access to LAB_Account_Aurora."
+      },
+      "concept": "Account Teams",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-HELP-ACCOUNT-TEAMS"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "prompt": "LAB_Solution_Engineer needs access to one deal, LAB_Opportunity_Orion, but not to every deal for LAB_AE_East. Which choice is narrowest when the feature is verified available?",
+      "options": {
+        "A": "Opportunity Team membership on LAB_Opportunity_Orion",
+        "B": "An owner-based sharing rule for all LAB_AE_East Opportunities",
+        "C": "Make Opportunity OWD Public Read/Write",
+        "D": "An Account Team only, without testing Opportunity access"
+      },
+      "answer": "A",
+      "rationale": "The requirement is a named collaborator on one Opportunity. An Opportunity Team is record-scoped, whereas the rule and OWD options are broader.",
+      "distractor_explanations": {
+        "B": "The engineer would gain access to a repeatable population, which exceeds the one-deal requirement.",
+        "C": "A public OWD broadens access for the entire object.",
+        "D": "Account Teams and Opportunity Teams are separate; do not assume one proves the other's access."
+      },
+      "concept": "Opportunity Teams",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-HELP-OPPORTUNITY-TEAMS"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "prompt": "LAB_Legal_Reviewer needs read-only access to LAB_Opportunity_Orion for a single contract review. No repeatable population exists. What is the best fit, assuming the object and grantor support it?",
+      "options": {
+        "A": "Manual sharing on LAB_Opportunity_Orion",
+        "B": "A global rule granting Legal access to all Opportunities",
+        "C": "A public Opportunity OWD",
+        "D": "An FLS change that makes Amount visible"
+      },
+      "answer": "A",
+      "rationale": "Manual sharing is a one-record exception. It should be tested against a comparison record and does not add missing CRUD/FLS.",
+      "distractor_explanations": {
+        "B": "A global rule is broader than a single exception and lacks a repeatable population in this scenario.",
+        "C": "Public OWD exposes the object broadly, not only the legal review record.",
+        "D": "FLS controls field visibility, not access to the record."
+      },
+      "concept": "Manual sharing",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-HELP-MANUAL"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "prompt": "Sales access must follow a verified geographic coverage model, with users and Accounts assigned to LAB_West. Which statement is most accurate?",
+      "options": {
+        "A": "Use Sales Territories after verifying feature naming, entitlement, enablement, and the territory model",
+        "B": "Always use the role hierarchy because every org includes the same territory model",
+        "C": "Use manual sharing for every Account forever",
+        "D": "Use FLS to determine which Accounts the reps can open"
+      },
+      "answer": "A",
+      "rationale": "Territories are a segment-based access model, but their availability and configuration are Needs verification. They are not interchangeable with a role hierarchy.",
+      "distractor_explanations": {
+        "B": "A role hierarchy models organization positions, not necessarily a sales segment, and territory availability is not universal.",
+        "C": "Manual sharing is a poor fit for a recurring segment-based population.",
+        "D": "FLS controls fields, not the set of Account records a user can reach."
+      },
+      "concept": "Sales Territories",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-HELP-TERRITORIES"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "prompt": "LAB_AE_East can open LAB_Opportunity_Orion through a valid sharing path but cannot edit it. What should you check before adding more sharing?",
+      "options": {
+        "A": "Opportunity Update permission and any relevant field-level edit access",
+        "B": "A broader Opportunity OWD",
+        "C": "A manual share to the same user",
+        "D": "A new Account Team"
+      },
+      "answer": "A",
+      "rationale": "The record is already reachable. Editing is an object-action and field-security question, so the CRUD/FLS gate is the next check.",
+      "distractor_explanations": {
+        "B": "Broader OWD changes record visibility, not the user's Update capability.",
+        "C": "Another record share cannot grant Update on Opportunity.",
+        "D": "An Account Team does not repair missing Opportunity Update permission."
+      },
+      "concept": "CRUD/FLS gate",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-HELP-DATA-ACCESS"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "prompt": "Which comparison between a sharing rule and manual sharing is correct?",
+      "options": {
+        "A": "A sharing rule automates access for a repeatable owner or criteria population; manual sharing fits one record exception",
+        "B": "Manual sharing narrows an overly broad OWD; sharing rules manage FLS",
+        "C": "A sharing rule applies only to one record; manual sharing is required for future matching records",
+        "D": "Both mechanisms grant object CRUD and field visibility"
+      },
+      "answer": "A",
+      "rationale": "The distinction is repeatable population versus one-record exception. Both are record-access mechanisms and neither grants missing object or field permission.",
+      "distractor_explanations": {
+        "B": "Neither mechanism narrows OWD, and FLS is a separate gate.",
+        "C": "The scope is reversed: a sharing rule can cover a repeatable population; manual sharing is record-specific.",
+        "D": "Record shares do not grant object CRUD or field visibility."
+      },
+      "concept": "Sharing rules versus manual sharing",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-HELP-RULES",
+        "SF-HELP-MANUAL"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "prompt": "Which comparison between Account Teams and Opportunity Teams is correct?",
+      "options": {
+        "A": "Account Teams apply to Account collaboration; Opportunity Teams apply to Opportunity collaboration, and each feature must be verified in the org",
+        "B": "Account Teams always grant access to every related Opportunity",
+        "C": "Opportunity Teams replace object permissions and FLS for deal collaborators",
+        "D": "Both are universal substitutes for owner- or criteria-based sharing rules"
+      },
+      "answer": "A",
+      "rationale": "They are distinct record-type collaboration mechanisms. Their entitlement, enablement, roles, and access options remain target-org verification items.",
+      "distractor_explanations": {
+        "B": "Do not assume Account Team membership proves access to a related Opportunity.",
+        "C": "A team cannot grant missing object CRUD or FLS.",
+        "D": "Teams are record-specific collaborator mechanisms, not automatic replacements for repeatable sharing rules."
+      },
+      "concept": "Account Teams versus Opportunity Teams",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-HELP-ACCOUNT-TEAMS",
+        "SF-HELP-OPPORTUNITY-TEAMS"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "What does OWD decide?",
+      "back": "The per-object baseline for record access before sharing layers widen it. It is not FLS or a one-record exception."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "What does the role hierarchy model for access?",
+      "back": "A role-position-based upward path to manager-level users where hierarchy-based sharing applies; verify actual roles and object behavior."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "What distinguishes a sharing rule from a manual share?",
+      "back": "A sharing rule widens access automatically for a repeatable owner or criteria population. A manual share is a one-record exception."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "Account Team versus Opportunity Team?",
+      "back": "Account Teams are named collaborators on one Account; Opportunity Teams are named collaborators on one Opportunity. Verify both features in the target org."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "What is the CRUD/FLS gate?",
+      "back": "Object permissions control actions; FLS controls field visibility and editability. Record sharing cannot create either permission."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "Peers must not see each other's Opportunities by default. Start where?",
+      "back": "OWD. Set the least-privilege object baseline first, then add deliberate access paths."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "LAB_Manager_East needs routine oversight of LAB_AE_East. Choose what?",
+      "back": "A verified role-hierarchy path when the role branch and object behavior fit; not a manual share on every record."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "LAB_Deal_Desk needs all future Opportunities owned by LAB_AE_East. Choose what?",
+      "back": "A narrow owner-based sharing rule, tested with one matching and one non-matching record."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "One solution engineer needs one deal. One legal reviewer needs one temporary exception. Choose what?",
+      "back": "Opportunity Team for an ongoing named collaborator if enabled; manual sharing for the one-record legal exception if supported."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "A user can open LAB_Opportunity_Orion but cannot edit Amount. Next action?",
+      "back": "Check Opportunity Update and Amount FLS. Do not broaden sharing because record reachability is already proven."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "Can a sharing rule hide a record that OWD already exposes?",
+      "back": "No. Sharing rules widen record access; use a more restrictive OWD baseline and then add deliberate grants."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Does record sharing grant CRUD or FLS?",
+      "back": "No. A user needs an allowed object action and allowed field access separately from a record-access path."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "What must remain Needs verification for teams and territories?",
+      "back": "Feature naming, entitlement, enablement, roles or access options, and territory-model configuration in the target org."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "LAB_AE_Peer unexpectedly opens LAB_Opportunity_Orion. What is the diagnostic sequence?",
+      "back": "Check CRUD/FLS only if the symptom includes action or field access; for record visibility trace OWD, hierarchy, rules, teams, territories, then manual sharing."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "A territory-shaped requirement appears, but the feature is unavailable in the lab. What do you do?",
+      "back": "Record Needs verification for naming, entitlement, enablement, and model. Do not distort roles or widen OWD just to force the lab scenario."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain Salesforce record sharing in 60 seconds without confusing it with CRUD and FLS.",
+      "answer_30_seconds": "I split access into two layers. CRUD and FLS decide whether the user can perform the object action and see or edit fields. For record visibility, OWD is the floor, then I evaluate role hierarchy, sharing rules, and the narrowest targeted path: Account or Opportunity Team, territory if verified, or manual sharing. Each share widens record access; it cannot grant missing CRUD/FLS or hide access below OWD.",
+      "answer_2_minutes": "I would say the design starts with the capability gate, then the record stack. Situation: a user reports missing access. Task: grant only what the user needs. Action: I verify object Read or Update and relevant FLS first, then trace OWD, hierarchy, sharing rules, and targeted grants in that order. I choose a rule for a repeatable population, a team for a named collaborator, a territory only after entitlement and model verification, and manual sharing for one exception. Result: I can prove both the intended allowed case and a denied comparison case without broadening the object.",
+      "example": "Situation: LAB_AE_Peer could not open LAB_Opportunity_Orion, while LAB_Legal_Reviewer needed one review. Task: preserve peer privacy and add the legal exception. Action: retain private OWD, verify the legal user's CRUD/FLS, then add a supported manual read-only share only to Orion. Result: Legal could read Orion, the peer remained blocked, and no global rule or OWD expansion was introduced.",
+      "tradeoffs": [
+        "A broad baseline is fast to configure but hard to defend; a restrictive baseline needs intentional access paths.",
+        "A highly targeted grant is safer for one record but becomes unmaintainable when the population repeats."
+      ],
+      "follow_ups": [
+        "Which layer would you test first if the user can open the record but cannot see a field?",
+        "Why can a sharing rule not repair an overly broad OWD?"
+      ],
+      "weak_answer_warnings": [
+        "Saying that sharing gives permissions without separating record access from CRUD/FLS.",
+        "Listing mechanisms in random order with no least-privilege decision rule."
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "design",
+      "question": "How would you design least-privilege access for peer-owned Opportunities and manager oversight?",
+      "answer_30_seconds": "I begin with a restrictive Opportunity OWD baseline so peers are not visible by default. Then I verify whether the manager requirement follows a real Salesforce role branch and whether hierarchy sharing applies to the object. I test as the manager and a peer; I do not create a manual share for every deal unless the requirement is genuinely exceptional.",
+      "answer_2_minutes": "I frame the answer as an access contract. Situation: sales wants peer privacy but managers need oversight. Task: protect peer-owned records without creating ongoing manual administration. Action: document required CRUD/FLS, set or preserve the least-privilege OWD baseline in non-production, confirm actual roles, and test hierarchy access with a subordinate-owned record. If another recipient needs a repeatable population, add a narrow sharing rule rather than a manager workaround. Result: the manager has a defensible path, peers remain denied, and the team has matching and non-matching evidence plus rollback notes.",
+      "example": "Situation: LAB_AE_East owns LAB_Opportunity_Orion and LAB_AE_Peer should not see it. Task: give LAB_Manager_East oversight without exposing all deals. Action: preserve a Private Opportunity baseline, verify that LAB_Manager_East is above LAB_AE_East in the intended role branch, and test the object's hierarchy behavior. Result: the manager's tested access works while the peer remains blocked; no blanket public access is used.",
+      "tradeoffs": [
+        "Role hierarchy scales manager-style access but fits organization positions, not every business segment.",
+        "Manual shares can unblock one urgent record but become risky debt for an ongoing manager relationship."
+      ],
+      "follow_ups": [
+        "What evidence proves the manager is actually above the owner in Salesforce?",
+        "What would you do if hierarchy-based access does not apply to the target object?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming a user's manager title proves a role-hierarchy path.",
+        "Promising that a role hierarchy solves sales-territory coverage."
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "design",
+      "question": "When do you choose a sharing rule instead of manual sharing?",
+      "answer_30_seconds": "I choose a sharing rule when the recipient and record population repeat through ownership or criteria. I choose manual sharing for a single exception. Before either choice, I verify CRUD/FLS and OWD, because neither mechanism can grant missing object or field access or reduce an overly broad baseline.",
+      "answer_2_minutes": "Situation: a support group asks for access. Task: find the smallest maintainable grant. Action: I ask whether the records can be described by a stable owner or criterion and whether the recipient is a durable group, role, or other supported principal. If yes, I design a narrow rule and test one match and one non-match. If the request is one deal for one reviewer, I use a supported manual share and test a comparison record. Result: access changes automatically only when the repeatable business condition changes, rather than through a growing manual-share backlog.",
+      "example": "Situation: LAB_Deal_Desk needs every Opportunity owned by LAB_AE_East, while LAB_Legal_Reviewer needs only LAB_Opportunity_Orion. Task: avoid a broad legal grant and avoid repeated deal-desk manual work. Action: create an owner-based LAB_Deal_Desk rule and a separate manual legal share for Orion. Result: a new matching LAB_AE_East record follows the rule, Comet remains outside it, and Legal remains limited to Orion.",
+      "tradeoffs": [
+        "Rules reduce recurring administration but can widen access unexpectedly if criteria or recipients are broad.",
+        "Manual shares are precise but require lifecycle review and are poor for a recurring population."
+      ],
+      "follow_ups": [
+        "How do you prove a sharing rule did not overmatch?",
+        "Why is a manual share not a way to grant a field permission?"
+      ],
+      "weak_answer_warnings": [
+        "Choosing a rule just because it is declarative without defining the population and recipient.",
+        "Calling manual sharing a permanent automation mechanism."
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "troubleshooting",
+      "question": "A user can open the Opportunity but cannot see Amount or edit the record. How do you troubleshoot it?",
+      "answer_30_seconds": "Because the record opens, I first test the CRUD/FLS gate: Opportunity Update if editing is needed, and field visibility or editability for Amount. I do not add a broader share. Only if the user cannot reach the record do I trace OWD, hierarchy, rules, teams, territories, and manual sharing.",
+      "answer_2_minutes": "Situation: the user reaches the record but reports a missing action or field. Task: avoid solving a capability problem with record sharing. Action: reproduce as the affected LAB_ user, check the exact object action, inspect Amount FLS, and distinguish a hidden field from a read-only field. I then compare with a user who has the desired object and field permissions but the same record path. Result: the root layer is isolated, the record-sharing design stays narrow, and the fix can be reviewed by the permission owner rather than expanding record visibility.",
+      "example": "Situation: LAB_AE_East can open LAB_Opportunity_Orion through a valid rule but cannot edit Amount. Task: enable the approved action without exposing new records. Action: verify Opportunity Update and Amount edit access in the LAB_ policy; leave the sharing rule unchanged. Result: after the appropriate capability change, the user can edit the permitted field on the already reachable record, while peer record visibility is unchanged.",
+      "tradeoffs": [
+        "Adding a broad share can create a security incident without fixing an FLS problem.",
+        "Changing FLS may expose a field across many records, so it needs its own least-privilege review."
+      ],
+      "follow_ups": [
+        "What result would send you from FLS troubleshooting back to the record-sharing stack?",
+        "How would you test a hidden field versus a record the user cannot open?"
+      ],
+      "weak_answer_warnings": [
+        "Starting with OWD when the user already opens the record.",
+        "Saying page layout alone proves field security."
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "How would you investigate a user who unexpectedly sees a peer-owned record?",
+      "answer_30_seconds": "I confirm the symptom as that user, then trace record access in order: OWD, role hierarchy, sharing rules, teams, territories, and manual sharing. I compare a matching and non-matching LAB_ record and do not assume the first visible mechanism is the only grant.",
+      "answer_2_minutes": "Situation: a peer sees a record that should be restricted. Task: identify the actual widening path without breaking intended access. Action: first confirm CRUD/FLS only as necessary to reproduce, then inspect the OWD baseline. I verify role placement, rule criteria and recipient membership, record team rows, territory assignment where configured, and manual-share rows. I test a comparison user and record at each step. Result: the team identifies the specific path, removes or narrows only that path under change control, and re-tests both the denied and intended allowed cases.",
+      "example": "Situation: LAB_AE_Peer unexpectedly opens LAB_Opportunity_Orion. Task: preserve LAB_Manager_East oversight and LAB_Deal_Desk access while blocking the peer. Action: compare Orion with LAB_Opportunity_Comet, inspect the Private baseline, then identify an unintended LAB_Deal_Desk group membership rather than changing OWD. Result: only the incorrect membership is corrected; manager and deal-desk tests continue to pass.",
+      "tradeoffs": [
+        "Changing OWD may remove a broad access path quickly but has the largest blast radius.",
+        "Removing a targeted grant is narrower but requires proof that it is the real source of access."
+      ],
+      "follow_ups": [
+        "Why do you need a comparison record as well as a comparison user?",
+        "What would make you suspect a sharing-rule recipient rather than OWD?"
+      ],
+      "weak_answer_warnings": [
+        "Removing the first share you find without proving it caused the access.",
+        "Ignoring the role hierarchy, team membership, or manual-share path."
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "design",
+      "question": "How do Account Teams and Opportunity Teams affect your design, and what must you verify first?",
+      "answer_30_seconds": "They are distinct record-specific collaborator mechanisms: Account Teams for an Account and Opportunity Teams for an Opportunity. I use them only for named collaborators, not broad populations, and first verify the corresponding feature's entitlement, enablement, available roles or access options, plus the user's CRUD/FLS.",
+      "answer_2_minutes": "Situation: a stakeholder asks to add specialists to strategic accounts and deals. Task: give collaboration access without broadening OWD. Action: I separate the Account requirement from the Opportunity requirement, verify that each team feature exists and supports the required access, then test one LAB_ record and one comparison record as the specialist. If the population is repeatable rather than named record collaborators, I use a narrow sharing rule instead. Result: the design is record-scoped, its availability is documented honestly, and a missing feature becomes a constraint rather than a reason to over-share.",
+      "example": "Situation: LAB_Finance_Analyst needs LAB_Account_Aurora and LAB_Solution_Engineer needs LAB_Opportunity_Orion. Task: avoid granting all Accounts or all Opportunities. Action: verify Account Teams and Opportunity Teams separately, add each user only to the matching LAB_ record type, and test a second record. Result: each specialist reaches only the intended record type and record; the access matrix records any unavailable feature as Needs verification.",
+      "tradeoffs": [
+        "Teams are precise for named collaboration but need maintenance when participation changes.",
+        "Sharing rules scale repeatable populations but can be too broad for a single collaboration relationship."
+      ],
+      "follow_ups": [
+        "Can an Account Team be assumed to grant related Opportunity access?",
+        "What do you do when a required team feature is not available in the target org?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming teams are available in every edition or license without verification.",
+        "Using Account Team and Opportunity Team as interchangeable labels."
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "architecture",
+      "question": "How do you decide between a role hierarchy and Sales Territories?",
+      "answer_30_seconds": "I use a role hierarchy for verified organization-position, manager-style access. I evaluate Sales Territories when access follows a configured sales segment such as geography, product, or market. I do not treat territories as universal: naming, entitlement, enablement, and model configuration are Needs verification.",
+      "answer_2_minutes": "Situation: sales leadership wants access by coverage area, while managers still need oversight. Task: avoid forcing two models into one role tree. Action: I map the manager chain separately from the coverage segmentation. I verify roles for manager access, then investigate a territory model only if the business truly assigns users and accounts to segments. I record whether the feature is entitled and configured before proposing it. Result: manager access remains understandable, segment access is modeled deliberately if available, and the team does not create misleading roles or broad rules as a shortcut.",
+      "example": "Situation: LAB_Manager_East oversees LAB_AE_East, but LAB_AE_West should cover LAB_Account_Aurora because it belongs to LAB_West. Task: keep reporting hierarchy distinct from territory coverage. Action: verify the manager's role path first, then inspect whether the approved LAB_ org has a territory model and entitlement for LAB_West. Result: the hierarchy solves only the manager need; territory access is tested only if available and otherwise remains an explicit design constraint.",
+      "tradeoffs": [
+        "A role hierarchy is simpler for reporting-line access but may misrepresent sales coverage.",
+        "A territory model can fit segmentation but adds configuration and entitlement dependencies that must be operated and tested."
+      ],
+      "follow_ups": [
+        "What evidence would prove a territory model is justified rather than a sharing rule?",
+        "Why is changing the role hierarchy to represent geography risky?"
+      ],
+      "weak_answer_warnings": [
+        "Saying territories replace OWD, sharing rules, or every other sharing control.",
+        "Promising a specific feature name or minimum entitlement without verifying the target org."
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "behavioral",
+      "question": "Give a STAR example of solving an urgent access request without over-sharing.",
+      "answer_30_seconds": "Situation: Legal needed one deal urgently. Task: grant only the review access and preserve peer privacy. Action: I checked the reviewer's CRUD/FLS, confirmed the record and authorized grantor supported a manual share, applied the minimum record-level grant in a LAB_ test, and tested a comparison deal. Result: the reviewer accessed only the required record, the peer remained blocked, and the team documented cleanup and a repeatability check.",
+      "answer_2_minutes": "I make the STAR structure explicit under pressure. Situation: LAB_Legal_Reviewer needed LAB_Opportunity_Orion and the business wanted a same-day answer. Task: avoid broadening OWD or creating a permanent rule for one exception. Action: I confirmed the user could read Opportunities and the required fields under policy, verified the record-sharing model and grantor authority, applied a supported read-only manual share in a disposable LAB_ environment, and tested Orion plus LAB_Opportunity_Comet as the reviewer and a peer. Result: Legal could review Orion, no unrelated record became visible, the test matrix showed the source of access, and the manual-share lifecycle was documented for follow-up.",
+      "example": "Situation: LAB_Legal_Reviewer needed one contract review while LAB_AE_Peer must stay denied. Task: deliver fast, least-privilege access. Action: choose a supported manual share instead of public OWD or a global rule, verify CRUD/FLS separately, and test Orion and Comet. Result: the reviewer gets one read-only record, the peer remains blocked, and the team can remove the documented LAB_ grant after the exercise.",
+      "tradeoffs": [
+        "Manual sharing is fast and narrow for one exception but requires follow-up if the request repeats.",
+        "A sharing rule may be more maintainable for a recurring legal population but would be excessive for one record."
+      ],
+      "follow_ups": [
+        "What would make you replace the manual share with a sharing rule?",
+        "How did you prove the user could see the field without broadening record access?"
+      ],
+      "weak_answer_warnings": [
+        "Describing a global OWD or profile expansion as a one-record least-privilege fix.",
+        "Leaving out the denied comparison test or the cleanup or lifecycle check."
+      ]
+    }
+  ]
+}

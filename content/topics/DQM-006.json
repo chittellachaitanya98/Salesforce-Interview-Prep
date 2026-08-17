@@ -1,0 +1,999 @@
+{
+  "topic_id": "DQM-006",
+  "slug": "large-data-volumes-query-selectivity-indexing-and-data-",
+  "title": "Large data volumes, query selectivity, indexing, and data skew",
+  "track": "Data management and quality",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 35,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DQM-005"
+  ],
+  "objectives": [
+    "Explain large data volume performance as reducing how many records the platform must process, using selective filters and archiving.",
+    "Define query selectivity as filters the Lightning Platform Query Optimizer can drive from indexes, and name operators that often prevent that.",
+    "Place standard, custom, Unique/External ID, and Support-requested indexes without inventing unofficial selectivity percentages.",
+    "Define ownership data skew and parent-child data skew using the 10,000-record architect thresholds, and refuse dummy-owner piles."
+  ],
+  "diagnostic_question": "A report times out on 8 million LAB_ invoices, one integration user owns 200,000 of them, and 80,000 contacts sit under a dummy account. Which problem is selectivity, indexing, ownership skew, or parent-child skew—and what would you not 'fix' with a bigger timeout?",
+  "definition": "Large data volume (LDV) design reduces how many records queries, reports, and sharing must touch. The Lightning Platform Query Optimizer uses indexes when filters are selective; negative and unindexed filters often force broader scans. Ownership data skew is one user owning more than 10,000 records of an object. Parent-child data skew is 10,000 or more children under one parent account, which stresses implicit sharing. ([LDV best practices](https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_best_practices.htm); [Ownership Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_group_membership_data_skew.htm))",
+  "why_it_matters": "Interviewers listen for selective filters, indexes, and skew—not 'Salesforce is slow.' Parking unassigned leads on a dummy user or all contacts on a dummy account is the example architect docs warn about. Inventing 10% selectivity numbers you cannot cite is worse than saying the optimizer needs selective indexed filters.",
+  "sixty_second_explanation": "Think of a highway interchange. Selective filters are ramps only a few cars need. Indexes are HOV lanes the optimizer may use when that ramp is selective. Negative filters are 'not this exit,' which is a poor way to route traffic. Ownership skew is dumping 10,000-plus cars onto one exit (one owner). Parent-child skew is one mega-interchange (one parent account) with 10,000-plus ramps that all have to be rechecked when access changes.",
+  "deeper_explanation": [
+    "LDV best practices: performance tuning relies on reducing the number of records processed. Narrow, selective queries beat broad ones. Archiving or discarding at the rate data arrives keeps volumes from degrading over time. If retrieved rows are few enough, the platform can use indexes (and other constructs such as skinny tables—request via documented channels, do not invent). ([LDV best practices](https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_best_practices.htm))",
+    "The Lightning Platform Query Optimizer exists because the multitenant database's native optimizer cannot always see tenant data access efficiently. It evaluates indexes against record-distribution thresholds to decide whether an index helps. Custom indexes can be requested from Salesforce Support; the platform may also auto-create indexes. Unique and External ID fields are indexed as field attributes (DQM-003) but still must be selective in the query. ([LDV infrastructure](https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_infrastructure_for_performance.htm))",
+    "SOQL/SOSL LDV practices: use selective filters on indexed fields with a wider range of values; avoid negative filters such as status != 'failed' or != NULL; prefer IN over huge OR lists; avoid filtering on non-deterministic / cross-object formula fields that are not indexable. Decompose OR queries that cannot use indexes. Timeouts: tune scope, consider Bulk API 2.0 query, LIMIT, or Batch Apex patterns—Needs verification of current bulk-query options in the org. ([SOQL and SOSL LDV](https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_best_practices_soql_and_sosl.htm))",
+    "Ownership data skew: a single user owns more than 10,000 records of an object—common when parking unassigned leads on a dummy user. Moving that user in the role hierarchy or in/out of a sharing-rule source group forces huge sharing recalculation. Mitigations in the architect guide: distribute ownership; if you must concentrate ownership, avoid giving those users a role; if they need a role, place them in a separate top-level role and do not move them, and keep them out of public groups used as sharing-rule sources. ([Ownership Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_group_membership_data_skew.htm))",
+    "Parent-child data skew: 10,000 or more children on one parent account (for example parking unallocated contacts under a dummy account). Implicit sharing then makes visibility changes expensive: losing access to one contact can require scanning the other children to see if account access should remain. ([Parent-Child Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_object_relationships_parent_child_data_skew.htm))"
+  ],
+  "mental_model": {
+    "analogy": "A highway interchange: selective filters = ramps few cars need, indexes = HOV lanes the optimizer may use, negative filters = 'not this exit,' ownership skew = 10,000-plus cars on one exit, parent-child skew = one mega-interchange with 10,000-plus ramps.",
+    "useful_mapping": [
+      "object with millions of rows → a vast highway network",
+      "selective indexed WHERE → a ramp only a small slice of traffic uses",
+      "index → HOV lane the query optimizer may choose",
+      "negative filter (!=, NOT, <> ) → 'not this exit' (usually unhelpful)",
+      "ownership skew → one exit owned by one driver with 10,000-plus cars",
+      "parent-child skew → dummy account interchange with 10,000-plus child ramps",
+      "sharing recalculation → rebuilding all the signs when that driver changes roles",
+      "archive → closing old lanes so the remaining network stays small"
+    ],
+    "where_it_breaks": [
+      "An index is not always used; the optimizer compares distribution thresholds.",
+      "Unique/External ID indexes still fail if the filter is not selective (almost all rows match).",
+      "Lookup skew onto a popular lookup target is a sibling pattern—cite current architect docs before quoting a number.",
+      "The analogy does not encode skinny tables or exact unofficial selectivity percentages."
+    ]
+  },
+  "teach_back_prompt": "Explain LDV, selectivity, indexing, and the two documented skew types with the 10,000 thresholds. Then say why a dummy account for extra contacts is dangerous. Name where the highway analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Ownership skew vs parent-child skew vs unselective query, one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Rewrite a != status filter as a selective positive filter idea."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Dummy user with a role owns 50k leads: what sharing risk does the architect guide name?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "When would you request a custom index versus marking Unique?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: reduce rows processed; indexes need selectivity; 10k skew thresholds."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-DEV-LDV-BP",
+      "title": "Best Practices for Deployments with Large Data Volumes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_best_practices.htm",
+      "supports": "Reduce records processed; selective/narrow queries; archive as data arrives.",
+      "release_or_version": "LDV best practices guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace org-specific query plans."
+    },
+    {
+      "source_id": "SF-DEV-LDV-INFRA",
+      "title": "Infrastructure for Systems with Large Data Volumes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_infrastructure_for_performance.htm",
+      "supports": "Lightning Platform Query Optimizer; indexes; optimizer evaluates indexes against record-distribution thresholds; skinny tables listed as a capability.",
+      "release_or_version": "LDV best practices guide",
+      "last_verified": "2026-08-16",
+      "limits": "Skinny-table eligibility is Support-mediated; do not invent object lists."
+    },
+    {
+      "source_id": "SF-DEV-LDV-SOQL",
+      "title": "SOQL and SOSL (LDV best practices)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_best_practices_soql_and_sosl.htm",
+      "supports": "Selective filters, indexed fields, avoid negative filters and non-deterministic formula filters, IN vs OR, timeout mitigation ideas.",
+      "release_or_version": "LDV best practices guide",
+      "last_verified": "2026-08-16",
+      "limits": "Exact selectivity percentages live on the Query & Search Optimization Cheat Sheet; do not invent them here."
+    },
+    {
+      "source_id": "SF-DEV-OWN-SKEW",
+      "title": "Ownership Data Skew",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_group_membership_data_skew.htm",
+      "supports": "More than 10,000 records owned by one user; dummy-user parking; role/group moves trigger sharing recalculation; mitigation bullets.",
+      "release_or_version": "Designing Record Access for Enterprise Scale",
+      "last_verified": "2026-08-16",
+      "limits": "10,000 is the documented threshold in this guide; confirm current guide if interviewing years later."
+    },
+    {
+      "source_id": "SF-DEV-PC-SKEW",
+      "title": "Parent-Child Data Skew",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_object_relationships_parent_child_data_skew.htm",
+      "supports": "10,000 or more children on one parent account; dummy-account parking; implicit sharing scan cost.",
+      "release_or_version": "Designing Record Access for Enterprise Scale",
+      "last_verified": "2026-08-16",
+      "limits": "Focus is Account implicit sharing; do not invent identical numbers for every lookup without citation."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LDV and DRAES developer guides",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Reduce rows processed",
+        "Selective indexed filters",
+        "Avoid negative WHERE",
+        "Ownership skew 10k",
+        "Parent-child skew 10k",
+        "No dummy piles"
+      ],
+      "accessible_description": "Portrait map of LDV: selective queries and indexes, ownership skew, parent-child skew, archiving."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-DEV-LDV-BP",
+        "SF-DEV-LDV-SOQL",
+        "SF-DEV-OWN-SKEW",
+        "SF-DEV-PC-SKEW"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Why is this query or sharing change slow?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Rows[Large object row count] --> QO[Lightning Platform Query Optimizer]\n  QO --> Idx{Indexed selective filter?}\n  Idx -->|Yes| Fast[Index-driven access]\n  Idx -->|Negative or unselective| Scan[Broad scan / timeout risk]\n  Own[OwnerId] --> OS{One user over 10k rows?}\n  OS -->|Yes| SkewO[Ownership data skew]\n  Acc[Parent Account] --> PC{10k plus children?}\n  PC -->|Yes| SkewP[Parent-child data skew]\n  SkewO --> Share[Sharing recalculation on role/group moves]\n  SkewP --> Impl[Implicit sharing scans]",
+      "decision": "flowchart TD\n  Slow[Slow report query or sharing job] --> Q1{Filter selective and indexed?}\n  Q1 -->|No| FixQ[Rewrite WHERE: positive, indexed, narrow; consider custom index]\n  Q1 -->|Yes still slow| Q2{One owner over 10k?}\n  Q2 -->|Yes| Dist[Distribute ownership; avoid dummy user role moves]\n  Q2 -->|No| Q3{Dummy parent with 10k plus children?}\n  Q3 -->|Yes| Split[Split children across real parents]\n  Q3 -->|No| Arch[Archive old rows; reduce active volume]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "LDV performance tuning relies on reducing how many records the system must process: narrower selective queries and archiving/discarding data as new data arrives.",
+      "source_ids": ["SF-DEV-LDV-BP"],
+      "scope": "LDV goal",
+      "validation": "LDV Best Practices opening approaches.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "The Lightning Platform Query Optimizer evaluates indexes against record-distribution thresholds. Custom indexes can be requested; the optimizer will not use an index if the filter is not selective.",
+      "source_ids": ["SF-DEV-LDV-INFRA", "SF-DEV-LDV-SOQL"],
+      "scope": "Optimizer and indexes",
+      "validation": "LDV infrastructure plus SOQL best practices.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Avoid negative SOQL filters (for example status != 'failed' or != NULL). Prefer selective indexed filters and IN lists instead of large OR chains. Avoid filtering on non-deterministic / cross-object formula fields that are not indexable.",
+      "source_ids": ["SF-DEV-LDV-SOQL"],
+      "scope": "Selectivity anti-patterns",
+      "validation": "SOQL and SOSL LDV table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Ownership data skew is when a single user owns more than 10,000 records of an object. Moving that user in the hierarchy or in/out of a sharing-rule source group can force long sharing recalculation. Distribute ownership; if concentrated, avoid assigning a role or isolate a top-level role and do not move it.",
+      "source_ids": ["SF-DEV-OWN-SKEW"],
+      "scope": "Ownership skew",
+      "validation": "Ownership Data Skew architect topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Parent-child data skew is 10,000 or more child records on a single parent account. Implicit sharing maintenance can require scanning remaining children when one child's access changes.",
+      "source_ids": ["SF-DEV-PC-SKEW"],
+      "scope": "Parent-child skew",
+      "validation": "Parent-Child Data Skew architect topic.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify LDV and DRAES guides for Summer '26; selectivity cheat-sheet numbers are intentionally not copied here.",
+  "unresolved_uncertainty": [
+    "Numeric selectivity thresholds (percentages / row caps) belong to the current Query & Search Optimization Cheat Sheet—Needs verification before quoting.",
+    "Lookup skew thresholds: cite current architect documentation rather than assuming the 10,000 Account figure applies to every lookup."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Query selectivity",
+      "telugu": "ఇండెక్స్ వాడేంత తక్కువ రోలను ఫిల్టర్ ఎంచుకోవడం."
+    },
+    {
+      "english": "Data skew",
+      "telugu": "చాలా రికార్డులు ఒకే యజమాని లేదా పేరెంట్ కింద పోగవడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "LDV means reduce rows processed. Queries need selective indexed filters; avoid negatives. Ownership skew is one user over 10,000 rows. Parent-child skew is 10,000-plus children on one account. Dummy parking lots cause both.",
+    "two_minutes": "I start from symptoms: timeout versus sharing job versus load time. Timeouts: rewrite WHERE, indexes, archive. Sharing pain after a role move: count records per owner. Contact visibility pain under one account: count children. I will not quote unofficial 10% numbers. I will not 'fix' skew with a longer timeout. Unique/External ID helps indexing but does not fix unselective filters or dummy accounts."
+  },
+  "terminology": [
+    {
+      "term": "large data volume",
+      "plain": "Enough rows that unselective queries, reports, and sharing maintenance get expensive.",
+      "precise": "LDV guides focus on reducing records processed via selective queries and archiving, plus platform features such as the query optimizer and indexes.",
+      "example": "Tens of millions of LAB_ Invoice__c rows still queried without a date predicate.",
+      "non_example": "A 200-row sandbox object.",
+      "confusable_neighbor": "API daily limits, which are a different governor family.",
+      "boundary": "No single official 'LDV starts at N rows' in this lesson; design for growth."
+    },
+    {
+      "term": "query selectivity",
+      "plain": "Whether a filter narrows enough that an index is worth using.",
+      "precise": "The optimizer evaluates distribution thresholds. Non-selective or negative filters often prevent index use even if a column is indexed.",
+      "example": "WHERE LAB_Status__c = 'Open' AND CreatedDate = THIS_MONTH on an indexed status with mixed values.",
+      "non_example": "WHERE Status != null on a field that is almost never null.",
+      "confusable_neighbor": "SOSL search crowding (also in the LDV SOQL/SOSL topic).",
+      "boundary": "Quote cheat-sheet percentages only with that sheet open."
+    },
+    {
+      "term": "index",
+      "plain": "A database shortcut the optimizer may use to find rows without scanning the object.",
+      "precise": "Standard indexes, Unique/External ID, custom indexes (Support or auto-indexer). The optimizer still checks selectivity. Skinny tables are a related Support-mediated feature.",
+      "example": "Request a custom index on LAB_InvoiceDate__c used in every timeout report.",
+      "non_example": "Assuming a formula field is indexed because it is 'like a field.'",
+      "confusable_neighbor": "Match keys in duplicate rules (DQM-003)—different feature.",
+      "boundary": "Do not promise Support will always add the index."
+    },
+    {
+      "term": "ownership data skew",
+      "plain": "One user owns more than 10,000 records of an object.",
+      "precise": "Architect guide threshold. Dummy-user parking plus role or sharing-group moves cause long sharing recalculation. Distribute owners; avoid roles on concentrated owners or isolate a top-level role you will not move.",
+      "example": "Integration User owns 200,000 LAB_ invoices and is then added to a role.",
+      "non_example": "Ten users each owning 500 records.",
+      "confusable_neighbor": "Parent-child skew, which is about one parent record, not one owner.",
+      "boundary": "Mass transfer onto one dummy recreates this (DQM-005)."
+    },
+    {
+      "term": "parent-child data skew",
+      "plain": "One parent account has 10,000 or more children.",
+      "precise": "Dummy-account parking of contacts is the documented example. Implicit sharing can require scanning remaining children when one child's access changes.",
+      "example": "80,000 unallocated LAB_ contacts under Account 'Unassigned.'",
+      "non_example": "Evenly distributed contacts under many real accounts.",
+      "confusable_neighbor": "Ownership skew.",
+      "boundary": "Lookup skew to a popular lookup target is neighboring; cite before numbering."
+    },
+    {
+      "term": "Lightning Platform Query Optimizer",
+      "plain": "Salesforce's extra optimizer that picks access paths on the multitenant store.",
+      "precise": "Helps produce effective queries because the native database optimizer cannot see tenant access the same way. Considers indexes, sharing filters, and statistics.",
+      "example": "A report filter that finally uses an index after values become selective.",
+      "non_example": "A human 'optimizing' by raising a timeout setting that does not exist here.",
+      "confusable_neighbor": "SQL Server/Oracle cost-based optimizer lectures that ignore sharing.",
+      "boundary": "Query plan tools in the org may differ; do not invent UI clicks."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Measure the shape",
+      "actor": "Admin + developer",
+      "trigger": "Timeouts or long sharing jobs",
+      "before": "'Salesforce is slow'",
+      "after": "Row counts, top owners, top parent accounts, filter fields",
+      "observe": "A count of records per OwnerId and per AccountId",
+      "failure": "Adding more reports on the same unselective object"
+    },
+    {
+      "step": 2,
+      "transition": "Fix selectivity",
+      "actor": "Developer/admin",
+      "trigger": "Query or report timeout",
+      "before": "Negative or unindexed filters",
+      "after": "Positive indexed predicates; possible custom index request",
+      "observe": "Query completes; explain plan if available",
+      "failure": "status != null as the only filter"
+    },
+    {
+      "step": 3,
+      "transition": "Break dummy piles",
+      "actor": "Admin",
+      "trigger": "Owner or parent over 10k",
+      "before": "Dummy user or dummy account",
+      "after": "Distributed owners and real parents; role design per architect guide",
+      "observe": "No user/account above the documented thresholds without a written exception",
+      "failure": "Mass transferring everything to Integration User"
+    },
+    {
+      "step": 4,
+      "transition": "Reduce active volume",
+      "actor": "Architect",
+      "trigger": "Growth outruns queries",
+      "before": "All history remains hot",
+      "after": "Archive/discard at inflow rate per LDV BP",
+      "observe": "Hot object row count trend (operational, not Storage Usage history)",
+      "failure": "Hoping a timeout increase exists"
+    }
+  ],
+  "when_to_use": [
+    "When interviewers ask about large data volumes, query selectivity, indexing, and data skew together.",
+    "When a report or SOQL times out and the WHERE clause uses negatives or unindexed formulas.",
+    "When one user owns more than 10,000 records and someone wants to move their role.",
+    "When more than 10,000 contacts sit under a dummy parent account.",
+    "When a team proposes parking all unassigned leads on one dummy user 'just for now.'"
+  ],
+  "when_not_to_use": [
+    "Do not use unofficial selectivity percentages in the interview unless you are reading the current cheat sheet.",
+    "Do not treat Unique/External ID as a cure for unselective filters or dummy-account piles.",
+    "Do not use this topic as a substitute for backup/restore (DQM-005) or migration rehearsal (DQM-007).",
+    "Do not 'fix' ownership skew by mass transferring onto a different single dummy user.",
+    "Do not quote lookup-skew numbers you cannot cite from current architect docs."
+  ],
+  "configuration_or_code_location": [
+    "Object Manager: Indexed column on fields; Unique/External ID attributes.",
+    "Reports/list views/SOQL WHERE clauses; Query Plan in Developer Console if available (reverify UI).",
+    "Setup → Support cases for custom indexes / skinny tables.",
+    "Reports of record counts grouped by OwnerId and AccountId."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox lab approximating LDV: 12,000 LAB_ invoices owned by Integration User, 11,000 LAB_ contacts under Account Unassigned, and a report that filters Invoice Status != 'Closed' on a mostly-open population.",
+    "inputs": [
+      "Counts per owner and per account",
+      "Report filter Status != Closed",
+      "Integration User has a role"
+    ],
+    "decisions": [
+      {
+        "decision": "Rewrite the report to Status = 'Open' (or an IN of few open values) on an indexed field.",
+        "because": "LDV SOQL guidance: avoid negative filters; need selective indexed predicates.",
+        "rejected": "Keeping != Closed because it 'reads well'"
+      },
+      {
+        "decision": "Distribute invoice ownership off Integration User; do not move that user in the hierarchy while skewed.",
+        "because": "Ownership skew >10,000; role moves recalculate sharing.",
+        "rejected": "Adding the dummy user to a sharing-rule source group"
+      },
+      {
+        "decision": "Split contacts off the dummy Unassigned account onto real or multiple holding accounts below 10k children each.",
+        "because": "Parent-child skew implicit sharing cost.",
+        "rejected": "Leaving 11,000 children on one parent 'until we know'"
+      }
+    ],
+    "configuration_or_code": [
+      "Report: positive status equals Open.",
+      "Mass transfer slices of invoices to several owners (DQM-005) with backup.",
+      "Reparent contacts in batches; never one dummy account."
+    ],
+    "output": "Report returns; no owner or parent remains above the documented 10k examples without a written exception.",
+    "verification": [
+      "Count invoices by owner; none over 10k in the lab.",
+      "Count contacts by account; Unassigned below 10k.",
+      "Report completes with the positive filter."
+    ],
+    "self_explanation": "Selectivity, ownership skew, and parent-child skew were three different piles. I did not invent a 10% number."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox. You will not create millions of rows; you will measure and design as if counts were larger.",
+    "starting_state_checks": [
+      "You can run a report grouped by Owner and by Account.",
+      "LAB_ naming only."
+    ],
+    "steps": [
+      "Create a report or SOQL that uses a negative filter; rewrite it as a positive equality/IN.",
+      "Count records by OwnerId; write whether any user would be skewed at 10,001.",
+      "Count contacts by AccountId; identify a dummy-parent risk.",
+      "List two index sources: Unique/External ID versus a Support-requested custom index."
+    ],
+    "guided_completion": [
+      "If you quoted a 10% threshold, replace it with 'optimizer distribution thresholds / cheat sheet.'",
+      "If you proposed one dummy owner as the fix, stop."
+    ],
+    "independent_challenge": "Explain why moving a skewed user's role is expensive using architect-guide language.",
+    "evidence": [
+      "Before/after filter text.",
+      "Written 10,000 thresholds for the two skew types."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ rows created for counts.",
+      "Do not request production skinny tables from this lab."
+    ],
+    "limitations": "Sandbox row counts will not prove production optimizer choices."
+  },
+  "decision_table": [
+    {
+      "signal": "Report/SOQL timeout; filter is !=, NOT, or unindexed formula.",
+      "choose": "Rewrite to selective positive filters on indexed fields; consider a custom index request.",
+      "not": "A negative filter plus 'raise the timeout.'",
+      "why": "LDV SOQL guidance: selective indexed filters; avoid negatives and non-indexable formulas."
+    },
+    {
+      "signal": "One user owns more than 10,000 records and might change roles or groups.",
+      "choose": "Distribute ownership; if concentrated, avoid a role or isolate a top-level role you will not move.",
+      "not": "Park even more rows on that dummy user.",
+      "why": "Ownership Data Skew guide: 10k threshold and sharing recalculation on moves."
+    },
+    {
+      "signal": "10,000-plus contacts (or other children) under one dummy account.",
+      "choose": "Split across real parents; stop using one Unassigned account as a parking lot.",
+      "not": "Adding more children to the same parent until 'we know the account.'",
+      "why": "Parent-child skew: implicit sharing scans the sibling set."
+    },
+    {
+      "signal": "Object grows every month and queries degrade.",
+      "choose": "Archive/discard at inflow rate; keep hot queries narrow.",
+      "not": "Only adding more reports on the full history.",
+      "why": "LDV best practices: reduce records processed; archive as data arrives."
+    },
+    {
+      "signal": "Need an index on a frequently filtered custom field that is not Unique.",
+      "choose": "Work with Salesforce Support (and check auto-indexer); still require selective values.",
+      "not": "Marking the field External ID 'for indexing' without an integration key.",
+      "why": "Indexes are Support/auto or field attributes; External ID is for outside identifiers (DQM-003) and still needs selectivity."
+    }
+  ],
+  "limitations": [
+    "Does not copy cheat-sheet percentages.",
+    "Does not fully specify skinny tables.",
+    "Does not design the entire sharing model.",
+    "Lookup skew needs a current citation before numbers."
+  ],
+  "security_notes": [
+    "Skewed dummy users with roles can accidentally inherit broad access if placed high in the hierarchy.",
+    "Do not copy production extracts into this lab.",
+    "Sharing recalculation is a security-maintenance cost, not just a performance footnote."
+  ],
+  "common_mistakes": [
+    "Quoting unofficial 10% selectivity as gospel without the cheat sheet.",
+    "Parking leads on a dummy user with a role.",
+    "Parking contacts on a dummy account.",
+    "Assuming any indexed field makes every filter fast.",
+    "Using != NULL as a selective filter."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Report times out after the object grew.",
+      "check": [
+        "Negative or unindexed filters.",
+        "Whether an index exists and values are selective.",
+        "Whether the report is really a full-table scan of history."
+      ],
+      "do_not_assume": "Salesforce randomly got slower."
+    },
+    {
+      "symptom": "Sharing recalculation runs for hours after a role change.",
+      "check": [
+        "Records owned by that user (10k+ skew).",
+        "Whether they are in sharing-rule source groups."
+      ],
+      "do_not_assume": "Apex is the cause by default."
+    },
+    {
+      "symptom": "Account access changes are slow when a contact is removed.",
+      "check": [
+        "Child count on that account (10k+).",
+        "Dummy Unassigned parent."
+      ],
+      "do_not_assume": "The contact trigger is always the bottleneck."
+    }
+  ],
+  "production_notes": [
+    "Design owners and parents before the first million rows.",
+    "Request indexes with evidence (slow queries, fields, operators).",
+    "This lesson does not authorize production skinny-table or index cases without architect review."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Main LDV performance approach in the best-practices guide?",
+      "options": {
+        "A": "Reduce the number of records the system must process",
+        "B": "Always disable sharing",
+        "C": "Hard-delete indexes",
+        "D": "Use only negative filters"
+      },
+      "answer": "A",
+      "rationale": "LDV BP: reduce records processed via selective queries and archiving.",
+      "distractor_explanations": {
+        "B": "Sharing is not 'turn off.'",
+        "C": "Nonsense.",
+        "D": "Negatives are an anti-pattern."
+      },
+      "concept": "Reduce rows",
+      "citation_ids": ["SF-DEV-LDV-BP"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Ownership data skew threshold in the architect guide?",
+      "options": {
+        "A": "A single user owns more than 10,000 records of an object",
+        "B": "A user owns more than 25 External IDs",
+        "C": "A user owns exactly 100 records",
+        "D": "Any user in a role"
+      },
+      "answer": "A",
+      "rationale": "Ownership Data Skew: more than 10,000 records of an object.",
+      "distractor_explanations": {
+        "B": "External ID cap is DQM-003.",
+        "C": "Not the documented threshold.",
+        "D": "Roles are relevant to mitigation, not the definition."
+      },
+      "concept": "Ownership 10k",
+      "citation_ids": ["SF-DEV-OWN-SKEW"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Parent-child data skew example threshold?",
+      "options": {
+        "A": "10,000 or more child records on a single parent account",
+        "B": "Two contacts on an account",
+        "C": "25 matching rules",
+        "D": "One dashboard component"
+      },
+      "answer": "A",
+      "rationale": "Parent-Child Data Skew: 10,000 or more children with a single parent account.",
+      "distractor_explanations": {
+        "B": "Far below the documented example.",
+        "C": "DQM-003.",
+        "D": "Unrelated."
+      },
+      "concept": "Parent-child 10k",
+      "citation_ids": ["SF-DEV-PC-SKEW"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which filter style does the LDV SOQL guidance tell you to avoid?",
+      "options": {
+        "A": "Negative filters such as status != 'failed' or != NULL",
+        "B": "Equality on an indexed selective field",
+        "C": "IN lists of a few Ids",
+        "D": "Filtering on Name instead of split First/Last where advised"
+      },
+      "answer": "A",
+      "rationale": "Avoid negative filters; they are called out explicitly.",
+      "distractor_explanations": {
+        "B": "That is the goal.",
+        "C": "IN is preferred over huge OR lists.",
+        "D": "The guide actually suggests Name when filtering first+last."
+      },
+      "concept": "Avoid negatives",
+      "citation_ids": ["SF-DEV-LDV-SOQL"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why might an indexed field still not speed a query?",
+      "options": {
+        "A": "The optimizer uses indexes only when the filter is selective relative to distribution thresholds",
+        "B": "Indexes never work on custom fields",
+        "C": "Sharing always disables indexes",
+        "D": "External ID fields cannot be indexed"
+      },
+      "answer": "A",
+      "rationale": "Infrastructure: optimizer evaluates indexes against record-distribution thresholds. SOQL: if filters aren't selective, optimizer doesn't use indexed columns.",
+      "distractor_explanations": {
+        "B": "Custom indexes exist.",
+        "C": "Sharing filters are considered; they do not globally disable indexes.",
+        "D": "External ID is an indexed attribute."
+      },
+      "concept": "Selectivity gates indexes",
+      "citation_ids": ["SF-DEV-LDV-INFRA", "SF-DEV-LDV-SOQL"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Dummy user owns most leads and is then moved in the role hierarchy. Risk?",
+      "options": {
+        "A": "Long-running sharing recalculation from ownership data skew",
+        "B": "Automatic hard delete of the leads",
+        "C": "External ID cap reset",
+        "D": "Recycle Bin bypass"
+      },
+      "answer": "A",
+      "rationale": "Ownership skew guide: moving such users in the hierarchy adjusts a very large number of sharing entries.",
+      "distractor_explanations": {
+        "B": "Role moves do not hard-delete.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Role move + skew",
+      "citation_ids": ["SF-DEV-OWN-SKEW"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "If concentrated ownership is unavoidable, the architect guide suggests?",
+      "options": {
+        "A": "Do not assign those users a role, or isolate a top-level role you will not move and keep them out of sharing-rule source groups",
+        "B": "Give them every role in the hierarchy",
+        "C": "Put them in every public group",
+        "D": "Delete their User record weekly"
+      },
+      "answer": "A",
+      "rationale": "Mitigation bullets in Ownership Data Skew.",
+      "distractor_explanations": {
+        "B": "Opposite of isolate.",
+        "C": "Guide says keep them out of those groups.",
+        "D": "Not a documented mitigation."
+      },
+      "concept": "Skew mitigation",
+      "citation_ids": ["SF-DEV-OWN-SKEW"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Why is parking 300,000 contacts under one dummy account dangerous?",
+      "options": {
+        "A": "Parent-child skew: implicit sharing may scan remaining children when access to one contact changes",
+        "B": "Contacts cannot have an AccountId",
+        "C": "It automatically creates 25 External IDs",
+        "D": "It disables the query optimizer"
+      },
+      "answer": "A",
+      "rationale": "Parent-Child Data Skew uses this exact parking-lot story.",
+      "distractor_explanations": {
+        "B": "Contacts often require accounts—that is why people park them.",
+        "C": "Unrelated.",
+        "D": "Not the documented mechanism."
+      },
+      "concept": "Dummy account",
+      "citation_ids": ["SF-DEV-PC-SKEW"]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Who evaluates whether an index will make a query faster?",
+      "options": {
+        "A": "The Lightning Platform Query Optimizer",
+        "B": "The Data Import Wizard",
+        "C": "A duplicate job",
+        "D": "Mass Transfer Records"
+      },
+      "answer": "A",
+      "rationale": "LDV infrastructure: query optimizer evaluates each index against distribution thresholds.",
+      "distractor_explanations": {
+        "B": "Load tool.",
+        "C": "DQM-003.",
+        "D": "DQM-005."
+      },
+      "concept": "Query optimizer",
+      "citation_ids": ["SF-DEV-LDV-INFRA"]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Filtering on a non-deterministic cross-object formula field?",
+      "options": {
+        "A": "Avoid; those formula fields are not indexable per LDV SOQL guidance",
+        "B": "Always faster than Id equality",
+        "C": "Required for Bulk API",
+        "D": "The only way to get sharing"
+      },
+      "answer": "A",
+      "rationale": "Avoid cross-object reference formula fields; they aren't indexable.",
+      "distractor_explanations": {
+        "B": "Opposite.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Formula filters",
+      "citation_ids": ["SF-DEV-LDV-SOQL"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Ownership skew versus parent-child skew?",
+      "options": {
+        "A": "Owner-centric 10k+ on one user vs child-centric 10k+ on one parent account",
+        "B": "They are identical definitions",
+        "C": "Both are Recycle Bin features",
+        "D": "Both are Unique field attributes"
+      },
+      "answer": "A",
+      "rationale": "Two DRAES topics, two shapes, both use 10,000 as the documented warning level.",
+      "distractor_explanations": {
+        "B": "Different objects of concentration.",
+        "C": "DQM-005.",
+        "D": "DQM-003."
+      },
+      "concept": "Two skews",
+      "citation_ids": ["SF-DEV-OWN-SKEW", "SF-DEV-PC-SKEW"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Best first response to 'just raise the timeout' on an unselective LDV report?",
+      "options": {
+        "A": "Tune the query: reduce scope, selective indexed filters, archive; consider Bulk query patterns if still needed",
+        "B": "Agree that timeouts are the official LDV feature",
+        "C": "Mass transfer all rows to one user",
+        "D": "Add a negative filter"
+      },
+      "answer": "A",
+      "rationale": "LDV SOQL: tune, reduce scope, selective filters; mentions LIMIT and Bulk API 2.0 query if still timing out.",
+      "distractor_explanations": {
+        "B": "Timeouts are failures.",
+        "C": "Creates ownership skew.",
+        "D": "Worsens selectivity."
+      },
+      "concept": "Tune not timeout",
+      "citation_ids": ["SF-DEV-LDV-SOQL", "SF-DEV-LDV-BP"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "ldv",
+      "front": "Headline LDV performance approach?",
+      "back": "Reduce how many records the platform must process: selective queries and archiving."
+    },
+    {
+      "id": "F2",
+      "category": "selectivity",
+      "front": "What is query selectivity?",
+      "back": "Whether a filter is narrow enough that the optimizer will use an index, based on distribution thresholds."
+    },
+    {
+      "id": "F3",
+      "category": "selectivity",
+      "front": "Name a filter anti-pattern from LDV SOQL.",
+      "back": "Negative filters such as != 'failed' or != NULL."
+    },
+    {
+      "id": "F4",
+      "category": "index",
+      "front": "Does an index always get used?",
+      "back": "No. The query optimizer checks record-distribution thresholds; unselective filters skip the index."
+    },
+    {
+      "id": "F5",
+      "category": "skew",
+      "front": "Ownership data skew?",
+      "back": "One user owns more than 10,000 records of an object."
+    },
+    {
+      "id": "F6",
+      "category": "skew",
+      "front": "Parent-child data skew?",
+      "back": "10,000 or more children on a single parent account, stressing implicit sharing."
+    },
+    {
+      "id": "F7",
+      "category": "skew",
+      "front": "Dummy user with a role owns 50k leads. Danger?",
+      "back": "Moving them in the hierarchy or sharing groups forces huge sharing recalculation."
+    },
+    {
+      "id": "F8",
+      "category": "skew",
+      "front": "If concentrated ownership is required, role advice?",
+      "back": "Avoid a role, or isolate a top-level role you will not move; keep them out of sharing-rule source groups."
+    },
+    {
+      "id": "F9",
+      "category": "index",
+      "front": "How do custom indexes appear?",
+      "back": "Salesforce Support request and/or platform auto-indexer—not by inventing a Setup 'index button' here."
+    },
+    {
+      "id": "F10",
+      "category": "formula",
+      "front": "Cross-object formula in a WHERE clause?",
+      "back": "Avoid; LDV guidance says they are not indexable."
+    },
+    {
+      "id": "F11",
+      "category": "compare",
+      "front": "Ownership skew vs parent-child skew?",
+      "back": "One owner vs one parent account; both warn at 10,000 in the cited architect topics."
+    },
+    {
+      "id": "F12",
+      "category": "optimizer",
+      "front": "Lightning Platform Query Optimizer's job?",
+      "back": "Help the multitenant platform pick efficient access because the native DB optimizer cannot see tenant access the same way."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Unassigned contacts under one dummy account?",
+      "back": "Parent-child skew pattern. Split them; do not keep piling on."
+    },
+    {
+      "id": "F14",
+      "category": "boundary",
+      "front": "Should you memorize unofficial 10% selectivity?",
+      "back": "No. Use the current Query & Search Optimization Cheat Sheet; this lesson cites thresholds conceptually."
+    },
+    {
+      "id": "F15",
+      "category": "archive",
+      "front": "Archive advice from LDV BP?",
+      "back": "Discard or archive at the same rate data arrives so active volume does not only grow."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What does Salesforce mean by large data volumes in this topic?",
+      "answer_30_seconds": "Enough rows that you must reduce records processed: selective indexed queries, archiving, and avoiding skew. It is a design problem, not a vibe that 'the cloud is slow.'",
+      "answer_2_minutes": "I quote LDV best practices: reduce scope, archive as data arrives, let indexes work when filters are selective. I add the query optimizer because multitenant statistics differ from a single-tenant DBA story. I do not invent a row number where LDV 'starts.' I separate API limits from LDV query cost.",
+      "example": "Millions of invoices still reported without a date predicate.",
+      "tradeoffs": [
+        "Keep all history hot vs archive",
+        "Custom index vs rewrite the report"
+      ],
+      "follow_ups": [
+        "What is a skinny table?",
+        "Where does Bulk API 2.0 query fit?"
+      ],
+      "weak_answer_warnings": [
+        "Only saying Salesforce has governors"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Explain query selectivity and indexing without unofficial percentages.",
+      "answer_30_seconds": "The optimizer uses an index when the filter is selective enough versus data distribution. Indexed plus unselective still scans. Avoid negatives and non-indexable formulas. Custom indexes come from Support or auto-indexer.",
+      "answer_2_minutes": "I walk a bad filter: Status != null. I walk a better one: Status = 'Open' AND a date range on indexed fields. Unique/External ID fields are indexed but can still be unselective if almost every row matches. I point interviewers to the cheat sheet for numeric thresholds instead of guessing 10%. I mention IN versus giant OR.",
+      "example": "Rewrite != 'Closed' to = 'Open' on LAB_ invoices.",
+      "tradeoffs": [
+        "Index request vs query rewrite",
+        "Equality vs inequality"
+      ],
+      "follow_ups": [
+        "Will OR of two indexed fields always use indexes?",
+        "What about NULL?"
+      ],
+      "weak_answer_warnings": [
+        "Reciting a 10% rule as if it were in this handbook page"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "All unassigned leads go to Dummy User, who has a role. What do architect docs say?",
+      "answer_30_seconds": "That is ownership data skew once they own more than 10,000 leads. Moving Dummy User in the hierarchy or sharing groups can force huge sharing recalculation. Distribute owners or isolate the user per the guide.",
+      "answer_2_minutes": "I tell the parking-lot story from the guide. I refuse 'just for now' if the pile will grow. If they must concentrate, I repeat: no role, or a top-level role you will not move, and stay out of sharing-rule source groups. Mass transfer onto another dummy is not a fix (DQM-005). Quality owners still matter (DQM-004).",
+      "example": "200,000 LAB_ leads on Integration User who then joins a regional role.",
+      "tradeoffs": [
+        "Queues vs dummy user",
+        "Many owners vs isolated role"
+      ],
+      "follow_ups": [
+        "Queues and skew?",
+        "Partner account ownership note in the same article?"
+      ],
+      "weak_answer_warnings": [
+        "Calling dummy-user parking a best practice"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Marketing dumps 80,000 contacts on Account Unassigned. Why do architects care?",
+      "answer_30_seconds": "Parent-child data skew: 10,000-plus children on one account. Implicit sharing can scan the other children when one contact's access changes. Split the pile.",
+      "answer_2_minutes": "I use the mailing-list example from Parent-Child Data Skew. Convenience of a required AccountId is how orgs get here. I plan multiple holding accounts or real accounts, loaded in batches, with backup (DQM-005). I do not promise lookup-skew numbers I cannot cite. I mention loads onto a skewed parent can also be slow.",
+      "example": "LAB_ Unassigned account with 80,000 contacts; user loses one contact and account sharing maintenance crawls.",
+      "tradeoffs": [
+        "Required Account vs parking lot",
+        "Many holding accounts vs data model change"
+      ],
+      "follow_ups": [
+        "Is 10,000 a hard platform error or a performance warning?",
+        "What is implicit sharing?"
+      ],
+      "weak_answer_warnings": [
+        "Leaving them on one parent until cleanup 'someday'"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you request a custom index?",
+      "answer_30_seconds": "When production queries/reports repeatedly filter a field with selective values and the field is not already indexed, and rewriting the filter is not enough. Support (or auto-indexer) creates it. Selectivity still required.",
+      "answer_2_minutes": "I gather evidence: object size, filter operators, approximate distinct values, timeouts. I do not mark External ID on a random field 'for the index' if it is not an outside key (DQM-003, 25-field budget). I avoid formula-field filters. I mention skinny tables only as a Support-mediated LDV feature, not a DIY Setup click.",
+      "example": "LAB_InvoiceDate__c on every timeout report; request custom index after confirming the date predicate is selective.",
+      "tradeoffs": [
+        "Index vs denormalize vs archive",
+        "Auto-indexer wait vs Support case"
+      ],
+      "follow_ups": [
+        "What operators are not optimizable?",
+        "Two-column indexes?"
+      ],
+      "weak_answer_warnings": [
+        "External ID on every column for speed"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A sharing recalculation exploded after a small role change. Walk the diagnosis.",
+      "answer_30_seconds": "Count records owned by users in that role. If someone owns 10k+, you hit ownership skew. Check public groups used as sharing-rule sources. Do not start by rewriting Apex.",
+      "answer_2_minutes": "I pull owner counts, group membership, and whether the user was moved into/out of a source group. I read the architect mitigation list. Short-term: stop moving them. Medium-term: distribute ownership with mass transfer to many real users (backup first). I keep parent-child skew as a separate check if Account access is the symptom instead.",
+      "example": "Dummy User with 80,000 accounts moved from No Role into a mid-hierarchy role.",
+      "tradeoffs": [
+        "Freeze hierarchy changes vs redistribute now",
+        "Queues vs users"
+      ],
+      "follow_ups": [
+        "How do you find the top owners?",
+        "Does Private OWD make this worse or better?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming a random trigger first"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "A DBA says 'just add indexes like Oracle.' How do you Salesforce-correct them?",
+      "answer_30_seconds": "We have a platform query optimizer, tenant statistics, sharing filters, and Support-mediated custom indexes. Selectivity still matters. Sharing and skew are first-class, not afterthoughts.",
+      "answer_2_minutes": "I respect their cost-based intuition, then I add multitenant facts from LDV infrastructure. I forbid negative filters as 'not equals is fine.' I add ownership and parent-child skew because the slow operation might not be the SELECT—it might be sharing maintenance. I will not promise we can CREATE INDEX on Friday afternoon in Setup.",
+      "example": "Oracle DBA wants an index on a formula; LDV says those filters are not indexable.",
+      "tradeoffs": [
+        "DBA muscle memory vs platform rules",
+        "Index vs archive"
+      ],
+      "follow_ups": [
+        "What is the cheat sheet?",
+        "Skinny tables in one sentence?"
+      ],
+      "weak_answer_warnings": [
+        "Pretending Salesforce has no optimizer story"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "Highway-interchange analogy, then break it.",
+      "answer_30_seconds": "Selective ramps, HOV indexes, not-this-exit negatives, 10k cars on one owner exit, 10k ramps on one dummy-account interchange. It breaks because an HOV lane (index) is not always used if the ramp is not selective.",
+      "answer_2_minutes": "I map archive to closing old lanes. I map role moves to rebuilding every sign on the skewed exit. I break it: lookup skew needs its own citation; cheat-sheet percentages are not painted on the highway; skinny tables are a special road the platform builds, not a paint job. I refuse dummy parking lots.",
+      "example": "Teaching why != Closed is a bad ramp on a mostly-open highway.",
+      "tradeoffs": [
+        "Story vs optimizer precision",
+        "Distribute traffic vs isolate one exit"
+      ],
+      "follow_ups": [
+        "State the 10k definitions without analogy.",
+        "Name one negative filter."
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer analogy"
+      ]
+    }
+  ]
+}

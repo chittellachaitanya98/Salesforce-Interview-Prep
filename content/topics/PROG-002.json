@@ -1,0 +1,987 @@
+{
+  "topic_id": "PROG-002",
+  "slug": "conditions-loops-methods-parameters-return-values-and-e",
+  "title": "Conditions, loops, methods, parameters, return values, and exceptions",
+  "track": "Programming foundations for Salesforce",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "PROG-001"
+  ],
+  "objectives": [
+    "Choose if-else or switch versus a loop when Apex must branch or repeat.",
+    "Name the five Apex loop forms and when break or continue applies.",
+    "Define a method with a return type or void, parameters (max 32), and a body.",
+    "Use throw, try, catch, and finally so an exception is handled without swallowing every failure."
+  ],
+  "diagnostic_question": "A helper must skip closed LAB_ Case rows, stop after the first match, return an Id or null, and still close a logging resource if a query fails. Which combination of condition, loop, method signature, and try/catch/finally would you sketch before typing?",
+  "definition": "Apex control flow uses if-else, switch, and five loop forms so statements are not only line-by-line. Methods declare a return type or void, up to 32 parameters, and a body. Exceptions interrupt normal flow: throw signals failure; try, catch, and finally recover or clean up. ([Control Flow](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_control_flow.htm); [Class Methods](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_defining_methods.htm); [Exception Statements](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_statements.htm))",
+  "why_it_matters": "Interviewers listen for bulk-safe loops (no SOQL inside a for-each over Trigger.new), honest return types instead of magic strings, and catch blocks that do not hide DML failures. Mixing Flow decision diamonds with Apex if without knowing try/finally is a common fail.",
+  "sixty_second_explanation": "Think of a railway signal box. A condition is a switch: this track or that track. A loop is a repeating circuit until the exit signal. A method is a named timetable procedure: parameters are the consist handed in, the return value is the consist handed out, void means the procedure only throws switches. An exception is the emergency stop; catch is the recovery siding; finally is the rule that you still lock the box even if the train never arrived.",
+  "deeper_explanation": [
+    "Statements normally run in order. If-else and switch branch; loops repeat. Apex documents five procedural loops: do-while, while, three-part for, for-each over an array or set, and for-each over an inline SOQL query. All loops support break (exit the loop) and continue (next iteration). ([Control Flow](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_control_flow.htm); [Loops](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_loops.htm))",
+    "A method needs optional modifiers, a return data type or void, a parenthesized parameter list, and a brace body. A method may have at most 32 input parameters. Methods can be overloaded; the parser picks an exact match then approximate conversion. ([Class Methods](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_defining_methods.htm))",
+    "throw raises an exception object. try marks the risky block. Each catch handles one unique exception type; a general Exception catch must be last. finally always runs for cleanup. At least one catch or finally must be present with try. ([Exception Statements](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_statements.htm))",
+    "This lesson is control-flow vocabulary before Apex bulk patterns. Putting SOQL or DML inside a loop over Trigger.new is an anti-pattern owned by later governor topics. Empty catch blocks that ignore DML exceptions are not 'handling'."
+  ],
+  "mental_model": {
+    "analogy": "Railway signal box: switches (conditions), repeating circuits (loops), named timetable procedures (methods with parameters and return values), emergency stop and recovery siding (exceptions).",
+    "useful_mapping": [
+      "if-else / switch → which track the consist takes",
+      "loop → a circuit repeated until the exit signal",
+      "break → leave the circuit entirely",
+      "continue → skip to the next lap",
+      "method → a named procedure on the timetable",
+      "parameters → cars handed into the procedure",
+      "return value → cars handed back; void means no consist returned",
+      "throw / catch / finally → emergency stop, recovery siding, always lock the box"
+    ],
+    "where_it_breaks": [
+      "Real railways do not have a 32-parameter cap.",
+      "SOQL-for loops are not physical tracks; they query data.",
+      "finally is not optional safety theater—the guide says it always executes.",
+      "The analogy does not encode governor limits or trigger bulkification."
+    ]
+  },
+  "teach_back_prompt": "Using the signal box, explain if versus a for-each loop, what void means on a method, and why a catch (Exception e) must be last. Then say where the railway analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "List five Apex loop types and the difference between break and continue."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Write a method signature with two parameters and a String return; then a void method that only logs."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Sketch try/catch/finally for a query that must still run cleanup."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Review a loop that queries inside Trigger.new and explain the control-flow versus bulk mistake."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: conditions, loops, methods, parameters, returns, exceptions."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-CTRL",
+      "title": "Control Flow Statements",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_control_flow.htm",
+      "supports": "Apex provides if-else, switch, and loops so execution is not only sequential.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every switch type combination."
+    },
+    {
+      "source_id": "SF-APEX-LOOPS",
+      "title": "Loops",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_loops.htm",
+      "supports": "Five loop forms; break exits the loop; continue skips to the next iteration.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "SOQL-for loop bulk behavior is expanded in later Apex data topics."
+    },
+    {
+      "source_id": "SF-APEX-METHODS",
+      "title": "Class Methods",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_defining_methods.htm",
+      "supports": "Return type or void, at most 32 parameters, method body, overloading.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Access modifiers and override rules are APEX-001."
+    },
+    {
+      "source_id": "SF-APEX-EXCEPTIONS",
+      "title": "Exception Statements",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_statements.htm",
+      "supports": "throw; try/catch/finally; unique catch types; Exception last; finally always runs.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Built-in exception class catalog is a neighboring page, not fully listed here."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Branch vs repeat",
+        "Five loop forms",
+        "Method signature",
+        "32 parameters max",
+        "try catch finally",
+        "Do not empty-catch DML"
+      ],
+      "accessible_description": "Portrait map: conditions branch, loops repeat, methods take parameters and return values or void, exceptions use throw and try/catch/finally."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-CTRL",
+        "SF-APEX-LOOPS",
+        "SF-APEX-METHODS",
+        "SF-APEX-EXCEPTIONS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "From condition to exception cleanup"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Start[Sequential statements] --> Branch{Condition if or switch}\n  Branch -->|Match| PathA[One path]\n  Branch -->|Else| PathB[Other path]\n  PathA --> Loop[Loop while or for]\n  PathB --> Loop\n  Loop --> Method[Method: parameters in, return or void out]\n  Method --> Ok[Normal return]\n  Method --> Throw[throw exception]\n  Throw --> Catch[Matching catch]\n  Catch --> Finally[finally always]\n  Ok --> Finally",
+      "decision": "flowchart TD\n  Need[Need control flow?] --> Q1{Once or many?}\n  Q1 -->|Once branch| Cond[if-else or switch]\n  Q1 -->|Repeat| Q2{Known collection or query?}\n  Q2 -->|List or set| ForEach[for variable : collection]\n  Q2 -->|Query rows| SoqlFor[for variable : SOQL]\n  Q2 -->|Unknown count| While[while or do-while]\n  Cond --> Q3{Reusable named work?}\n  Q3 -->|Yes| Meth[Method with parameters and return or void]\n  Q3 -->|No| Inline[Keep inline]\n  Meth --> Q4{Can it fail?}\n  Q4 -->|Recover or cleanup| Try[try catch finally]\n  Q4 -->|Caller must see it| Throw[throw; do not empty-catch]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Apex provides if-else statements, switch statements, and loops to control execution. Statements otherwise run in source order.",
+      "source_ids": ["SF-APEX-CTRL"],
+      "scope": "Conditions and control flow",
+      "validation": "Control Flow Statements page, Summer '26.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Apex supports five procedural loops: do-while, while, three-part for, for-each over an array or set, and for-each over inline SOQL. break exits the loop; continue skips to the next iteration.",
+      "source_ids": ["SF-APEX-LOOPS"],
+      "scope": "Loops",
+      "validation": "Loops page in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A method requires a return type or void, a name, parentheses with at most 32 parameters, and a body. Methods may be overloaded.",
+      "source_ids": ["SF-APEX-METHODS"],
+      "scope": "Methods, parameters, return values",
+      "validation": "Class Methods page.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "throw signals an error. try/catch/finally recover: catch types must be unique, a general Exception catch must be last, and finally always executes. try needs at least a catch or a finally.",
+      "source_ids": ["SF-APEX-EXCEPTIONS"],
+      "scope": "Exceptions",
+      "validation": "Exception Statements page.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Control-flow and exception syntax here is stable in Summer '26 (API 67.0). Reverify switch value types against the current guide if you rely on a new type.",
+  "unresolved_uncertainty": [
+    "Exact switch-supported types can be version-sensitive; confirm on the Switch Statements page before an interview deep-dive."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Method",
+      "telugu": "పేరున్న పని; ఇన్‌పుట్ పారామితులు, రిటర్న్ లేదా void."
+    },
+    {
+      "english": "Exception",
+      "telugu": "సాధారణ ప్రవాహాన్ని ఆపే లోపం సంకేతం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Conditions branch, loops repeat—Apex has five loop forms plus break and continue. Methods take up to 32 parameters and return a type or void. Exceptions use throw, try, catch, and finally; empty catch is not handling.",
+    "two_minutes": "I pick if or switch for a one-time decision and a loop when work repeats. for-each over a list is the usual collection walk; SOQL-for is for query rows. I extract a method when the work has a name, inputs, and a return. I catch specific types first and Exception last. finally is for cleanup that must run. I do not put queries inside a loop over Trigger.new in this foundation lesson—that is a bulk/governor fail later."
+  },
+  "terminology": [
+    {
+      "term": "condition",
+      "plain": "A yes/no (or multi-way) choice that picks which statements run.",
+      "precise": "if-else or switch: Apex branches instead of running every line in order.",
+      "example": "if (labStatus == 'Closed') { return; } else { labWork(); }",
+      "non_example": "A validation rule on the object is not an Apex if statement.",
+      "confusable_neighbor": "Flow Decision element: declarative branching, not Apex syntax.",
+      "boundary": "Formula IF() is a different expression language."
+    },
+    {
+      "term": "loop",
+      "plain": "A block that repeats while a condition holds or while items remain.",
+      "precise": "Five forms: do-while, while, three-part for, for (x : listOrSet), for (x : [SOQL]). break exits; continue skips one iteration.",
+      "example": "for (Case c : labCases) { if (c.IsClosed) { continue; } }",
+      "non_example": "A scheduled job is not itself a language loop.",
+      "confusable_neighbor": "Batch Apex execute chunks: platform batching, not a while loop you wrote.",
+      "boundary": "Governor-safe bulk loops are APEX-007; this lesson is the syntax."
+    },
+    {
+      "term": "method",
+      "plain": "A named procedure a class can run.",
+      "precise": "Optional modifiers, required return type or void, up to 32 parameters, brace body. Can be overloaded.",
+      "example": "public static Id labFirstOpen(List<Case> rows) { ... return rows[0].Id; }",
+      "non_example": "A Flow Action is not an Apex method unless it invokes one.",
+      "confusable_neighbor": "Constructor: initializer, not a general method with a return type.",
+      "boundary": "Access modifiers are APEX-001; this lesson is signature and control flow."
+    },
+    {
+      "term": "parameter",
+      "plain": "An input slot the caller fills when invoking the method.",
+      "precise": "Each parameter has a type and name. Maximum 32 input parameters per method.",
+      "example": "void labPing(String name, Integer retries)",
+      "non_example": "A URL query string on a REST call is not an Apex method parameter until you map it.",
+      "confusable_neighbor": "Return value: output of the method, not an input.",
+      "boundary": "Pass-by-value details are on the Class Methods page; do not invent Java-memory diagrams."
+    },
+    {
+      "term": "return value",
+      "plain": "The typed result handed back to the caller, or nothing if void.",
+      "precise": "The method's data type is required. Use void when the method does not return a value. Callers may ignore a non-void result, as in Java.",
+      "example": "return labId; versus public void labLog() { }",
+      "non_example": "System.debug is a side effect, not a return value unless you return the string.",
+      "confusable_neighbor": "Exception: failure path, not a normal return.",
+      "boundary": "Future methods returning void is APEX-011, not this lesson's general rule."
+    },
+    {
+      "term": "exception",
+      "plain": "A disruption of normal execution you can throw or catch.",
+      "precise": "throw an exception object. try/catch/finally recover. Catch types unique; Exception last; finally always runs.",
+      "example": "try { insert labAcc; } catch (DmlException e) { ... } finally { labCleanup(); }",
+      "non_example": "A Flow fault connector is not an Apex catch block.",
+      "confusable_neighbor": "Validation-rule error: declarative, not throw.",
+      "boundary": "Custom exception classes and built-in types are expanded in APEX-006."
+    },
+    {
+      "term": "finally",
+      "plain": "Cleanup that runs whether the try succeeded or failed.",
+      "precise": "A try may have at most one finally. It always executes regardless of exception type. Use it to free resources.",
+      "example": "finally { LAB_Trace.close(); }",
+      "non_example": "A second catch is not finally.",
+      "confusable_neighbor": "catch: handles a type; finally: always runs.",
+      "boundary": "Do not use finally to hide a failed DML by ignoring it."
+    },
+    {
+      "term": "overload",
+      "plain": "Two methods with the same name and different parameter lists.",
+      "precise": "The parser selects the exact match, then conversion. Multiple approximate matches cause a parse-time exception.",
+      "example": "labAdd(Integer i) and labAdd(Integer i, Integer j)",
+      "non_example": "Two methods that differ only by return type are not a valid overload story—Needs verification of exact Apex overload-by-return rules; prefer different parameter lists.",
+      "confusable_neighbor": "override: inheritance, PROG-003.",
+      "boundary": "Do not overload @AuraEnabled methods for LWC (later LWC topic)."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Branch or repeat",
+      "actor": "Developer",
+      "trigger": "Logic is not a straight line",
+      "before": "Every statement would run",
+      "after": "if/switch for a decision, a loop for repetition",
+      "observe": "Only the intended path executes",
+      "failure": "Copy-pasted blocks instead of a loop"
+    },
+    {
+      "step": 2,
+      "transition": "Name a method",
+      "actor": "Developer",
+      "trigger": "The same work needs inputs and a result",
+      "before": "Anonymous inline script",
+      "after": "Typed parameters, return or void, body under 32 params",
+      "observe": "Callers compile against the signature",
+      "failure": "Returning a magic String 'ERR' instead of throwing or a typed result"
+    },
+    {
+      "step": 3,
+      "transition": "Handle failure",
+      "actor": "Developer",
+      "trigger": "DML, query, or invariant can fail",
+      "before": "Unhandled exception emails / failed transaction",
+      "after": "Specific catch, Exception last if needed, finally for cleanup",
+      "observe": "Tests assert the catch path; cleanup still runs",
+      "failure": "catch (Exception e) { } with an empty body"
+    },
+    {
+      "step": 4,
+      "transition": "Keep loops bulk-shaped",
+      "actor": "Developer + reviewer",
+      "trigger": "Loop over many records",
+      "before": "Query inside the loop looks convenient",
+      "after": "Collection loop without per-iteration SOQL/DML (later governors)",
+      "observe": "One query before the loop in the lab",
+      "failure": "for (Account a : Trigger.new) { List<Contact> c = [SELECT Id FROM Contact WHERE AccountId = :a.Id]; }"
+    }
+  ],
+  "when_to_use": [
+    "When you must branch with conditions or repeat with loops in Apex rather than a one-line assignment.",
+    "When extracting a method with parameters and a return value or void so callers share one body.",
+    "When an exception must be thrown, caught, or cleaned up with finally instead of crashing silently.",
+    "When a review asks whether a for-each, while, or SOQL-for loop is the right repetition form."
+  ],
+  "when_not_to_use": [
+    "Do not use this conditions-and-loops lesson as a substitute for governor bulkification numbers (APEX-007).",
+    "Do not treat methods and parameters as the access-modifier lesson (private/public/global is APEX-001).",
+    "Do not catch Exception empty-handed to 'make the test pass' while hiding DML failures.",
+    "Do not replace a Flow Decision with Apex if a declarative condition already meets the requirement (AUTO-001)."
+  ],
+  "configuration_or_code_location": [
+    "Apex class methods in a sandbox; Developer Console anonymous Apex for tiny loop labs.",
+    "Method header: return type, name, parameter list.",
+    "try/catch/finally wrapping DML or queries in the same method.",
+    "Problems pane for 'variable does not exist' after a return or break."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox class LAB_CasePicker receives a list of synthetic Case rows. It must skip closed cases, return the first open Id, return null if none, and still run a finally block that records that the method finished. No production data.",
+    "inputs": [
+      "List<Case> that may be empty or mixed open/closed",
+      "Need a reusable method, not anonymous-only",
+      "Cleanup flag must flip even when the list is null"
+    ],
+    "decisions": [
+      {
+        "decision": "Use a for-each loop over the list with continue on closed rows and break after the first open Id.",
+        "because": "Loops page: for (variable : array_or_set), continue skips, break exits.",
+        "rejected": "A while(true) with a manual index for a simple list walk"
+      },
+      {
+        "decision": "Method signature Id pick(List<Case> rows) returning null when none match.",
+        "because": "Class Methods require a return type; Id or null is honest versus a magic String.",
+        "rejected": "void method that writes to a public static as a hidden return"
+      },
+      {
+        "decision": "try/catch NullPointerException for a null list, finally sets labDone = true.",
+        "because": "finally always executes; catch types should be specific.",
+        "rejected": "catch (Exception e) {} empty"
+      }
+    ],
+    "configuration_or_code": [
+      "public class LAB_CasePicker { public static Boolean labDone; public static Id pick(List<Case> rows) { labDone = false; Id found; try { for (Case c : rows) { if (c.IsClosed) { continue; } found = c.Id; break; } } catch (NullPointerException e) { found = null; } finally { labDone = true; } return found; } }",
+      "Call pick(null) and assert labDone is true.",
+      "Call pick with one closed and one open Case and assert the open Id."
+    ],
+    "output": "First open Id or null; labDone true after both success and null-list paths.",
+    "verification": [
+      "Null list: return null and labDone true.",
+      "Closed-only list: return null after continue on each row.",
+      "Empty catch is absent from the class."
+    ],
+    "self_explanation": "The loop skipped closed rows, the method returned a typed Id, and finally still ran."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox or scratch org; LAB_ Apex only.",
+    "starting_state_checks": [
+      "Can create Apex classes and run tests or anonymous Apex.",
+      "No production Case updates."
+    ],
+    "steps": [
+      "Create LAB_CasePicker with pick(List<Case> rows) using for-each, continue, break, and a typed Id return.",
+      "Add try/catch/finally so a null list does not skip the finally flag.",
+      "Write a test or anonymous asserts for empty list, null list, and mixed closed/open rows.",
+      "Intentionally add a 33rd parameter to a dummy method and capture the compile error, then revert."
+    ],
+    "guided_completion": [
+      "If finally did not run on null, the catch swallowed the method before finally—or you returned inside catch incorrectly. Recheck the guide: finally always executes.",
+      "If you queried inside the loop, remove that query for this lab."
+    ],
+    "independent_challenge": "Overload pick with pick(List<Case> rows, String status) and explain how the parser chooses an overload.",
+    "evidence": [
+      "Test or anonymous output for null list still setting the finally flag.",
+      "Compile error text for too many parameters, then the reverted 2-parameter method."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_CasePicker.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not prove built-in exception class catalogs or trigger bulk patterns."
+  },
+  "decision_table": [
+    {
+      "signal": "One business decision with two or a few named paths.",
+      "choose": "if-else or switch condition, not a loop.",
+      "not": "A for loop that happens to run once.",
+      "why": "Control flow page: conditions branch; loops repeat."
+    },
+    {
+      "signal": "Walk every element of an in-memory list or set.",
+      "choose": "for (Type x : collection) with continue/break as needed.",
+      "not": "while with a handwritten index unless you truly need the index.",
+      "why": "The Loops page lists for-each over array_or_set as a first-class form."
+    },
+    {
+      "signal": "Reusable work with inputs and a result for callers.",
+      "choose": "A method with typed parameters and a return type or void.",
+      "not": "Copy-paste the block, or more than 32 parameters.",
+      "why": "Class Methods require a signature and cap parameters at 32."
+    },
+    {
+      "signal": "An operation can fail and you still must clean up.",
+      "choose": "try with a specific catch and a finally block.",
+      "not": "Empty catch (Exception e) that hides the failure.",
+      "why": "Exception Statements: finally always runs; catch types should be unique and Exception last."
+    }
+  ],
+  "limitations": [
+    "Does not catalog every built-in exception type.",
+    "Does not teach Queueable versus future.",
+    "Does not replace Flow Decision design.",
+    "32-parameter cap is from the methods guide; do not invent other numeric limits here."
+  ],
+  "security_notes": [
+    "Do not log exception messages that contain secrets or personal data.",
+    "Empty catch can hide authorization failures; treat that as a security smell.",
+    "Parameters from users still need CRUD/FLS later (APEX-015)."
+  ],
+  "common_mistakes": [
+    "SOQL inside a loop over Trigger.new.",
+    "Empty catch (Exception e).",
+    "Using String return codes instead of throw or a typed return.",
+    "Putting Exception catch before a more specific catch.",
+    "Confusing break (leave loop) with return (leave method)."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Unreachable statement after a loop.",
+      "check": [
+        "Did every path return or throw?",
+        "Did break versus return get mixed up?"
+      ],
+      "do_not_assume": "The compiler is wrong about reachability."
+    },
+    {
+      "symptom": "finally did not seem to run.",
+      "check": [
+        "Is there a try with finally?",
+        "Did the process die at the platform limit rather than an Apex catch?"
+      ],
+      "do_not_assume": "finally is optional decoration."
+    },
+    {
+      "symptom": "Compile error about too many parameters.",
+      "check": [
+        "Count the input parameters; the cap is 32.",
+        "Group inputs in a small class instead of a long list."
+      ],
+      "do_not_assume": "Edition limits caused it."
+    }
+  ],
+  "production_notes": [
+    "Do not ship empty catch blocks.",
+    "Sandbox-test exception paths, not only the happy return.",
+    "This lesson does not authorize production anonymous Apex with DML."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How many procedural loop types does the Apex Loops page list?",
+      "options": {
+        "A": "Five",
+        "B": "Two: while and for only",
+        "C": "One SOQL-for loop only",
+        "D": "None; Apex has no loops"
+      },
+      "answer": "A",
+      "rationale": "do-while, while, three-part for, for-each collection, and for-each SOQL.",
+      "distractor_explanations": {
+        "B": "Those exist, but they are not the full list.",
+        "C": "SOQL-for is one of five.",
+        "D": "Loops are documented."
+      },
+      "concept": "loops",
+      "citation_ids": ["SF-APEX-LOOPS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the maximum number of input parameters on an Apex method?",
+      "options": {
+        "A": "32",
+        "B": "10",
+        "C": "Unlimited",
+        "D": "2"
+      },
+      "answer": "A",
+      "rationale": "Class Methods: a method can only have 32 input parameters.",
+      "distractor_explanations": {
+        "B": "Not the documented cap.",
+        "C": "There is a documented cap.",
+        "D": "Far too low."
+      },
+      "concept": "parameters",
+      "citation_ids": ["SF-APEX-METHODS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "A method should not hand a value back to the caller. What return type?",
+      "options": {
+        "A": "void",
+        "B": "null as the type name",
+        "C": "Object always",
+        "D": "Omit the return type entirely like JavaScript"
+      },
+      "answer": "A",
+      "rationale": "Use void if the method does not return a value.",
+      "distractor_explanations": {
+        "B": "null is a value, not a return type.",
+        "C": "Object is a type, not the void marker.",
+        "D": "Apex requires a return type or void."
+      },
+      "concept": "return values",
+      "citation_ids": ["SF-APEX-METHODS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where must a catch (Exception e) appear relative to other catch blocks?",
+      "options": {
+        "A": "Last, if used",
+        "B": "First, to catch everything early",
+        "C": "It cannot be used in Apex",
+        "D": "Only inside finally"
+      },
+      "answer": "A",
+      "rationale": "The general Exception type must be the last catch block when used.",
+      "distractor_explanations": {
+        "B": "That would hide specific catches.",
+        "C": "It is documented.",
+        "D": "finally is a separate block."
+      },
+      "concept": "exceptions",
+      "citation_ids": ["SF-APEX-EXCEPTIONS"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does continue do in an Apex loop?",
+      "options": {
+        "A": "Skips to the next iteration",
+        "B": "Exits the entire loop",
+        "C": "Returns from the method",
+        "D": "Rolls back the transaction"
+      },
+      "answer": "A",
+      "rationale": "continue skips to the next iteration; break exits the loop.",
+      "distractor_explanations": {
+        "B": "That is break.",
+        "C": "That is return.",
+        "D": "That is DML exception / rollback behavior, not continue."
+      },
+      "concept": "loops",
+      "citation_ids": ["SF-APEX-LOOPS"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Does finally run if a catch block handled the exception?",
+      "options": {
+        "A": "Yes; finally always executes",
+        "B": "No; catch replaces finally",
+        "C": "Only if you rethrow",
+        "D": "Only in tests"
+      },
+      "answer": "A",
+      "rationale": "Code in finally always executes regardless of whether an exception was thrown or which type.",
+      "distractor_explanations": {
+        "B": "catch and finally are complementary.",
+        "C": "Rethrow is not required.",
+        "D": "Not test-only."
+      },
+      "concept": "exceptions",
+      "citation_ids": ["SF-APEX-EXCEPTIONS"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You need to walk query results without first assigning a List. Which loop form is documented for that?",
+      "options": {
+        "A": "for (variable : [inline_soql_query])",
+        "B": "switch on the query string",
+        "C": "do-while with a random Id",
+        "D": "A Flow Loop only"
+      },
+      "answer": "A",
+      "rationale": "The fifth loop form is for-each over an inline SOQL query.",
+      "distractor_explanations": {
+        "B": "switch is not a query walker.",
+        "C": "Not the documented query loop.",
+        "D": "This lesson is Apex loops."
+      },
+      "concept": "loops",
+      "citation_ids": ["SF-APEX-LOOPS"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A catch (Exception e) {} empty block 'fixes' a failing insert in a demo. Risk?",
+      "options": {
+        "A": "It hides the DML failure and is not graceful recovery",
+        "B": "Apex forbids catch",
+        "C": "finally cannot run after catch",
+        "D": "Parameters exceed 32 automatically"
+      },
+      "answer": "A",
+      "rationale": "try/catch is for recovery, not for swallowing errors. Empty catch hides failures.",
+      "distractor_explanations": {
+        "B": "catch is documented.",
+        "C": "finally still runs.",
+        "D": "Unrelated."
+      },
+      "concept": "exceptions",
+      "citation_ids": ["SF-APEX-EXCEPTIONS"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "if-else versus a loop: which statement is accurate?",
+      "options": {
+        "A": "Conditions branch once; loops repeat a block",
+        "B": "They are identical in Apex",
+        "C": "Loops cannot use Boolean conditions",
+        "D": "if-else is only allowed in triggers"
+      },
+      "answer": "A",
+      "rationale": "Control flow: execute based on a condition, or repeat a block.",
+      "distractor_explanations": {
+        "B": "Different tools.",
+        "C": "while uses a Boolean condition.",
+        "D": "if-else is general Apex."
+      },
+      "concept": "conditions",
+      "citation_ids": ["SF-APEX-CTRL"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "break versus return inside a loop in a method?",
+      "options": {
+        "A": "break leaves the loop; return leaves the method",
+        "B": "They are synonyms in Apex",
+        "C": "return only works in void methods",
+        "D": "break returns a value"
+      },
+      "answer": "A",
+      "rationale": "Loops page: break exits the loop. return is a method exit with an optional value.",
+      "distractor_explanations": {
+        "B": "Different scopes of exit.",
+        "C": "void methods can return; with no value.",
+        "D": "break does not return a typed value."
+      },
+      "concept": "loops vs return",
+      "citation_ids": ["SF-APEX-LOOPS", "SF-APEX-METHODS"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Two methods named labAdd, one with one Integer and one with two. What is this?",
+      "options": {
+        "A": "Overloading; the parser picks by parameter list",
+        "B": "An exception",
+        "C": "A loop",
+        "D": "Invalid in Apex"
+      },
+      "answer": "A",
+      "rationale": "User-defined methods can be overloaded; the parser selects the implementation.",
+      "distractor_explanations": {
+        "B": "Not an exception by itself.",
+        "C": "Not a loop.",
+        "D": "Documented as allowed."
+      },
+      "concept": "methods",
+      "citation_ids": ["SF-APEX-METHODS"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "A try block has no catch and no finally. Valid?",
+      "options": {
+        "A": "No; at least a catch or a finally must be present",
+        "B": "Yes; try may stand alone",
+        "C": "Only in anonymous Apex",
+        "D": "Only if the method is void"
+      },
+      "answer": "A",
+      "rationale": "Exception Statements: at least the catch block or the finally block must be present.",
+      "distractor_explanations": {
+        "B": "try cannot stand alone.",
+        "C": "Same syntax everywhere.",
+        "D": "Return type is unrelated."
+      },
+      "concept": "exceptions",
+      "citation_ids": ["SF-APEX-EXCEPTIONS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "What do Apex conditions (if-else/switch) do?",
+      "back": "They branch execution so not every statement runs in source order."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "Name the five Apex loop forms.",
+      "back": "do-while, while, three-part for, for-each collection, for-each inline SOQL."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "break vs continue in a loop?",
+      "back": "break exits the loop; continue skips to the next iteration."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "Required parts of an Apex method besides modifiers?",
+      "back": "Return type or void, name, parameter list in parentheses, brace body."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "Maximum Apex method input parameters?",
+      "back": "32 parameters, per the Class Methods guide."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "When do you choose a loop over if-else?",
+      "back": "When a block must repeat; conditions are for one-time branching."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "When should a method be void?",
+      "back": "When it does not return a value to the caller—side effects only."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Where does catch (Exception e) go?",
+      "back": "Last among catch blocks, if you use the general Exception type."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "What belongs in finally?",
+      "back": "Cleanup that must run whether the try succeeded or threw."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "for-each list vs SOQL-for loop?",
+      "back": "List/set already in memory vs iterating an inline query result."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "Why is an empty catch a problem?",
+      "back": "It hides failures, including DML and possible authorization errors."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Should exception messages include secrets?",
+      "back": "No. Do not log credentials, session IDs, or personal data."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "Is SOQL inside a Trigger.new loop a control-flow win?",
+      "back": "No. It is a bulk/governor anti-pattern even if the loop syntax is valid."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Need first matching Id then stop walking a list?",
+      "back": "for-each with a condition, assign the Id, then break."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Null list throws, but a done-flag must still flip?",
+      "back": "try/catch the NPE (or null-check) and set the flag in finally."
+    },
+    {
+      "id": "F16",
+      "category": "terminology",
+      "front": "What is method overloading?",
+      "back": "Same method name, different parameter lists; parser picks the match."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain conditions, loops, methods, parameters, return values, and exceptions in Apex.",
+      "answer_30_seconds": "Conditions branch, five loop forms repeat, methods take up to 32 parameters and return a type or void, exceptions use throw plus try/catch/finally.",
+      "answer_2_minutes": "I use if or switch for a decision and a loop when work repeats. I name the five loop types and break versus continue. A method is a signature: return or void, parameters, body. I catch specific exceptions first and put Exception last. finally always runs. I do not call an empty catch 'error handling'.",
+      "example": "LAB_CasePicker: for-each, continue on closed, break on first Id, finally sets a done flag.",
+      "tradeoffs": [
+        "Typed return vs void plus side effects",
+        "Specific catch vs broad Exception"
+      ],
+      "follow_ups": [
+        "What is the parameter cap?",
+        "Does finally run after return in try?"
+      ],
+      "weak_answer_warnings": [
+        "Only describing JavaScript for/if"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What mistakes do beginners make with Apex loops and exceptions?",
+      "answer_30_seconds": "SOQL in a loop, empty catch, mixing up break and return, and treating void as optional syntax.",
+      "answer_2_minutes": "The loop syntax can be correct and still be a bulk failure. Empty catch hides DML. catch (Exception e) before a specific type is illegal/wrong. Methods need a return type. I also see while(true) without a guaranteed break. I separate this lesson from governor numbers but I still refuse per-row queries.",
+      "example": "for (Account a : Trigger.new) { Contact c = [SELECT Id FROM Contact WHERE AccountId = :a.Id]; } is the classic fail.",
+      "tradeoffs": [
+        "Convenient per-row query vs bulk-safe collections"
+      ],
+      "follow_ups": [
+        "How would you rewrite that loop?",
+        "Where does continue help?"
+      ],
+      "weak_answer_warnings": [
+        "Saying governors do not apply in sandbox"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Design a method that returns the first open Case Id from a list or null.",
+      "answer_30_seconds": "Id pick(List<Case> rows) with for-each, continue if closed, break after the first open Id, return found.",
+      "answer_2_minutes": "Signature returns Id, not String. Null list is either a precondition check or a caught NPE; either way finally can mark completion. I would not use a void method that sets a static. I would not query inside the loop if the list is already in memory. Overload only if a second parameter list is truly needed.",
+      "example": "LAB_CasePicker.pick in the worked example with labDone in finally.",
+      "tradeoffs": [
+        "null return vs custom exception when none found"
+      ],
+      "follow_ups": [
+        "When would you throw instead of return null?",
+        "SOQL-for instead of list for-each?"
+      ],
+      "weak_answer_warnings": [
+        "Returning 'NONE' as a String"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "You must always close a debug buffer whether insert succeeds or fails. Structure?",
+      "answer_30_seconds": "try the insert, catch DmlException specifically, put close() in finally so it always runs.",
+      "answer_2_minutes": "try identifies the risky DML. catch (DmlException e) handles that type. I do not start with Exception unless I also keep it last. finally closes the buffer because the guide says it always executes. I still surface or log the error; I do not empty-catch. If the platform kills the transaction via an unhandleable governor, I say that is outside this finally guarantee—Needs verification for limit exceptions that cannot be caught.",
+      "example": "try { insert labAcc; } catch (DmlException e) { labLog(e); } finally { labBuf.close(); }",
+      "tradeoffs": [
+        "Rethrow after log vs swallow after compensate"
+      ],
+      "follow_ups": [
+        "Can governor limit exceptions be caught?",
+        "Why Exception last?"
+      ],
+      "weak_answer_warnings": [
+        "Putting close() only in the success path"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Compile error: catch block is unreachable. What do you look at?",
+      "answer_30_seconds": "A broader Exception catch is probably above a more specific catch, or two catches share a type.",
+      "answer_2_minutes": "The guide requires unique catch types and Exception last. I reorder catches from specific to general. I also check I did not duplicate DmlException. This is not a missing import. I recompile after the reorder and add a test that throws the specific type.",
+      "example": "catch (Exception e) before catch (DmlException e) is the usual order bug.",
+      "tradeoffs": [
+        "One broad catch vs several specific catches"
+      ],
+      "follow_ups": [
+        "Must you have a catch if you have finally?",
+        "What does unique catch type mean?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the Salesforce edition"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A loop never stops. How do you diagnose with this vocabulary?",
+      "answer_30_seconds": "Check the while/do-while Boolean, missing increment in a three-part for, and missing break on the success condition.",
+      "answer_2_minutes": "Infinite loops are usually while (true) without break, or a condition that never becomes false. for-each over a list cannot grow forever unless the list is mutated in a surprising way—I would inspect mutation. I distinguish 'loop never stops' from 'method never returns' (missing return on some if path). I do not jump to governors first if CPU has not yet been mentioned.",
+      "example": "while (i < 10) { /* forgot i++ */ } versus for (Case c : rows) which is bounded by list size.",
+      "tradeoffs": [
+        "do-while (runs once) vs while (may run zero times)"
+      ],
+      "follow_ups": [
+        "When is do-while the right form?",
+        "How does continue hide a missing increment?"
+      ],
+      "weak_answer_warnings": [
+        "Calling it a Salesforce platform outage"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you avoid a method and keep the condition inline?",
+      "answer_30_seconds": "When the branch is a single obvious check used once and a method would only hide a one-liner.",
+      "answer_2_minutes": "I extract a method when there are parameters, a return value, reuse, or an exception policy to test. I keep inline if-else for a local flag. I avoid a 32-parameter method by grouping inputs. I also avoid Apex entirely if a Flow Decision is enough—this track is still programming foundations, not an excuse to code every condition.",
+      "example": "if (rows == null) return null; stays inline; pick-first-open-Id becomes a method.",
+      "tradeoffs": [
+        "Readability of a named method vs local clarity"
+      ],
+      "follow_ups": [
+        "What about overloading instead of a Boolean flag parameter?",
+        "When is switch clearer than if-else?"
+      ],
+      "weak_answer_warnings": [
+        "Methods for every single comparison"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this topic with the railway signal box and where it breaks.",
+      "answer_30_seconds": "Switches are conditions, repeating circuits are loops, timetable procedures are methods, emergency stop is throw, finally locks the box. It breaks on the 32-parameter cap and governors.",
+      "answer_2_minutes": "I walk a consist through a switch (if), around a circuit (for-each), into a named procedure with cars in and cars out (parameters and return), then an emergency stop (throw) onto a recovery siding (catch) while still locking the box (finally). I then say railways have no 32-parameter rule, SOQL-for is not a physical track, and empty catch is not recovery. I finish with two lines of Apex.",
+      "example": "Show continue on closed cases as 'skip this car' and break as 'leave the circuit'.",
+      "tradeoffs": [
+        "Analogy vs showing real signatures"
+      ],
+      "follow_ups": [
+        "Map void to the analogy",
+        "Map overload"
+      ],
+      "weak_answer_warnings": [
+        "Using a generic catalog metaphor"
+      ]
+    }
+  ]
+}

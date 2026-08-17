@@ -1,0 +1,998 @@
+{
+  "topic_id": "AI-003",
+  "slug": "prompt-builder-templates-inputs-outputs-and-evaluation",
+  "title": "Prompt Builder, templates, inputs, outputs, and evaluation",
+  "track": "Agentforce and AI on Salesforce",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AI-002"
+  ],
+  "objectives": [
+    "Explain Prompt Builder as the Setup workshop where you create, test, preview, and activate reusable prompt templates.",
+    "Choose Sales Email, Field Generation, or Flex from Help's template types using the intended inputs and outputs.",
+    "Describe merge-field, flow, Apex, and object inputs, and why preview/evaluation happens before Activate.",
+    "Refuse invented edition or SKU gates; mark them Needs verification unless Help cites them."
+  ],
+  "diagnostic_question": "Sales wants a personalized follow-up email, Service wants a Case summary written into a field, and a BA wants one generation that reads Opportunity plus a PDF. Before reading, which Prompt Builder template type, inputs, and evaluation step would you pick for each?",
+  "definition": "Prompt Builder is where you create, test, review, customize, and manage prompt templates that connect CRM data to an LLM. Templates are reusable, use-case-driven prompts. Inputs can include merge fields, flows, Apex, related lists, objects, files, and free text depending on type. Outputs are the LLM response used in email, a record field, an invocable action, or an agent step. Evaluation means previewing a real record before you Activate. ([Prompt Builder](https://help.salesforce.com/s/articleView?id=ai.prompt_builder_about.htm); [Create a Field Generation Prompt Template](https://help.salesforce.com/s/articleView?id=ai.prompt_builder_create_field_gen_prompt_template.htm); [Get to Know Agentforce Service Agent](https://help.salesforce.com/s/articleView?id=service.bots_service_asa_about.htm))",
+  "why_it_matters": "A Field Generation template will not send email. A Sales Email template will not write Case.Subject. Activating without preview is how hallucinated summaries reach production. Interviewers listen for template type, inputs, outputs, and a named evaluation step—not 'we turned on Einstein.'",
+  "sixty_second_explanation": "Think of a print shop that runs wedding invitations. Prompt Builder is the shop. The template is the invitation form. Inputs are the guest list, venue card, and optional RSVP note you drop into the slots. The output is the printed card—an email draft, a field value, or a Flex packet. Evaluation is reading a proof against one real couple before you print the whole run. Activate is sending the job to the press, not the proof.",
+  "deeper_explanation": [
+    "Help describes Prompt Builder as the place to create, test, review, customize, and manage prompt templates that incorporate CRM data from merge fields that reference record fields, flows, related lists, and Apex, connecting the user and data securely to LLMs. Assign the Prompt Template Manager permission set to admins who create and manage templates. ([Prompt Builder](https://help.salesforce.com/s/articleView?id=ai.prompt_builder_about.htm))",
+    "Cited template types: a Sales Email prompt template lets the sales team draft personalized emails for a contact or lead. A Field Generation prompt template brings generative workflows to fields on Lightning record pages so users can populate a field with an LLM summary or description. A Flex prompt template accepts a variable number of inputs of different object types—for example a newsletter from product and campaign objects. ([Prompt Builder](https://help.salesforce.com/s/articleView?id=ai.prompt_builder_about.htm); [Create a Field Generation Prompt Template](https://help.salesforce.com/s/articleView?id=ai.prompt_builder_create_field_gen_prompt_template.htm))",
+    "Field Generation setup in Help: Setup → Prompt Builder → New Prompt Template → Field Generation, name the template, select the object field Einstein should populate, write the prompt, then Preview Settings with a sample record. Help notes Dynamic Forms are required to add the template to a Lightning record page. ([Create a Field Generation Prompt Template](https://help.salesforce.com/s/articleView?id=ai.prompt_builder_create_field_gen_prompt_template.htm))",
+    "ASA Help: AI agents and other generative features use prompt templates from Prompt Builder. Merge fields add changing data such as names and prices; you can also add flows and Apex. You can call a prompt template via an invocable action on the platform or using Connect REST API or Connect in Apex. ([Get to Know Agentforce Service Agent](https://help.salesforce.com/s/articleView?id=service.bots_service_asa_about.htm); [Prompt Builder](https://help.salesforce.com/s/articleView?id=ai.prompt_builder_about.htm))",
+    "Evaluation in this lesson means the Prompt Template Workspace preview: pick a record, generate a response, inspect the resolved prompt, then Activate only after the proof is acceptable. Do not invent numeric quality scores Help did not cite. Grounding with retrievers is AI-004. Exact add-on SKUs remain Needs verification."
+  ],
+  "mental_model": {
+    "analogy": "A wedding-invitation print shop: the form, the guest slots, the printed card, and the proof copy before the press run.",
+    "useful_mapping": [
+      "Prompt Builder → the print shop and press",
+      "prompt template → the invitation form (metadata)",
+      "inputs / merge fields / flows / Apex → guest names, venue, and optional RSVP note",
+      "output → printed card: email draft, field value, or Flex packet",
+      "preview / evaluation → reading one couple's proof",
+      "Activate → sending the job to the press",
+      "Sales Email vs Field Generation vs Flex → envelope vs envelope liner vs custom booklet"
+    ],
+    "where_it_breaks": [
+      "A print shop does not call an LLM; Salesforce still routes through the Einstein Trust Layer.",
+      "Flex input limits and file-picker behavior differ on mobile versus Lightning; Help cites those constraints in related articles.",
+      "Activating a template does not grant every user access; permission sets still apply.",
+      "The analogy does not encode Einstein Requests or edition add-ons."
+    ]
+  },
+  "teach_back_prompt": "Without saying only 'it is a prompt,' explain Sales Email versus Field Generation versus Flex, name the inputs each expects, and describe the preview you would run before Activate.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: Prompt Builder, three template types, inputs versus outputs, preview before Activate."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given email, field fill, and multi-object packet, pick a template type for each."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Walk Field Generation: object field, Dynamic Forms, Preview Settings, Activate."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Explain how an agent action can call a prompt template without confusing Builder with Prompt Builder."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: template type, inputs, outputs, and one evaluation check."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-PB-ABOUT",
+      "title": "Prompt Builder",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=ai.prompt_builder_about.htm",
+      "supports": "Create/test/manage templates; Sales Email, Field Generation, Flex; merge fields, flows, Apex; invocable and Connect API; Prompt Template Manager permission set.",
+      "release_or_version": "Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Italian/English Help wording can differ slightly; reverify the English article in the org's Help."
+    },
+    {
+      "source_id": "SF-HELP-PB-FIELDGEN",
+      "title": "Create a Field Generation Prompt Template",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=ai.prompt_builder_create_field_gen_prompt_template.htm",
+      "supports": "Field Generation type, object field, workspace prompt, Preview Settings, Dynamic Forms to place on a Lightning record page.",
+      "release_or_version": "Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Not all objects support Dynamic Forms; Help points to LWC-enabled objects."
+    },
+    {
+      "source_id": "SF-HELP-PB-FLEX",
+      "title": "Create a Flex Prompt Template",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.prompt_builder_create_flex_prompt_template.htm",
+      "supports": "Flex templates with a variable set of inputs.",
+      "release_or_version": "Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Exact Flex input-count caps in adjacent articles are Needs verification if not on this page."
+    },
+    {
+      "source_id": "SF-HELP-ASA",
+      "title": "Get to Know Agentforce Service Agent",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=service.bots_service_asa_about.htm",
+      "supports": "Agents and other generative features use Prompt Builder templates with merge fields, flows, and Apex.",
+      "release_or_version": "Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every template type."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Prompt Builder",
+        "Template types",
+        "Inputs",
+        "Outputs",
+        "Preview evaluation",
+        "Activate"
+      ],
+      "accessible_description": "Portrait map: Prompt Builder authors templates; Sales Email, Field Generation, and Flex take different inputs; preview a record before Activate; agents may call templates as actions."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-PB-ABOUT",
+        "SF-HELP-PB-FIELDGEN",
+        "SF-HELP-ASA"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Prompt template inputs to outputs"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  PB[Prompt Builder] --> T[Prompt template metadata]\n  T --> SE[Sales Email]\n  T --> FG[Field Generation]\n  T --> FX[Flex]\n  T --> In[Inputs: merge fields flows Apex objects files text]\n  T --> Out[Outputs: email draft field value invocable or agent action]\n  T --> Ev[Preview evaluation then Activate]",
+      "decision": "flowchart TD\n  Need[Need generative text?] --> Q1{Human will send an email to a contact or lead?}\n  Q1 -->|Yes| SE[Sales Email template]\n  Q1 -->|No| Q2{Write into a Lightning record field?}\n  Q2 -->|Yes| FG[Field Generation plus Dynamic Forms]\n  Q2 -->|No| Q3{Multiple objects, files, or free text?}\n  Q3 -->|Yes| FX[Flex template]\n  Q3 -->|No| Q4{Need conversation plus jobs?}\n  Q4 -->|Yes| Ag[Agentforce agent AI-002 not a template type]\n  Q4 -->|No| Det[Deterministic Flow AI-007]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Prompt Builder is where you create, test, review, customize, and manage prompt templates that incorporate CRM data via merge fields, flows, related lists, and Apex and connect users and data securely to LLMs.",
+      "source_ids": ["SF-HELP-PB-ABOUT"],
+      "scope": "Product definition",
+      "validation": "Prompt Builder Help opening definition.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Help cites Sales Email templates for contact or lead emails, Field Generation templates to populate Lightning record-page fields, and Flex templates that accept a variable number of inputs of different object types.",
+      "source_ids": ["SF-HELP-PB-ABOUT", "SF-HELP-PB-FIELDGEN"],
+      "scope": "Template types",
+      "validation": "Prompt Builder about page and Field Generation procedure.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Field Generation templates are added to Lightning record pages using Dynamic Forms; preview uses a sample record in Preview Settings before save.",
+      "source_ids": ["SF-HELP-PB-FIELDGEN"],
+      "scope": "Field Generation placement and evaluation",
+      "validation": "Create a Field Generation Prompt Template.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Agents and other generative features use prompt templates from Prompt Builder, including merge fields, flows, and Apex. Templates can also be called via invocable actions or Connect REST/Apex.",
+      "source_ids": ["SF-HELP-ASA", "SF-HELP-PB-ABOUT"],
+      "scope": "Runtime callers",
+      "validation": "ASA Help and Prompt Builder about page.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Prompt Builder remains the current Help name. Template types and file-input options continue to expand; reverify the New Prompt Template dropdown in the target org.",
+  "unresolved_uncertainty": [
+    "Whether a given org has every template type in the dropdown is Needs verification against licenses.",
+    "Exact Flex input maximums beyond adjacent Help notes are Needs verification."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Prompt template",
+      "telugu": "LLMకి పంపే పునర్వినియోగ ఫారం; మెర్జ్ ఫీల్డ్‌లతో CRM డేటా చేరుతుంది."
+    },
+    {
+      "english": "Field Generation",
+      "telugu": "లైట్నింగ్ రికార్డ్ ఫీల్డ్‌లో AI డ్రాఫ్ట్ రాయడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Prompt Builder authors reusable prompt templates. Sales Email drafts contact or lead mail. Field Generation writes a Lightning field. Flex takes mixed inputs. You preview a record, then Activate. Agents can call the same templates.",
+    "two_minutes": "I start from the output. If a human sends mail to a Contact or Lead, that is Sales Email. If a field on the record page should fill, that is Field Generation and it needs Dynamic Forms. If I need Opportunity plus a file or free text, that is Flex. Inputs are merge fields, flows, Apex, objects—not a chat channel. Evaluation is the workspace preview against a LAB_ record, not a vibe check. I never confuse Prompt Builder with Agentforce Builder."
+  },
+  "terminology": [
+    {
+      "term": "Prompt Builder",
+      "plain": "The Setup workshop for reusable LLM prompt forms.",
+      "precise": "Help: create, test, review, customize, and manage prompt templates that incorporate CRM data and connect securely to LLMs.",
+      "example": "Setup → Prompt Builder → New Prompt Template for LAB_ Case summary.",
+      "non_example": "Agentforce Builder, which configures the agent catalog.",
+      "confusable_neighbor": "Process Builder: retired automation, not Prompt Builder.",
+      "boundary": "Does not deploy messaging channels."
+    },
+    {
+      "term": "prompt template",
+      "plain": "A reusable, use-case-driven prompt with slots for CRM data.",
+      "precise": "Metadata you author in Prompt Builder; agents and other generative features consume it.",
+      "example": "LAB_Renewal_Email Sales Email template.",
+      "non_example": "A one-off question typed into a public chatbot.",
+      "confusable_neighbor": "Subagent instructions: agent job guardrails, not a template type.",
+      "boundary": "The template is metadata; the generated paragraph is not stored until a field or email uses it."
+    },
+    {
+      "term": "Sales Email template",
+      "plain": "A template that drafts a personalized email for a contact or lead.",
+      "precise": "Help: lets the sales team create drafts of personalized emails for a contact or lead.",
+      "example": "Draft follow-up for LAB_ Contact after a demo.",
+      "non_example": "Writing Case.Description on the record page.",
+      "confusable_neighbor": "Flex used to build a multi-object newsletter rather than a Contact/Lead email.",
+      "boundary": "The human still reviews and sends unless a later feature automates send—do not invent send rules."
+    },
+    {
+      "term": "Field Generation template",
+      "plain": "A template that fills a field on a Lightning record page.",
+      "precise": "Help: populate a field with a summary or description created by an LLM; Dynamic Forms place it on the page.",
+      "example": "LAB_Case_Summary__c filled from Case Subject, Description, and comments.",
+      "non_example": "A formula field that concatenates two text fields with no LLM.",
+      "confusable_neighbor": "Record-triggered Flow writing the same field deterministically.",
+      "boundary": "Not all objects support Dynamic Forms."
+    },
+    {
+      "term": "Flex template",
+      "plain": "A template that takes a variable mix of object, file, or text inputs.",
+      "precise": "Help: accepts a variable number of inputs of different object types, such as a newsletter from product and campaign.",
+      "example": "LAB_Opportunity plus a PDF of pricing as Flex inputs.",
+      "non_example": "A Sales Email template locked to Contact or Lead.",
+      "confusable_neighbor": "Field Generation: one target field on one object.",
+      "boundary": "Related Help notes additional Flex input constraints; treat uncited caps as Needs verification."
+    },
+    {
+      "term": "inputs",
+      "plain": "The data slots the template is allowed to read.",
+      "precise": "Merge fields, flows, related lists, Apex, objects, files, or free text depending on type and Help for that type.",
+      "example": "Opportunity.Description merge field on a Flex template.",
+      "non_example": "The Enhanced Chat channel.",
+      "confusable_neighbor": "Outputs: what the LLM returns after generation.",
+      "boundary": "Grounding retrievers as dynamic inputs are AI-004."
+    },
+    {
+      "term": "outputs",
+      "plain": "What you do with the LLM response.",
+      "precise": "An email draft, a field value, an invocable/API result, or an agent action response—not the template metadata itself.",
+      "example": "Resolved text written into LAB_Case_Summary__c.",
+      "non_example": "The prompt template record in Setup.",
+      "confusable_neighbor": "Preview panel text that was never saved to a field.",
+      "boundary": "Saving versus displaying is a design choice you must verify in the UI."
+    },
+    {
+      "term": "evaluation (preview)",
+      "plain": "Proving the template against a sample record before Activate.",
+      "precise": "Field Generation Help: Preview Settings, select a record, generate response, inspect prompt and resolution, then save.",
+      "example": "Preview LAB-0001 Case and reject a summary that invents a warranty.",
+      "non_example": "Activating because the prompt 'looks professional' with no record.",
+      "confusable_neighbor": "Agentforce Testing Center (AI-006), which tests agents, not this workspace proof.",
+      "boundary": "Do not invent a numeric quality score Help did not publish."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Pick the template type from the output",
+      "actor": "Admin",
+      "trigger": "Generative text requested",
+      "before": "One blob called a prompt",
+      "after": "Sales Email, Field Generation, or Flex named",
+      "observe": "Output destination written down",
+      "failure": "Field Generation used to send email"
+    },
+    {
+      "step": 2,
+      "transition": "Bind inputs",
+      "actor": "Admin",
+      "trigger": "Type chosen",
+      "before": "Prompt with no CRM data",
+      "after": "Merge fields, flows, or Apex slots filled",
+      "observe": "Each slot resolves in preview",
+      "failure": "Hard-coding a customer name in the template"
+    },
+    {
+      "step": 3,
+      "transition": "Preview evaluation",
+      "actor": "Admin",
+      "trigger": "Draft prompt written",
+      "before": "Unseen LLM output",
+      "after": "Generated response inspected on a LAB_ record",
+      "observe": "Display Prompt and Display Resolution used if available",
+      "failure": "Activate without a sample record"
+    },
+    {
+      "step": 4,
+      "transition": "Activate and grant access",
+      "actor": "Admin",
+      "trigger": "Proof accepted",
+      "before": "Draft template",
+      "after": "Activated template plus Prompt Template User or Manager as Help requires",
+      "observe": "Target user can see Draft with AI or the field action in sandbox",
+      "failure": "Assuming Activate grants every profile access"
+    }
+  ],
+  "when_to_use": [
+    "When you must pick a Prompt Builder template type from the intended email, field, or Flex output.",
+    "When designing inputs such as merge fields, flows, or Apex so the template is grounded in CRM data.",
+    "When an interviewer asks how you evaluate a prompt template before Activate.",
+    "When an Agentforce action needs a reusable prompt template rather than a one-off instruction paragraph."
+  ],
+  "when_not_to_use": [
+    "Do not use Prompt Builder templates as a substitute for deterministic Flow when the rule is a fixed calculation (AI-007).",
+    "Do not treat this lesson as Agentforce subagents, instructions, actions, and channels (AI-002).",
+    "Do not use workspace preview as a full Agentforce Testing Center rollout (AI-006).",
+    "Do not claim a template type Help did not list, or an edition gate Help did not cite."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Prompt Builder → New Prompt Template.",
+    "Prompt Template Workspace: prompt text, resources, Preview Settings, Activate.",
+    "Lightning App Builder Dynamic Forms for Field Generation placement.",
+    "Permission sets: Prompt Template Manager and Prompt Template User as Help describes."
+  ],
+  "worked_example": {
+    "scenario": "LAB_ Support wants Case summaries in LAB_Case_Summary__c on the Lightning page, and Sales wants a Contact follow-up email. Sandbox only, no production send.",
+    "inputs": [
+      "Case Subject, Description, and comments for the summary",
+      "Contact Name and last Activity for the email",
+      "Two LAB_ sample records"
+    ],
+    "decisions": [
+      {
+        "decision": "Use Field Generation for LAB_Case_Summary__c, not Sales Email.",
+        "because": "Help defines Field Generation as populating a Lightning record-page field.",
+        "rejected": "One Flex template stuffed onto the Case page hoping it writes the field"
+      },
+      {
+        "decision": "Use a Sales Email template for the Contact follow-up.",
+        "because": "Help defines Sales Email as personalized drafts for a contact or lead.",
+        "rejected": "Field Generation on Contact.Description as a fake email"
+      },
+      {
+        "decision": "Preview both templates on LAB_ records before Activate.",
+        "because": "Field Generation Help requires a sample record in Preview Settings to inspect the response.",
+        "rejected": "Activate from the prompt text alone"
+      }
+    ],
+    "configuration_or_code": [
+      "New Field Generation template targeting LAB_Case_Summary__c; enable Dynamic Forms on the Case page.",
+      "New Sales Email template for Contact; do not send from production.",
+      "Prompt Template Manager on the admin; Prompt Template User on the LAB_ tester."
+    ],
+    "output": "Two activated sandbox templates with saved preview screenshots on LAB_ records.",
+    "verification": [
+      "Case page shows the Field Generation control and writes only LAB_Case_Summary__c.",
+      "Sales Email preview names the LAB_ Contact and does not invent a closed-won amount.",
+      "Neither template is connected to a production channel."
+    ],
+    "self_explanation": "Type followed output. Preview was the evaluation. I did not use an agent for a field fill."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox. If Prompt Builder is not licensed, complete a paper template from Help only.",
+    "starting_state_checks": [
+      "You will not send email to real customers.",
+      "Use LAB_ records only."
+    ],
+    "steps": [
+      "Open Prompt Builder Help and write the three cited template types in LAB_notes.",
+      "Draft a Field Generation prompt for a synthetic Case field, listing the merge fields you would add.",
+      "Write the Preview Settings check: which LAB_ record, what would make you refuse Activate.",
+      "State which permission set an author needs versus a user who only runs the template."
+    ],
+    "guided_completion": [
+      "If Dynamic Forms is unavailable on the object, record Needs verification and keep the paper prompt.",
+      "If the org lacks Prompt Builder, Help reading still completes the lab."
+    ],
+    "independent_challenge": "Design a Flex template that takes Opportunity plus free-text 'customer question' and explain why Sales Email is the wrong type.",
+    "evidence": [
+      "LAB_notes with three template types and one refused Activate reason.",
+      "A Help URL for Field Generation or Prompt Builder about."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate sandbox templates you created.",
+      "Do not leave Prompt Template User on extra profiles."
+    ],
+    "limitations": "Does not prove Connect API invocation or agent-action wiring."
+  },
+  "decision_table": [
+    {
+      "signal": "A seller needs a drafted email to a Contact or Lead they will review.",
+      "choose": "Sales Email prompt template in Prompt Builder.",
+      "not": "Field Generation on a random long-text field as a fake inbox.",
+      "why": "Help defines Sales Email as personalized drafts for a contact or lead."
+    },
+    {
+      "signal": "Users should fill a Lightning record-page field with an LLM summary.",
+      "choose": "Field Generation template plus Dynamic Forms on that object.",
+      "not": "A Sales Email template, or a formula field pretending to be generative.",
+      "why": "Field Generation Help is the procedure for object-field population."
+    },
+    {
+      "signal": "Generation must read more than one object, a file, or free text.",
+      "choose": "Flex prompt template with those inputs defined.",
+      "not": "Forcing Field Generation's single object field to carry everything.",
+      "why": "Help describes Flex as variable inputs of different object types."
+    },
+    {
+      "signal": "The requirement is a conversation that selects jobs and actions.",
+      "choose": "An Agentforce agent that may call a prompt template as an action (AI-002).",
+      "not": "A Prompt Builder template as a substitute for channels and subagents.",
+      "why": "ASA Help says agents use templates; templates are not the agent catalog."
+    }
+  ],
+  "limitations": [
+    "Does not list every template type that may appear in a given org.",
+    "Does not configure Data 360 retrievers (AI-004).",
+    "Does not replace Trust Layer permission design (AI-005).",
+    "SKU and Dynamic Forms object coverage are Needs verification."
+  ],
+  "security_notes": [
+    "Templates send CRM field values toward an LLM path; do not bind secret fields without a Trust Layer review (AI-005).",
+    "Never preview using production customer PII in a screenshot you will share.",
+    "Activate is a release decision, not a private draft."
+  ],
+  "common_mistakes": [
+    "Confusing Prompt Builder with Agentforce Builder.",
+    "Using Field Generation to send email.",
+    "Activating without previewing a sample record.",
+    "Hard-coding names instead of merge fields.",
+    "Assuming Activate grants every user access."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Users cannot see Draft with AI or the field generation control.",
+      "check": [
+        "Template is Activated.",
+        "Prompt Template User (or the Help-cited access) is assigned.",
+        "Field Generation is on a Dynamic Forms-enabled Lightning page."
+      ],
+      "do_not_assume": "The LLM is down."
+    },
+    {
+      "symptom": "Preview invents a discount the Opportunity does not have.",
+      "check": [
+        "Which merge fields are actually in the prompt.",
+        "Whether instructions tell the model not to invent missing numbers.",
+        "Whether grounding/retrieval is required (AI-004)."
+      ],
+      "do_not_assume": "Activate will magically fix hallucination."
+    },
+    {
+      "symptom": "Flex template does not appear on the object you expected.",
+      "check": [
+        "Which objects were declared as inputs.",
+        "Related Help constraints for files versus DMOs.",
+        "Needs verification notes for uncited input types."
+      ],
+      "do_not_assume": "Flex can be dropped on every object like a formula."
+    }
+  ],
+  "production_notes": [
+    "Preview in sandbox with LAB_ records before any production Activate.",
+    "Treat prompt templates as metadata in the release train.",
+    "No production email send is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do you create and manage prompt templates according to Help?",
+      "options": {
+        "A": "Prompt Builder",
+        "B": "Process Builder",
+        "C": "Schema Builder only",
+        "D": "Work.com"
+      },
+      "answer": "A",
+      "rationale": "Prompt Builder Help is the workshop for creating, testing, and managing prompt templates.",
+      "distractor_explanations": {
+        "B": "Process Builder is retired automation.",
+        "C": "Schema Builder is the data model.",
+        "D": "Work.com is unrelated."
+      },
+      "concept": "Prompt Builder",
+      "citation_ids": ["SF-HELP-PB-ABOUT"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "A Sales Email prompt template is for:",
+      "options": {
+        "A": "Personalized email drafts for a contact or lead",
+        "B": "Setting org-wide defaults",
+        "C": "Compiling Apex tests",
+        "D": "Creating custom objects"
+      },
+      "answer": "A",
+      "rationale": "Prompt Builder Help defines Sales Email templates that way.",
+      "distractor_explanations": {
+        "B": "OWD is sharing.",
+        "C": "Apex tests are a developer concern.",
+        "D": "Objects are data model."
+      },
+      "concept": "Sales Email",
+      "citation_ids": ["SF-HELP-PB-ABOUT"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You want users to fill a Case long-text field from the Lightning record page. Which type?",
+      "options": {
+        "A": "Field Generation, then Dynamic Forms on the page",
+        "B": "Sales Email only",
+        "C": "A validation rule",
+        "D": "An Omni-Channel queue"
+      },
+      "answer": "A",
+      "rationale": "Field Generation Help is the procedure for populating a Lightning record-page field and notes Dynamic Forms.",
+      "distractor_explanations": {
+        "B": "Sales Email drafts Contact/Lead mail.",
+        "C": "Validation rules block saves.",
+        "D": "Omni-Channel routes work."
+      },
+      "concept": "Field Generation",
+      "citation_ids": ["SF-HELP-PB-FIELDGEN"]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Flex templates are described as accepting:",
+      "options": {
+        "A": "A variable number of inputs of different object types",
+        "B": "Only a single formula field",
+        "C": "Only org-wide email addresses",
+        "D": "Only Classic page layouts"
+      },
+      "answer": "A",
+      "rationale": "Prompt Builder Help describes Flex that way, with a product-and-campaign newsletter example.",
+      "distractor_explanations": {
+        "B": "Flex is not a formula.",
+        "C": "Email addresses are not the definition.",
+        "D": "This is Lightning generative AI."
+      },
+      "concept": "Flex",
+      "citation_ids": ["SF-HELP-PB-ABOUT"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which permission set does Help assign to admins who create and manage templates in Prompt Builder?",
+      "options": {
+        "A": "Prompt Template Manager",
+        "B": "View All Data only",
+        "C": "Modify All Data only",
+        "D": "Chatter Free"
+      },
+      "answer": "A",
+      "rationale": "Prompt Builder Help tells you to assign Prompt Template Manager to those admins.",
+      "distractor_explanations": {
+        "B": "View All Data is not the cited template-author set.",
+        "C": "Modify All Data is not the cited set.",
+        "D": "Chatter Free cannot author templates."
+      },
+      "concept": "Permissions",
+      "citation_ids": ["SF-HELP-PB-ABOUT"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How can a prompt template be called besides the record page, per Help?",
+      "options": {
+        "A": "As an invocable action, or via Connect REST API or Connect in Apex",
+        "B": "Only by SSH into the Salesforce server",
+        "C": "Only from Salesforce Classic reports",
+        "D": "Only by changing OWD"
+      },
+      "answer": "A",
+      "rationale": "Prompt Builder Help lists invocable action and Connect REST/Apex callers.",
+      "distractor_explanations": {
+        "B": "There is no SSH admin path.",
+        "C": "Reports are not the cited caller.",
+        "D": "OWD is sharing."
+      },
+      "concept": "Invocation",
+      "citation_ids": ["SF-HELP-PB-ABOUT"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "ASA Help says AI agents use prompt templates that you can also enrich with:",
+      "options": {
+        "A": "Merge fields, and you can add flows and Apex",
+        "B": "Only static HTML with no CRM data",
+        "C": "Only Visualforce view state",
+        "D": "Only SOQL COUNT() without a prompt"
+      },
+      "answer": "A",
+      "rationale": "Get to Know Agentforce Service Agent describes merge fields, flows, and Apex on templates.",
+      "distractor_explanations": {
+        "B": "The point is CRM-grounded templates.",
+        "C": "Visualforce is not the cited mechanism.",
+        "D": "COUNT() is not a prompt template."
+      },
+      "concept": "Agent plus templates",
+      "citation_ids": ["SF-HELP-ASA"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "What is the Help-backed evaluation step before users rely on Field Generation?",
+      "options": {
+        "A": "Preview Settings: pick a record, generate a response, inspect prompt/resolution, then Activate",
+        "B": "Skip preview and Activate immediately",
+        "C": "Email the CEO for a vibe check",
+        "D": "Change the API version of an Apex class"
+      },
+      "answer": "A",
+      "rationale": "Create a Field Generation Prompt Template walks Preview Settings and generating a response.",
+      "distractor_explanations": {
+        "B": "Help includes preview.",
+        "C": "Not a cited control.",
+        "D": "Unrelated to this workspace."
+      },
+      "concept": "Evaluation",
+      "citation_ids": ["SF-HELP-PB-FIELDGEN"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which is metadata versus generated business text?",
+      "options": {
+        "A": "The prompt template is metadata; the saved Case summary is business data",
+        "B": "Both are always metadata",
+        "C": "Both are always business data",
+        "D": "Merge fields are Apex classes"
+      },
+      "answer": "A",
+      "rationale": "Templates are configuration. Field values written from the LLM are record data.",
+      "distractor_explanations": {
+        "B": "The generated paragraph stored on Case is data.",
+        "C": "The template definition is metadata.",
+        "D": "Merge fields reference record fields."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-HELP-PB-ABOUT", "SF-HELP-PB-FIELDGEN"]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Prompt Builder versus Agentforce Builder?",
+      "options": {
+        "A": "Prompt Builder authors templates; Agentforce Builder configures the agent catalog",
+        "B": "They are the same Setup page",
+        "C": "Agentforce Builder only sends email",
+        "D": "Prompt Builder deploys WhatsApp"
+      },
+      "answer": "A",
+      "rationale": "ASA Help places templates in Prompt Builder; agents are configured separately.",
+      "distractor_explanations": {
+        "B": "They are different workshops.",
+        "C": "Builder is the agent canvas.",
+        "D": "Channels are agent deployment, not Prompt Builder."
+      },
+      "concept": "Two builders",
+      "citation_ids": ["SF-HELP-ASA"]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "To place a Field Generation template on a Lightning record page, Help says you must enable:",
+      "options": {
+        "A": "Dynamic Forms (for supported LWC-enabled objects)",
+        "B": "Salesforce Classic only",
+        "C": "Person Accounts only",
+        "D": "Territory Management"
+      },
+      "answer": "A",
+      "rationale": "Field Generation Help requires Dynamic Forms to add the template to a Lightning record page.",
+      "distractor_explanations": {
+        "B": "This is Lightning.",
+        "C": "Person Accounts are unrelated.",
+        "D": "Territories are sales alignment."
+      },
+      "concept": "Dynamic Forms",
+      "citation_ids": ["SF-HELP-PB-FIELDGEN"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A BA wants one generation from Opportunity, Campaign, and a PDF. Best cited type?",
+      "options": {
+        "A": "Flex",
+        "B": "Sales Email locked to Lead only",
+        "C": "A validation rule",
+        "D": "An approval process"
+      },
+      "answer": "A",
+      "rationale": "Flex is the cited type for a variable mix of object inputs; files appear in related Flex Help.",
+      "distractor_explanations": {
+        "B": "Sales Email is Contact/Lead email drafts.",
+        "C": "Validation is deterministic.",
+        "D": "Approvals are a different engine."
+      },
+      "concept": "Flex inputs",
+      "citation_ids": ["SF-HELP-PB-ABOUT", "SF-HELP-PB-FLEX"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is Prompt Builder in Help?",
+      "back": "The workshop where you create, test, review, customize, and manage prompt templates that connect CRM data to LLMs."
+    },
+    {
+      "id": "F2",
+      "category": "types",
+      "front": "Name three cited prompt template types.",
+      "back": "Sales Email, Field Generation, and Flex, as described on the Prompt Builder Help page."
+    },
+    {
+      "id": "F3",
+      "category": "email",
+      "front": "What is a Sales Email template for?",
+      "back": "Personalized email drafts for a contact or lead that the sales team can use."
+    },
+    {
+      "id": "F4",
+      "category": "field",
+      "front": "What does Field Generation put on the page?",
+      "back": "An LLM summary or description into a chosen field on a Lightning record page, via Dynamic Forms."
+    },
+    {
+      "id": "F5",
+      "category": "flex",
+      "front": "What is distinctive about Flex templates?",
+      "back": "They accept a variable number of inputs of different object types, such as product plus campaign."
+    },
+    {
+      "id": "F6",
+      "category": "inputs",
+      "front": "Name typical Prompt Builder inputs from Help.",
+      "back": "Merge fields, flows, related lists, and Apex; Flex may add objects, files, or free text per related Help."
+    },
+    {
+      "id": "F7",
+      "category": "outputs",
+      "front": "What counts as a template output in this lesson?",
+      "back": "The LLM response used as an email draft, a saved field value, an invocable result, or an agent action reply."
+    },
+    {
+      "id": "F8",
+      "category": "eval",
+      "front": "How do you evaluate a Field Generation template?",
+      "back": "Preview Settings: select a record, generate a response, inspect prompt and resolution, then Activate."
+    },
+    {
+      "id": "F9",
+      "category": "perms",
+      "front": "Which permission set authors templates?",
+      "back": "Prompt Template Manager is the Help-cited set for admins who create and manage templates."
+    },
+    {
+      "id": "F10",
+      "category": "invoke",
+      "front": "How else can you call a template?",
+      "back": "As an invocable action anywhere on the platform, or with Connect REST API or Connect in Apex."
+    },
+    {
+      "id": "F11",
+      "category": "agent",
+      "front": "Do Agentforce agents use Prompt Builder?",
+      "back": "Yes. ASA Help says agents and other generative features use prompt templates managed in Prompt Builder."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "Prompt Builder versus Agentforce Builder?",
+      "back": "Prompt Builder authors reusable templates. Agentforce Builder configures the agent, subagents, and channels."
+    },
+    {
+      "id": "F13",
+      "category": "meta",
+      "front": "Template versus generated summary?",
+      "back": "The template is metadata. A summary stored on a Case field is business data."
+    },
+    {
+      "id": "F14",
+      "category": "forms",
+      "front": "Why mention Dynamic Forms here?",
+      "back": "Help requires Dynamic Forms to add a Field Generation template to a Lightning record page."
+    },
+    {
+      "id": "F15",
+      "category": "mistake",
+      "front": "Activate without a preview?",
+      "back": "Do not. Evaluation means generating against a sample record and reading the resolved prompt first."
+    },
+    {
+      "id": "F16",
+      "category": "scenario",
+      "front": "Opportunity plus PDF plus free-text question?",
+      "back": "Start with a Flex template, not Sales Email, which is for Contact or Lead drafts."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is Prompt Builder, and how do templates, inputs, outputs, and evaluation fit?",
+      "answer_30_seconds": "Prompt Builder is the template workshop. Templates are reusable prompts. Inputs are merge fields, flows, or Apex. Outputs are email, a field, or an invocable result. Evaluation is previewing a record before Activate.",
+      "answer_2_minutes": "I quote Help: create, test, review, and manage templates that connect CRM data to LLMs. I pick type from the output—Sales Email, Field Generation, or Flex. I bind inputs so we are not hard-coding names. I preview a LAB_ record, read the resolved prompt, then Activate and assign Prompt Template User. Agents may call the same template; that does not make Prompt Builder the agent canvas.",
+      "example": "LAB_Case_Summary Field Generation previewed on Case LAB-0001 before Activate.",
+      "tradeoffs": [
+        "Reusable template vs one-off prompt",
+        "Field fill vs email draft"
+      ],
+      "follow_ups": [
+        "What is Flex for?",
+        "Which permission set authors templates?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Process Builder the same tool",
+        "Skipping preview"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "When do you choose Field Generation versus Sales Email versus Flex?",
+      "answer_30_seconds": "Field Generation writes a Lightning field. Sales Email drafts Contact or Lead mail. Flex takes mixed objects, files, or free text. The output destination picks the type.",
+      "answer_2_minutes": "I refuse to pick Flex as a default 'powerful' type. If the UX is a field on the record page, Help's Field Generation path plus Dynamic Forms is the fit. If sellers need an email, Sales Email is the fit. If the packet needs Opportunity and Campaign, Flex is the cited type. If they actually need a conversation with jobs, I leave Prompt Builder and design an agent.",
+      "example": "Case summary field vs Contact follow-up email vs product-plus-campaign newsletter.",
+      "tradeoffs": [
+        "Page UX vs inbox UX",
+        "Single object vs multi-input Flex"
+      ],
+      "follow_ups": [
+        "Does Field Generation need Dynamic Forms?",
+        "Can an agent call Flex?"
+      ],
+      "weak_answer_warnings": [
+        "One type for every request"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "design",
+      "question": "How do you evaluate a prompt template before users trust it?",
+      "answer_30_seconds": "I use the workspace preview with a sample record, generate a response, inspect the resolved prompt, and only then Activate. I do not invent a numeric score Help did not publish.",
+      "answer_2_minutes": "Field Generation Help is explicit: Preview Settings, choose a record, generate, review. I pick LAB_ records that include messy comments so I can see hallucination. If the model invents a warranty, I tighten instructions or add grounding later (AI-004). I also check that Activate plus permission sets is what actually exposes the control, not preview alone.",
+      "example": "Preview Case LAB-0001; reject a summary that names a product not on the Case.",
+      "tradeoffs": [
+        "More merge fields vs shorter prompts",
+        "Sandbox preview vs production risk"
+      ],
+      "follow_ups": [
+        "What if preview looks good but users still cannot see it?",
+        "How is this different from Testing Center?"
+      ],
+      "weak_answer_warnings": [
+        "Activate from the prompt text alone"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Users cannot see Field Generation on the Case page. Walk the diagnosis.",
+      "answer_30_seconds": "Check Activated status, Prompt Template User access, Dynamic Forms on a supported object, and that the template targets the intended field.",
+      "answer_2_minutes": "Help's placement path is Dynamic Forms on LWC-enabled objects. If the object is not supported, I do not fight the page—I record Needs verification and consider Flex plus an invocable path. I do not grant Modify All Data to 'make AI appear.' I also confirm we did not build a Sales Email template and expect it on the Case highlight panel.",
+      "example": "Template still Draft; tester lacked Prompt Template User; Case page was a standard layout without Dynamic Forms.",
+      "tradeoffs": [
+        "Dynamic Forms migration vs another output path",
+        "User permission vs author permission"
+      ],
+      "follow_ups": [
+        "Which objects support Dynamic Forms?",
+        "Manager versus User permission set?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the LLM first"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "foundational",
+      "question": "How do Agentforce agents use Prompt Builder?",
+      "answer_30_seconds": "Agents consume prompt templates for generative steps. Merge fields, flows, and Apex can enrich those templates. Prompt Builder is not the channel and not the subagent list.",
+      "answer_2_minutes": "ASA Help states agents and other generative features use Prompt Builder templates. A standard action such as Answer Questions with Knowledge uses a template plus retrievers (AI-004). A custom action can invoke a Flex template. I still design subagents in Agentforce Builder. Mixing the two Setup maps is a common interview fail.",
+      "example": "Escalate subagent action calling a Flex template that summarizes the Case for the human.",
+      "tradeoffs": [
+        "Shared template vs prompt pasted into instructions",
+        "Agent UX vs record-page UX"
+      ],
+      "follow_ups": [
+        "Invocable versus agent action?",
+        "Where is Connect API useful?"
+      ],
+      "weak_answer_warnings": [
+        "Prompt Builder deploys WhatsApp"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Preview invents a closed-won amount. What do you change first?",
+      "answer_30_seconds": "I inspect the resolved prompt: which merge fields actually rendered. I tell the template not to invent missing numbers, and I add only the fields that exist. I do not Activate.",
+      "answer_2_minutes": "Hallucination is a generative risk Trust Layer helps limit but does not erase (AI-005). If Amount was never in the inputs, the model is guessing. I add the field or I instruct 'if Amount is blank, say unknown.' If they need Knowledge policy, that is grounding/retrieval, not more adjectives in the prompt. Evaluation is refusing Activate until the proof is honest.",
+      "example": "Resolved prompt showed Subject and Description only; Amount was never merged.",
+      "tradeoffs": [
+        "More fields vs prompt size",
+        "Instruction guardrail vs retrieval"
+      ],
+      "follow_ups": [
+        "When do you add a retriever?",
+        "What is toxicity detection?"
+      ],
+      "weak_answer_warnings": [
+        "Activate anyway because the tone sounds on-brand"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Why not hard-code the account name in the template?",
+      "answer_30_seconds": "Because the template is reusable metadata. Help's point of merge fields is changing CRM data such as names and prices. Hard-coding one LAB_ name makes every other record wrong.",
+      "answer_2_minutes": "I treat the template like a mail-merge form. Inputs resolve at run time from the record, flow, or Apex. That is also why preview must use more than one sample record. Hard-coding is the fastest way to look clever in a demo and fail in week two. Secrets never go in the prompt text.",
+      "example": "Merge Contact.FirstName instead of typing 'Priya' into the Sales Email body.",
+      "tradeoffs": [
+        "Reusable merge vs demo speed",
+        "Flow input vs field merge"
+      ],
+      "follow_ups": [
+        "When would you use Apex as an input?",
+        "Related lists as merge sources?"
+      ],
+      "weak_answer_warnings": [
+        "Pasting a real customer name into the template"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "A VP wants one Flex template to replace Flow, email, field fill, and the service agent. What do you refuse?",
+      "answer_30_seconds": "I refuse the mega-template. Flex is for mixed inputs, not for replacing deterministic automation, inboxes, record pages, and Agentforce channels at once.",
+      "answer_2_minutes": "I split: formula or Flow for math (AI-007), Field Generation for the page, Sales Email for the inbox, an agent if they need conversation and jobs. Flex is the right tool when the generation truly needs multiple resources. I mark SKUs Needs verification. A single Flex will not route WhatsApp or enforce an approval.",
+      "example": "Rejected 'one Flex to run the business'; accepted Flex for Opportunity plus Campaign newsletter copy only.",
+      "tradeoffs": [
+        "Fewer templates vs operable UX",
+        "Generative vs deterministic"
+      ],
+      "follow_ups": [
+        "When is Flex the right default?",
+        "When do you escalate to an agent?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to one template for every surface"
+      ]
+    }
+  ]
+}

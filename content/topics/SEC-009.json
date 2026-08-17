@@ -1,0 +1,976 @@
+{
+  "topic_id": "SEC-009",
+  "slug": "shield-platform-encryption-field-audit-trail-event-moni",
+  "title": "Shield Platform Encryption, field audit trail, event monitoring, and transaction security overview",
+  "track": "Identity, access, and security",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "SEC-008"
+  ],
+  "objectives": [
+    "Place Shield Platform Encryption, Field Audit Trail, Event Monitoring, and Transaction Security as complementary Shield-family controls, not as substitutes for CRUD, FLS, or sharing.",
+    "Explain encryption as protecting data at rest, audit trail as field-history retention, event monitoring as activity visibility, and transaction security as policy reactions to events.",
+    "Refuse invented retention years, event counts, or edition gates; mark them Needs verification in current Help and the org.",
+    "Choose which control matches a compliance story: rest encryption, who-changed-the-field, who-exported-the-report, or block-this-action."
+  ],
+  "diagnostic_question": "A regulator asks four things: SSN at rest must be encrypted, Amount history must be retained beyond ordinary field history, report exports must be visible, and mass-export from an unusual IP should be blocked. Which Shield-family control is each, and which ordinary security gate still applies first?",
+  "definition": "Salesforce Shield is a suite of add-on security products. Shield Platform Encryption encrypts data at rest in Salesforce while remaining distinct from Classic Encryption. Field Audit Trail extends field-history style auditing for compliance (confirm current Help for what it stores and how long). Event Monitoring provides event log visibility into user and system activity such as logins and report exports. Transaction Security (including enhanced/real-time policies) evaluates events and can notify or block. These products require appropriate licenses; they do not replace object permissions, FLS, or record sharing. ([Platform Encryption](https://help.salesforce.com/s/articleView?id=sf.security_pe_overview.htm); [Field Audit Trail](https://help.salesforce.com/s/articleView?id=xcloud.field_audit_trail.htm); [Event Monitoring](https://help.salesforce.com/s/articleView?id=sf.event_monitoring.htm))",
+  "why_it_matters": "Teams buy encryption expecting it to hide Amount from sales, or they skip FLS because Event Monitoring exists. Interviewers want the split: encryption is not authorization, audit is not a block, monitoring is not encryption, transaction security is not a sharing rule. Inventing '10 years' or '70 events' without Help is a fail.",
+  "sixty_second_explanation": "Think of a bank vault room. Platform Encryption is locking the vault steel so disks in the data center are unreadable if stolen—tellers with permission still work at the window. Field Audit Trail is the numbered ledger of who changed a balance field. Event Monitoring is the camera tape of who walked in and who printed a report. Transaction Security is the guard who can stop a suspicious bag at the door. None of those replaces the teller's badge (CRUD/FLS) or which drawers they may open (sharing).",
+  "deeper_explanation": [
+    "Shield Platform Encryption protects data at rest. It is not the same as Classic Encryption. You select data elements through encryption policy (fields, files, and other elements described in current Help). Key management, including Bring Your Own Key where entitled, is part of the product. Encryption does not replace FLS: a user with field access still sees decrypted values in the app. Confirm field types that support encryption in the implementation guide/Help; do not invent a list. ([Platform Encryption](https://help.salesforce.com/s/articleView?id=sf.security_pe_overview.htm))",
+    "Standard Field History Tracking is not Field Audit Trail. FAT is the Shield capability for longer-term, compliance-oriented field history. Retention periods, objects, and storage are license- and configuration-specific. Quote current Field Audit Trail Help rather than marketing pages. ([Field Audit Trail](https://help.salesforce.com/s/articleView?id=xcloud.field_audit_trail.htm))",
+    "Event Monitoring captures event types (logins, API, report export, and others listed in current Help). It is visibility and forensics, not a default block. Real-Time Event Monitoring is a related capability; confirm which SKU the org has. Do not invent an event-type count. ([Event Monitoring](https://help.salesforce.com/s/articleView?id=sf.event_monitoring.htm))",
+    "Transaction Security policies can react to events (for example block or alert) using clicks or Apex depending on the policy type documented for the org. It is not OWD and not FLS. License and which events are eligible are Needs verification. ([Transaction Security](https://help.salesforce.com/s/articleView?id=sf.security_transaction.htm))",
+    "Ordinary gates still come first: authentication, user permissions, object/FLS, sharing. Shield sits on top for regulated data, audit, and monitoring."
+  ],
+  "mental_model": {
+    "analogy": "A bank vault room: steel lock = Platform Encryption, ledger = Field Audit Trail, cameras = Event Monitoring, door guard = Transaction Security, teller badge = CRUD/FLS.",
+    "useful_mapping": [
+      "vault steel → data at rest encryption",
+      "tellers still seeing values → encryption is not FLS",
+      "numbered ledger → Field Audit Trail / field history",
+      "camera tape → Event Monitoring",
+      "guard who can stop a bag → Transaction Security policy",
+      "which drawers → sharing (not Shield)"
+    ],
+    "where_it_breaks": [
+      "Some encrypted fields have functional limitations (search, filters); verify per field type in Help.",
+      "Event Monitoring is not always real-time depending on product SKU.",
+      "Classic Encryption is a different, narrower feature; do not equate it to Shield."
+    ]
+  },
+  "teach_back_prompt": "Explain why encrypting Amount does not hide it from a salesperson who has FLS, and which product you would use if the ask is 'who exported this report.'",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Encryption vs FAT vs Event Monitoring vs Transaction Security in one line each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify four regulator asks without inventing numbers."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Encryption vs FLS vs Classic Encryption."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "When is Transaction Security the answer instead of a sharing rule?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: Shield overview plus least privilege still first."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-PE",
+      "title": "Shield Platform Encryption",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_pe_overview.htm",
+      "supports": "Platform Encryption overview: encrypt data at rest; distinct from Classic Encryption; policy-based selection of data elements.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Supported field types and key-management options are org- and license-specific."
+    },
+    {
+      "source_id": "SF-HELP-FAT",
+      "title": "Field Audit Trail",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=xcloud.field_audit_trail.htm",
+      "supports": "Field Audit Trail as the Shield field-history/compliance capability; read this page for retention and setup rather than marketing numbers.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Do not invent retention years or object maxima."
+    },
+    {
+      "source_id": "SF-HELP-EVENT-MON",
+      "title": "Event Monitoring",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.event_monitoring.htm",
+      "supports": "Event Monitoring as visibility into org events such as logins and report-related activity listed in Help.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Event-type catalogs and real-time vs log-file SKUs Need verification; do not invent counts."
+    },
+    {
+      "source_id": "SF-HELP-TXN-SEC",
+      "title": "Transaction Security",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_transaction.htm",
+      "supports": "Transaction Security policies that evaluate events and can take policy actions such as block or notify as documented.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Eligible events and Apex vs clicks policy types are org-specific."
+    },
+    {
+      "source_id": "SF-HELP-DATA-ACCESS",
+      "title": "Control Who Sees What",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm",
+      "supports": "CRUD, FLS, and sharing remain the authorization model Shield does not replace.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not describe Shield SKUs."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Encryption at rest",
+        "Not FLS",
+        "Field Audit Trail",
+        "Event Monitoring",
+        "Transaction Security",
+        "Licenses Need verification"
+      ],
+      "accessible_description": "Four Shield-family controls around the ordinary access path, with a warning not to invent limits."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-PE",
+        "SF-HELP-FAT",
+        "SF-HELP-EVENT-MON",
+        "SF-HELP-TXN-SEC",
+        "SF-HELP-DATA-ACCESS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Shield around the access path"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Authz[CRUD FLS sharing still first] --> Data[Data at rest]\n  Data --> PE[Platform Encryption]\n  Authz --> Change[Field value changes]\n  Change --> FAT[Field Audit Trail]\n  Authz --> Act[User and API actions]\n  Act --> EM[Event Monitoring visibility]\n  Act --> TS[Transaction Security policy action]",
+      "decision": "flowchart TD\n  Ask[Compliance ask] --> Q1{Protect stored bytes if disk is stolen?}\n  Q1 -->|Yes| PE[Platform Encryption if entitled]\n  Q1 -->|Who changed this field over a long period?| FAT[Field Audit Trail not just standard history]\n  Q1 -->|Who exported a report or logged in?| EM[Event Monitoring]\n  Q1 -->|Stop the action now?| TS[Transaction Security policy]\n  Q1 -->|Hide Amount from sales?| FLS[FLS first; encryption will not hide it in the UI]\n  Q1 -->|Which records?| Share[Sharing; not Shield]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Shield Platform Encryption encrypts selected data at rest and is distinct from Classic Encryption. It does not replace field-level security in the UI.",
+      "source_ids": ["SF-HELP-PE", "SF-HELP-DATA-ACCESS"],
+      "scope": "Encryption",
+      "validation": "Platform Encryption overview plus the ordinary FLS model.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Field Audit Trail is a Shield capability for extended field-history auditing. Exact retention and object coverage must be read from current Help, not invented.",
+      "source_ids": ["SF-HELP-FAT"],
+      "scope": "Audit trail",
+      "validation": "Field Audit Trail Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Event Monitoring provides visibility into org events. Transaction Security policies can evaluate events and take documented actions such as block or notify. Neither replaces sharing.",
+      "source_ids": ["SF-HELP-EVENT-MON", "SF-HELP-TXN-SEC"],
+      "scope": "Monitor vs block",
+      "validation": "Event Monitoring and Transaction Security Help.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify Shield product names (Real-Time Event Monitoring, Enhanced Transaction Security) and SKUs in the target org for Summer '26.",
+  "unresolved_uncertainty": [
+    "Retention years, event-type counts, and AES key lengths: do not quote marketing pages; read current Help/implementation guides.",
+    "Which events Transaction Security can block in this org: Needs verification."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Platform Encryption",
+      "telugu": "స్టోరేజ్‌లో డేటాను గుప్తీకరించడం; UIలో FLS స్థానంలో కాదు."
+    },
+    {
+      "english": "Event Monitoring",
+      "telugu": "లాగిన్‌లు, ఎక్స్‌పోర్టులు వంటి చర్యలను చూడటం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Encryption protects data at rest, not FLS. Field Audit Trail is long-lived field history. Event Monitoring is the camera. Transaction Security can block or alert. Licenses Need verification. CRUD/FLS/sharing still come first.",
+    "two_minutes": "I map the regulator's sentence to a product: rest, history, visibility, reaction. I refuse numbers I cannot cite from Help. I say Classic Encryption is not Shield. I say monitoring without a policy does not block. I keep least privilege on permission sets. If the org lacks Shield, I say so instead of designing fake policies."
+  },
+  "terminology": [
+    {
+      "term": "Shield Platform Encryption",
+      "plain": "Encrypts selected Salesforce data while it is stored.",
+      "precise": "Policy-driven at-rest encryption with Salesforce-managed or customer-managed keys where entitled. Distinct from Classic Encryption.",
+      "example": "Encrypt LAB_SSN__c at rest after confirming the field type is supported.",
+      "non_example": "Hiding Amount from a salesperson who still has FLS read.",
+      "confusable_neighbor": "Classic Encryption.",
+      "boundary": "Functional limitations per field type: read Help, do not invent."
+    },
+    {
+      "term": "Classic Encryption",
+      "plain": "An older, narrower encryption feature, not the Shield product.",
+      "precise": "Help distinguishes Classic Encryption from Shield Platform Encryption. Do not treat them as interchangeable.",
+      "example": "A legacy encrypted custom field that is not Shield policy encryption.",
+      "non_example": "BYOK Shield key rotation.",
+      "confusable_neighbor": "Shield Platform Encryption.",
+      "boundary": "Availability Needs verification; do not claim it exists in every org."
+    },
+    {
+      "term": "Field Audit Trail",
+      "plain": "Shield-grade history of field changes for compliance.",
+      "precise": "Extends beyond ordinary Field History Tracking. Retention and setup are in Field Audit Trail Help—do not invent a year count.",
+      "example": "Retain Amount changes for a regulated object after FAT is entitled and configured.",
+      "non_example": "Standard 20-field history on an object without FAT (do not invent the 20 if you cannot cite it here—Needs verification of standard FHT limits).",
+      "confusable_neighbor": "Event Monitoring: actions, not necessarily field old/new values.",
+      "boundary": "Standard Field History Tracking is a separate setup."
+    },
+    {
+      "term": "Event Monitoring",
+      "plain": "Logs of what users and integrations did.",
+      "precise": "Event log visibility (and related real-time products where licensed) for types documented in Help, such as logins and report exports.",
+      "example": "Investigate who exported a LAB report.",
+      "non_example": "A sharing rule.",
+      "confusable_neighbor": "Transaction Security: can act on events, not only store them.",
+      "boundary": "Do not invent event counts."
+    },
+    {
+      "term": "Transaction Security",
+      "plain": "Policies that react to events—alert or block as configured.",
+      "precise": "Evaluates selected events and takes documented policy actions. Enhanced/real-time variants depend on SKU.",
+      "example": "Block a report export event type if Help lists it as eligible and the org is entitled.",
+      "non_example": "An organization-wide default.",
+      "confusable_neighbor": "Event Monitoring without a policy.",
+      "boundary": "Eligible events Need verification."
+    },
+    {
+      "term": "Data at rest",
+      "plain": "Data sitting in storage, not currently being typed in a browser.",
+      "precise": "The state Platform Encryption is designed to protect in Salesforce data centers.",
+      "example": "Database bytes for LAB_SSN__c.",
+      "non_example": "TLS in transit (a different control family).",
+      "confusable_neighbor": "FLS: authorization to see the value when using the app.",
+      "boundary": "In-transit encryption is not this product's headline."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Keep ordinary security first",
+      "actor": "Admin + security owner",
+      "trigger": "Compliance request",
+      "before": "Jumping to Shield",
+      "after": "CRUD/FLS/sharing documented",
+      "observe": "Access matrix still exists",
+      "failure": "Encrypting a field instead of removing FLS"
+    },
+    {
+      "step": 2,
+      "transition": "Match the sentence to a product",
+      "actor": "Admin",
+      "trigger": "Four different asks",
+      "before": "One 'turn on Shield' ticket",
+      "after": "Encryption vs FAT vs monitoring vs policy",
+      "observe": "Written mapping",
+      "failure": "Inventing a 10-year SLA from a blog"
+    },
+    {
+      "step": 3,
+      "transition": "Verify entitlement",
+      "actor": "Admin",
+      "trigger": "Design chosen",
+      "before": "Assumed every org has Shield",
+      "after": "License confirmed or gap recorded",
+      "observe": "Company Information / Shield Setup pages",
+      "failure": "Designing Transaction Security in an unlicensed org"
+    },
+    {
+      "step": 4,
+      "transition": "Pilot in disposable org",
+      "actor": "Admin",
+      "trigger": "Entitled",
+      "before": "Production encryption on day one",
+      "after": "Known functional impacts (search/filter) from Help",
+      "observe": "LAB field encrypted; UI still honors FLS",
+      "failure": "Encrypting production SSN without a field-type check"
+    }
+  ],
+  "when_to_use": [
+    "When a compliance story needs data-at-rest encryption, extended field history, activity logs, or event-driven blocks.",
+    "When distinguishing Shield Platform Encryption from Classic Encryption and from FLS.",
+    "When Event Monitoring is proposed as if it were a sharing rule or a permission set.",
+    "When Transaction Security is the right reaction layer instead of hoping users will not click Export."
+  ],
+  "when_not_to_use": [
+    "Do not use Platform Encryption to hide a field from users who still have field-level security.",
+    "Do not use Event Monitoring as a substitute for least-privilege permission sets.",
+    "Do not use Transaction Security as an organization-wide default or restriction rule.",
+    "Do not quote unofficial retention years or event counts; re-read Field Audit Trail and Event Monitoring Help."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Platform Encryption / Encryption Policy (reverify labels).",
+    "Setup → Field Audit Trail / Field History related configuration.",
+    "Setup → Event Monitoring / Event Log File access as entitled.",
+    "Setup → Transaction Security policies."
+  ],
+  "worked_example": {
+    "scenario": "Disposable org. Regulator-style asks: encrypt LAB_SSN__c at rest; keep Amount history longer than standard field history; see report exports; block a documented risky event if entitled. Sales still must not see SSN in the UI.",
+    "inputs": [
+      "FLS must hide SSN from LAB_AE_East",
+      "Shield products may or may not be licensed"
+    ],
+    "decisions": [
+      {
+        "decision": "Hide SSN with FLS first.",
+        "because": "Encryption does not replace field permissions in the UI.",
+        "rejected": "Encrypt-only with FLS left open"
+      },
+      {
+        "decision": "Use Platform Encryption for at-rest protection if the field type is supported and the org is entitled.",
+        "because": "That matches the disk/stolen-storage story.",
+        "rejected": "Classic Encryption assumed equivalent"
+      },
+      {
+        "decision": "Use Field Audit Trail for long history if entitled; otherwise say standard Field History is not the same product.",
+        "because": "Do not invent retention years.",
+        "rejected": "Promising a marketing '10 years' figure"
+      },
+      {
+        "decision": "Event Monitoring for export visibility; Transaction Security only if the event is eligible and licensed for block.",
+        "because": "Logs are not blocks.",
+        "rejected": "A sharing rule to stop exports"
+      }
+    ],
+    "configuration_or_code": [
+      "Permission set without SSN FLS for LAB_AE_East.",
+      "If Shield is present, encrypt only a synthetic LAB field.",
+      "Record Needs verification if Setup pages are missing."
+    ],
+    "output": "Four asks mapped. FLS still hides SSN. No invented numbers in the design note.",
+    "verification": [
+      "LAB_AE_East cannot see SSN in a report.",
+      "If encryption is on, Help-supported field still behaves in a documented way.",
+      "Design note contains no unofficial event counts."
+    ],
+    "self_explanation": "I stacked ordinary authorization under Shield and I refused invented SLAs."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable org. If Shield is not licensed, inspect Help and write Needs verification—that is a complete lab outcome.",
+    "starting_state_checks": [
+      "Non-production.",
+      "You can create a LAB custom field."
+    ],
+    "steps": [
+      "Create LAB_SSN__c (synthetic) and set FLS so a LAB sales user cannot read it.",
+      "Search Setup for Platform Encryption, Field Audit Trail, Event Monitoring, Transaction Security; record which exist.",
+      "Open the matching Help articles and copy one supported fact per product into notes—no blog numbers.",
+      "If encryption is available, identify whether your field type is listed as supported before enabling anything.",
+      "Write the four-ask mapping from the diagnostic question."
+    ],
+    "guided_completion": [
+      "If you enabled encryption on an unsupported type, stop and revert.",
+      "If you quoted 10 years without Help, delete that sentence."
+    ],
+    "independent_challenge": "A stakeholder says Event Monitoring 'is our sharing model.' Write a four-sentence rebuttal.",
+    "evidence": [
+      "Screenshot or list of which Shield Setup pages exist.",
+      "Four-ask mapping with Help URLs."
+    ],
+    "stop_recovery_cleanup": [
+      "Remove LAB fields if created.",
+      "Do not leave production encryption policy changes."
+    ],
+    "limitations": "Many orgs will not have every Shield SKU; documenting the gap is success."
+  },
+  "decision_table": [
+    {
+      "signal": "Need the stored bytes unreadable without keys, while authorized users still work in the UI.",
+      "choose": "Shield Platform Encryption if entitled and the field type is supported.",
+      "not": "FLS-only as a disk-theft control, or Classic Encryption assumed identical.",
+      "why": "Encryption is at rest; FLS is authorization in the app."
+    },
+    {
+      "signal": "Need long-lived who-changed-this-field evidence beyond ordinary Field History.",
+      "choose": "Field Audit Trail after reading current Help for retention.",
+      "not": "A made-up year count from a marketing page.",
+      "why": "FAT is the Shield history product; numbers must be cited from Help."
+    },
+    {
+      "signal": "Need to know who exported a report or logged in.",
+      "choose": "Event Monitoring (and real-time variants if licensed).",
+      "not": "A restriction rule.",
+      "why": "That is activity visibility, not record filtering."
+    },
+    {
+      "signal": "Need to stop a risky action as it happens.",
+      "choose": "Transaction Security policy if the event is eligible.",
+      "not": "Event Monitoring logs alone, or an OWD change.",
+      "why": "Policies can block or notify; logs by themselves do not."
+    }
+  ],
+  "limitations": [
+    "SKU availability is org-specific.",
+    "No invented retention, event counts, or key lengths.",
+    "Does not replace SEC-003/004."
+  ],
+  "security_notes": [
+    "Encryption keys are sensitive; do not export them into chat logs.",
+    "Event logs can contain personal data; handle as production-like even in labs.",
+    "Least privilege still applies to who can view event logs."
+  ],
+  "common_mistakes": [
+    "Using encryption as FLS.",
+    "Quoting unofficial 10-year/70-event figures.",
+    "Equating Classic Encryption with Shield.",
+    "Thinking Event Monitoring blocks exports by default."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Encrypted field cannot be filtered or searched as before.",
+      "check": [
+        "Help limitations for that encrypted field type.",
+        "Whether the requirement should have been FLS instead."
+      ],
+      "do_not_assume": "Salesforce is broken."
+    },
+    {
+      "symptom": "No Event Monitoring Setup.",
+      "check": [
+        "License entitlement.",
+        "Record Needs verification; do not fake a policy."
+      ],
+      "do_not_assume": "It is included in every Enterprise org."
+    },
+    {
+      "symptom": "Users still see SSN after 'encryption was turned on.'",
+      "check": [
+        "FLS for those users.",
+        "Whether they are supposed to see decrypted values as authorized users."
+      ],
+      "do_not_assume": "Encryption failed; authorized UI access is expected."
+    }
+  ],
+  "production_notes": [
+    "Pilot encryption on synthetic fields; functional impact is real.",
+    "Event log access is itself a privilege.",
+    "This lesson does not authorize Shield purchases or production key rotation."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Shield Platform Encryption primarily protects data…",
+      "options": {
+        "A": "At rest in Salesforce storage, for selected data elements",
+        "B": "By hiding fields from users who have FLS",
+        "C": "By setting OWD to Private",
+        "D": "By disabling MFA"
+      },
+      "answer": "A",
+      "rationale": "Platform Encryption is at-rest protection, not an FLS substitute.",
+      "distractor_explanations": {
+        "B": "Authorized users still see values.",
+        "C": "Sharing.",
+        "D": "Authentication."
+      },
+      "concept": "At rest",
+      "citation_ids": ["SF-HELP-PE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Classic Encryption versus Shield Platform Encryption?",
+      "options": {
+        "A": "They are distinct features; do not treat Classic as Shield",
+        "B": "They are identical SKUs",
+        "C": "Classic includes Event Monitoring",
+        "D": "Shield is only login hours"
+      },
+      "answer": "A",
+      "rationale": "Help distinguishes the two encryption products.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Different products.",
+        "D": "SEC-007."
+      },
+      "concept": "Classic vs Shield",
+      "citation_ids": ["SF-HELP-PE"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Sales has FLS to Amount. Will Platform Encryption hide Amount in Lightning?",
+      "options": {
+        "A": "No. Encryption is not FLS; authorized users still work with decrypted values",
+        "B": "Yes, always",
+        "C": "Yes, and it also sets OWD",
+        "D": "Yes, it removes the permission set"
+      },
+      "answer": "A",
+      "rationale": "UI authorization is still FLS/CRUD.",
+      "distractor_explanations": {
+        "B": "Common misconception.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Encryption ≠ FLS",
+      "citation_ids": ["SF-HELP-PE", "SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Need who-changed-Amount over a long compliance window. First Shield-family name?",
+      "options": {
+        "A": "Field Audit Trail, with retention read from current Help",
+        "B": "A sharing rule",
+        "C": "Login hours",
+        "D": "Guest user sharing rules"
+      },
+      "answer": "A",
+      "rationale": "FAT is the extended field-history product.",
+      "distractor_explanations": {
+        "B": "Record grants.",
+        "C": "When login.",
+        "D": "Experience Cloud guests."
+      },
+      "concept": "FAT",
+      "citation_ids": ["SF-HELP-FAT"]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Need to know who exported a report. Tool?",
+      "options": {
+        "A": "Event Monitoring",
+        "B": "Organization-wide defaults",
+        "C": "with sharing",
+        "D": "Page layout"
+      },
+      "answer": "A",
+      "rationale": "Activity visibility is Event Monitoring.",
+      "distractor_explanations": {
+        "B": "Record baseline.",
+        "C": "Apex sharing.",
+        "D": "UX."
+      },
+      "concept": "Event Monitoring",
+      "citation_ids": ["SF-HELP-EVENT-MON"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Need to stop a risky action, not only log it. Tool?",
+      "options": {
+        "A": "Transaction Security policy if the event is eligible and entitled",
+        "B": "Event Monitoring logs alone",
+        "C": "A permission-set group named Block",
+        "D": "MFA glossary least privilege only"
+      },
+      "answer": "A",
+      "rationale": "Transaction Security can take policy actions; logs by themselves do not block.",
+      "distractor_explanations": {
+        "B": "Visibility only.",
+        "C": "Not a block engine.",
+        "D": "Authorization principle, not an event policy."
+      },
+      "concept": "Block vs log",
+      "citation_ids": ["SF-HELP-TXN-SEC"]
+    },
+    {
+      "id": "Q7",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Event Monitoring versus Transaction Security?",
+      "options": {
+        "A": "Monitoring is visibility; transaction security can evaluate events and act",
+        "B": "They are both OWD",
+        "C": "They both encrypt fields",
+        "D": "They both replace FLS"
+      },
+      "answer": "A",
+      "rationale": "See versus act.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Encryption is PE.",
+        "D": "False."
+      },
+      "concept": "See vs act",
+      "citation_ids": ["SF-HELP-EVENT-MON", "SF-HELP-TXN-SEC"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A blog says Field Audit Trail keeps 10 years. What do you do in this handbook?",
+      "options": {
+        "A": "Treat the number as Needs verification and read Field Audit Trail Help",
+        "B": "Cite the blog as Salesforce Help",
+        "C": "Invent 20 years to be safe",
+        "D": "Ignore FAT entirely"
+      },
+      "answer": "A",
+      "rationale": "No invented limits; official Help only.",
+      "distractor_explanations": {
+        "B": "Marketing/blog is not Help.",
+        "C": "Worse.",
+        "D": "The product still exists."
+      },
+      "concept": "No invented limits",
+      "citation_ids": ["SF-HELP-FAT"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Stakeholder: 'Turn on encryption instead of FLS.' Reply?",
+      "options": {
+        "A": "FLS still decides who sees the value in the app; encryption is at rest",
+        "B": "Agree; encryption hides UI fields",
+        "C": "Agree; encryption sets roles",
+        "D": "Agree; encryption is MFA"
+      },
+      "answer": "A",
+      "rationale": "Two different problems.",
+      "distractor_explanations": {
+        "B": "False for authorized users.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Wrong substitute",
+      "citation_ids": ["SF-HELP-PE", "SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Do Shield products replace record sharing?",
+      "options": {
+        "A": "No. CRUD, FLS, and sharing remain the authorization model",
+        "B": "Yes, Event Monitoring is sharing",
+        "C": "Yes, encryption is OWD",
+        "D": "Yes, FAT assigns profiles"
+      },
+      "answer": "A",
+      "rationale": "Control Who Sees What still applies.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Still the access path",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Setup has no Transaction Security. Best interview move?",
+      "options": {
+        "A": "Record Needs verification of SKU; do not design a fake block policy",
+        "B": "Invent a standard-edition equivalent",
+        "C": "Use a sharing rule as a block",
+        "D": "Disable MFA as a block"
+      },
+      "answer": "A",
+      "rationale": "Honesty plus Help, not fiction.",
+      "distractor_explanations": {
+        "B": "Invented.",
+        "C": "Wrong layer.",
+        "D": "Wrong layer."
+      },
+      "concept": "Missing SKU",
+      "citation_ids": ["SF-HELP-TXN-SEC"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Field Audit Trail versus Event Monitoring?",
+      "options": {
+        "A": "FAT is field value history; Event Monitoring is activity/event logs",
+        "B": "They are the same object",
+        "C": "FAT encrypts disks",
+        "D": "Event Monitoring is Classic Encryption"
+      },
+      "answer": "A",
+      "rationale": "Ledger versus camera tape.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "That is PE.",
+        "D": "False."
+      },
+      "concept": "History vs events",
+      "citation_ids": ["SF-HELP-FAT", "SF-HELP-EVENT-MON"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "pe",
+      "front": "What does Platform Encryption protect?",
+      "back": "Selected data at rest. It is not FLS in the UI."
+    },
+    {
+      "id": "F2",
+      "category": "classic",
+      "front": "Classic Encryption vs Shield?",
+      "back": "Distinct features. Do not treat Classic as Shield Platform Encryption."
+    },
+    {
+      "id": "F3",
+      "category": "fat",
+      "front": "What is Field Audit Trail for?",
+      "back": "Extended field-history auditing. Read Help for retention; do not invent years."
+    },
+    {
+      "id": "F4",
+      "category": "em",
+      "front": "What is Event Monitoring?",
+      "back": "Visibility into org events such as logins and report-related activity listed in Help."
+    },
+    {
+      "id": "F5",
+      "category": "ts",
+      "front": "What is Transaction Security?",
+      "back": "Policies that evaluate events and can notify or block when entitled and eligible."
+    },
+    {
+      "id": "F6",
+      "category": "fls",
+      "front": "Encryption hide Amount from sales?",
+      "back": "No, if they have FLS they still see it. Use FLS (and sharing) for authorization."
+    },
+    {
+      "id": "F7",
+      "category": "see-act",
+      "front": "Logs vs blocks?",
+      "back": "Event Monitoring sees. Transaction Security can act."
+    },
+    {
+      "id": "F8",
+      "category": "limits",
+      "front": "May you quote 70 event types from a blog?",
+      "back": "No. Do not invent counts; use current Help."
+    },
+    {
+      "id": "F9",
+      "category": "sku",
+      "front": "Every org has Shield?",
+      "back": "No. Entitlement is Needs verification."
+    },
+    {
+      "id": "F10",
+      "category": "order",
+      "front": "Does Shield replace sharing?",
+      "back": "No. CRUD, FLS, and record access still come first."
+    },
+    {
+      "id": "F11",
+      "category": "scenario",
+      "front": "Stolen-disk story?",
+      "back": "Platform Encryption (if entitled)."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "Who exported the report?",
+      "back": "Event Monitoring can surface who exported a report when the org is entitled."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Stop the export as it happens?",
+      "back": "Transaction Security if that event is eligible—not a sharing rule."
+    },
+    {
+      "id": "F14",
+      "category": "history",
+      "front": "Standard Field History vs FAT?",
+      "back": "FAT is the Shield long-term/compliance product. They are not automatically the same."
+    },
+    {
+      "id": "F15",
+      "category": "keys",
+      "front": "What does BYOK mean in Shield?",
+      "back": "Bring Your Own Key is a Shield key-management option where entitled; confirm in Help."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Give a Shield overview without inventing limits.",
+      "answer_30_seconds": "Platform Encryption is at rest. Field Audit Trail is field-change history. Event Monitoring is activity logs. Transaction Security can block or alert. Licenses Need verification. None replaces FLS or sharing.",
+      "answer_2_minutes": "I map sentences, not SKU folklore. Rest, ledger, camera, guard. I distinguish Classic Encryption. I say monitoring is not a block. I keep CRUD/FLS/sharing first. If asked for 10 years or 70 events I open Help instead of guessing. That honesty is the interview-ready close.",
+      "example": "Four regulator asks mapped to four products plus FLS for SSN in the UI.",
+      "tradeoffs": [
+        "Buy Shield vs tighten ordinary security first",
+        "Real-time SKU vs daily logs"
+      ],
+      "follow_ups": [
+        "What is Real-Time Event Monitoring?",
+        "What field types encrypt?"
+      ],
+      "weak_answer_warnings": [
+        "Invented numbers"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why is encryption not field-level security?",
+      "answer_30_seconds": "Encryption protects stored bytes. Users who are authorized still see decrypted values in the app. Hiding Amount is FLS (and maybe layout, which is weaker).",
+      "answer_2_minutes": "I tell the stolen-disk versus salesperson story. Platform Encryption is for the disk. FLS is for the person. You often need both: FLS so sales cannot see SSN, encryption so a storage compromise is less catastrophic. I mention possible filter/search limitations from Help after encryption. I do not turn off FLS because encryption is on.",
+      "example": "LAB_AE_East still must lack SSN FLS after LAB_SSN__c is encrypted.",
+      "tradeoffs": [
+        "Functional impact of encryption vs residual UI risk",
+        "Who is allowed to see decrypted values"
+      ],
+      "follow_ups": [
+        "Classic Encryption?",
+        "Files and attachments?"
+      ],
+      "weak_answer_warnings": [
+        "Encryption hides UI fields"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Regulator wants report-export visibility and a block on a suspicious export pattern. Design?",
+      "answer_30_seconds": "Event Monitoring for visibility. Transaction Security for a block if the event is eligible and licensed. Least-privilege export permissions still first. Not OWD.",
+      "answer_2_minutes": "Situation: data loss worry. Task: see and maybe stop. Action: shrink who has export user permissions, enable Event Monitoring if entitled, add a Transaction Security policy only after Help lists the event. Test in disposable org. Result: we can answer who exported, and we only claim a block if the SKU and event match. I will not promise a number of event types.",
+      "example": "LAB report export in logs; policy only if Setup shows an eligible event.",
+      "tradeoffs": [
+        "Block false positives vs data loss",
+        "Permission reduction vs monitoring-only"
+      ],
+      "follow_ups": [
+        "What if Transaction Security is missing?",
+        "SIEM export?"
+      ],
+      "weak_answer_warnings": [
+        "Sharing rule as a block"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "They want Amount history for years. Standard Field History is already on. What do you say?",
+      "answer_30_seconds": "Standard Field History is not Field Audit Trail. FAT is the Shield product for extended auditing. I will read FAT Help for retention instead of quoting a blog.",
+      "answer_2_minutes": "I inspect whether FAT is entitled. If not, I present a gap: ordinary history may not meet the regulation. I do not invent 10 years. I also check which objects/fields FAT supports in Help. Encryption and FAT are complementary, not substitutes. Result: a written gap or a Help-cited retention design, never a marketing number in the SOW.",
+      "example": "Opportunity Amount: FHT on versus FAT not licensed—Needs verification recorded.",
+      "tradeoffs": [
+        "Buy FAT vs accept shorter history",
+        "Which fields are worth tracking"
+      ],
+      "follow_ups": [
+        "Storage impact?",
+        "How do you report on FAT?"
+      ],
+      "weak_answer_warnings": [
+        "Promising 10 years from memory"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Users cannot filter on a newly encrypted field. Diagnose.",
+      "answer_30_seconds": "Check Help limitations for that encrypted field type. This may be expected. Do not decrypt production to 'fix reports' without a design review. Confirm encryption was even the right control versus FLS.",
+      "answer_2_minutes": "Situation: report breakage after encryption. Task: separate expected limitation from misconfiguration. Action: field type versus supported list, deterministic encryption options if Help describes them for that use case—without inventing option names. If they only needed UI hide, FLS would have avoided the filter loss. Result: either an accepted limitation, a Help-supported encryption scheme, or a rollback in the lab.",
+      "example": "LAB custom text field encrypted; list view filter fails as documented.",
+      "tradeoffs": [
+        "At-rest protection vs report filterability",
+        "Deterministic vs probabilistic schemes if Help offers them"
+      ],
+      "follow_ups": [
+        "What is deterministic encryption? (verify Help)",
+        "Can we encrypt a different field?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Salesforce broken"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "design",
+      "question": "How do you place Shield on the security access path?",
+      "answer_30_seconds": "After authentication and authorization: encryption wraps stored data, FAT records field changes, monitoring records actions, transaction security may intercept actions. Sharing still decides rows.",
+      "answer_2_minutes": "I would not start an access-path interview with Shield. Login, permissions, FLS, OWD, then Shield overlays. Guest Experience Cloud is still guest sharing rules, not encryption. Apex without sharing is still a leak path encryption will not fix in the UI. That sequencing shows architecture judgment.",
+      "example": "SEC-010-style walk: LAB_AE_East FLS, then encrypt SSN, then monitor exports.",
+      "tradeoffs": [
+        "Defense in depth vs overlapping tools",
+        "Cost of SKUs vs ordinary least privilege"
+      ],
+      "follow_ups": [
+        "Where does MFA sit?",
+        "Where does restriction sit?"
+      ],
+      "weak_answer_warnings": [
+        "Shield replaces the access path"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Leadership bought Event Monitoring and still had a data leak via a permission set. What failed?",
+      "answer_30_seconds": "Monitoring without least privilege. Logs do not prevent a user who already has export and object access. Transaction Security or removing the permission would have been the control, plus FLS/sharing.",
+      "answer_2_minutes": "Situation: cameras without locks. Task: fix authorization. Action: who had export, object Read, and broad sharing. Tighten permission sets, consider a policy if eligible, keep monitoring for after-the-fact. Result: we stop treating Event Monitoring as a sharing model. I would still use the logs to see what left.",
+      "example": "LAB_Analyst had export plus too much object access; logs showed the export after the fact.",
+      "tradeoffs": [
+        "Detect vs prevent",
+        "Policy false positives vs open exports"
+      ],
+      "follow_ups": [
+        "Which user permission is export? (verify name in org)",
+        "Folder access vs object access?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Shield for not being FLS"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the vault-room analogy, then break it, and refuse invented numbers.",
+      "answer_30_seconds": "Steel is encryption, ledger is FAT, cameras are Event Monitoring, guard is Transaction Security, teller badge is FLS. It breaks when encrypted fields lose filters, when logs are not real-time, and when Classic Encryption is confused with Shield.",
+      "answer_2_minutes": "I walk the regulator through four rooms. I then say the teller still sees cash with a badge. I refuse 10 years and 70 events. I say SKUs Need verification. Close: ordinary Salesforce security still comes first.",
+      "example": "Four asks, four products, FLS for SSN, no blog numbers on the whiteboard.",
+      "tradeoffs": [
+        "Memorable vs precise Help",
+        "Buying Shield vs doing FLS"
+      ],
+      "follow_ups": [
+        "BYOK?",
+        "Data Detect?"
+      ],
+      "weak_answer_warnings": [
+        "A generic teaching metaphor",
+        "Marketing statistics"
+      ]
+    }
+  ]
+}

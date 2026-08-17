@@ -1,0 +1,982 @@
+{
+  "topic_id": "APP-005",
+  "slug": "tasks-events-chatter-email-integration-calendar-integra",
+  "title": "Tasks, events, Chatter, email integration, calendar integration, and Salesforce mobile",
+  "track": "Sales, service, and productivity applications",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APP-004"
+  ],
+  "objectives": [
+    "Distinguish Task (due-dated to-do) from Event (start/end calendar block) as Activity records related to people and deals.",
+    "Place Chatter as the in-org feed and groups product, not as email and not as Knowledge.",
+    "Explain email and calendar integration as sync/compose bridges to the Activity timeline, not as a second CRM.",
+    "State what Salesforce mobile is for (on-the-go Accounts, Contacts, Leads, Opportunities, Tasks, Events) without inventing offline limits."
+  ],
+  "diagnostic_question": "A seller wants calls logged, a meeting on a shared calendar, a deal discussion visible to the account team, Outlook compose with logging, and phone updates at the airport. Which of Task, Event, Chatter, email integration, calendar integration, or Salesforce mobile do you pick for each, and what would you refuse to fake with a custom object?",
+  "definition": "Productivity layer on top of APP-001 records: Tasks are to-dos with due dates; Events are calendar blocks with start and end; both appear on the activity timeline. Chatter is the internal feed, groups, and @mentions product. Email and calendar integration connect Outlook/Gmail/calendar to Salesforce so messages and meetings can log as activities. The Salesforce mobile app lets sellers track and update accounts, contacts, leads, and opportunities, make calls, send emails, and act on upcoming tasks and events while away from the desktop. ([Salesforce Help Sales / mobile](https://help.salesforce.com/s/products/sales); [Stage/forecast mapping still uses Activities as work evidence](https://help.salesforce.com/s/articleView?id=sf.faq_forecasts_category_mapping.htm))",
+  "why_it_matters": "Interviewers fail people who create a custom Meeting object, who treat Chatter as email, who think Salesforce mobile is a different data model, or who add Opportunity Stages to track calls (APP-002). Duplicate meetings from calendar sync and unlogged emails are the production pain.",
+  "sixty_second_explanation": "Think of a newsroom. A Task is an assignment on the reporter's list with a due time. An Event is a live broadcast slot with a start and end. Chatter is the newsroom wall—@mentions and group threads, not the wire service. Email integration is the correspondent's mailbox that can file a copy on the story. Calendar integration is the studio booking board. Salesforce mobile is the reporter's phone in the field, updating the same stories—not a second newsroom.",
+  "deeper_explanation": [
+    "Tasks and Events are Activities related to Who (Lead/Contact) and What (Account, Opportunity, Case, and other WhatId targets). A Task has a due date and status; an Event has StartDateTime and EndDateTime. Neither is a Chatter post. APP-002 already warned: do not invent Stages to mean 'we called them.'",
+    "Chatter is collaboration in the org: record feeds, groups, @mentions. It is not Knowledge publication (APP-004), not Files libraries (APP-006), and not Outlook. Feed tracking is metadata; posts are data.",
+    "Email integration (Outlook/Gmail integrations, Lightning Email, Einstein Activity Capture as a neighboring product) exists so sellers can send or log email against records. Do not invent capture-delay minutes. Calendar integration creates or syncs Events; double-booking and private-event behavior are Needs verification per the connector in the org.",
+    "Salesforce Help describes a seller-focused mobile experience: track and update accounts, contacts, leads, and opportunities; make calls; send emails; see and act on upcoming tasks and events in the activity timeline. Compact layouts and mobile navigation are metadata. The app is not a separate database. ([Sales Help hub](https://help.salesforce.com/s/products/sales))",
+    "Einstein Copilot and Inbox are mentioned on the Sales Help hub as adjacent productivity; this lesson does not claim their licensing. Offline mobile behavior, exact Outlook add-in names, and EAC vs manual logging: Needs verification in the target org."
+  ],
+  "mental_model": {
+    "analogy": "A newsroom: Task = assignment on the list, Event = broadcast slot with start/end, Chatter = the wall, email integration = correspondent mailbox filing a copy, calendar integration = studio booking board, Salesforce mobile = field reporter phone on the same stories.",
+    "useful_mapping": [
+      "Task → due-dated to-do on Who/What",
+      "Event → calendar block on Who/What",
+      "Activity timeline → the story's work history",
+      "Chatter post → internal wall thread, not a Task",
+      "Email logged → often a Task of type Email (product-dependent)",
+      "Calendar sync → Event records",
+      "Salesforce mobile → same objects, compact layouts",
+      "Custom Meeting object → usually the wrong newsroom"
+    ],
+    "where_it_breaks": [
+      "Some email products log as EmailMessage, not Task—do not swear it is always a Task.",
+      "Chatter files vs Salesforce Files (APP-006) overlap in UX.",
+      "Mobile offline drafts may exist; do not invent conflict rules.",
+      "The analogy does not encode sharing of private events or legal hold."
+    ]
+  },
+  "teach_back_prompt": "Explain Task versus Event versus Chatter to a seller who wants a custom Meeting object, then say what Salesforce mobile does not change about the data model.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Task vs Event vs Chatter in one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Map five seller asks to the six tools in this title."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why mobile is not a second CRM."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose duplicate Events after calendar sync."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: activities, Chatter, integrations, mobile."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-SALES-HUB",
+      "title": "Salesforce Help | Sales",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/products/sales",
+      "supports": "Seller-focused mobile: track/update accounts, contacts, leads, opportunities; calls; emails; upcoming tasks and events on the activity timeline.",
+      "release_or_version": "Summer '26 help hub",
+      "last_verified": "2026-08-16",
+      "limits": "Hub page is overview; connector-specific articles must be used for Outlook/Gmail exact steps."
+    },
+    {
+      "source_id": "SF-HELP-FORECAST-MAP",
+      "title": "Manage Opportunity Stage to Forecast Category Mappings for Pipeline Forecasts",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.faq_forecasts_category_mapping.htm",
+      "supports": "Stage/forecast remain separate from work logging; this lesson uses that boundary so calls are Activities not new Stages.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not document Outlook connectors."
+    },
+    {
+      "source_id": "SF-HELP-LEAD-SETTINGS",
+      "title": "Define Default Settings for Lead Creation",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.customize_leadsettings.htm",
+      "supports": "Leads remain a first-class object sellers update on mobile and via activities; Lead Settings are not replaced by Chatter.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Not an activities feature page; used as object-boundary evidence with APP-001."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Task vs Event",
+        "Chatter vs email",
+        "Email integration",
+        "Calendar integration",
+        "Salesforce mobile same data",
+        "Not a new Stage"
+      ],
+      "accessible_description": "Portrait map: Tasks and Events on the timeline; Chatter is the wall; email and calendar connectors log work; mobile uses the same objects."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-SALES-HUB",
+        "SF-HELP-FORECAST-MAP",
+        "SF-HELP-LEAD-SETTINGS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "How work shows up on a record"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Rec[Lead Account Contact Opportunity Case] --> WhoWhat[WhoId / WhatId]\n  Task[Task due-dated assignment] --> WhoWhat\n  Ev[Event start-end broadcast slot] --> WhoWhat\n  Task --> TL[Activity timeline]\n  Ev --> TL\n  Mail[Email integration] --> Log[Logged email activity]\n  Cal[Calendar integration] --> Ev\n  Chat[Chatter wall] --> Feed[Record or group feed]\n  Mob[Salesforce mobile] --> Rec\n  Mob --> TL",
+      "decision": "flowchart TD\n  Need[Seller productivity ask] --> Q1{What is the work?}\n  Q1 -->|To-do with a due date| Task[Task]\n  Q1 -->|Meeting with start and end| Ev[Event plus calendar integration if they live in Outlook/Google]\n  Q1 -->|Internal discussion not a to-do| Chat[Chatter post or group]\n  Q1 -->|Send or file an email on the record| Email[Email integration / Lightning Email]\n  Q1 -->|Update CRM at the airport| Mob[Salesforce mobile same objects]\n  Q1 -->|Track that we called them in pipeline| Act[Log Activity never a new Stage APP-002]\n  Q1 -->|Approved SOP for all agents| Know[Knowledge APP-004 not Chatter]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "The Salesforce mobile seller experience is described as tracking and updating accounts, contacts, leads, and opportunities, making calls, sending emails, and seeing and acting on upcoming tasks and events in the activity timeline.",
+      "source_ids": ["SF-HELP-SALES-HUB"],
+      "scope": "Salesforce mobile",
+      "validation": "Salesforce Help Sales hub, Seller-Focused Mobile Experience paragraph.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Opportunity Stage changes affect probability and forecast category. Logging work should use Activities rather than inventing Stages for calls.",
+      "source_ids": ["SF-HELP-FORECAST-MAP"],
+      "scope": "Activities vs stages",
+      "validation": "Stage-to-forecast mapping Help; APP-002 boundary reused here.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Leads remain a first-class sales object with Setup (Lead Settings). Mobile and activity logging do not replace Lead as the capture object.",
+      "source_ids": ["SF-HELP-LEAD-SETTINGS"],
+      "scope": "Lead object boundary",
+      "validation": "Define Default Settings for Lead Creation.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Outlook/Gmail connectors, Einstein Activity Capture, and mobile offline continue to change; reverify the exact integration product name in the org for Summer '26.",
+  "unresolved_uncertainty": [
+    "Whether logged email is Task, EmailMessage, or both depends on the integration product—Needs verification.",
+    "Einstein Activity Capture sharing and excluded addresses are neighboring and not fully specified here."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Task",
+      "telugu": "గడువు ఉన్న చేయాల్సిన పని రికార్డు."
+    },
+    {
+      "english": "Event",
+      "telugu": "ప్రారంభం మరియు ముగింపు ఉన్న క్యాలెండర్ స్లాట్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Tasks are due-dated to-dos. Events are start/end meetings. Chatter is the internal wall. Email and calendar integrations log work onto records. Salesforce mobile updates the same Accounts, Contacts, Leads, Opportunities, Tasks, and Events—not a second CRM. Do not fake calls with a new Stage.",
+    "two_minutes": "I refuse a custom Meeting object unless there is a true data-model gap. I relate Activities via Who and What. I keep Knowledge and Files in their topics. I ask which Outlook/Gmail product they actually bought before promising capture. On mobile I talk compact layouts and the activity timeline from Help, not invented offline SLAs. Lead Settings still own Lead capture defaults."
+  },
+  "terminology": [
+    {
+      "term": "Task",
+      "plain": "A to-do with a due date and status, related to a person and/or a record.",
+      "precise": "Activity subtype. Status/Priority/DueDate. Appears on the activity timeline. Not an Event and not a Chatter post.",
+      "example": "Task LAB_Call Maya due tomorrow, related to Lead LAB_Maya.",
+      "non_example": "Opportunity Stage 'Called' with no Task.",
+      "confusable_neighbor": "Event: has start and end, not just due date.",
+      "boundary": "Recurring tasks and series: reverify in current Help."
+    },
+    {
+      "term": "Event",
+      "plain": "A meeting or appointment with a start and end time.",
+      "precise": "Activity subtype on the calendar and timeline. Calendar integration often creates these. Invitees may be Contacts/Leads/Users depending on product.",
+      "example": "Event LAB_Discovery 10:00–10:30 related to Opportunity LAB_Northwind Q3.",
+      "non_example": "A Chatter post 'we meet at 10.'",
+      "confusable_neighbor": "Task: no start/end block.",
+      "boundary": "Private events and Group Events: Needs verification per edition."
+    },
+    {
+      "term": "Chatter",
+      "plain": "The in-Salesforce feed: posts, comments, @mentions, groups.",
+      "precise": "Collaboration product on records and groups. Not email, not Knowledge, not a Task. Feed tracking is metadata.",
+      "example": "@mention AE on Account LAB_Northwind feed about legal review.",
+      "non_example": "An Outlook email to the account team with no Salesforce log.",
+      "confusable_neighbor": "Case comment / Knowledge article.",
+      "boundary": "Chatter vs Slack Salesforce integrations are neighboring."
+    },
+    {
+      "term": "Email integration",
+      "plain": "Connecting Outlook or Gmail so sellers can send/log email on Salesforce records.",
+      "precise": "A family of products (Lightning Email, add-ins, EAC). Logs work onto the timeline. Not a second CRM. Exact object written (Task vs EmailMessage) is product-specific.",
+      "example": "Seller sends from Outlook with LAB_Northwind Opportunity selected to log.",
+      "non_example": "Forwarding customer mail to a personal inbox with no logging.",
+      "confusable_neighbor": "Email-to-Case (APP-003): service capture, not seller productivity.",
+      "boundary": "EAC sharing model: Needs verification."
+    },
+    {
+      "term": "Calendar integration",
+      "plain": "Syncing or creating Salesforce Events from Outlook/Google calendar.",
+      "precise": "Keeps meeting blocks aligned. Risk: duplicates if two syncs fight. Not Tasks.",
+      "example": "Outlook appointment with Contact LAB_Maya creates Event on the Contact.",
+      "non_example": "A Task due at 10:00 used as the meeting.",
+      "confusable_neighbor": "Salesforce calendar UI without an external connector.",
+      "boundary": "Which direction syncs, and private events: Needs verification."
+    },
+    {
+      "term": "Salesforce mobile",
+      "plain": "The official phone app that uses the same CRM records.",
+      "precise": "Help: update accounts, contacts, leads, opportunities; calls; emails; upcoming tasks and events on the activity timeline. Compact layouts and navigation are metadata.",
+      "example": "AE updates Opportunity Amount in the airport using the mobile app.",
+      "non_example": "A spreadsheet on the phone treated as offline CRM.",
+      "confusable_neighbor": "Experience Cloud mobile site for customers.",
+      "boundary": "Offline, branding, and Mobile Publisher: neighboring."
+    },
+    {
+      "term": "Activity timeline",
+      "plain": "The chronological work history on a record.",
+      "precise": "Shows Tasks, Events, and logged emails (as configured). Mobile Help calls out acting on upcoming tasks and events here.",
+      "example": "Opportunity LAB_Northwind Q3 timeline shows discovery Event and follow-up Task.",
+      "non_example": "A report of all Tasks in the org.",
+      "confusable_neighbor": "Chatter feed: collaboration, can be adjacent on the page.",
+      "boundary": "Timeline filters and EAC captured activities: product-specific."
+    },
+    {
+      "term": "Compact layout",
+      "plain": "The handful of fields mobile (and some highlights) show first.",
+      "precise": "Metadata on the object. Changing it is not a mobile app install. Does not change sharing.",
+      "example": "Contact compact layout: Name, Phone, Email, Account.",
+      "non_example": "A page layout with 80 fields expected to be usable on a phone.",
+      "confusable_neighbor": "Page layout / Lightning record page.",
+      "boundary": "Dynamic forms on mobile: Needs verification."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Model the work as Activities",
+      "actor": "Admin + sales ops",
+      "trigger": "Calls and meetings must be visible",
+      "before": "Stages or custom objects fake the work",
+      "after": "Task and Event record types, Who/What populated",
+      "observe": "LAB_ discovery Event on the Opportunity timeline",
+      "failure": "Custom Meeting__c with no timeline"
+    },
+    {
+      "step": 2,
+      "transition": "Add the wall",
+      "actor": "Admin",
+      "trigger": "Account team needs discussion",
+      "before": "Email-only side threads",
+      "after": "Chatter enabled on the object, group for the team if needed",
+      "observe": "@mention appears on the record feed",
+      "failure": "Using Knowledge drafts for chatter"
+    },
+    {
+      "step": 3,
+      "transition": "Connect mailbox and calendar",
+      "actor": "Admin + IT",
+      "trigger": "Sellers live in Outlook/Google",
+      "before": "Manual logging only",
+      "after": "Chosen official connector in sandbox, duplicate rules understood",
+      "observe": "A LAB_ test send appears on the timeline",
+      "failure": "Two capture products at once creating duplicates"
+    },
+    {
+      "step": 4,
+      "transition": "Enable the field phone",
+      "actor": "Admin",
+      "trigger": "Work happens away from desktop",
+      "before": "Desktop layouts on a 6-inch screen",
+      "after": "Mobile navigation, compact layouts, essential actions",
+      "observe": "Lead, Opportunity, Task, Event usable on a handset",
+      "failure": "A second custom mobile database"
+    }
+  ],
+  "when_to_use": [
+    "When a seller must log a due-dated Task or a start/end Event on a Lead, Contact, Account, Opportunity, or Case.",
+    "When the account team needs Chatter discussion rather than an email-only side thread.",
+    "When Outlook or Gmail should log email or calendar meetings onto the Salesforce activity timeline.",
+    "When sellers need Salesforce mobile to update the same accounts, contacts, leads, opportunities, tasks, and events in the field."
+  ],
+  "when_not_to_use": [
+    "Do not create a custom Meeting object to replace Event, or a new Opportunity Stage to mean a Task was completed.",
+    "Do not use Chatter as Knowledge (APP-004) or as Email-to-Case (APP-003).",
+    "Do not treat Salesforce mobile as a different data model or a substitute for compact layouts.",
+    "Do not run two email-capture products without a duplicate plan, or promise Einstein Activity Capture details without reading that product's Help."
+  ],
+  "configuration_or_code_location": [
+    "Object Manager → Task / Event; Activity settings; Who/What related lists.",
+    "Setup → Chatter; feed tracking.",
+    "Setup → Email and calendar integration products actually licensed (names vary).",
+    "Setup → Salesforce mobile app, navigation, compact layouts."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox LAB_ sales: AE must call Maya (Lead), hold a 30-minute discovery on Northwind Opportunity, discuss legal on the Account feed, log the invite from Outlook if available, and update Amount from a phone. No production mailbox changes.",
+    "inputs": [
+      "Lead LAB_Maya, Opportunity LAB_Northwind Q3, Account LAB_Northwind",
+      "Task and Event create rights",
+      "Chatter on Account",
+      "Mobile app on a test user"
+    ],
+    "decisions": [
+      {
+        "decision": "Call = Task; discovery = Event; legal thread = Chatter; no new Stage.",
+        "because": "Activities vs forecast mapping boundary from APP-002/Help.",
+        "rejected": "Stage 'Discovery Call Held'"
+      },
+      {
+        "decision": "Use Salesforce mobile to edit Opportunity fields and complete the Task; same records.",
+        "because": "Sales Help hub describes mobile updates plus tasks/events on the timeline.",
+        "rejected": "A spreadsheet as offline system of record"
+      },
+      {
+        "decision": "If Outlook integration is not licensed, create the Event in Salesforce rather than inventing capture.",
+        "because": "Do not claim a connector that is not there.",
+        "rejected": "Installing an unofficial sync tool in production"
+      }
+    ],
+    "configuration_or_code": [
+      "Create Task LAB_Call Maya on the Lead.",
+      "Create Event LAB_Discovery on the Opportunity with start/end.",
+      "Chatter post on Account with @mention.",
+      "Open the same Opportunity in Salesforce mobile; change a LAB_ field; complete the Task."
+    ],
+    "output": "Timeline shows Task and Event; Account feed shows Chatter; mobile shows the same Opportunity Amount.",
+    "verification": [
+      "Event has start and end; Task has due date.",
+      "No extra Opportunity Stage values were added.",
+      "Mobile compact layout shows the fields the AE needs, or you document the gap."
+    ],
+    "self_explanation": "I mapped each ask to Task, Event, Chatter, or mobile. I did not fake meetings with a custom object."
+  },
+  "hands_on_lab": {
+    "environment": "Sandbox plus Salesforce mobile app on a personal test user; LAB_ records only.",
+    "starting_state_checks": [
+      "You can create Tasks and Events.",
+      "Do not connect a production mailbox."
+    ],
+    "steps": [
+      "Create a LAB_ Task on a Lead and a LAB_ Event on an Opportunity with explicit start and end.",
+      "Post a Chatter message on the related Account.",
+      "Open both records in Salesforce mobile (or Lightning with mobile preview if the store app is blocked) and complete the Task.",
+      "Write one sentence on whether email/calendar integration exists in this org—do not enable it in production."
+    ],
+    "guided_completion": [
+      "If Events lack start/end, you created a Task.",
+      "If mobile shows too many fields, inspect compact layout rather than blaming the app binary."
+    ],
+    "independent_challenge": "Explain to sales ops why Email-to-Case is the wrong product for AE mailbox logging.",
+    "evidence": [
+      "Timeline screenshot with LAB_ Task and Event.",
+      "Note: mobile uses the same Opportunity Id."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ activities.",
+      "Disconnect any sandbox-only email connector you added."
+    ],
+    "limitations": "May not prove Outlook add-in or EAC."
+  },
+  "decision_table": [
+    {
+      "signal": "Need a due-dated call-back on a Lead.",
+      "choose": "A Task related to the Lead (WhoId).",
+      "not": "A new Opportunity Stage or a Chatter post only.",
+      "why": "Tasks are to-dos; Stages drive forecasts (APP-002)."
+    },
+    {
+      "signal": "Need a 30-minute discovery on an Opportunity that should appear on calendars.",
+      "choose": "An Event with start and end, plus calendar integration if they live in Outlook/Google.",
+      "not": "A Task due at 10:00 pretending to be a meeting block.",
+      "why": "Events are calendar blocks; Help's mobile story includes upcoming events."
+    },
+    {
+      "signal": "Account team must discuss legally in Salesforce, not only in a side email.",
+      "choose": "Chatter on the Account (and a private group if needed).",
+      "not": "Knowledge articles or Email-to-Case.",
+      "why": "Chatter is the in-org wall; Knowledge is SOPs; Email-to-Case is service capture."
+    },
+    {
+      "signal": "Sellers will not leave Outlook to type a Task after every send.",
+      "choose": "Official email integration for the licensed product; test logging on LAB_ records.",
+      "not": "A second unofficial capture tool alongside EAC without a duplicate plan.",
+      "why": "Duplicate timeline noise is the usual failure; product names must match the org."
+    },
+    {
+      "signal": "AE updates deals and completes tasks at the airport.",
+      "choose": "Salesforce mobile with compact layouts on Account, Contact, Lead, Opportunity, Task, Event.",
+      "not": "A separate mobile database or a desktop page layout with 80 fields.",
+      "why": "Help describes the mobile seller experience on those objects and the activity timeline."
+    }
+  ],
+  "limitations": [
+    "Does not configure Einstein Activity Capture sharing tables.",
+    "Does not configure Email-to-Case (APP-003).",
+    "Does not document offline conflict resolution.",
+    "Connector names vary; reverify."
+  ],
+  "security_notes": [
+    "Logged email can store customer PII on the timeline—review who sees Activities.",
+    "Chatter groups can leak if they are public.",
+    "Mobile devices need MDM per company policy; this lesson does not set MDM."
+  ],
+  "common_mistakes": [
+    "Custom Meeting object.",
+    "Stage named Called.",
+    "Chatter as Knowledge.",
+    "Email-to-Case for AE mailboxes.",
+    "Assuming mobile is a different org."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Duplicate Events after enabling calendar sync.",
+      "check": [
+        "Two connectors both creating Events",
+        "Salesforce calendar plus Outlook both saving",
+        "WhoId/WhatId matching"
+      ],
+      "do_not_assume": "The Event object is broken."
+    },
+    {
+      "symptom": "Email sent from Outlook not on the Opportunity.",
+      "check": [
+        "Whether the integration product is assigned to the user",
+        "Whether they selected a related record",
+        "EAC vs manual log mode"
+      ],
+      "do_not_assume": "Sharing hid it before checking it was logged."
+    },
+    {
+      "symptom": "Mobile missing Phone on Contact.",
+      "check": [
+        "Compact layout",
+        "Mobile card / Lightning page",
+        "FLS"
+      ],
+      "do_not_assume": "The app cannot show Phone."
+    }
+  ],
+  "production_notes": [
+    "Pilot email/calendar integration in sandbox with LAB_ addresses.",
+    "Train compact layouts before a mobile rollout.",
+    "Do not enable two capture products on the same users without a design."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which objects does the Sales Help hub mention for the seller mobile experience?",
+      "options": {
+        "A": "Accounts, contacts, leads, and opportunities, plus tasks and events on the activity timeline",
+        "B": "Only custom Meeting__c",
+        "C": "Only Forecasts tab",
+        "D": "Only Price Books"
+      },
+      "answer": "A",
+      "rationale": "Help: track and update accounts, contacts, leads, and opportunities; upcoming tasks and events in the activity timeline.",
+      "distractor_explanations": {
+        "B": "Custom objects are the anti-pattern.",
+        "C": "Forecasts are APP-002.",
+        "D": "APP-001."
+      },
+      "concept": "Mobile objects",
+      "citation_ids": ["SF-HELP-SALES-HUB"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Task versus Event?",
+      "options": {
+        "A": "Task is due-dated to-do; Event has start and end",
+        "B": "They are both Chatter posts",
+        "C": "Event has no times",
+        "D": "Task is only for Cases"
+      },
+      "answer": "A",
+      "rationale": "Standard Activity split used throughout this lesson.",
+      "distractor_explanations": {
+        "B": "Chatter is separate.",
+        "C": "Opposite.",
+        "D": "Tasks relate to many WhatId types."
+      },
+      "concept": "Task vs Event",
+      "citation_ids": ["SF-HELP-SALES-HUB"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Sales wants a Stage named Left Voicemail for forecasting. What should you do?",
+      "options": {
+        "A": "Log a Task instead; Stage changes probability and Forecast Category",
+        "B": "Always add the Stage",
+        "C": "Use Web-to-Case",
+        "D": "Use a Price Book"
+      },
+      "answer": "A",
+      "rationale": "Stage mapping Help: Stage changes probability and forecast category. Calls are Activities.",
+      "distractor_explanations": {
+        "B": "Pollutes APP-002 forecasts.",
+        "C": "Service capture.",
+        "D": "Catalog."
+      },
+      "concept": "Not a stage",
+      "citation_ids": ["SF-HELP-FORECAST-MAP"]
+    },
+    {
+      "id": "Q4",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Chatter versus email integration?",
+      "options": {
+        "A": "Chatter is the in-org feed; email integration logs mailbox messages onto records",
+        "B": "They are the same connector",
+        "C": "Chatter replaces Leads",
+        "D": "Email integration publishes Knowledge"
+      },
+      "answer": "A",
+      "rationale": "This lesson's split. Lead Settings still own Lead capture.",
+      "distractor_explanations": {
+        "B": "Different products.",
+        "C": "Leads remain objects (Lead Settings).",
+        "D": "Knowledge is APP-004."
+      },
+      "concept": "Chatter vs email",
+      "citation_ids": ["SF-HELP-LEAD-SETTINGS"]
+    },
+    {
+      "id": "Q5",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Email integration versus Email-to-Case?",
+      "options": {
+        "A": "Email integration is seller productivity logging; Email-to-Case is service capture creating Cases",
+        "B": "They are identical",
+        "C": "Email-to-Case creates Events only",
+        "D": "Email integration creates Entitlements"
+      },
+      "answer": "A",
+      "rationale": "APP-003 vs this topic. Mixing them is a common design error.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Email-to-Case creates Cases.",
+        "D": "APP-004."
+      },
+      "concept": "Two email products",
+      "citation_ids": ["SF-HELP-SALES-HUB"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "AE cannot see Phone on Contact in the mobile app. First metadata check?",
+      "options": {
+        "A": "Compact layout (and FLS), not a different Salesforce org",
+        "B": "Forecast Settings",
+        "C": "Web-to-Lead HTML",
+        "D": "Price Book Active"
+      },
+      "answer": "A",
+      "rationale": "Mobile uses compact layouts on the same Contact object.",
+      "distractor_explanations": {
+        "B": "APP-002.",
+        "C": "APP-001.",
+        "D": "APP-001."
+      },
+      "concept": "Compact layout",
+      "citation_ids": ["SF-HELP-SALES-HUB"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Need a meeting on both Outlook and the Opportunity. What record type?",
+      "options": {
+        "A": "Event, with calendar integration if licensed",
+        "B": "Task only",
+        "C": "Campaign only",
+        "D": "Quote only"
+      },
+      "answer": "A",
+      "rationale": "Events are calendar blocks; calendar integration syncs them.",
+      "distractor_explanations": {
+        "B": "No start/end block.",
+        "C": "Marketing roster.",
+        "D": "Offer record."
+      },
+      "concept": "Calendar Event",
+      "citation_ids": ["SF-HELP-SALES-HUB"]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Does Salesforce mobile use different Account records than desktop?",
+      "options": {
+        "A": "No. It updates the same accounts, contacts, leads, and opportunities",
+        "B": "Yes, a shadow database",
+        "C": "Yes, only Person Accounts",
+        "D": "Yes, only Campaigns"
+      },
+      "answer": "A",
+      "rationale": "Help describes tracking and updating those CRM objects from mobile.",
+      "distractor_explanations": {
+        "B": "Interview fail.",
+        "C": "Person Accounts are APP-001, not a mobile-only model.",
+        "D": "Campaigns are not the hub's list."
+      },
+      "concept": "Same data model",
+      "citation_ids": ["SF-HELP-SALES-HUB"]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Internal 'did legal review this?' belongs where first?",
+      "options": {
+        "A": "Chatter on the Account or a private group",
+        "B": "A new Forecast Category",
+        "C": "Web-to-Case HTML",
+        "D": "A Price Book"
+      },
+      "answer": "A",
+      "rationale": "Chatter is the in-org discussion product.",
+      "distractor_explanations": {
+        "B": "APP-002.",
+        "C": "APP-003.",
+        "D": "APP-001."
+      },
+      "concept": "Chatter discussion",
+      "citation_ids": ["SF-HELP-SALES-HUB"]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Two email capture products on the same user. Risk?",
+      "options": {
+        "A": "Duplicate activities on the timeline",
+        "B": "Lead conversion mapping breaks automatically",
+        "C": "Milestones cap becomes 11",
+        "D": "Quotes disable"
+      },
+      "answer": "A",
+      "rationale": "This lesson's operational warning: two loggers, two records.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "APP-004.",
+        "D": "Unrelated."
+      },
+      "concept": "Duplicate capture",
+      "citation_ids": ["SF-HELP-SALES-HUB"]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do upcoming tasks and events show in the mobile seller story?",
+      "options": {
+        "A": "The activity timeline",
+        "B": "The Forecasts omitted bucket",
+        "C": "Map Lead Fields",
+        "D": "ContentDistribution"
+      },
+      "answer": "A",
+      "rationale": "Help: see and act on upcoming tasks and events in the activity timeline.",
+      "distractor_explanations": {
+        "B": "APP-002.",
+        "C": "APP-001.",
+        "D": "APP-006."
+      },
+      "concept": "Mobile timeline",
+      "citation_ids": ["SF-HELP-SALES-HUB"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A custom Meeting__c is proposed because 'Events are too simple.' First response?",
+      "options": {
+        "A": "Challenge it: Events plus calendar integration and the timeline are the supported meeting model",
+        "B": "Always agree",
+        "C": "Store meetings as Campaigns",
+        "D": "Store meetings as Price Books"
+      },
+      "answer": "A",
+      "rationale": "Custom meeting objects fall off mobile timeline and connectors.",
+      "distractor_explanations": {
+        "B": "Usually wrong.",
+        "C": "Wrong object.",
+        "D": "Wrong object."
+      },
+      "concept": "No custom meeting",
+      "citation_ids": ["SF-HELP-SALES-HUB"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "task",
+      "front": "What is a Task?",
+      "back": "A due-dated to-do Activity related to Who/What—not an Event and not Chatter."
+    },
+    {
+      "id": "F2",
+      "category": "event",
+      "front": "What is an Event?",
+      "back": "A calendar Activity with start and end, shown on the timeline and in calendar integration."
+    },
+    {
+      "id": "F3",
+      "category": "chatter",
+      "front": "What is Chatter for?",
+      "back": "In-org feeds, groups, and @mentions—not email, Knowledge, or Tasks."
+    },
+    {
+      "id": "F4",
+      "category": "email",
+      "front": "Email integration versus Email-to-Case?",
+      "back": "Seller logging onto records versus service capture that creates Cases."
+    },
+    {
+      "id": "F5",
+      "category": "calendar",
+      "front": "What does calendar integration primarily create?",
+      "back": "Event records (meeting blocks), not Tasks."
+    },
+    {
+      "id": "F6",
+      "category": "mobile",
+      "front": "Which CRM objects does Help highlight for seller mobile?",
+      "back": "Accounts, contacts, leads, opportunities, plus tasks and events on the activity timeline."
+    },
+    {
+      "id": "F7",
+      "category": "mobile",
+      "front": "Is Salesforce mobile a second database?",
+      "back": "No. It updates the same records; compact layouts control what you see first."
+    },
+    {
+      "id": "F8",
+      "category": "stage",
+      "front": "Why not a Stage named Called?",
+      "back": "Stage changes probability and Forecast Category. Log a Task instead."
+    },
+    {
+      "id": "F9",
+      "category": "timeline",
+      "front": "What is the activity timeline?",
+      "back": "Chronological Tasks, Events, and logged emails on a record—including on mobile."
+    },
+    {
+      "id": "F10",
+      "category": "layout",
+      "front": "Phone missing on mobile Contact?",
+      "back": "Check compact layout and FLS before blaming the app store binary."
+    },
+    {
+      "id": "F11",
+      "category": "duplicates",
+      "front": "Duplicate Events after sync?",
+      "back": "Two connectors or double-save. Do not assume the Event object is corrupt."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "Chatter versus Knowledge?",
+      "back": "Chatter is discussion. Knowledge is published SOPs (APP-004)."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Custom Meeting__c?",
+      "back": "Usually refuse: Events plus timeline and calendar integration are the supported model."
+    },
+    {
+      "id": "F14",
+      "category": "lead",
+      "front": "Does mobile replace Lead Settings?",
+      "back": "No. Leads stay first-class; Lead Settings still own capture defaults."
+    },
+    {
+      "id": "F15",
+      "category": "capture",
+      "front": "Two email loggers on one user?",
+      "back": "Risk of duplicate timeline activities. Pick one design."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Task versus Event versus Chatter?",
+      "answer_30_seconds": "A Task is a due-dated to-do. An Event is a start/end meeting. Chatter is the internal feed. All can sit on the same Account, but only Tasks and Events are Activities on the timeline.",
+      "answer_2_minutes": "I relate Activities with Who and What. I will not replace Events with a custom object if sellers also need Outlook and mobile. I will not use Chatter as a to-do list because it has no due-date assignment model like Task. Knowledge remains APP-004.",
+      "example": "Call Maya = Task on Lead; discovery = Event on Opportunity; legal = Chatter on Account.",
+      "tradeoffs": [
+        "Activity vs Chatter visibility",
+        "Event vs Task for reminders"
+      ],
+      "follow_ups": [
+        "Recurring series?",
+        "Group events?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Chatter an Activity"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What does Salesforce mobile change?",
+      "answer_30_seconds": "The form factor and compact layouts—not the objects. Help says sellers update accounts, contacts, leads, opportunities and act on tasks and events on the timeline.",
+      "answer_2_minutes": "I configure mobile navigation and compact layouts. I do not promise a separate mobile database. Offline, branding, and MDM are neighboring. Lead Settings still apply to Leads updated from the phone. I keep page layouts from dumping 80 fields onto a handset.",
+      "example": "Same Opportunity Id edited at the airport; Amount matches desktop.",
+      "tradeoffs": [
+        "Field presence vs screen size",
+        "Offline vs online-only"
+      ],
+      "follow_ups": [
+        "Required fields on mobile?",
+        "Biometrics?"
+      ],
+      "weak_answer_warnings": [
+        "Saying mobile is a different org"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Sellers live in Outlook and skip Salesforce after meetings.",
+      "answer_30_seconds": "Calendar integration for Events, email integration for logged mail, plus mobile for updates. Do not invent a Meeting__c. Do not use Email-to-Case.",
+      "answer_2_minutes": "I identify the licensed connector. I pilot with LAB_ addresses. I watch duplicates if EAC plus an add-in both log. I train WhatId selection so mail lands on the Opportunity. I still want a Task for follow-ups that are not meetings.",
+      "example": "Outlook appointment with Contact Maya creates Event; follow-up Task due Friday.",
+      "tradeoffs": [
+        "Automatic capture vs intentional logging",
+        "Privacy of personal mail"
+      ],
+      "follow_ups": [
+        "Excluded addresses?",
+        "Who sees captured mail?"
+      ],
+      "weak_answer_warnings": [
+        "Email-to-Case for the sales team"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Ops wants a custom Meeting object because Event cannot store LAB_Room__c.",
+      "answer_30_seconds": "I add a custom field on Event first. A new object drops off standard timeline, mobile activity, and calendar connectors.",
+      "answer_2_minutes": "If they need a complex room-scheduling product, that is a different app (maybe AppExchange—APP-007), not a reason to abandon Activity. I show Help's mobile timeline expectation. I refuse to break Who/What reporting.",
+      "example": "Event.LAB_Room__c on the discovery Event; still related to Opportunity.",
+      "tradeoffs": [
+        "Field on Event vs new object",
+        "Connector support vs unique UX"
+      ],
+      "follow_ups": [
+        "Recurrence?",
+        "Resource calendars?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing immediately to Meeting__c"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Mobile users say 'Salesforce is empty' but desktop is not.",
+      "answer_30_seconds": "Same sharing, different navigation and compact layouts. Check app menu, offline, and whether they are in the right org.",
+      "answer_2_minutes": "I verify username/org. I check Salesforce mobile navigation items. I check compact layout and FLS. I do not rebuild sharing first if desktop list views work for that user. I confirm they are not in an Experience Cloud site.",
+      "example": "Opportunities tab missing from mobile navigation; desktop has it in Sales app.",
+      "tradeoffs": [
+        "Fewer mobile tabs vs completeness",
+        "Cached offline vs live"
+      ],
+      "follow_ups": [
+        "Profiles vs permission sets for mobile?",
+        "Connected app policies?"
+      ],
+      "weak_answer_warnings": [
+        "Recreating all records on mobile"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Every Outlook send creates two Tasks.",
+      "answer_30_seconds": "Two loggers. Identify Lightning Email, add-in, and EAC. Turn one off for a LAB_ user and retest.",
+      "answer_2_minutes": "I look at created-by and timestamps. I do not delete the Task object. I check whether one record is EmailMessage and one is Task—Needs verification per product. I document the surviving logger.",
+      "example": "EAC plus manual Outlook add-in both on; two timeline rows per send.",
+      "tradeoffs": [
+        "Automatic vs manual",
+        "Task vs EmailMessage reporting"
+      ],
+      "follow_ups": [
+        "Can we merge history?",
+        "Legal hold?"
+      ],
+      "weak_answer_warnings": [
+        "Hiding the timeline"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you not enable calendar sync?",
+      "answer_30_seconds": "When sellers already double-book, when private personal calendars must not enter CRM, or when a pilot already produced duplicate Events.",
+      "answer_2_minutes": "I might keep Salesforce Events without bidirectional sync. I might log meetings manually or via an add-in 'save to Salesforce' without full sync. Privacy and duplicate risk beat convenience. Mobile still shows Events that exist in Salesforce.",
+      "example": "Executives with mixed personal/work calendars: no org-wide sync; AE cohort only.",
+      "tradeoffs": [
+        "Convenience vs PII on calendars",
+        "Sync vs explicit save"
+      ],
+      "follow_ups": [
+        "Private event flags?",
+        "Who owns the connector?"
+      ],
+      "weak_answer_warnings": [
+        "Org-wide sync on day one"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this with the newsroom analogy and where it breaks.",
+      "answer_30_seconds": "Assignment list is Task, broadcast slot is Event, wall is Chatter, correspondent mailbox is email integration, studio board is calendar, field phone is Salesforce mobile on the same stories.",
+      "answer_2_minutes": "It breaks when logged email is EmailMessage not Task, when Chatter files collide with Files, when mobile offline conflicts, and when Email-to-Case is the service wire not the correspondent mailbox. I cite Help's mobile object list and the Stage-mapping reason not to invent Called stages. Lead Settings still own Lead defaults.",
+      "example": "Whiteboard: one Opportunity story with Task, Event, Chatter, mobile edit.",
+      "tradeoffs": [
+        "Story vs official names",
+        "Connectors vs manual log"
+      ],
+      "follow_ups": [
+        "Where do Files attach? (APP-006)",
+        "Where does AppExchange sit? (APP-007)"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphors instead of the newsroom mapping"
+      ]
+    }
+  ]
+}

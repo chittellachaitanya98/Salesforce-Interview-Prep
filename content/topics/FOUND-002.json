@@ -1,0 +1,1119 @@
+{
+  "topic_id": "FOUND-002",
+  "slug": "objects-records-fields",
+  "title": "Salesforce Objects, Records, and Fields",
+  "track": "Shared Foundations",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 35,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [],
+  "objectives": [
+    "Classify a business requirement as an object, field, record, or value and justify the classification.",
+    "Distinguish standard from custom objects using semantic fit rather than label similarity.",
+    "Separate metadata changes from business-data changes and choose the appropriate operation boundary.",
+    "Diagnose whether an observation concerns structure, presentation, or access before proposing a fix."
+  ],
+  "diagnostic_question": "A company wants to track every equipment inspection, its date, result, inspector, and related customer. Which parts are objects, fields, records, and values—and what evidence would change your answer?",
+  "definition": "An object defines one category of business information, fields define the facts each instance can hold, and a record is one saved instance. In the official database analogy: object ≈ table, field ≈ column, record ≈ row. ([Salesforce Object Reference](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm))",
+  "why_it_matters": "Every report, Flow, Apex query, Lightning component, integration, sharing rule, and deployment assumes a data model. A weak model spreads ambiguity downstream; a precise model gives every actor the same nouns, identities, and state boundaries.",
+  "terminology": [
+    {
+      "term": "Data model",
+      "plain": "The organized plan for what the business stores and how those pieces connect.",
+      "precise": "The collection of objects, fields, and relationships that structures business data in an org.",
+      "example": "A service model with Request, Customer, and Request Line Item objects.",
+      "non_example": "A dashboard that summarizes requests; it presents data but is not the storage structure itself.",
+      "confusable_neighbor": "Database: the underlying storage system; the data model is the human-meaningful structure placed on it.",
+      "boundary": "This topic covers objects, fields, and records; relationship behavior is the next topic."
+    },
+    {
+      "term": "Object",
+      "plain": "A named container for one kind of business thing.",
+      "precise": "A Salesforce data structure analogous to a database table; its fields define the shape shared by its records.",
+      "example": "Account for companies or LAB_Request__c for service requests.",
+      "non_example": "Acme Corporation; that is one Account record, not the Account object.",
+      "confusable_neighbor": "Tab: a navigation surface that can expose an object; a tab is not the object itself.",
+      "boundary": "An object defines structure and platform capabilities; it is not a dedicated database server."
+    },
+    {
+      "term": "Field",
+      "plain": "One named fact that every record of an object can hold.",
+      "precise": "A typed attribute on an object, analogous to a database table column.",
+      "example": "Status__c as a Picklist field on LAB_Request__c.",
+      "non_example": "“Approved”; that is a field value inside one record.",
+      "confusable_neighbor": "Field value: data stored in a field for one record.",
+      "boundary": "A field definition is metadata; the value stored for a record is business data."
+    },
+    {
+      "term": "Record",
+      "plain": "One saved instance of the thing described by an object.",
+      "precise": "A particular occurrence of an object, analogous to one row in a database table.",
+      "example": "Request R-1042 with Status = New and Amount = 1200.",
+      "non_example": "The Request object definition shared by all requests.",
+      "confusable_neighbor": "Record type: metadata that can vary processes, picklist values, and layouts; it is not a record.",
+      "boundary": "Records contain business values but remain subject to object, field, and record access controls."
+    },
+    {
+      "term": "Standard object",
+      "plain": "A business container Salesforce supplies.",
+      "precise": "An object created by Salesforce and included in the platform or licensed product.",
+      "example": "Account, Contact, Lead, or Opportunity.",
+      "non_example": "LAB_Request__c created for a company-specific process.",
+      "confusable_neighbor": "Custom object: created by a customer, partner package, or implementation.",
+      "boundary": "Availability and fields can depend on product, edition, license, and org configuration."
+    },
+    {
+      "term": "Custom object",
+      "plain": "A business container your organization adds for a need Salesforce did not model for you.",
+      "precise": "An org-defined object created through configuration or metadata tooling to store organization-specific information.",
+      "example": "LAB_Request__c for a bespoke service intake process.",
+      "non_example": "Renaming the Account label; the underlying Account object remains standard.",
+      "confusable_neighbor": "Custom metadata type: configuration records used by applications, not ordinary transactional business records.",
+      "boundary": "Creating a custom object changes metadata; creating one of its records changes business data."
+    },
+    {
+      "term": "Metadata",
+      "plain": "Information that tells Salesforce how the org is structured, behaves, looks, and grants access.",
+      "precise": "Configuration describing schema, processes, presentation, authorization, and general org behavior.",
+      "example": "The definition of LAB_Request__c and its Status__c picklist field.",
+      "non_example": "A request record whose status value is New.",
+      "confusable_neighbor": "Business data: the operational records and field values the organization works with.",
+      "boundary": "Metadata can still contain sensitive names or text; “not business data” does not mean “never sensitive.”"
+    },
+    {
+      "term": "Business data",
+      "plain": "The actual customer, transaction, or operational facts saved in records.",
+      "precise": "Record and field values that directly correspond to the organization’s business.",
+      "example": "Request R-1042, Amount 1200, Status New.",
+      "non_example": "The fact that Status__c is a picklist with allowed values.",
+      "confusable_neighbor": "Metadata: the definition and configuration that gives business data its shape.",
+      "boundary": "Use data APIs or data tools for records; Metadata API manages definitions rather than ordinary records."
+    },
+    {
+      "term": "API name",
+      "plain": "The stable machine-facing name used by code, queries, and integrations.",
+      "precise": "A metadata identifier distinct from the user-facing label; it is the name programmatic tools use to address an object or field.",
+      "example": "LAB_Request__c and Status__c.",
+      "non_example": "“Service Request,” a label users may see.",
+      "confusable_neighbor": "Label: translatable, human-facing display text.",
+      "boundary": "Treat API-name changes as impact-bearing metadata changes; this lesson does not teach rename behavior."
+    }
+  ],
+  "sixty_second_explanation": "Imagine a clean register for service requests. The register template is the object. Its headings—Status, Amount, Requested Date—are fields. Each filled line is a record. “New” and “1200” are values inside one record. Salesforce adds security, automation, APIs, and user interfaces around this structure, so the spreadsheet analogy is useful for shape but not a complete platform model.",
+  "deeper_explanation": [
+    "Start with a stable business noun that can have multiple instances. That is an object candidate.",
+    "For each instance, identify atomic facts with meaningful data types. Those are field candidates.",
+    "A saved instance supplies values for those fields and receives a record identity.",
+    "The definitions are schema metadata; the operational values are business data. Salesforce documents these as different responsibility boundaries. ([Metadata API Guide](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_intro.htm))",
+    "Objects can be supplied by Salesforce or created for organization-specific concepts. Reuse a standard object only when its meaning fits; do not force an unrelated process into it merely to avoid a custom object."
+  ],
+  "mental_model": {
+    "analogy": "A typed register: template → headings → filled rows.",
+    "useful_mapping": [
+      "register template → object",
+      "heading with data type → field",
+      "filled row → record",
+      "cell content → field value"
+    ],
+    "where_it_breaks": [
+      "A Salesforce object is not only storage; it participates in permissions, automation, APIs, reports, and UI.",
+      "A tab is navigation, not the object itself.",
+      "Relationships, polymorphism, calculated fields, transactions, and multitenant limits need additional models."
+    ]
+  },
+  "visual_model": {
+    "title": "Definition → instance state transition",
+    "steps": [
+      "Define object metadata",
+      "Define typed fields",
+      "Grant intended access",
+      "Create a record",
+      "Store field values",
+      "Observe via UI/API/report"
+    ],
+    "invariant": "Every saved value belongs to a field defined for that object; access and automation can still prevent an actor from observing or changing it."
+  },
+  "when_to_use": [
+    "When a requirement names a business thing and you must classify it as a Salesforce object, field, record, or value before anyone opens Setup.",
+    "When deciding whether a repeating inspection belongs on Account fields or on its own custom object with its own records.",
+    "When a report is empty and you must separate missing object metadata from missing records or missing field access.",
+    "When code or an integration should use an API name on an object or field instead of a user-facing label."
+  ],
+  "when_not_to_use": [
+    "Do not treat the object-field-record table analogy as a security, sharing, or automation design.",
+    "Do not create a new Salesforce object merely because a Lightning page needs another section.",
+    "Do not model a one-off display label as a business object with records.",
+    "Do not use this fields-and-records lesson to choose lookup versus master-detail; that is a later relationship topic."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Object Manager to inspect or configure objects and fields (UI navigation is release-sensitive; verified 2026-08-07).",
+    "App Launcher → an app → object tab or list view to work with records when the object is exposed.",
+    "SOQL, REST/SOAP APIs, Apex, Flow, and Lightning data services use object/field API names; those mechanisms are taught later."
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "actor": "Administrator or deployment tool",
+      "trigger": "A schema requirement is approved",
+      "before": "The org has no definition for the new concept/attribute",
+      "transition": "Create or modify object/field metadata",
+      "after": "The org schema exposes a typed place for values",
+      "observe": "Object Manager or metadata/source describe output",
+      "failure": "Missing permissions, dependency conflicts, invalid metadata, or deployment mismatch."
+    },
+    {
+      "step": 2,
+      "actor": "Administrator/security owner",
+      "trigger": "A role must use the new structure",
+      "before": "Metadata exists but the actor may have no access",
+      "transition": "Assign least-privilege object and field access and expose an appropriate experience",
+      "after": "The intended actor can attempt permitted operations",
+      "observe": "Permission inspection and user-context verification",
+      "failure": "Definition exists but create/read/update is blocked or sensitive fields are overexposed."
+    },
+    {
+      "step": 3,
+      "actor": "User, automation, or integration",
+      "trigger": "A business event creates or changes an instance",
+      "before": "Only the shared schema exists, or an older record state exists",
+      "transition": "Validate and persist field values in a record transaction",
+      "after": "One record has a new identity/state or updated values",
+      "observe": "Record UI, API response, report, audit field, or log",
+      "failure": "Validation, automation, permissions, transaction rollback, or concurrency prevents commit."
+    }
+  ],
+  "worked_example": {
+    "scenario": "A service team needs to track requests independently of Cases in a disposable sandbox. Each request is a record of a custom object with typed fields for status, amount, and date—not a blob of text on Account.",
+    "inputs": [
+      "Many requests can exist.",
+      "Each request has Status, Amount, Requested Date, and Sensitive Note.",
+      "Requests need independent reporting and lifecycle."
+    ],
+    "decisions": [
+      {
+        "decision": "Create LAB_Request__c",
+        "because": "Request is a repeatable concept with its own identity and lifecycle.",
+        "rejected": "One long text field on Account; it destroys one-record-per-request reporting grain."
+      },
+      {
+        "decision": "Create typed fields Status__c, Amount__c, Requested_Date__c, Sensitive_Note__c",
+        "because": "Each is one recurring fact per request.",
+        "rejected": "Encode all facts in the record name."
+      },
+      {
+        "decision": "Create R-1042 as a record",
+        "because": "It is one occurrence of the Request object.",
+        "rejected": "Create a new object for every request."
+      }
+    ],
+    "configuration_or_code": [
+      "Custom object label: Lab Request; API name: LAB_Request__c",
+      "Picklist: Status__c = New, In Review, Approved, Rejected",
+      "Currency: Amount__c",
+      "Date: Requested_Date__c",
+      "Long Text Area: Sensitive_Note__c"
+    ],
+    "output": "R-1042 | New | 1200 | 2026-08-07 | synthetic text only",
+    "verification": [
+      "Object Manager shows the object and field definitions.",
+      "A permitted user can create and reopen R-1042.",
+      "A list view or report returns R-1042 at the correct grain.",
+      "A user without Sensitive_Note__c access cannot read it through the intended surface."
+    ],
+    "self_explanation": "Why is Amount__c a field rather than a child object in this bounded scenario? What changed in metadata, and what changed in business data?"
+  },
+  "hands_on_lab": {
+    "title": "Build and inspect LAB_Request__c in a disposable org",
+    "environment": "Fresh Trailhead Playground, scratch org, or disposable Developer Edition only. Never production.",
+    "starting_state_checks": [
+      "No real customer or personally identifiable information.",
+      "You can access Setup and Object Manager.",
+      "LAB_Request__c does not already exist, or you have a cleanup plan."
+    ],
+    "steps": [
+      "Predict the object, field, record, and value mapping before opening Setup.",
+      "From Setup, open Object Manager and create custom object Lab Request with API name LAB_Request__c.",
+      "Add Status__c (Picklist), Amount__c (Currency), Requested_Date__c (Date), and Sensitive_Note__c (Long Text Area).",
+      "Create a tab only if needed for the lab experience; remember the tab is not the object.",
+      "Create synthetic record R-1042 with Status New and Amount 1200.",
+      "Reopen it and classify what you see as metadata, record, field, or value.",
+      "Delete the synthetic record and remove LAB_ metadata using your cleanup manifest when finished."
+    ],
+    "guided_completion": [
+      "Given Request as the object, choose data types for Status and Requested Date.",
+      "Explain why R-1042 is not metadata."
+    ],
+    "independent_challenge": "Model recurring equipment inspections for customer sites. Decide whether Inspection is an object or Account fields; state cardinality, lifecycle, access, reporting grain, and what evidence would reverse your choice.",
+    "evidence": [
+      "Screenshot or exported metadata showing LAB_Request__c and fields.",
+      "Record ID or screenshot for synthetic R-1042.",
+      "Written classification with at least one analogy boundary."
+    ],
+    "stop_recovery_cleanup": [
+      "Stop if the org contains real customer data.",
+      "If a name collision occurs, inspect before changing anything; do not overwrite existing metadata.",
+      "Delete synthetic records first, then remove LAB_ metadata only after checking dependencies."
+    ],
+    "limitations": "This lab verifies configuration and classification at tiny scale; it does not validate large-data-volume behavior, production security, deployment readiness, or integration contracts."
+  },
+  "decision_table": [
+    {
+      "signal": "One category with many instances and its own identity/lifecycle",
+      "choose": "Object",
+      "not": "A repeated set of numbered fields",
+      "why": "Preserves record grain and lifecycle."
+    },
+    {
+      "signal": "One typed fact shared by every instance",
+      "choose": "Field",
+      "not": "A new object by default",
+      "why": "Keeps the fact on the entity it describes."
+    },
+    {
+      "signal": "One real occurrence with actual values",
+      "choose": "Record",
+      "not": "Object definition",
+      "why": "It is business state, not shared schema."
+    },
+    {
+      "signal": "Salesforce-supplied concept fits the business semantics",
+      "choose": "Standard object",
+      "not": "Duplicate custom object",
+      "why": "Reuses platform/product behavior without parallel truth."
+    },
+    {
+      "signal": "Distinct business concept has no suitable standard object",
+      "choose": "Custom object",
+      "not": "Force-fit unrelated standard object",
+      "why": "Makes the domain explicit while accepting governance cost."
+    }
+  ],
+  "limitations": [
+    "The table/row/column analogy does not explain security, automation, transactions, relationships, or licensing.",
+    "Available standard objects and fields depend on products, editions, licenses, features, and org configuration.",
+    "UI setup paths can change by release; verify immediately before publication.",
+    "Mutable numeric object/field limits are deliberately omitted here; consult the live limits/reference documentation for the target org and release."
+  ],
+  "security_notes": [
+    "Object existence does not grant access. Object permission, field-level access, record scope, and execution context are distinct gates.",
+    "A page layout or tab is not a security boundary.",
+    "Metadata can include sensitive names or descriptions; business data can include personal data. Keep both out of source, labs, screenshots, and prompts unless approved.",
+    "Use synthetic LAB_ data and least privilege in disposable environments."
+  ],
+  "common_mistakes": [
+    "Calling a tab an object.",
+    "Calling one Account a standard object instead of a record of the Account object.",
+    "Using “record type” as a synonym for record.",
+    "Creating a custom object for a single attribute.",
+    "Flattening a repeatable child lifecycle into numbered parent fields.",
+    "Treating metadata deployment success as proof users can operate the feature."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Object is absent from navigation",
+      "check": [
+        "Does the object metadata exist?",
+        "Does the user have object access?",
+        "Is a tab created and available in the app?",
+        "Is the app/navigation configuration current?"
+      ],
+      "do_not_assume": "No tab does not prove no object."
+    },
+    {
+      "symptom": "Object opens but a field is missing",
+      "check": [
+        "Confirm field API name and existence.",
+        "Check field-level access.",
+        "Check page/component visibility separately.",
+        "Test the relevant API or execution context."
+      ],
+      "do_not_assume": "A layout change grants field security."
+    },
+    {
+      "symptom": "Report has no records",
+      "check": [
+        "Known record against filters.",
+        "Report type and relationship shape.",
+        "Running user record scope.",
+        "Fields used by filters/grouping."
+      ],
+      "do_not_assume": "Empty output means data was deleted."
+    }
+  ],
+  "production_notes": [
+    "Write a data dictionary with business definition, owner, classification, retention, API name, and source of truth.",
+    "Review naming, cardinality, ownership, sharing, reporting grain, automation density, integration contracts, archival, and package/deployment impact before creating an object.",
+    "Deploy metadata and permissions together; run user-context post-deployment checks.",
+    "Keep consequential claims mapped to current official sources and revalidate on every seasonal release."
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "An object is the business category, fields are typed facts about it, and a record is one saved instance. I start with business meaning and cardinality, reuse a standard object when it fits, and create a custom object only for a distinct concept. I also separate schema metadata from business record data and verify object, field, and record access independently.",
+    "two_minutes": "The table/column/row analogy is a good first model: object, field, record. Then I add the platform boundaries it omits. Object and field definitions are metadata; record values are business data. A standard object is supplied by Salesforce, while a custom object models organization-specific information. The choice affects security, reporting, automation, APIs, deployments, storage, and governance. In production I validate semantic fit, cardinality, lifecycle, access, reporting grain, integration ownership, and failure behavior—not just whether Setup lets me create it."
+  },
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "prompt": "Which mapping matches the official Salesforce data-model analogy?",
+      "options": {
+        "A": "Object → row; field → table; record → column",
+        "B": "Object → table; field → column; record → row",
+        "C": "Object → tab; field → page; record → app",
+        "D": "Object → database; field → server; record → tenant"
+      },
+      "answer": "B",
+      "rationale": "An object structures one category of data like a table, fields define attributes like columns, and each record is one occurrence like a row.",
+      "distractor_explanations": {
+        "A": "It reverses all three concepts.",
+        "C": "Tabs, pages, and apps are presentation/navigation concepts, not this storage analogy.",
+        "D": "An object is not a database or tenant boundary."
+      },
+      "concept": "Object/field/record mental model",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-01",
+        "SF-TRAIL-01"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "prompt": "What is a record?",
+      "options": {
+        "A": "A particular occurrence of an object",
+        "B": "A reusable field definition",
+        "C": "A navigation tab",
+        "D": "An org-wide metadata deployment"
+      },
+      "answer": "A",
+      "rationale": "A record is one saved instance, such as one specific Account.",
+      "distractor_explanations": {
+        "B": "A field definition describes one attribute shared across records.",
+        "C": "A tab is navigation.",
+        "D": "A deployment moves metadata and is not a business record."
+      },
+      "concept": "Record definition",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-01"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "prompt": "Which statement best distinguishes metadata from business data?",
+      "options": {
+        "A": "Metadata is always public; business data is always private",
+        "B": "Metadata describes structure and behavior; business data contains operational record values",
+        "C": "Metadata exists only in code; business data exists only in reports",
+        "D": "They are identical terms"
+      },
+      "answer": "B",
+      "rationale": "Object and field definitions are schema metadata, while values inside saved records are business data.",
+      "distractor_explanations": {
+        "A": "Both metadata and business data can be sensitive.",
+        "C": "Metadata is also created in Setup, and business data is used beyond reports.",
+        "D": "The official documentation explicitly contrasts them."
+      },
+      "concept": "Metadata vs business data",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-01"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "prompt": "A company must track equipment inspections that have no suitable standard object. What is the strongest first modeling choice?",
+      "options": {
+        "A": "Create one Inspection custom object with fields for inspection facts",
+        "B": "Put every inspection in a custom label",
+        "C": "Create one field on User for every inspection",
+        "D": "Use a tab with no object"
+      },
+      "answer": "A",
+      "rationale": "A custom object is intended to store organization-specific categories of business information; fields define each inspection’s facts.",
+      "distractor_explanations": {
+        "B": "Custom labels store reusable display text, not transactional records.",
+        "C": "Repeated inspections are instances of their own business concept, not user attributes.",
+        "D": "A tab does not provide a data structure by itself."
+      },
+      "concept": "Choosing a custom object",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-OBJREF-01",
+        "SF-TRAIL-01"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "prompt": "For LAB_Request__c, where should a request amount be modeled?",
+      "options": {
+        "A": "As a Currency field on the object, with a value on each record",
+        "B": "As a separate Salesforce org per amount",
+        "C": "As the object label",
+        "D": "As a profile"
+      },
+      "answer": "A",
+      "rationale": "Amount is one typed fact shared by request records, so it belongs in a field definition and each record stores its own value.",
+      "distractor_explanations": {
+        "B": "Org boundaries are not data values.",
+        "C": "The label names the object for people.",
+        "D": "A profile contributes permissions, not transactional amount storage."
+      },
+      "concept": "Field vs value",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-TRAIL-01"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "prompt": "A developer needs the stable identifier used by code while admins want friendly wording for users. Which pairing is correct?",
+      "options": {
+        "A": "Use the label for code and the API name only in page layouts",
+        "B": "Use the API name for programmatic references and the label for display",
+        "C": "Use the record ID as the object label",
+        "D": "Use the tab style as the API name"
+      },
+      "answer": "B",
+      "rationale": "The machine-facing API name and human-facing label serve different audiences.",
+      "distractor_explanations": {
+        "A": "Labels can change for display and should not replace programmatic identifiers.",
+        "C": "A record ID identifies one record, not an object label.",
+        "D": "Tab style controls presentation, not schema identity."
+      },
+      "concept": "API name vs label",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-META-01"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "prompt": "A migration script needs to create Account records. Which layer should it operate on?",
+      "options": {
+        "A": "Business data through an appropriate data API or data tool",
+        "B": "Only Metadata API because Account is an object",
+        "C": "A page layout deployment",
+        "D": "A custom tab icon"
+      },
+      "answer": "A",
+      "rationale": "Creating Accounts creates business records. Salesforce documentation distinguishes record operations from metadata operations.",
+      "distractor_explanations": {
+        "B": "Metadata API manages definitions and configuration, not ordinary Account record CRUD.",
+        "C": "Page layouts affect presentation.",
+        "D": "Tab icons are unrelated presentation metadata."
+      },
+      "concept": "Metadata vs data operation",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-META-01"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "prompt": "Users can open Account but cannot see one sensitive field. What does this symptom show?",
+      "options": {
+        "A": "Object access alone does not prove field access",
+        "B": "The Account object is necessarily missing",
+        "C": "Every Account record was deleted",
+        "D": "The field must be a tab"
+      },
+      "answer": "A",
+      "rationale": "Object, field, and record access are distinct gates. Being able to reach an object does not guarantee visibility of every field.",
+      "distractor_explanations": {
+        "B": "The object exists because users can open Account.",
+        "C": "Existing Account pages disprove universal deletion.",
+        "D": "A field and a tab are different concepts."
+      },
+      "concept": "Access boundary diagnosis",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-OBJREF-01"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "prompt": "An admin adds Status__c to LAB_Request__c, then creates request R-1042 with Status = New. Which is metadata and which is data?",
+      "options": {
+        "A": "Both are metadata",
+        "B": "Both are data",
+        "C": "Status__c definition is metadata; R-1042 and New are business data",
+        "D": "R-1042 is metadata; Status__c is data"
+      },
+      "answer": "C",
+      "rationale": "The field definition gives records their structure; the saved record and field value are operational data.",
+      "distractor_explanations": {
+        "A": "The request instance is not configuration.",
+        "B": "The field definition is schema metadata.",
+        "D": "It reverses definition and instance."
+      },
+      "concept": "Definition vs instance",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-01"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "prompt": "A report has no rows for a user, but an admin confirms records exist. What should be investigated before redesigning the object?",
+      "options": {
+        "A": "Access, filters, and the user’s data scope",
+        "B": "Whether columns should be renamed records",
+        "C": "Whether a tab can replace all permissions",
+        "D": "Whether Salesforce needs a dedicated server for the object"
+      },
+      "answer": "A",
+      "rationale": "Missing output can result from filters or access. Existence of an object and records does not guarantee every user or report can return them.",
+      "distractor_explanations": {
+        "B": "Renaming concepts does not diagnose missing data.",
+        "C": "A tab cannot replace access controls.",
+        "D": "Salesforce objects are tenant data structures, not dedicated servers."
+      },
+      "concept": "Troubleshooting missing records",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-OBJREF-01"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "prompt": "When should an existing standard object be preferred over a new custom object?",
+      "options": {
+        "A": "Whenever its business meaning and behavior fit the requirement without semantic distortion",
+        "B": "Whenever the custom object name would be shorter",
+        "C": "Only when no fields are needed",
+        "D": "Never; custom objects are always safer"
+      },
+      "answer": "A",
+      "rationale": "Start with the business concept and reuse a standard object when its meaning fits. Create a custom object for organization-specific concepts that do not fit.",
+      "distractor_explanations": {
+        "B": "Name length is not a modeling criterion.",
+        "C": "Standard objects have fields and support extension.",
+        "D": "Custom is not automatically safer or better."
+      },
+      "concept": "Standard vs custom decision",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-OBJREF-01",
+        "SF-TRAIL-01"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "prompt": "Which statement correctly compares a field and a record?",
+      "options": {
+        "A": "A field defines one attribute; a record supplies values for the object’s fields",
+        "B": "A field contains many orgs; a record defines a permission set",
+        "C": "A field is always custom; a record is always standard",
+        "D": "They are interchangeable names for a row"
+      },
+      "answer": "A",
+      "rationale": "The field is part of the shared schema; the record is one instance containing values that conform to that schema.",
+      "distractor_explanations": {
+        "B": "Neither concept has that role.",
+        "C": "Both standard and custom objects can have fields; records are instances, not standard/custom schema categories.",
+        "D": "Only the record maps to a row in the analogy."
+      },
+      "concept": "Field vs record",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-01"
+      ]
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain objects, fields, and records to a nontechnical stakeholder.",
+      "answer_30_seconds": "An object is the category of thing we track, a field is one fact about it, and a record is one actual instance.",
+      "answer_2_minutes": "I start from the business noun, such as Service Request. Salesforce represents that category with an object. Amount, status, and requested date become typed fields. Every submitted request becomes a record whose values follow that shared structure. The table/column/row analogy is useful for structure, but it does not explain permissions, automation, or user interface behavior.",
+      "example": "LAB_Request__c has Status__c and Amount__c; R-1042 is one record.",
+      "tradeoffs": [
+        "The analogy is bounded; Salesforce objects also participate in security, automation, APIs, and UI."
+      ],
+      "follow_ups": [
+        "How would relationships fit?",
+        "Where is the structure configured?"
+      ],
+      "weak_answer_warnings": [
+        "Says “Salesforce is just Excel.”",
+        "Uses record type as a synonym for record."
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Differentiate standard and custom objects.",
+      "answer_30_seconds": "Standard objects are supplied by Salesforce; custom objects are added for organization-specific concepts. I choose by semantic fit, not by habit.",
+      "answer_2_minutes": "Account and Contact are common standard objects. If the required business concept fits one of them, I extend rather than duplicate. If the concept is independently meaningful and no standard object fits, I define a custom object. I still check product licensing, ownership, security, reporting, relationships, integrations, and lifecycle before committing.",
+      "example": "Use Account for a customer company; use LAB_Request__c for a bespoke service intake entity.",
+      "tradeoffs": [
+        "A custom object adds metadata and governance cost. A standard object can carry product behaviors that must fit the requirement."
+      ],
+      "follow_ups": [
+        "What if the standard object almost fits?",
+        "How would you migrate from a poor choice?"
+      ],
+      "weak_answer_warnings": [
+        "“Always custom because it is flexible.”",
+        "Decides from label similarity only."
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A business asks for ten new fields on Account to track inspections. What do you ask before building?",
+      "answer_30_seconds": "I ask whether inspection is a repeatable business entity with its own lifecycle, ownership, reporting, and relationships. If yes, it likely deserves an Inspection object rather than ten flattened Account fields.",
+      "answer_2_minutes": "I clarify cardinality: can one account have many inspections? I ask which actors create and approve them, which facts repeat, whether history matters, how access differs, and what reports or integrations need. The state transition matters: an inspection moves through statuses; an Account usually persists across many inspections. That evidence drives object versus field choice.",
+      "example": "If an Account has quarterly inspections, Inspection__c records related to Account preserve one row per event.",
+      "tradeoffs": [
+        "Another object increases relationship, sharing, reporting, and automation complexity; a field can be correct for a true one-value attribute."
+      ],
+      "follow_ups": [
+        "What relationship would you choose?",
+        "How would you prevent duplicate inspections?"
+      ],
+      "weak_answer_warnings": [
+        "Counts fields but ignores cardinality.",
+        "Models a repeatable process as a single text blob."
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Users can see Account records but not Revenue__c. Diagnose without guessing.",
+      "answer_30_seconds": "I separate object, field, and record gates. Record visibility proves only part of access; I inspect field-level access and the presentation/API path.",
+      "answer_2_minutes": "I reproduce as the affected user, confirm the exact object and field API name, and distinguish “not visible on page” from “not readable at all.” Then I inspect field-level security, permission sets/groups, page or component visibility, and the execution context of any code or integration. I use evidence from UI/API behavior rather than assuming the field is missing.",
+      "example": "The field may exist and be readable to admins but omitted or denied for one permission set group.",
+      "tradeoffs": [
+        "A layout fix does not grant field permission; changing FLS can expose data across more surfaces than intended."
+      ],
+      "follow_ups": [
+        "What if Apex returns the field?",
+        "What if only one record is affected?"
+      ],
+      "weak_answer_warnings": [
+        "Equates page layout with security.",
+        "Immediately grants broad permissions."
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A report shows zero requests although admins see hundreds. What is your investigation path?",
+      "answer_30_seconds": "First verify report type and filters, then the running user’s object, field, and record scope. I do not redesign the schema until I can locate the failing gate.",
+      "answer_2_minutes": "I capture the user, report URL, expected record IDs, filter values, date/time zone, report type, and folder context. I compare a known record against report criteria, then inspect whether the user can query/open it and read fields used by filters. This moves from observation to falsifiable hypotheses.",
+      "example": "R-1042 exists, but its owner is outside the user’s record scope or Status__c is unavailable to the reporting path.",
+      "tradeoffs": [
+        "Changing filters can leak data; broadening sharing to fix one report may violate least privilege."
+      ],
+      "follow_ups": [
+        "How would you prove it is record access?",
+        "What would you log?"
+      ],
+      "weak_answer_warnings": [
+        "Says “refresh the report.”",
+        "Changes OWD without evidence."
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A deployment added an object but production users cannot create records. What layers do you check?",
+      "answer_30_seconds": "I verify the metadata arrived, then permissions, field requirements, layouts or actions, validation/automation failures, and licensing.",
+      "answer_2_minutes": "A successful metadata deployment only proves definitions were accepted. I check the object and fields in Object Manager or describe output, assigned permissions, required fields, record types, create action exposure, validation rules, Flows/Apex errors, and user license constraints. I reproduce with a minimal record and retain the exact error.",
+      "example": "The object exists, but the permission set was not assigned or a required field is absent from the create experience.",
+      "tradeoffs": [
+        "Granting Modify All is not a diagnostic. Disabling automation can hide the actual defect."
+      ],
+      "follow_ups": [
+        "What post-deployment checks prevent this?",
+        "How do you handle rollback?"
+      ],
+      "weak_answer_warnings": [
+        "Treats deploy success as user readiness.",
+        "Asks users to retry without reading the error."
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design_tradeoff",
+      "question": "Defend using a custom object instead of adding fields to Case.",
+      "answer_30_seconds": "I use a custom object when the concept has its own identity, lifecycle, cardinality, access, and integration contract; I extend Case when it is truly a case attribute or supported case process.",
+      "answer_2_minutes": "I compare semantic fit, one-to-many behavior, ownership/sharing, required state transitions, reporting grain, automation density, API consumers, archival, and product features. A custom object isolates a distinct aggregate but adds relationships and governance. Extending Case reuses Service features but can overload its meaning.",
+      "example": "A regulated inspection with multiple readings and approvals may be independent from the support Case that initiated it.",
+      "tradeoffs": [
+        "Custom objects add metadata, security, storage, reporting, and deployment work; Case may provide valuable service capabilities."
+      ],
+      "follow_ups": [
+        "What are your decisive nonfunctional requirements?",
+        "How do you model history?"
+      ],
+      "weak_answer_warnings": [
+        "Only says “it depends.”",
+        "Chooses from implementation convenience."
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "follow_up_challenge",
+      "question": "The stakeholder calls a record type “a kind of record.” How do you correct the model tactfully?",
+      "answer_30_seconds": "I acknowledge the wording, then separate an individual record from Record Type metadata that can vary business process, picklists, and presentation for records on the same object.",
+      "answer_2_minutes": "I use two examples on one object: R-1042 and R-1043 are records. “Warranty Request” and “Billing Request” can be record types applied to those records. The record type classifies/configures behavior; it is not the saved business instance. Then I ask what difference the stakeholder actually needs—different data, lifecycle, access, or merely presentation.",
+      "example": "Two Case records can have different record types while remaining records of the Case object.",
+      "tradeoffs": [
+        "Record types add maintenance and do not create a new security boundary or object."
+      ],
+      "follow_ups": [
+        "When would separate objects be better?",
+        "Does record type grant record access?"
+      ],
+      "weak_answer_warnings": [
+        "Corrects jargon without discovering intent.",
+        "Claims record types are separate tables."
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "What is an object?",
+      "back": "A named Salesforce structure for one category of business information; analogous to a table."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "What is a field?",
+      "back": "A typed attribute on an object; analogous to a column."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "What is a record?",
+      "back": "One saved occurrence of an object; analogous to a row."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "What is a standard object?",
+      "back": "An object Salesforce creates and supplies."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "What is a custom object?",
+      "back": "An org-defined object for organization-specific information."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "Should “Acme Corporation” be an object or record? Why?",
+      "back": "A record: it is one occurrence of the Account business concept."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "Should “inspection date” be an object, field, or record?",
+      "back": "Usually a Date field on an Inspection object; it is one fact per inspection."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "When prefer a standard object?",
+      "back": "When its business meaning and supported behavior fit without semantic distortion."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "When create a custom object?",
+      "back": "When a stable, independently useful business concept has multiple instances and no suitable standard object."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "What should code use: label or API name?",
+      "back": "The API name; labels are human-facing display text."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "Does object access guarantee field visibility?",
+      "back": "No. Object, field, and record access are distinct gates."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Can metadata contain sensitive information?",
+      "back": "Yes. Names, descriptions, reports, or configuration text can contain sensitive information."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "Does the object/field/record analogy explain permissions or automation?",
+      "back": "No. It explains structure only; security, behavior, and transaction mechanics require separate models."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "You add Status__c, then save Status = New. Classify both.",
+      "back": "Status__c definition is metadata; New on a saved record is business data."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "A report is empty although records exist. First hypothesis categories?",
+      "back": "Filters, report type/shape, and user access/data scope—not immediately a missing object."
+    }
+  ],
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, draw object → fields → one record → values for LAB_Request__c. Mark metadata versus business data."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify five new examples: Account, Acme, Industry, Manufacturing, and Account tab. Explain one confusable neighbor."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Decide whether recurring inspections belong in Account fields or an Inspection object; name the variables that control the decision."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose: object visible, one field missing, report empty. Separate structure, presentation, and access hypotheses."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Teach the model without saying object, field, or record; then answer a skeptical probe about where the table analogy breaks."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-OBJREF-01",
+      "title": "Overview of Salesforce Objects and Fields",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm",
+      "supports": "Object/field/table/column analogy; record definition; standard/custom/external object distinctions; access factors.",
+      "release_or_version": "Summer ’26, API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "API-focused overview; does not teach full data-model design or UI procedure."
+    },
+    {
+      "source_id": "SF-TRAIL-01",
+      "title": "Find Object Management Settings",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=extend_click_find_objectmgmt_parent.htm",
+      "supports": "Most objects are available from Object Manager in Setup in Lightning Experience; object customizations such as custom fields and page layouts live there.",
+      "release_or_version": "Salesforce Help — Find Object Management Settings",
+      "last_verified": "2026-08-16",
+      "limits": "UI paths are release-sensitive; Classic Setup locations can differ. Not a full data-model design guide."
+    },
+    {
+      "source_id": "SF-META-01",
+      "title": "Understanding Metadata API",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_intro.htm",
+      "supports": "Metadata versus business data; schema/process/presentation/authorization metadata; metadata operations versus record operations.",
+      "release_or_version": "Summer ’26, API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Metadata API scope; not a general security or data migration guide."
+    },
+    {
+      "source_id": "SF-REL-01",
+      "title": "Object Relationships (boundary)",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.relationships_between_objects.htm",
+      "supports": "Relationship types connect objects; detailed lookup and master-detail behavior is a later topic.",
+      "release_or_version": "Salesforce Help",
+      "last_verified": "2026-08-16",
+      "limits": "Relationship behavior is intentionally deferred; do not invent cardinality limits here."
+    },
+    {
+      "source_id": "LS-RETR-01",
+      "title": "Test-Enhanced Learning: Taking Memory Tests Improves Long-Term Retention",
+      "type": "Peer-reviewed learning science",
+      "url": "https://doi.org/10.1111/j.1467-9280.2006.01693.x",
+      "supports": "Retrieval-before-reveal learning mechanism used in the practice interface.",
+      "release_or_version": "2006 study",
+      "last_verified": "2026-08-16",
+      "limits": "Evidence supports retrieval practice under studied conditions, not this entire product sequence."
+    },
+    {
+      "source_id": "LS-DIST-01",
+      "title": "Improving Students’ Learning With Effective Learning Techniques",
+      "type": "Peer-reviewed review",
+      "url": "https://journals.sagepub.com/doi/10.1177/1529100612453266",
+      "supports": "Distributed practice and practice testing rationale for review scheduling.",
+      "release_or_version": "2013 review",
+      "last_verified": "2026-08-16",
+      "limits": "Intervals in this handbook are a product policy, not a universal optimum."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video found",
+      "channel": "Official Salesforce video channels searched",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "Official channels were searched; the exact foundation lesson is covered by the official Trailhead unit instead.",
+      "gaps": "No exact video was technically validated for this topic.",
+      "free_or_paid": "Free",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "status": "not_verified",
+      "title": "No verified Telugu video found for this topic",
+      "channel": "Candidate discovered: Salesforce Telugu with Ramesh",
+      "url": "https://www.youtube.com/watch?v=27-A8n2yS7Y",
+      "language": "Telugu",
+      "duration": "22 minutes (search listing)",
+      "level": "Beginner",
+      "teaches_well": "Search metadata indicates objects, fields, and records in Telugu.",
+      "gaps": "The exact video URL, title, channel, and listing were verified, but no usable transcript/captions were available for claim-level technical review; therefore it is not endorsed. Telugu glossary is provided in the lesson.",
+      "free_or_paid": "Free",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600×2000",
+      "zones": [
+        "core mapping",
+        "metadata vs data",
+        "standard vs custom",
+        "worked example",
+        "decision cues",
+        "mistakes",
+        "takeaway"
+      ]
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML with local browser-print CSS",
+      "source_footer": [
+        "SF-OBJREF-01",
+        "SF-TRAIL-01",
+        "SF-META-01"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Definition-to-observation execution map"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Obj[Object: category of thing] --> Fld[Fields: typed facts]\n  Fld --> Rec[Record: one saved instance]\n  Rec --> Val[Values in those fields]\n  Obj --> Std[Standard object supplied by Salesforce]\n  Obj --> Cust[Custom object for org-specific concepts]\n  Fld --> Meta[Field definition is metadata]\n  Rec --> Data[Record values are business data]",
+      "decision": "flowchart TD\n  Need[New business fact?] --> Q1{Many instances with own lifecycle?}\n  Q1 -->|Yes, no standard fit| Cust[Custom object plus fields]\n  Q1 -->|Yes, standard fits| Std[Reuse standard object]\n  Q1 -->|One fact on existing thing| Fld[Field on that object]\n  Need --> Q2{Saved occurrence or definition?}\n  Q2 -->|One real inspection| Rec[Create a record]\n  Q2 -->|Allowed Status values| Meta[Change field metadata]\n  Need --> Q3{Users cannot see Amount?}\n  Q3 -->|Object opens, field hidden| Acc[Field access or layout, not missing object]",
+      "sequence": "sequenceDiagram\n  participant Admin\n  participant OM as Object Manager\n  participant User\n  Admin->>OM: Define object and fields metadata\n  User->>OM: Create a record with values\n  User->>User: Report or UI shows that record if access allows"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Salesforce objects and fields are analogous to database tables and columns; a record is analogous to a row.",
+      "source_ids": [
+        "SF-OBJREF-01",
+        "SF-TRAIL-01"
+      ],
+      "scope": "Durable conceptual analogy",
+      "validation": "Both official pages render the same mapping.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Standard objects are supplied by Salesforce; custom objects are created to store organization-specific information.",
+      "source_ids": [
+        "SF-OBJREF-01",
+        "SF-TRAIL-01"
+      ],
+      "scope": "Core platform concepts",
+      "validation": "Cross-checked in Developer and Trailhead pages.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Salesforce metadata describes schema, process, presentation, authorization, and org configuration, while business data includes operational records and values.",
+      "source_ids": [
+        "SF-META-01"
+      ],
+      "scope": "Summer ’26 / API 67.0 documentation",
+      "validation": "Verified exact rendered passages.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Metadata API manages customization definitions and not ordinary business record CRUD.",
+      "source_ids": [
+        "SF-META-01"
+      ],
+      "scope": "Metadata API responsibility boundary",
+      "validation": "Verified exact rendered passage and linked data-API contrast.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Application access to objects and data depends on org definitions/configuration, user permissions, access settings, sharing, and object-specific factors.",
+      "source_ids": [
+        "SF-OBJREF-01"
+      ],
+      "scope": "API access orientation, not a complete security algorithm",
+      "validation": "Verified exact rendered passage.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-006",
+      "claim": "Object relationships are relationship fields that connect objects; detailed relationship behavior is a separate topic.",
+      "source_ids": [
+        "SF-REL-01"
+      ],
+      "scope": "Concept boundary",
+      "validation": "Verified current Trailhead unit.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "No release-sensitive behavior change is claimed for this foundational mapping. Documentation and setup navigation were reverified against Summer ’26 / API 67.0 on 2026-08-07.",
+  "unresolved_uncertainty": [
+    "The discovered Telugu candidate could not pass claim-level technical verification because captions/transcript were unavailable.",
+    "Product/edition-specific standard-object availability is intentionally deferred to product tracks and must be checked against the target org."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Object",
+      "telugu": "ఒకే రకమైన వ్యాపార సమాచారాన్ని నిల్వ చేసే నిర్మాణం; డేటాబేస్ పట్టికతో పోల్చవచ్చు."
+    },
+    {
+      "english": "Field",
+      "telugu": "ప్రతి రికార్డులో ఉండే ఒక నిర్దిష్ట లక్షణం; పట్టిక కాలమ్‌తో పోల్చవచ్చు."
+    },
+    {
+      "english": "Record",
+      "telugu": "ఆబ్జెక్ట్‌కు చెందిన ఒక నిజమైన ఉదాహరణ; పట్టికలోని ఒక వరుసతో పోల్చవచ్చు."
+    },
+    {
+      "english": "Metadata",
+      "telugu": "ఆర్గ్ నిర్మాణం, ప్రవర్తన, ప్రదర్శన, అనుమతులను వివరిస్తున్న కాన్ఫిగరేషన్ సమాచారం."
+    },
+    {
+      "english": "Business data",
+      "telugu": "రికార్డులు మరియు వాటిలో నిల్వ చేసిన వాస్తవ వ్యాపార విలువలు."
+    }
+  ]
+}

@@ -1,0 +1,1008 @@
+{
+  "topic_id": "LWC-008",
+  "slug": "navigation-toasts-modals-quick-actions-and-flow-integra",
+  "title": "Navigation, toasts, modals, quick actions, and Flow integration",
+  "track": "Lightning Web Components",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-007"
+  ],
+  "objectives": [
+    "Choose lightning/navigation versus a toast, LightningModal, a screen or headless quick action, or a Flow screen component.",
+    "State the documented containers where lightning/navigation is not supported.",
+    "Prefer lightning/toast over platformShowToastEvent where the Guide says so, and explain LWR-site limits.",
+    "Capture recordId on an LWC screen quick action with an @api setter, not connectedCallback."
+  ],
+  "diagnostic_question": "A stakeholder wants a button that confirms a Case close, tells the user it worked, then opens the Account. Which of navigation, toast, modal, quick action, or Flow do you pick for each step, and what would you not use in Lightning Out?",
+  "definition": "Navigation, toasts, modals, quick actions, and Flow integration are the Lightning Web Components ways to move the user, announce an outcome, collect a blocking decision, host a record-page action, or embed admin-owned automation in a screen. The LWC Developer Guide's navigation service is lightning/navigation in Lightning Experience, Experience Builder sites, and the Salesforce mobile app—not Lightning Components for Visualforce or Lightning Out. Toasts prefer lightning/toast.show(); modals extend LightningModal; screen quick actions open a modal and close with CloseActionScreenEvent; Flow uses LWC as screen components or local actions. ([Navigate to Pages](https://developer.salesforce.com/docs/platform/lwc/guide/use-navigate.html); [Toast Notifications](https://developer.salesforce.com/docs/platform/lwc/guide/use-toast.html); [Modal Windows](https://developer.salesforce.com/docs/platform/lwc/guide/use-dialog-modal.html); [Screen Quick Actions](https://developer.salesforce.com/docs/platform/lwc/guide/use-quick-actions-screen.html); [Flows](https://developer.salesforce.com/docs/platform/lwc/guide/use-flow.html))",
+  "why_it_matters": "Wrong channel is a common interview fail: a toast for a destructive confirm, NavigationMixin on LightningModal, or reading recordId in connectedCallback on a quick action. Lightning Out and LWR sites silently lack some modules. Mixing Flow and LWC without a target configuration also ships a component admins cannot drop on a screen.",
+  "sixty_second_explanation": "Think of a hotel concierge desk. Navigation is walking the guest to a room. A toast is a sticky note on the counter. A modal is a private conversation booth that blocks the lobby until they answer. A quick action is the front-desk bell that opens a standard request window. Flow is handing the guest to a specialist who already owns the checklist. You do not shout a sticky note when you need a signature, and you do not walk guests through a door that does not exist in that building (Lightning Out).",
+  "deeper_explanation": [
+    "Use lightning/navigation with a PageReference to open records, lists, named pages, or URL-addressable LWCs. The service is not supported in Lightning Components for Visualforce or Lightning Out 2.0 / Lightning Out (beta), even if those containers sit inside Lightning Experience. LWR apps use lwr/navigation instead. lightning__UrlAddressable is not supported in Experience Builder sites. ([Navigate to Pages](https://developer.salesforce.com/docs/platform/lwc/guide/use-navigate.html))",
+    "lightning/toast with LightningToast.show() is the preferred toast API and supports inline links in title and message. lightning/platformShowToastEvent is event-based, lacks title links, and is not supported on Aura-site login pages, LWR Experience Cloud sites, or standalone apps. lightning/toastContainer can cap how many toasts appear. ([Toast Notifications](https://developer.salesforce.com/docs/platform/lwc/guide/use-toast.html))",
+    "A modal extends LightningModal from lightning/modal—not LightningElement—and uses lightning-modal-header/body/footer. Open it with MyModal.open() from a parent. You cannot use NavigationMixin directly on the LightningModal class; navigate from a LightningElement parent (or a child that extends LightningElement) after the modal dispatches a PageReference. ([Modal Windows](https://developer.salesforce.com/docs/platform/lwc/guide/use-dialog-modal.html); [Navigate From a Modal](https://developer.salesforce.com/docs/platform/lwc/guide/use-navigate-modal.html))",
+    "Screen quick actions appear in a modal. Unlike other record-page LWCs, recordId is not ready in connectedCallback(); declare an @api setter that stores this._recordId. Close with CloseActionScreenEvent from lightning/actions. lightning-quick-action-panel supplies SLDS header/body/footer. Custom footer plus the X control skips Cancel logic. Headless quick actions run without a UI. ([Screen Quick Actions](https://developer.salesforce.com/docs/platform/lwc/guide/use-quick-actions-screen.html))",
+    "Flow integration means building LWC as flow screen components or flow local actions, with the matching targets and property editors. Do not reinvent an entire wizard in LWC when a Screen Flow already owns the business steps; do not drop a Flow inside LWC when you only needed a toast."
+  ],
+  "mental_model": {
+    "analogy": "A hotel concierge desk: escort to a room, sticky note, private booth, front-desk bell, specialist with a checklist.",
+    "useful_mapping": [
+      "escort to a room → lightning/navigation PageReference",
+      "sticky note on the counter → toast (lightning/toast preferred)",
+      "private booth that blocks the lobby → LightningModal",
+      "front-desk bell → screen or headless quick action",
+      "specialist checklist → Flow screen component or local action",
+      "building with no concierge corridor → Lightning Out / Visualforce: no lightning/navigation"
+    ],
+    "where_it_breaks": [
+      "A hotel booth can still walk you to a room; LightningModal cannot call NavigationMixin itself.",
+      "A sticky note is not a confirm-delete; that needs a modal or Flow.",
+      "The bell on a record page delivers recordId later than connectedCallback."
+    ]
+  },
+  "teach_back_prompt": "Explain to a teammate when you would pick a toast versus a modal versus navigation versus Flow, then name one container where lightning/navigation is unsupported.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "List the five channels in this topic and one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Which toast module would you use on an LWR Experience site?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "How do you close a screen quick action, and how do you capture recordId?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Why NavigationMixin on LightningModal fails, and what you do instead."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: pick channels for confirm, announce, then navigate."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-NAV",
+      "title": "Navigate to Pages, Records, and Lists",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/use-navigate.html",
+      "supports": "lightning/navigation support matrix; Lightning Out and Visualforce exclusion; UrlAddressable vs Experience Builder; lwr/navigation for LWR.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "PageReference type catalog is a neighboring reference page."
+    },
+    {
+      "source_id": "SF-LWC-TOAST",
+      "title": "Toast Notifications",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/use-toast.html",
+      "supports": "lightning/toast preferred; platformShowToastEvent limits on LWR, login pages, standalone apps; toastContainer.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Exact default toast duration is not specified here."
+    },
+    {
+      "source_id": "SF-LWC-MODAL",
+      "title": "Modal Windows",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/use-dialog-modal.html",
+      "supports": "Extend LightningModal; no lightning-modal tag; open() from parent; helper header/body/footer.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Notification modals are a sibling dialog topic."
+    },
+    {
+      "source_id": "SF-LWC-NAV-MODAL",
+      "title": "Navigate From a Modal",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/use-navigate-modal.html",
+      "supports": "Cannot use NavigationMixin directly on LightningModal; parent LightningElement navigates from an event.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Example page types vary; confirm the PageReference you need."
+    },
+    {
+      "source_id": "SF-LWC-QA-SCREEN",
+      "title": "Create Screen Quick Actions",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/use-quick-actions-screen.html",
+      "supports": "recordId setter; CloseActionScreenEvent; lightning-quick-action-panel; X bypasses Cancel logic.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Headless quick actions are a sibling page."
+    },
+    {
+      "source_id": "SF-LWC-FLOW",
+      "title": "Flows",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/use-flow.html",
+      "supports": "LWC as flow screen components and local actions with Flow Builder configuration.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Flow product choice versus Apex is AUTO-001."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Five channels",
+        "Navigation support matrix",
+        "Toast preference",
+        "LightningModal vs mixin",
+        "Quick action recordId",
+        "Flow targets"
+      ],
+      "accessible_description": "Portrait map: navigation, toast, modal, quick action, and Flow as separate channels, with Lightning Out as a no-navigation zone."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-NAV",
+        "SF-LWC-TOAST",
+        "SF-LWC-MODAL",
+        "SF-LWC-QA-SCREEN"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Which LWC chrome for this user moment?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  User[User moment] --> Nav[lightning/navigation PageReference]\n  User --> Toast[lightning/toast show]\n  User --> Modal[LightningModal.open]\n  User --> QA[Screen or headless quick action]\n  User --> Flow[Flow screen LWC or local action]\n  Modal --> Parent[Parent LightningElement may Navigate]\n  QA --> Setter[@api recordId setter + CloseActionScreenEvent]",
+      "decision": "flowchart TD\n  Need[Need chrome after a user act?] --> Q1{Must they confirm or fill a form?}\n  Q1 -->|Yes blocking| Q2{Admin-owned multi-step?}\n  Q2 -->|Yes| Flow[Flow screen or local action]\n  Q2 -->|No developer UI| Modal[LightningModal or screen quick action]\n  Q1 -->|No just announce| Toast[lightning/toast]\n  Q1 -->|No take them somewhere| Q3{Container supports lightning/navigation?}\n  Q3 -->|LEX Experience Cloud mobile| Nav[NavigationMixin]\n  Q3 -->|Lightning Out or Visualforce| Avoid[No lightning/navigation; redesign]\n  Q3 -->|LWR app| Lwr[lwr/navigation]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "lightning/navigation is supported in Lightning Experience, Experience Builder sites, and the Salesforce mobile app, not in Lightning Components for Visualforce or Lightning Out.",
+      "source_ids": ["SF-LWC-NAV"],
+      "scope": "Navigation support",
+      "validation": "Navigate to Pages opening paragraphs.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "lightning/toast is the preferred toast API; platformShowToastEvent is not supported on LWR Experience Cloud sites, Aura login pages, or standalone apps.",
+      "source_ids": ["SF-LWC-TOAST"],
+      "scope": "Toasts",
+      "validation": "Toast Notifications comparison.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Custom modals extend LightningModal, not LightningElement, and NavigationMixin cannot be used directly on LightningModal.",
+      "source_ids": ["SF-LWC-MODAL", "SF-LWC-NAV-MODAL"],
+      "scope": "Modals",
+      "validation": "Modal Windows and Navigate From a Modal.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "LWC screen quick actions do not pass recordId in connectedCallback; use an @api setter. Close with CloseActionScreenEvent.",
+      "source_ids": ["SF-LWC-QA-SCREEN"],
+      "scope": "Quick actions",
+      "validation": "Create Screen Quick Actions.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Lightning web components can be developed as Flow screen components and Flow local actions.",
+      "source_ids": ["SF-LWC-FLOW"],
+      "scope": "Flow integration",
+      "validation": "Flows topic in the LWC Developer Guide.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "lightning/toast is the documented preferred module over platformShowToastEvent. Reverify LWR and Lightning Out 2.0 support against Summer '26 docs.",
+  "unresolved_uncertainty": [
+    "Exact headless quick-action invoke signature belongs to the headless sibling page; confirm before an interview deep-dive.",
+    "Needs verification: lightning-flow embed component availability versus screen-component targets in the current release."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Toast",
+      "telugu": "తాత్కాలిక నోటిఫికేషన్ సందేశం."
+    },
+    {
+      "english": "Modal",
+      "telugu": "పేజీని బ్లాక్ చేసే డైలాగ్ విండో."
+    },
+    {
+      "english": "Quick action",
+      "telugu": "రికార్డ్ లేదా గ్లోబల్ యాక్షన్ బటన్ నుండి తెరిచే LWC."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I pick a channel: navigation to move, toast to announce, LightningModal to block, quick action for record chrome, Flow when admins own the steps. I never assume lightning/navigation works in Lightning Out.",
+    "two_minutes": "I start from the user moment. Confirm-delete is a modal or Flow, not a toast. After success I prefer lightning/toast, especially on LWR sites where platformShowToastEvent is unsupported. If I must navigate from a modal, the parent LightningElement calls NavigationMixin. On a screen quick action I capture recordId with a setter and close with CloseActionScreenEvent."
+  },
+  "terminology": [
+    {
+      "term": "lightning/navigation",
+      "plain": "The LWC service that opens another page, record, or list using a PageReference.",
+      "precise": "Supported in Lightning Experience, Experience Builder sites, and the Salesforce mobile app. Not supported in Lightning Components for Visualforce or Lightning Out. LWR apps use lwr/navigation.",
+      "example": "NavigationMixin.Navigate to a LAB_ Account record page after save.",
+      "non_example": "window.location.assign to a Salesforce URL inside Lightning Out hoping it is the navigation service.",
+      "confusable_neighbor": "lwr/navigation for Lightning Web Runtime apps.",
+      "boundary": "PageReference type catalog is neighboring reference material."
+    },
+    {
+      "term": "toast",
+      "plain": "A temporary popup that announces success, error, warning, or info.",
+      "precise": "Prefer LightningToast.show() from lightning/toast. platformShowToastEvent is not supported on LWR Experience sites, Aura login pages, or standalone apps.",
+      "example": "After createRecord, a success toast with a link to the new LAB_ Account.",
+      "non_example": "A blocking confirm-delete dialog.",
+      "confusable_neighbor": "Modal: blocking, requires a decision.",
+      "boundary": "Inline error regions from LWC-007 still belong on the card."
+    },
+    {
+      "term": "LightningModal",
+      "plain": "A custom overlay you open in code that blocks the rest of the page.",
+      "precise": "Extend LightningModal from lightning/modal. There is no lightning-modal tag. Parent calls MyModal.open(). NavigationMixin is not used on the modal class itself.",
+      "example": "labConfirmClose.open() returning 'confirm' to the parent.",
+      "non_example": "A screen quick action you configured in Setup without extending LightningModal.",
+      "confusable_neighbor": "Screen quick action modal chrome via lightning-quick-action-panel.",
+      "boundary": "Notification alert/confirm/prompt are sibling dialog helpers."
+    },
+    {
+      "term": "screen quick action",
+      "plain": "An LWC that opens in a modal from a record or global action.",
+      "precise": "Requires a quick-action target. recordId arrives via an @api setter, not connectedCallback. Close with CloseActionScreenEvent. Optional lightning-quick-action-panel for SLDS structure.",
+      "example": "Update Phone action on LAB_ Contact using lightning-record-edit-form inside the panel.",
+      "non_example": "Headless quick action with no UI.",
+      "confusable_neighbor": "LightningModal.open from a button that is not an action.",
+      "boundary": "Headless invoke details are the sibling headless page."
+    },
+    {
+      "term": "Flow screen component",
+      "plain": "An LWC an admin places on a Flow screen.",
+      "precise": "Configured with Flow targets so Flow Builder can drop it on a screen or use it as a local action. Properties must match supported Flow data types.",
+      "example": "A map picker LWC on a Screen Flow that updates a LAB_ Address.",
+      "non_example": "Calling Apex from LWC and calling it 'Flow integration.'",
+      "confusable_neighbor": "lightning-flow host component—Needs verification of current embed APIs.",
+      "boundary": "Whether the process should be Flow at all is AUTO-001."
+    },
+    {
+      "term": "CloseActionScreenEvent",
+      "plain": "The event that closes an LWC screen quick action modal.",
+      "precise": "Imported from lightning/actions. Use it for Cancel or after a successful save. The X control does not run your Cancel handler if you built a custom footer.",
+      "example": "this.dispatchEvent(new CloseActionScreenEvent()) after updateRecord succeeds.",
+      "non_example": "LightningModal.close() on a non-quick-action modal—that is this.close() on LightningModal.",
+      "confusable_neighbor": "LightningModal this.close(result).",
+      "boundary": "Only for the quick-action screen target."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Classify the user moment",
+      "actor": "Developer + admin",
+      "trigger": "Button or action requested",
+      "before": "Unclear chrome",
+      "after": "Navigate, toast, modal, quick action, or Flow",
+      "observe": "Written reason for the channel",
+      "failure": "Toast for a destructive confirm"
+    },
+    {
+      "step": 2,
+      "transition": "Check the container",
+      "actor": "Developer",
+      "trigger": "Channel includes navigation or toast",
+      "before": "Assumed LEX",
+      "after": "Confirmed LEX / Experience / mobile / LWR / Out",
+      "observe": "lightning/navigation or lwr/navigation or neither",
+      "failure": "Shipping NavigationMixin in Lightning Out"
+    },
+    {
+      "step": 3,
+      "transition": "Implement the chrome",
+      "actor": "Developer",
+      "trigger": "Channel chosen",
+      "before": "No overlay or navigation",
+      "after": "Correct class base, events, and targets in js-meta.xml",
+      "observe": "Modal extends LightningModal; QA has setter; Flow has targets",
+      "failure": "Reading recordId in connectedCallback on a screen action"
+    },
+    {
+      "step": 4,
+      "transition": "Compose channels",
+      "actor": "Developer",
+      "trigger": "Success path",
+      "before": "User stuck in the overlay",
+      "after": "Close overlay, toast, then navigate from a LightningElement",
+      "observe": "Parent handles onnavigate from the modal",
+      "failure": "NavigationMixin on the LightningModal class"
+    }
+  ],
+  "when_to_use": [
+    "When you must move the user with lightning/navigation in Lightning Experience, an Experience Builder site, or the Salesforce mobile app.",
+    "When a short success or error announcement is enough: prefer a toast via lightning/toast, not a blocking modal.",
+    "When the user must confirm or complete a form in a blocking overlay: LightningModal or a screen quick action.",
+    "When admins own a multi-step process: Flow integration with an LWC screen component or local action rather than a hard-coded wizard."
+  ],
+  "when_not_to_use": [
+    "Do not use lightning/navigation in Lightning Out, Lightning Components for Visualforce, or as a substitute for lwr/navigation in an LWR app.",
+    "Do not use platformShowToastEvent as your only toast on an LWR Experience Cloud site or standalone app.",
+    "Do not put NavigationMixin on a LightningModal class, or read recordId only in connectedCallback on a screen quick action.",
+    "Do not rebuild an entire Flow in LWC toasts and modals when a Screen Flow already fits, and do not skip LWC-007 inline error states by toasting every empty list."
+  ],
+  "configuration_or_code_location": [
+    "js-meta.xml targets: lightning__RecordPage, lightning__UrlAddressable, lightning__FlowScreen, lightning__RecordAction.",
+    "JS: NavigationMixin(LightningElement); LightningToast.show; class X extends LightningModal; CloseActionScreenEvent.",
+    "Setup: object Quick Action pointing at the LWC, or Flow Builder screen.",
+    "Parent JS: MyModal.open() then Navigate from the callback."
+  ],
+  "worked_example": {
+    "scenario": "On a LAB_ Case record, agents need Close Case: confirm reason in a modal, save, toast success, then navigate to the parent Account. Must also work as a screen quick action. Not Lightning Out.",
+    "inputs": [
+      "Case Id on the record page",
+      "Close reason picklist",
+      "Parent Account Id after save"
+    ],
+    "decisions": [
+      {
+        "decision": "Use a screen quick action with lightning-quick-action-panel for the form.",
+        "because": "Record chrome already has actions; the Guide's screen-action pattern fits.",
+        "rejected": "A toast that closes the Case with no confirm"
+      },
+      {
+        "decision": "Capture recordId with an @api setter stored in _recordId.",
+        "because": "connectedCallback is too early on LWC quick actions.",
+        "rejected": "this.recordId in connectedCallback"
+      },
+      {
+        "decision": "After save, toast with lightning/toast then CloseActionScreenEvent; navigate from the record page only if not in the action overlay—or have the parent page handle navigation if this is LightningModal.open.",
+        "because": "Toasts announce; navigation is a separate channel; mixins do not sit on LightningModal.",
+        "rejected": "NavigationMixin on a LightningModal subclass"
+      }
+    ],
+    "configuration_or_code": [
+      "@api set recordId(v) { this._recordId = v; } get recordId() { return this._recordId; }",
+      "import LightningToast from 'lightning/toast'; await LightningToast.show({ label: 'Case closed', variant: 'success' }, this);",
+      "this.dispatchEvent(new CloseActionScreenEvent());"
+    ],
+    "output": "Blocking form, success toast, action closes; no NavigationMixin on a modal class.",
+    "verification": [
+      "First connectedCallback log of recordId is empty; setter later has the Id.",
+      "X on a custom footer does not run Cancel logic—documented limitation.",
+      "lightning/navigation is not imported into a LightningModal subclass."
+    ],
+    "self_explanation": "I split confirm, announce, and move. I respected the quick-action recordId timing and the modal mixin rule."
+  },
+  "hands_on_lab": {
+    "environment": "Scratch org or Developer sandbox; LAB_ LWC only.",
+    "starting_state_checks": [
+      "You can deploy LWC and create a quick action on a custom or standard object in this org.",
+      "You are not using Lightning Out."
+    ],
+    "steps": [
+      "Create labCloseCase as a screen quick action with an @api recordId setter and lightning-quick-action-panel.",
+      "On success, call LightningToast.show and dispatch CloseActionScreenEvent.",
+      "Create a second pair: a LightningModal child plus a parent that uses NavigationMixin to open a record after the modal returns a PageReference event.",
+      "Document in a comment why NavigationMixin is on the parent, not the modal."
+    ],
+    "guided_completion": [
+      "If recordId is undefined in connectedCallback, that is expected.",
+      "If the modal class extends LightningElement, it is not the LightningModal pattern."
+    ],
+    "independent_challenge": "Add a Flow screen target to a small LWC that only displays a read-only LAB_ field, and place it on a Screen Flow in the sandbox.",
+    "evidence": [
+      "Code showing the recordId setter and CloseActionScreenEvent.",
+      "Parent Navigate call sitting on NavigationMixin(LightningElement), not LightningModal."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ components and the sandbox quick action.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not prove Lightning Out, LWR routing, or every PageReference type."
+  },
+  "decision_table": [
+    {
+      "signal": "User must confirm a destructive or irreversible Case close.",
+      "choose": "LightningModal or a screen quick action form, optionally a Screen Flow.",
+      "not": "A success toast that performs the close with no confirm.",
+      "why": "Toasts announce; they do not collect a blocking decision."
+    },
+    {
+      "signal": "Save succeeded and the user should stay on the page.",
+      "choose": "lightning/toast show() with a short success message.",
+      "not": "platformShowToastEvent as the only option on an LWR Experience site.",
+      "why": "The Guide prefers lightning/toast and documents platformShowToastEvent gaps."
+    },
+    {
+      "signal": "After the overlay, open the parent Account record in Lightning Experience.",
+      "choose": "NavigationMixin on a LightningElement parent (or the page component), not on LightningModal.",
+      "not": "Apply NavigationMixin directly to the LightningModal class.",
+      "why": "Navigate From a Modal requires a LightningElement to call the mixin."
+    },
+    {
+      "signal": "The same form must appear from the record action bar.",
+      "choose": "Screen quick action with recordId setter and CloseActionScreenEvent.",
+      "not": "Rely on connectedCallback for recordId like a normal record-page LWC.",
+      "why": "The Screen Quick Actions topic documents that timing difference."
+    },
+    {
+      "signal": "Admins must change steps without a code deploy.",
+      "choose": "Flow integration: LWC as a screen component or local action.",
+      "not": "Hard-code the wizard as nested LightningModal calls.",
+      "why": "The Flows topic exists so LWC participates in Flow Builder, not replaces every Flow."
+    }
+  ],
+  "limitations": [
+    "Does not catalog every PageReference type.",
+    "Does not fully specify headless quick-action invoke.",
+    "Lightning Out and Visualforce cannot use lightning/navigation.",
+    "X on a custom quick-action footer skips Cancel logic."
+  ],
+  "security_notes": [
+    "Do not put secrets or full error stacks in toast messages.",
+    "Closing a Case in a quick action still requires Apex/LDS CRUD and sharing.",
+    "URL-addressable components expose a URL; treat query params as untrusted."
+  ],
+  "common_mistakes": [
+    "NavigationMixin on LightningModal.",
+    "recordId in connectedCallback on a screen quick action.",
+    "platformShowToastEvent on an LWR site.",
+    "Toast for confirm-delete.",
+    "Assuming lightning/navigation works in Lightning Out."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Quick action form has no record Id.",
+      "check": [
+        "Use an @api setter, not connectedCallback.",
+        "Confirm the action is a screen LWC action on that object."
+      ],
+      "do_not_assume": "The metadata target is wrong before checking setter timing."
+    },
+    {
+      "symptom": "Compile or runtime error using Navigate inside a modal class.",
+      "check": [
+        "Does the class extend LightningModal? Then move NavigationMixin to the parent.",
+        "Pass a PageReference through an event as in Navigate From a Modal."
+      ],
+      "do_not_assume": "PageReference type is invalid before checking the mixin host."
+    },
+    {
+      "symptom": "Toast never appears on an Experience Cloud LWR site.",
+      "check": [
+        "Switch to lightning/toast.",
+        "Do not rely on platformShowToastEvent there."
+      ],
+      "do_not_assume": "The save failed; the toast module may be unsupported."
+    }
+  ],
+  "production_notes": [
+    "Match toast and modal copy to your empty/error states from LWC-007.",
+    "Regression-test quick actions after layout assignment, not only after deploy.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where is lightning/navigation documented as unsupported?",
+      "options": {
+        "A": "Lightning Components for Visualforce and Lightning Out",
+        "B": "Lightning Experience record pages",
+        "C": "Salesforce mobile app",
+        "D": "Experience Builder sites"
+      },
+      "answer": "A",
+      "rationale": "The Navigate topic lists Visualforce Lightning components and Lightning Out as unsupported containers.",
+      "distractor_explanations": {
+        "B": "LEX is a supported container.",
+        "C": "Mobile app is supported.",
+        "D": "Experience Builder sites are supported for lightning/navigation."
+      },
+      "concept": "Navigation support matrix",
+      "citation_ids": ["SF-LWC-NAV"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which toast API does the LWC Developer Guide call preferred?",
+      "options": {
+        "A": "lightning/toast show()",
+        "B": "window.alert",
+        "C": "Only platformShowToastEvent",
+        "D": "Apex System.debug"
+      },
+      "answer": "A",
+      "rationale": "Toast Notifications states lightning/toast is the preferred method.",
+      "distractor_explanations": {
+        "B": "Not the Lightning toast service.",
+        "C": "That module is documented with support gaps.",
+        "D": "Server logs are not user toasts."
+      },
+      "concept": "Preferred toast",
+      "citation_ids": ["SF-LWC-TOAST"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need a custom overlay. Which class do you extend?",
+      "options": {
+        "A": "LightningModal from lightning/modal",
+        "B": "LightningElement only, plus a lightning-modal tag",
+        "C": "NavigationMixin(LightningModal) as the documented happy path",
+        "D": "AuraComponent"
+      },
+      "answer": "A",
+      "rationale": "There is no lightning-modal tag; you extend LightningModal.",
+      "distractor_explanations": {
+        "B": "The Guide says you do not add that tag.",
+        "C": "NavigationMixin is not used directly on LightningModal.",
+        "D": "This is LWC."
+      },
+      "concept": "LightningModal",
+      "citation_ids": ["SF-LWC-MODAL"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "On an LWC screen quick action, when is recordId typically not available?",
+      "options": {
+        "A": "In connectedCallback, unlike other record-page LWCs",
+        "B": "Never; it is always ready in the constructor",
+        "C": "Only after CloseActionScreenEvent",
+        "D": "Only in Flow"
+      },
+      "answer": "A",
+      "rationale": "The Screen Quick Actions topic says recordId is not passed in connectedCallback; use an @api setter.",
+      "distractor_explanations": {
+        "B": "Constructor is even earlier.",
+        "C": "That event closes the panel.",
+        "D": "This is the quick-action target."
+      },
+      "concept": "Quick action recordId",
+      "citation_ids": ["SF-LWC-QA-SCREEN"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How should a screen quick action close itself after Cancel?",
+      "options": {
+        "A": "Dispatch CloseActionScreenEvent from lightning/actions",
+        "B": "window.close()",
+        "C": "NavigationMixin.GenerateUrl only",
+        "D": "Delete the component metadata"
+      },
+      "answer": "A",
+      "rationale": "CloseActionScreenEvent is the documented close mechanism.",
+      "distractor_explanations": {
+        "B": "Not a Lightning action API.",
+        "C": "That generates a URL, it does not close the action.",
+        "D": "Unrelated."
+      },
+      "concept": "CloseActionScreenEvent",
+      "citation_ids": ["SF-LWC-QA-SCREEN"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "platformShowToastEvent on an LWR Experience Cloud site. What does the Guide warn?",
+      "options": {
+        "A": "That module is not supported there; use lightning/toast",
+        "B": "It is the only supported toast",
+        "C": "It always works if cacheable=true",
+        "D": "It replaces LightningModal"
+      },
+      "answer": "A",
+      "rationale": "platformShowToastEvent is listed as unsupported on LWR sites for Experience Cloud.",
+      "distractor_explanations": {
+        "B": "Opposite of the docs.",
+        "C": "Caching is Apex, not toast support.",
+        "D": "Different channel."
+      },
+      "concept": "Toast support gaps",
+      "citation_ids": ["SF-LWC-TOAST"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A modal must send the user to a record. Where does NavigationMixin live?",
+      "options": {
+        "A": "On a LightningElement parent that handles an event from the modal",
+        "B": "On the LightningModal class itself, per the Guide's direct pattern",
+        "C": "Only in Apex",
+        "D": "Only in Visualforce"
+      },
+      "answer": "A",
+      "rationale": "Navigate From a Modal: you cannot use NavigationMixin directly in a component that extends LightningModal.",
+      "distractor_explanations": {
+        "B": "Explicitly forbidden by that topic.",
+        "C": "Navigation is client-side.",
+        "D": "Visualforce is an unsupported navigation container."
+      },
+      "concept": "Navigate from modal",
+      "citation_ids": ["SF-LWC-NAV-MODAL"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Admins must change a five-step Case intake without deploying JS each time. Best channel?",
+      "options": {
+        "A": "Flow integration with an LWC screen component where custom UI is needed",
+        "B": "Five stacked toasts",
+        "C": "Lightning Out navigation",
+        "D": "A headless quick action with no screen"
+      },
+      "answer": "A",
+      "rationale": "The Flows topic exists so LWC participates in Flow Builder.",
+      "distractor_explanations": {
+        "B": "Toasts are announcements, not a wizard.",
+        "C": "Out does not get lightning/navigation.",
+        "D": "Headless has no intake UI."
+      },
+      "concept": "Flow versus LWC wizard",
+      "citation_ids": ["SF-LWC-FLOW"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Toast versus modal for a validation message the user must acknowledge before continuing?",
+      "options": {
+        "A": "Modal (or Flow); a toast can be missed and does not block",
+        "B": "Toast only",
+        "C": "NavigationMixin only",
+        "D": "They are identical APIs"
+      },
+      "answer": "A",
+      "rationale": "Modals block interaction until dismiss; toasts do not.",
+      "distractor_explanations": {
+        "B": "Non-blocking.",
+        "C": "Moves the page, does not confirm.",
+        "D": "Different modules and UX."
+      },
+      "concept": "Toast vs modal",
+      "citation_ids": ["SF-LWC-TOAST", "SF-LWC-MODAL"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Screen quick action versus LightningModal.open from a button on the page?",
+      "options": {
+        "A": "The action is Setup-assigned chrome with special recordId timing; open() is a developer-owned overlay",
+        "B": "They are the same metadata",
+        "C": "open() is only for Flow",
+        "D": "Quick actions cannot show forms"
+      },
+      "answer": "A",
+      "rationale": "Screen actions use action targets, setters, and CloseActionScreenEvent; LightningModal is opened in JS.",
+      "distractor_explanations": {
+        "B": "Different configuration.",
+        "C": "open() is the modal module.",
+        "D": "The Guide shows forms in the panel."
+      },
+      "concept": "Action vs modal.open",
+      "citation_ids": ["SF-LWC-QA-SCREEN", "SF-LWC-MODAL"]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "lightning__UrlAddressable is documented as not supported in which container?",
+      "options": {
+        "A": "Experience Builder sites",
+        "B": "Lightning Experience",
+        "C": "Salesforce mobile app",
+        "D": "Custom Lightning console apps"
+      },
+      "answer": "A",
+      "rationale": "The Navigate topic says that target is not supported in Experience Builder sites because it interferes with custom domain and CDN support.",
+      "distractor_explanations": {
+        "B": "LEX is supported.",
+        "C": "Mobile is supported.",
+        "D": "Custom apps including console are listed as supported."
+      },
+      "concept": "UrlAddressable limits",
+      "citation_ids": ["SF-LWC-NAV"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A screen quick action has custom footer buttons. User clicks X. What does the Guide warn?",
+      "options": {
+        "A": "The modal closes without running Cancel logic",
+        "B": "CloseActionScreenEvent always fires",
+        "C": "The Case is always saved",
+        "D": "NavigationMixin runs automatically"
+      },
+      "answer": "A",
+      "rationale": "If you build a custom footer, pressing X only closes the modal; Cancel logic is bypassed.",
+      "distractor_explanations": {
+        "B": "X is not your Cancel handler.",
+        "C": "No automatic save.",
+        "D": "Unrelated."
+      },
+      "concept": "Quick action X control",
+      "citation_ids": ["SF-LWC-QA-SCREEN"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "Preferred LWC toast module?",
+      "back": "lightning/toast with LightningToast.show(), not platformShowToastEvent as the default."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "Where is lightning/navigation unsupported?",
+      "back": "Lightning Components for Visualforce and Lightning Out (including 2.0 / beta)."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "What class does a custom LWC modal extend?",
+      "back": "LightningModal from lightning/modal. There is no lightning-modal tag."
+    },
+    {
+      "id": "F4",
+      "category": "decision",
+      "front": "Can LightningModal use NavigationMixin directly?",
+      "back": "No. A LightningElement parent (or child that extends LightningElement) navigates."
+    },
+    {
+      "id": "F5",
+      "category": "decision",
+      "front": "How do you get recordId on a screen quick action?",
+      "back": "An @api setter that stores a private field. Do not rely on connectedCallback."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "How do you close a screen quick action?",
+      "back": "Dispatch CloseActionScreenEvent from lightning/actions."
+    },
+    {
+      "id": "F7",
+      "category": "limitation_security",
+      "front": "platformShowToastEvent on LWR Experience Cloud?",
+      "back": "Unsupported. Use lightning/toast instead."
+    },
+    {
+      "id": "F8",
+      "category": "scenario",
+      "front": "Confirm-delete: toast or modal?",
+      "back": "Modal, screen quick action, or Flow. A toast does not block."
+    },
+    {
+      "id": "F9",
+      "category": "scenario",
+      "front": "LWR app routing module?",
+      "back": "lwr/navigation, not lightning/navigation."
+    },
+    {
+      "id": "F10",
+      "category": "terminology",
+      "front": "Flow integration in this topic means?",
+      "back": "LWC as a Flow screen component or local action with the proper targets."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "UrlAddressable in Experience Builder sites?",
+      "back": "Not supported; it interferes with custom domain and CDN support."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "Custom QA footer plus X. Cancel logic?",
+      "back": "X closes without running your Cancel handler. Document that gap."
+    },
+    {
+      "id": "F13",
+      "category": "terminology",
+      "front": "lightning-quick-action-panel purpose?",
+      "back": "SLDS-aligned header, body, and footer inside a screen quick action."
+    },
+    {
+      "id": "F14",
+      "category": "decision",
+      "front": "Announce save success while staying on the page?",
+      "back": "Toast via lightning/toast, not a navigation away."
+    },
+    {
+      "id": "F15",
+      "category": "terminology",
+      "front": "How do you open a LightningModal?",
+      "back": "Import the modal component and await MyModal.open({ ... }) from the parent."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you choose among navigation, toast, modal, quick action, and Flow in LWC?",
+      "answer_30_seconds": "Navigate to move, toast to announce, modal or screen action to block, Flow when admins own the steps. Check the container before using lightning/navigation.",
+      "answer_2_minutes": "I start from the user moment, not the API I like. Destructive confirm is never a toast. Record-page chrome often wants a screen quick action with a recordId setter. After success I toast, then navigate from a LightningElement if needed. If the wizard must change without deploys, I expose LWC to Flow instead of nesting modals.",
+      "example": "Close LAB_ Case: screen action form, lightning/toast, then optional Navigate to Account from a parent.",
+      "tradeoffs": [
+        "Admin-owned Flow versus developer-owned modal",
+        "Action bar versus in-page button"
+      ],
+      "follow_ups": [
+        "What about headless actions?",
+        "What about LWR?"
+      ],
+      "weak_answer_warnings": [
+        "One API for every UX problem"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Where does lightning/navigation not work?",
+      "answer_30_seconds": "Lightning Components for Visualforce and Lightning Out, even if those containers are inside Lightning Experience. LWR apps need lwr/navigation.",
+      "answer_2_minutes": "I recite the support matrix from the Navigate topic. I do not promise deep-link LWC navigation in Lightning Out. For Experience Builder I also remember lightning__UrlAddressable is unsupported. Interviewers listen for that container humility.",
+      "example": "A Visualforce page hosting Lightning Out cannot call NavigationMixin to a record page.",
+      "tradeoffs": [
+        "Stay in LEX versus embed in VF",
+        "Custom URL component versus Experience site"
+      ],
+      "follow_ups": [
+        "What is Lightning Out 2.0?",
+        "How do you navigate in LWR?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming navigation works everywhere LWC runs"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Your modal must navigate to a record. How do you structure the components?",
+      "answer_30_seconds": "The modal extends LightningModal and fires an event with a PageReference. The parent extends NavigationMixin(LightningElement) and calls Navigate.",
+      "answer_2_minutes": "I do not put NavigationMixin on the modal class. The Navigate From a Modal topic is explicit. The child inside the modal may dispatch the PageReference; the parent that called MyModal.open handles onnavigate. That is the interview diagram.",
+      "example": "miscModal pattern: parent opens myModal, then Navigate on the event.",
+      "tradeoffs": [
+        "Close then navigate versus navigate while open",
+        "Child versus modal dispatching the event"
+      ],
+      "follow_ups": [
+        "Can the modal call this.close before navigate?",
+        "What page type do you use?"
+      ],
+      "weak_answer_warnings": [
+        "export default class X extends NavigationMixin(LightningModal)"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A screen quick action's form is empty. recordId looks undefined. What do you check?",
+      "answer_30_seconds": "Whether you read recordId in connectedCallback. Use an @api setter into a private field and read that later.",
+      "answer_2_minutes": "Unlike other record-page LWCs, quick actions assign recordId after connectedCallback. I implement set recordId and get recordId, store _recordId, and wire or query from the setter. I also confirm the target is lightning__RecordAction / screen, not a normal page component dropped on the layout.",
+      "example": "labEditPhone setter logs the Id after the first connectedCallback log shows undefined.",
+      "tradeoffs": [
+        "Setter-triggered wire versus imperative load",
+        "Panel form versus lightning-record-edit-form"
+      ],
+      "follow_ups": [
+        "How do you close after save?",
+        "What if they click X?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming FLS before checking setter timing"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Toasts work in the org app but not on an LWR site. Why?",
+      "answer_30_seconds": "platformShowToastEvent is not supported on LWR Experience Cloud sites. Switch to lightning/toast.",
+      "answer_2_minutes": "I ask which module they imported. If it is ShowToastEvent, that matches the documented gap. I migrate to LightningToast.show with the component as the second argument. I still keep inline errors on the form from LWC-007; a missing toast is not the only channel.",
+      "example": "Experience Cloud LWR intake form: ShowToastEvent silent; lightning/toast visible.",
+      "tradeoffs": [
+        "Dual toast modules during migration",
+        "Inline error versus toast"
+      ],
+      "follow_ups": [
+        "Does lightning/toast support links?",
+        "What is toastContainer?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming CSP first without checking the toast module"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Users click X on your quick action and unsaved work vanishes without your Cancel warning. Why?",
+      "answer_30_seconds": "With a custom footer, X only closes the modal. Cancel logic does not run. The Guide calls this out.",
+      "answer_2_minutes": "I either use lightning-quick-action-panel patterns that match platform Cancel, warn in UX copy, or avoid putting unique logic only on Cancel. I do not promise a beforeunload hook that the X control will honor. Interviewers like that you read the limitation instead of calling it a platform bug.",
+      "example": "Custom Save/Cancel footer; X discards the LAB_ Phone edit silently.",
+      "tradeoffs": [
+        "Custom footer styling versus platform close behavior",
+        "Warn on every field change versus accept the gap"
+      ],
+      "follow_ups": [
+        "Would LightningModal this.close help?",
+        "Would Flow be better?"
+      ],
+      "weak_answer_warnings": [
+        "Filing a Salesforce bug as the first answer"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When is Flow the better host than a stack of LWC modals?",
+      "answer_30_seconds": "When admins must change steps, branching, or data writes without a JS deploy, and LWC only supplies a custom widget on a screen.",
+      "answer_2_minutes": "I keep AUTO-001 in mind: Flow owns the process. LWC supplies UI the base Flow screen cannot. I add the Flow screen target and supported property types. I do not hide a five-step intake behind nested LightningModal.open calls that only developers can change.",
+      "example": "Address-picker LWC on a Screen Flow that creates a LAB_ Service Appointment.",
+      "tradeoffs": [
+        "Admin agility versus pixel control",
+        "Local action versus screen component"
+      ],
+      "follow_ups": [
+        "What is a Flow local action?",
+        "How do you validate a custom screen component?"
+      ],
+      "weak_answer_warnings": [
+        "LWC for every wizard by default"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach these five channels with a hotel-desk analogy, then break it.",
+      "answer_30_seconds": "Escort is navigation, sticky note is toast, booth is modal, bell is quick action, specialist is Flow. The booth cannot walk you to the room—LightningModal cannot host NavigationMixin.",
+      "answer_2_minutes": "I map each channel, then the breaks: Lightning Out has no corridor; LWR uses a different escort service; the bell delivers the room number after you already stepped into connectedCallback. That last point is the quick-action recordId trap.",
+      "example": "Whiteboard the Close Case path with four boxes and one 'not in Out' sticker.",
+      "tradeoffs": [
+        "Analogy speed versus support-matrix accuracy",
+        "One overlay versus Flow"
+      ],
+      "follow_ups": [
+        "Draw the modal parent diagram",
+        "Name the toast module"
+      ],
+      "weak_answer_warnings": [
+        "catalog-shelf metaphor",
+        "Collapsing all five into 'just events'"
+      ]
+    }
+  ]
+}

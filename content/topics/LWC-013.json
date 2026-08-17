@@ -1,0 +1,963 @@
+{
+  "topic_id": "LWC-013",
+  "slug": "aura-and-visualforce-recognition-interoperability-and-m",
+  "title": "Aura and Visualforce recognition, interoperability, and migration decisions",
+  "track": "Lightning Web Components",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-012"
+  ],
+  "objectives": [
+    "Recognize Aura versus Visualforce versus LWC from markup, folders, and runtime containers.",
+    "State the coexistence rule: Aura may contain LWC; LWC may not contain Aura.",
+    "Decide what to migrate by usage and facets, not by rewriting every working page.",
+    "Know that Lightning Out and Visualforce do not get lightning/navigation and other LEX-only modules."
+  ],
+  "diagnostic_question": "A record page mixes an Aura wrapper, an LWC child, and a Visualforce iframe. What can contain what, what should you migrate first, and which navigation APIs will silently fail?",
+  "definition": "Aura and Visualforce recognition, interoperability, and migration decisions are how you identify the three UI stacks, compose them legally, and choose what to rewrite. Aura and LWC coexist in the same Lightning runtime: an Aura component can contain a Lightning web component; a Lightning web component cannot contain an Aura component. If an Aura component’s facets contain other Aura components, those must migrate too. Visualforce is a different container; Lightning Out and Lightning Components for Visualforce do not support lightning/navigation. ([Pick a Component to Migrate](https://developer.salesforce.com/docs/platform/lwc/guide/migrate-decide.html); [Migrate Aura Components](https://developer.salesforce.com/docs/platform/lwc/guide/migrate-introduction.html); [Navigate to Pages](https://developer.salesforce.com/docs/platform/lwc/guide/use-navigate.html))",
+  "why_it_matters": "Interviewers fail 'rewrite everything in LWC this sprint' and 'drop Aura inside LWC.' Facets create hidden Aura children. Visualforce plus Lightning Out looks like LWC but loses navigation and some toasts. Recognition from file names (.cmp vs .js/.html vs .page) is the first 30 seconds of the answer.",
+  "sixty_second_explanation": "Think of a mixed rail fleet on one campus. Visualforce is the heritage streetcar on its own rails. Aura is the older locomotive that can still couple a new LWC passenger car. LWC is the new electric multiple unit: it cannot swallow an Aura locomotive inside itself. Interoperability is legal coupling. Migration is retiring a locomotive when the route and the coupled cars are ready—not scrapping the whole yard because one new car arrived.",
+  "deeper_explanation": [
+    "Recognition: Visualforce uses .page/.component and Apex controllers, often Classic or VF tabs. Aura uses .cmp/.auradoc in aura/ folders and aura: attributes. LWC uses lwc/ folders with HTML, JS, CSS, js-meta.xml. Lightning App Builder may host Aura and LWC side by side on a record page.",
+    "Interoperability: Aura and LWC share the Lightning runtime. Aura can contain LWC. LWC cannot contain Aura. Facets in Aura that hold nested Aura force those nested pieces onto the migration path too. Events and data-binding differ; the migrate guide has dedicated pages for markup, events, CSS, and Apex. ([Pick a Component to Migrate](https://developer.salesforce.com/docs/platform/lwc/guide/migrate-decide.html))",
+    "Visualforce interoperability is usually Lightning Components for Visualforce or Lightning Out / Lightning Out 2.0—not nesting VF inside LWC as a first-class child. Those containers do not support lightning/navigation even when they appear inside Lightning Experience. Plan URL changes accordingly (LWC-008).",
+    "Migration decisions: new work prefers LWC. Migrate an Aura component when you must change it, when you need LWC-only APIs, or when the wrapper exists only to host LWC. Do not migrate a stable Aura that you never touch just for fashion. Understand facets before you pick a leaf. Use the official Aura-to-LWC mapping topics rather than inventing a one-to-one API cheat sheet from memory.",
+    "LWS applies to Aura and LWC (GA Summer ’23). A Visualforce page is not 'fixed' by LWS. Tests: Jest for LWC (LWC-012), not Aura test suites."
+  ],
+  "mental_model": {
+    "analogy": "A mixed rail fleet: Visualforce streetcar on separate rails, Aura locomotive that can couple an LWC car, LWC train that cannot swallow an Aura locomotive.",
+    "useful_mapping": [
+      "streetcar rails → Visualforce / Classic VF container",
+      "Aura locomotive → .cmp component that may wrap LWC",
+      "LWC passenger car → modern component, cannot contain Aura",
+      "coupled cars that must all convert → Aura facets of nested Aura",
+      "missing corridor on the streetcar line → no lightning/navigation in Lightning Out",
+      "scrapping the yard overnight → unjustified big-bang migration"
+    ],
+    "where_it_breaks": [
+      "A real railroad can rebuild a locomotive around a car; LWC still cannot host Aura.",
+      "Lightning App Builder can place Aura and LWC as siblings without nesting.",
+      "Managed-package Aura may be unmigratable even if the analogy says 'retire it.'"
+    ]
+  },
+  "teach_back_prompt": "Without a catalog metaphor, tell a teammate the Aura-contains-LWC rule, how you recognize Visualforce, and when you would not migrate.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Can LWC contain Aura? Can Aura contain LWC?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "What are Aura facets doing to your migration plan?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Name one module that fails in Lightning Out / VF."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "When do you leave a working Aura component alone?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: recognize, compose, migrate."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-MIGRATE-DECIDE",
+      "title": "Pick a Component to Migrate",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/migrate-decide.html",
+      "supports": "Coexistence; Aura contains LWC; LWC cannot contain Aura; migrate nested Aura in facets too; evaluate usage.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every Aura interface mapping."
+    },
+    {
+      "source_id": "SF-LWC-MIGRATE-INTRO",
+      "title": "Migrate Aura Components to Lightning Web Components",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/migrate-introduction.html",
+      "supports": "Aura and LWC can exist in the same application; mapping skills from Aura to LWC; pointer to Trailhead and migration tools.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "MCP/Aura-to-LWC tools are neighboring; do not invent tool output."
+    },
+    {
+      "source_id": "SF-LWC-NAV",
+      "title": "Navigate to Pages, Records, and Lists",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/use-navigate.html",
+      "supports": "lightning/navigation is unsupported in Lightning Components for Visualforce and Lightning Out.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not enumerate every VF embedding option."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Recognize stacks",
+        "Aura wraps LWC",
+        "LWC never wraps Aura",
+        "Facets",
+        "VF / Out limits",
+        "Migrate by usage"
+      ],
+      "accessible_description": "Portrait map of Visualforce, Aura, and LWC: legal nesting, facet impact, and Lightning Out as a no-navigation zone."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-MIGRATE-DECIDE",
+        "SF-LWC-MIGRATE-INTRO",
+        "SF-LWC-NAV"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Who can nest whom?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  LEX[Lightning runtime] --> Aura[Aura .cmp]\n  LEX --> LWC[LWC bundle]\n  Aura --> LWC\n  LWC -.->|cannot contain| Aura\n  VF[Visualforce / Lightning Out] --> LWC2[LWC in unsupported navigation container]\n  Aura --> Facet[Aura facets of more Aura]\n  Facet --> Mig[Must migrate those too]",
+      "decision": "flowchart TD\n  See[See a UI to change] --> Q1{What files?}\n  Q1 -->|.page Apex controller| VF[Visualforce: treat as separate container]\n  Q1 -->|.cmp aura| Q2{Need to change it?}\n  Q2 -->|No and stable| Leave[Leave Aura; optionally wrap new LWC beside it]\n  Q2 -->|Yes| Q3{Has Aura facets?}\n  Q3 -->|Yes| All[Plan nested Aura in the same migration]\n  Q3 -->|No| Lwc[Rewrite as LWC; Aura parent may host it]\n  Q1 -->|lwc folder| Keep[Extend LWC; do not nest Aura inside]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Lightning web components and Aura components can co-exist in the same runtime. Aura can contain LWC. LWC cannot contain Aura.",
+      "source_ids": ["SF-LWC-MIGRATE-DECIDE"],
+      "scope": "Interoperability",
+      "validation": "Pick a Component to Migrate coexistence bullets.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "If an Aura component has facets that contain other Aura components, you must migrate those other Aura components too.",
+      "source_ids": ["SF-LWC-MIGRATE-DECIDE"],
+      "scope": "Facets",
+      "validation": "Pick a Component to Migrate.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Aura and LWC can exist in the same application; the migrate section maps Aura skills onto LWC.",
+      "source_ids": ["SF-LWC-MIGRATE-INTRO"],
+      "scope": "Migration framing",
+      "validation": "Migrate Aura Components introduction.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "lightning/navigation is not supported in Lightning Components for Visualforce or Lightning Out.",
+      "source_ids": ["SF-LWC-NAV"],
+      "scope": "Visualforce / Out",
+      "validation": "Navigate to Pages support matrix.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Lightning Out 2.0 is the current Out branding in the nav tree; reverify embedding options for Summer '26. Aura-to-LWC migration tools are mentioned; do not claim a specific tool output without the current docs.",
+  "unresolved_uncertainty": [
+    "Exact Aura interface-to-LWC target mappings belong to the migrate-interfaces page; look them up per component.",
+    "Needs verification: which managed-package Aura components you are licensed to replace."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Aura component",
+      "telugu": "LWCకి ముందు Lightning UI భాగం (.cmp)."
+    },
+    {
+      "english": "Visualforce",
+      "telugu": "పేజీ-కేంద్రిత పాత UI ఫ్రేమ్‌వర్క్."
+    },
+    {
+      "english": "Interoperability",
+      "telugu": "Aura మరియు LWC ఒకే రన్‌టైమ్‌లో కలిసి పని చేయడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I recognize VF, Aura, and LWC from files. Aura may wrap LWC; LWC never wraps Aura. Facets pull nested Aura into the migration. Visualforce/Out loses lightning/navigation. I migrate by usage, not fashion.",
+    "two_minutes": "New work is LWC. A stable Aura wrapper can host a new LWC child. If I touch the Aura parent, I map facets first. I do not promise NavigationMixin inside Lightning Out. I do not big-bang the org. LWS applies to Aura and LWC, not as a VF rewrite."
+  },
+  "terminology": [
+    {
+      "term": "Aura component",
+      "plain": "The older Lightning component model using .cmp markup.",
+      "precise": "Lives in the Lightning runtime with LWC. May contain LWC. Cannot be nested inside LWC. Facets can hide more Aura children.",
+      "example": "aura:component wrapping c:labKpiTile LWC on a record page.",
+      "non_example": "An lwc/labKpiTile bundle.",
+      "confusable_neighbor": "Lightning web component.",
+      "boundary": "Aura events and value binding differ; see migrate-events."
+    },
+    {
+      "term": "Visualforce",
+      "plain": "The page-centric UI framework that predates Lightning.",
+      "precise": "Recognized by .page and Apex controllers. Embedding LWC typically uses Lightning Out or Lightning Components for Visualforce, which lack lightning/navigation.",
+      "example": "A VF console page hosting Lightning Out.",
+      "non_example": "A Lightning record page with only LWC.",
+      "confusable_neighbor": "Lightning App Builder pages.",
+      "boundary": "Do not invent a VF-inside-LWC first-class tag."
+    },
+    {
+      "term": "interoperability",
+      "plain": "Legal ways the stacks share a screen.",
+      "precise": "Aura hosts LWC. Sibling placement on App Builder. VF hosts via Out. Not LWC hosts Aura.",
+      "example": "Aura parent, LWC child, both on one LEX page.",
+      "non_example": "c:auraChild inside an LWC template.",
+      "confusable_neighbor": "Lightning Message Service across stacks (neighboring communication topic).",
+      "boundary": "LMS details are LWC-005."
+    },
+    {
+      "term": "migration",
+      "plain": "Rewriting Aura (or VF) UI into LWC when it is justified.",
+      "precise": "Evaluate how and where the component is used. Migrate nested Aura in facets together. Prefer LWC for new work. Mapping guides exist for markup, events, CSS, Apex, quick actions.",
+      "example": "Rewriting an Aura quick action you must change into an LWC screen action (LWC-008).",
+      "non_example": "Rewriting a untouched managed Aura header this sprint.",
+      "confusable_neighbor": "Lift-and-shift of Visualforce with no container analysis.",
+      "boundary": "Do not memorize unofficial API maps; open the migrate-* pages."
+    },
+    {
+      "term": "facet",
+      "plain": "An Aura region that can hold other components as children.",
+      "precise": "If those children are Aura, they are on the migration hook: you must migrate them too when you migrate the parent.",
+      "example": "An Aura layout facet that includes another Aura filter bar.",
+      "non_example": "An LWC slot (different model).",
+      "confusable_neighbor": "LWC slots.",
+      "boundary": "Understand facets before picking a leaf component."
+    },
+    {
+      "term": "recognition",
+      "plain": "Telling VF, Aura, and LWC apart in an org or a repo.",
+      "precise": "Folders (pages, aura, lwc), file suffixes, and which builder opened the source. Interviewers start here.",
+      "example": "Seeing aura:iteration versus lwc:if in a screenshot.",
+      "non_example": "Guessing from the business object name alone.",
+      "confusable_neighbor": "Experience Cloud LWR versus Aura sites (toast/nav differences).",
+      "boundary": "Site type is a neighboring Experience topic."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Recognize the stack",
+      "actor": "Developer",
+      "trigger": "A UI bug or enhancement",
+      "before": "Unknown .cmp / .page / lwc",
+      "after": "Named stack and container",
+      "observe": "File path and suffix",
+      "failure": "Calling everything Lightning"
+    },
+    {
+      "step": 2,
+      "transition": "Map composition",
+      "actor": "Developer",
+      "trigger": "More than one stack on the page",
+      "before": "Assumed LWC can wrap Aura",
+      "after": "Aura-wraps-LWC or siblings; no LWC-wraps-Aura",
+      "observe": "Parent markup",
+      "failure": "Trying to put aura:component in an LWC template"
+    },
+    {
+      "step": 3,
+      "transition": "Check facets and usage",
+      "actor": "Developer + admin",
+      "trigger": "Migration proposed",
+      "before": "Leaf-only rewrite",
+      "after": "Nested Aura listed; App Builder versus VF versus Out noted",
+      "observe": "Written nested list",
+      "failure": "Migrating a parent and leaving Aura facet children"
+    },
+    {
+      "step": 4,
+      "transition": "Decide migrate versus host",
+      "actor": "Architect + developer",
+      "trigger": "Enough inventory",
+      "before": "Big-bang rewrite",
+      "after": "New LWC hosted by Aura, or full LWC, or leave stable Aura",
+      "observe": "Navigation APIs valid in that container",
+      "failure": "NavigationMixin in Lightning Out"
+    }
+  ],
+  "when_to_use": [
+    "When you must recognize Aura versus Visualforce versus LWC and decide interoperability or migration.",
+    "When an Aura wrapper should host a new LWC instead of a forbidden LWC-contains-Aura design.",
+    "When Aura facets contain nested Aura that would be stranded by a parent-only rewrite.",
+    "When a Visualforce or Lightning Out host cannot use lightning/navigation and the migration plan must account for that."
+  ],
+  "when_not_to_use": [
+    "Do not use this migration lesson as a mandate to rewrite every stable Aura or Visualforce page this quarter.",
+    "Do not nest Aura inside LWC, or assume Lightning Out has the same navigation and toast modules as LEX.",
+    "Do not skip facet inventory, or treat LWS as a Visualforce rewrite.",
+    "Do not invent one-to-one Aura-to-LWC API maps from memory; open the official migrate topics."
+  ],
+  "configuration_or_code_location": [
+    "Repo: force-app/main/default/aura vs lwc vs pages.",
+    "Aura markup that references c:lwcName.",
+    "js-meta.xml targets versus Aura interfaces (migrate-interfaces page).",
+    "VF page Lightning Out application versus Lightning record page."
+  ],
+  "worked_example": {
+    "scenario": "A LAB_ Account page uses an Aura header with two Aura facets (filter + chart) and a team wants a new LWC KPI tile. A second request is to embed the KPI on a Visualforce console page via Lightning Out with NavigationMixin to the Account.",
+    "inputs": [
+      "Existing Aura header you barely change",
+      "Two Aura facet children",
+      "New KPI requirement",
+      "VF console constraint"
+    ],
+    "decisions": [
+      {
+        "decision": "Put the KPI in LWC and let the Aura header contain it (or place it as an App Builder sibling).",
+        "because": "Aura can contain LWC; new work prefers LWC.",
+        "rejected": "Wrap the Aura header inside the new LWC"
+      },
+      {
+        "decision": "Do not migrate the untouched Aura facets in this sprint.",
+        "because": "Usage does not require touching them; migrate-decide says evaluate how it is used.",
+        "rejected": "Big-bang rewrite of filter and chart"
+      },
+      {
+        "decision": "On Visualforce Out, do not use lightning/navigation; pass a URL or keep the user in VF.",
+        "because": "The Navigate topic excludes that container.",
+        "rejected": "Copy-paste NavigationMixin from the LEX version"
+      }
+    ],
+    "configuration_or_code": [
+      "Aura parent includes <c:labKpiTile record-id=\"{!v.recordId}\"> (syntax Needs verification against current Aura-to-LWC attribute passing).",
+      "LWC labKpiTile with lightning__RecordPage target for the LEX placement.",
+      "Out version omits NavigationMixin; documents the limitation."
+    ],
+    "output": "KPI ships as LWC; Aura remains legal host; VF path has no fake navigation.",
+    "verification": [
+      "LWC template contains no Aura child.",
+      "Facet Aura components still render.",
+      "Out page has no lightning/navigation import."
+    ],
+    "self_explanation": "I recognized three stacks, obeyed the nesting rule, and refused LEX APIs in Out."
+  },
+  "hands_on_lab": {
+    "environment": "Scratch org that still allows Aura and LWC; LAB_ names only.",
+    "starting_state_checks": [
+      "You can create both an Aura component and an LWC.",
+      "You are not editing production managed packages."
+    ],
+    "steps": [
+      "Create labAuraHost (Aura) that includes labLwcChild (LWC) showing a bound record Id.",
+      "Attempt (in a throwaway branch) to reference an Aura component from an LWC template and record that it is not a supported composition.",
+      "List any Aura facets on labAuraHost; write whether a future migration must include them.",
+      "Document in a comment that lightning/navigation would be invalid if this LWC were hosted in Lightning Out."
+    ],
+    "guided_completion": [
+      "If the LWC template hosts Aura, the lab failed the Guide's rule.",
+      "If you migrated unused facets, you overscoped."
+    ],
+    "independent_challenge": "Identify one Visualforce page in a sample app (or describe one) and write whether Out or a Lightning page is the better long-term host.",
+    "evidence": [
+      "Aura markup showing the LWC child.",
+      "Written note: LWC cannot contain Aura; Out cannot use lightning/navigation."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Aura and LWC from the scratch org.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not run an official Aura-to-LWC converter end to end."
+  },
+  "decision_table": [
+    {
+      "signal": "Need a new widget on an existing Aura record header.",
+      "choose": "Build LWC and let Aura contain it, or place LWC as an App Builder sibling.",
+      "not": "An LWC parent that tries to include the Aura header.",
+      "why": "Aura can contain LWC; LWC cannot contain Aura."
+    },
+    {
+      "signal": "You must change an Aura parent whose facets include other Aura components.",
+      "choose": "Inventory and migrate those nested Aura pieces in the same plan.",
+      "not": "Rewrite only the parent and leave Aura children in facets.",
+      "why": "The migrate-decide topic says those other Aura components must migrate too."
+    },
+    {
+      "signal": "The UI is Visualforce or Lightning Out and must open a record page like LEX.",
+      "choose": "Redesign navigation; do not use lightning/navigation in that container.",
+      "not": "Copy NavigationMixin from the Lightning Experience LWC.",
+      "why": "The Navigate topic lists VF Lightning components and Lightning Out as unsupported."
+    },
+    {
+      "signal": "An Aura component is stable, unused in the current project, and not blocking LWC.",
+      "choose": "Leave it; put new work in LWC beside it.",
+      "not": "A fashion-driven big-bang rewrite this sprint.",
+      "why": "Pick a component to migrate by how and where it is used."
+    }
+  ],
+  "limitations": [
+    "Does not map every Aura interface to js-meta.xml.",
+    "Does not guarantee managed-package source is available.",
+    "Lightning Out 2.0 details are neighboring docs.",
+    "Does not replace LWC-008 module support matrices."
+  ],
+  "security_notes": [
+    "Migrating UI does not loosen CRUD/FLS; retest access.",
+    "LWS applies to Aura and LWC in Lightning, not as a VF CSP substitute.",
+    "Do not copy production VF view state into examples."
+  ],
+  "common_mistakes": [
+    "LWC containing Aura.",
+    "Ignoring Aura facets.",
+    "NavigationMixin in Lightning Out.",
+    "Big-bang rewrite of stable Aura.",
+    "Calling Visualforce 'Aura' or vice versa."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Cannot drop an Aura component into an LWC template.",
+      "check": [
+        "That composition is unsupported.",
+        "Host LWC from Aura or as siblings."
+      ],
+      "do_not_assume": "A missing namespace prefix is the only issue."
+    },
+    {
+      "symptom": "After migrating a parent, nested UI vanished.",
+      "check": [
+        "Aura facets that still expected Aura children.",
+        "Migrate or replace those children."
+      ],
+      "do_not_assume": "App Builder hid the component."
+    },
+    {
+      "symptom": "LWC navigation works on the record page and fails on a VF host.",
+      "check": [
+        "Is the host Lightning Out or Lightning Components for Visualforce?",
+        "Remove lightning/navigation from that build."
+      ],
+      "do_not_assume": "The PageReference type is wrong before checking the container."
+    }
+  ],
+  "production_notes": [
+    "Inventory Aura, LWC, and VF before promising dates.",
+    "Regression-test LEX and Out hosts separately.",
+    "No production rewrite is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which nesting is documented as allowed?",
+      "options": {
+        "A": "An Aura component can contain a Lightning web component",
+        "B": "An LWC can contain an Aura component",
+        "C": "Neither can coexist",
+        "D": "Only Visualforce can contain Aura"
+      },
+      "answer": "A",
+      "rationale": "Aura can contain LWC; LWC cannot contain Aura; they coexist in the same runtime.",
+      "distractor_explanations": {
+        "B": "Explicitly disallowed.",
+        "C": "They coexist.",
+        "D": "Not the coexistence rule."
+      },
+      "concept": "Aura contains LWC",
+      "citation_ids": ["SF-LWC-MIGRATE-DECIDE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Can a Lightning web component contain an Aura component?",
+      "options": {
+        "A": "No",
+        "B": "Yes, with a special slot",
+        "C": "Yes, if cacheable=true",
+        "D": "Yes, in Jest only"
+      },
+      "answer": "A",
+      "rationale": "A Lightning web component can’t contain an Aura component.",
+      "distractor_explanations": {
+        "B": "Slots are LWC children, not Aura.",
+        "C": "Apex caching is unrelated.",
+        "D": "Tests do not change composition rules."
+      },
+      "concept": "No LWC-contains-Aura",
+      "citation_ids": ["SF-LWC-MIGRATE-DECIDE"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "An Aura parent uses facets that include other Aura components. You migrate the parent. What else?",
+      "options": {
+        "A": "You must migrate those other Aura components too",
+        "B": "Facets automatically become LWC slots",
+        "C": "You must convert them to Visualforce first",
+        "D": "Nothing; facets are ignored"
+      },
+      "answer": "A",
+      "rationale": "If an Aura component has facets that contain other Aura components, you must migrate those too.",
+      "distractor_explanations": {
+        "B": "Slots are not a silent conversion.",
+        "C": "Wrong direction.",
+        "D": "Facets are the trap."
+      },
+      "concept": "Facets",
+      "citation_ids": ["SF-LWC-MIGRATE-DECIDE"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "lightning/navigation in Lightning Components for Visualforce?",
+      "options": {
+        "A": "Unsupported, even if the VF page sits in Lightning Experience",
+        "B": "Fully supported like LEX",
+        "C": "Supported only with Jest",
+        "D": "Supported if the LWC is cacheable"
+      },
+      "answer": "A",
+      "rationale": "The Navigate topic excludes Lightning Components for Visualforce and Lightning Out even inside LEX or the mobile app.",
+      "distractor_explanations": {
+        "B": "Opposite.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "VF / Out navigation",
+      "citation_ids": ["SF-LWC-NAV"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Aura components and LWC in the same application?",
+      "options": {
+        "A": "They can exist together; the migrate guide maps Aura skills to LWC",
+        "B": "Impossible after Winter ’23",
+        "C": "Only in Classic",
+        "D": "Only inside Apex"
+      },
+      "answer": "A",
+      "rationale": "The migrate introduction states they can exist in the same application.",
+      "distractor_explanations": {
+        "B": "Coexistence remains.",
+        "C": "Lightning runtime.",
+        "D": "UI stacks, not Apex."
+      },
+      "concept": "Same application",
+      "citation_ids": ["SF-LWC-MIGRATE-INTRO"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How do you usually recognize an Aura bundle in source?",
+      "options": {
+        "A": "aura folder and .cmp markup",
+        "B": "lwc folder with js-meta.xml only",
+        "C": ".page and an Apex controller only",
+        "D": "A Jest __tests__ folder only"
+      },
+      "answer": "A",
+      "rationale": "Recognition starts from aura/.cmp versus lwc versus pages.",
+      "distractor_explanations": {
+        "B": "That is LWC.",
+        "C": "That is Visualforce.",
+        "D": "Tests are not the stack."
+      },
+      "concept": "Recognition",
+      "citation_ids": ["SF-LWC-MIGRATE-DECIDE"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You need a new KPI on a stable Aura header. Best interoperability move?",
+      "options": {
+        "A": "New LWC hosted by the Aura header or as a sibling on the Lightning page",
+        "B": "LWC that includes the Aura header as a child",
+        "C": "Rewrite all VF in the org first",
+        "D": "Disable LWS"
+      },
+      "answer": "A",
+      "rationale": "New work in LWC; Aura may contain it; LWC may not contain Aura.",
+      "distractor_explanations": {
+        "B": "Illegal nesting.",
+        "C": "Overscoped.",
+        "D": "Wrong layer."
+      },
+      "concept": "Host new LWC",
+      "citation_ids": ["SF-LWC-MIGRATE-DECIDE"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Product wants NavigationMixin inside Lightning Out on a VF page. You say?",
+      "options": {
+        "A": "Unsupported; redesign how the user moves",
+        "B": "It works if you extend LightningModal",
+        "C": "It works with cacheable Apex",
+        "D": "It works if Aura wraps it"
+      },
+      "answer": "A",
+      "rationale": "Lightning Out is an unsupported navigation container.",
+      "distractor_explanations": {
+        "B": "Modal mixin rules are separate and still not Out.",
+        "C": "Unrelated.",
+        "D": "Host does not add the module."
+      },
+      "concept": "Out navigation refusal",
+      "citation_ids": ["SF-LWC-NAV"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Visualforce versus Aura versus LWC in one recognition line?",
+      "options": {
+        "A": "VF is page/controller; Aura is .cmp Lightning; LWC is web-component bundle in lwc/",
+        "B": "They are three names for the same files",
+        "C": "VF is LWC's compiler",
+        "D": "Aura is only for mobile"
+      },
+      "answer": "A",
+      "rationale": "Interview recognition is file and runtime identity.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Aura is a Lightning model, not mobile-only."
+      },
+      "concept": "Three stacks",
+      "citation_ids": ["SF-LWC-MIGRATE-INTRO"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Migrate now versus leave Aura?",
+      "options": {
+        "A": "Migrate when usage requires change or nested facets block you; leave stable unused Aura",
+        "B": "Always migrate every Aura this quarter",
+        "C": "Never migrate Aura",
+        "D": "Migrate only Visualforce, never Aura"
+      },
+      "answer": "A",
+      "rationale": "Pick a component to migrate by understanding how and where it is used.",
+      "distractor_explanations": {
+        "B": "Fashion rewrite.",
+        "C": "New work still prefers LWC.",
+        "D": "This topic includes Aura."
+      },
+      "concept": "Usage-based migrate",
+      "citation_ids": ["SF-LWC-MIGRATE-DECIDE"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Before picking which Aura component to migrate, the Guide says understand?",
+      "options": {
+        "A": "The concept of facets in Aura components",
+        "B": "SOQL selectivity only",
+        "C": "Jest snapshots only",
+        "D": "CSP directives only"
+      },
+      "answer": "A",
+      "rationale": "Before you pick a component to migrate, make sure that you understand facets.",
+      "distractor_explanations": {
+        "B": "Different track.",
+        "C": "LWC-012.",
+        "D": "LWC-010."
+      },
+      "concept": "Understand facets first",
+      "citation_ids": ["SF-LWC-MIGRATE-DECIDE"]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Do Aura and LWC share a runtime in Lightning?",
+      "options": {
+        "A": "Yes; they can co-exist in the same runtime",
+        "B": "No; they require separate orgs",
+        "C": "Only in Visualforce",
+        "D": "Only during Jest"
+      },
+      "answer": "A",
+      "rationale": "Lightning web components and Aura components can co-exist in the same runtime.",
+      "distractor_explanations": {
+        "B": "Same org, same Lightning runtime.",
+        "C": "VF is another container.",
+        "D": "Runtime is the org, not Jest."
+      },
+      "concept": "Same runtime",
+      "citation_ids": ["SF-LWC-MIGRATE-DECIDE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "Can Aura contain LWC?",
+      "back": "Yes. They coexist in the Lightning runtime."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "Can LWC contain Aura?",
+      "back": "No. That composition is not allowed."
+    },
+    {
+      "id": "F3",
+      "category": "decision",
+      "front": "Aura facets with nested Aura. Migration?",
+      "back": "Those nested Aura components must migrate too."
+    },
+    {
+      "id": "F4",
+      "category": "decision",
+      "front": "New widget on a stable Aura header?",
+      "back": "Build LWC and let Aura host it, or place it as a sibling."
+    },
+    {
+      "id": "F5",
+      "category": "limitation_security",
+      "front": "lightning/navigation on Lightning Out / VF Lightning?",
+      "back": "Unsupported, even inside Lightning Experience."
+    },
+    {
+      "id": "F6",
+      "category": "scenario",
+      "front": "Recognize Visualforce in source?",
+      "back": ".page (and related VF files) plus an Apex controller, not lwc/ or aura/.cmp."
+    },
+    {
+      "id": "F7",
+      "category": "scenario",
+      "front": "Recognize Aura versus LWC?",
+      "back": "aura/ + .cmp versus lwc/ + html/js/js-meta.xml."
+    },
+    {
+      "id": "F8",
+      "category": "terminology",
+      "front": "Why understand facets before picking a migrate target?",
+      "back": "Hidden Aura children ride along; a leaf rewrite is incomplete."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "Stable Aura you never change?",
+      "back": "Leave it. Prefer LWC for new work beside it."
+    },
+    {
+      "id": "F10",
+      "category": "limitation_security",
+      "front": "Does LWS rewrite Visualforce?",
+      "back": "No. LWS is Lightning (Aura/LWC) JS sandbox, not a VF migration."
+    },
+    {
+      "id": "F11",
+      "category": "terminology",
+      "front": "Same application for Aura and LWC?",
+      "back": "Yes. The migrate introduction states they can exist together."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "Migrated parent, nested UI gone. Check?",
+      "back": "Aura facets that still expected Aura children."
+    },
+    {
+      "id": "F13",
+      "category": "decision",
+      "front": "Where do you look up Aura-to-LWC API maps?",
+      "back": "Official migrate-* Guide pages, not memory."
+    },
+    {
+      "id": "F14",
+      "category": "terminology",
+      "front": "App Builder sibling versus nesting?",
+      "back": "Aura and LWC can sit side by side without one containing the other."
+    },
+    {
+      "id": "F15",
+      "category": "limitation_security",
+      "front": "Managed-package Aura you cannot edit?",
+      "back": "You may not be able to migrate it; host new LWC beside it instead."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain Aura and Visualforce recognition, interoperability, and migration decisions.",
+      "answer_30_seconds": "I identify VF, Aura, and LWC from files. Aura may wrap LWC; LWC never wraps Aura. Facets pull nested Aura along. Out/VF lose lightning/navigation. I migrate by usage.",
+      "answer_2_minutes": "New work is LWC. A stable Aura parent is a legal host. I inventory facets before promising a rewrite. I treat Visualforce as another container, not 'old Aura.' I refuse big-bang fashion migrations and illegal nesting in the same breath.",
+      "example": "LAB_ Account: Aura header hosts labKpiTile; VF console path has no NavigationMixin.",
+      "tradeoffs": [
+        "Host versus rewrite",
+        "LEX versus Out"
+      ],
+      "follow_ups": [
+        "What is a facet?",
+        "LWR versus Aura sites?"
+      ],
+      "weak_answer_warnings": [
+        "Rewrite everything in LWC this sprint"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What is the coexistence nesting rule?",
+      "answer_30_seconds": "Same Lightning runtime. Aura can contain LWC. LWC cannot contain Aura.",
+      "answer_2_minutes": "I draw the arrow only one way. Siblings on App Builder are fine. Facets are how extra Aura sneaks into a parent migration. Interviewers listen for the negative sentence: LWC cannot contain Aura.",
+      "example": "On a whiteboard I draw Aura wrapping LWC as legal, and LWC wrapping Aura as illegal.",
+      "tradeoffs": [
+        "Wrapper Aura forever versus full LWC page",
+        "Sibling versus parent-child"
+      ],
+      "follow_ups": [
+        "Events across the boundary?",
+        "Public properties from Aura?"
+      ],
+      "weak_answer_warnings": [
+        "They nest both ways"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "You migrate an Aura layout and the filter bar disappears. What happened?",
+      "answer_30_seconds": "A facet still expected an Aura child you did not migrate. Nested Aura must come along.",
+      "answer_2_minutes": "I go back to migrate-decide. I list facets before coding. I either migrate the filter Aura to LWC or keep the parent Aura until the children are ready. I do not blame App Builder visibility first.",
+      "example": "Aura facet body included c:labFilterBar Aura; parent became LWC with an empty slot.",
+      "tradeoffs": [
+        "Migrate children first versus keep parent Aura",
+        "Temporary duplicate UI"
+      ],
+      "follow_ups": [
+        "How do you find facets?",
+        "Slots versus facets?"
+      ],
+      "weak_answer_warnings": [
+        "Salesforce deleted the component"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A VF page hosts your LWC through Lightning Out. Product copies LEX navigation code. Your review?",
+      "answer_30_seconds": "Reject lightning/navigation. That container is unsupported even inside LEX chrome.",
+      "answer_2_minutes": "I separate LEX record-page builds from Out builds. I offer a VF-safe URL or keep navigation in VF. I also re-check toasts (LWC-008). This is recognition of container, not a PageReference typo.",
+      "example": "Removing NavigationMixin from labKpiTileOut.js.",
+      "tradeoffs": [
+        "Stay on a Lightning page versus VF",
+        "Two codepaths versus one limited path"
+      ],
+      "follow_ups": [
+        "Lightning Out 2.0?",
+        "Experience Cloud?"
+      ],
+      "weak_answer_warnings": [
+        "It is inside LEX so navigation works"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A developer pastes an Aura component tag into LWC HTML. What do you tell them?",
+      "answer_30_seconds": "That composition is invalid. Host the LWC from Aura or place them as siblings.",
+      "answer_2_minutes": "I show the migrate-decide bullets. I help them invert the parent. I do not hunt for a namespace prefix as if that would legalize Aura-in-LWC. If they need slots, those are LWC children, still not Aura.",
+      "example": "Failed compile or runtime when c:oldAura sat in labNew.html.",
+      "tradeoffs": [
+        "Invert parent versus full rewrite",
+        "App Builder siblings versus code nesting"
+      ],
+      "follow_ups": [
+        "Can Aura set @api on LWC?",
+        "What about Lightning Message Service?"
+      ],
+      "weak_answer_warnings": [
+        "Add a namespace and it will work"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "How do you recognize which stack owns a buggy widget in a mixed page?",
+      "answer_30_seconds": "Inspect DOM/file path: lwc-* custom elements, Aura rendered markup, or a VF iframe/Out root. Then open the matching folder.",
+      "answer_2_minutes": "I do not guess from the business name. I use Setup Custom Code lists and the repo. Mixed pages lie; the header can be Aura while the body is LWC. Recognition is step one of troubleshooting.",
+      "example": "Chrome inspect shows c-lab-kpi-tile versus an Aura namespace element.",
+      "tradeoffs": [
+        "Browser inspect versus repo search",
+        "Managed package opacity"
+      ],
+      "follow_ups": [
+        "What if it is a managed Aura?",
+        "Experience Builder?"
+      ],
+      "weak_answer_warnings": [
+        "It is all Lightning so it is LWC"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When do you refuse a full Aura-to-LWC migration project?",
+      "answer_30_seconds": "When the Aura is stable, unused this quarter, managed-locked, or the real need is a small LWC beside it. Facet cost can also exceed benefit.",
+      "answer_2_minutes": "I still prefer LWC for new work. I will not burn a team on fashion rewrites. I quantify nested Aura, VF/Out hosts, and test debt (Jest versus Aura tests). I propose hosting first, migrate when we must change the parent.",
+      "example": "Leaving a managed console Aura; adding labKpiTile via App Builder.",
+      "tradeoffs": [
+        "Tech-debt payoff versus feature delivery",
+        "Host forever versus scheduled rewrite"
+      ],
+      "follow_ups": [
+        "What KPIs would justify migrate?",
+        "LWS-only features?"
+      ],
+      "weak_answer_warnings": [
+        "Always rewrite all Aura"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach nesting and VF with a rail-fleet analogy, then break it.",
+      "answer_30_seconds": "VF is a streetcar on other rails. Aura can couple an LWC car. LWC cannot swallow an Aura locomotive. The break: App Builder can park them as siblings without coupling, and managed locomotives may never be scrapped.",
+      "answer_2_minutes": "I also break navigation: the streetcar line has no LEX corridor, so lightning/navigation fails in Out. Facets are extra cars already coupled that you forgot to count. I never use a library metaphor.",
+      "example": "Whiteboard three tracks and one illegal arrow.",
+      "tradeoffs": [
+        "Analogy versus quoting migrate-decide",
+        "Host versus rewrite"
+      ],
+      "follow_ups": [
+        "Draw facets",
+        "Name the navigation container gap"
+      ],
+      "weak_answer_warnings": [
+        "catalog-shelf metaphor"
+      ]
+    }
+  ]
+}

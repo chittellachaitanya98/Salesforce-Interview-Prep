@@ -1,0 +1,984 @@
+{
+  "topic_id": "ARCH-006",
+  "slug": "integration-architecture-and-failure-mode-design",
+  "title": "Integration architecture and failure-mode design",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-005"
+  ],
+  "objectives": [
+    "Choose a Salesforce integration pattern from timing (synchronous request/reply versus asynchronous fire-and-forget), volume, and whether Salesforce must wait.",
+    "Design failure modes: error handling, recovery, retries, and idempotency as first-class architecture, not afterthoughts.",
+    "Refuse synchronous callouts from trigger context and unbounded chatty remote call-in loops.",
+    "Cite official timeout and retry windows (Apex callouts up to 120 seconds; outbound messaging retries up to 24 hours; high-volume platform events stored 72 hours) rather than inventing API daily caps."
+  ],
+  "diagnostic_question": "Salesforce must create an order in an ERP: sometimes the user must see the ERP number on the page, sometimes a nightly sync is enough, and the ERP sometimes replies twice. Before reading, which pattern, which failure mode, and which idempotency key would you choose?",
+  "definition": "Salesforce integration architecture is the designed pattern for moving process or data between Salesforce and a remote system, including what happens when the remote side is slow, duplicate, or down. Official Integration Patterns contrast Remote Process Invocation—Request and Reply (Salesforce waits and tracks state from the response) with Fire and Forget (Salesforce does not wait; the remote acknowledges and continues). Each pattern requires an error-handling and recovery strategy and an idempotent receiver. ([Integration Patterns](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns); [Integration Patterns and Practices](https://developer.salesforce.com/docs/atlas.en-us.integration_patterns_and_practices.meta/integration_patterns_and_practices/integ_pat_intro_overview.htm))",
+  "why_it_matters": "Interviewers listen for pattern names, not 'we used an API.' They listen for timeout, retry, and duplicate-message design. A happy-path named credential is not architecture. Request/reply that blocks a trigger, or fire-and-forget with no recovery, fails in production the first time the ERP blinks.",
+  "sixty_second_explanation": "Treat integrations like a courier desk. Request and reply is a package with a return receipt: the clerk waits, then writes the ERP number on the Salesforce form. Fire and forget is a drop in the chute: you get a hand-off stamp, not the final delivery photo. Failure-mode design is the lost-parcel desk: who retries, what is the timeout, and how does the warehouse ignore a duplicate tracking number (idempotency). Do not send a clerk to wait at the chute during a record save (synchronous callout from a trigger). Do not invent a daily API cap; cite current Limits docs for allocations.",
+  "deeper_explanation": [
+    "Architecture Center Integration Patterns: Request and Reply is Salesforce invoking a remote process, waiting, and tracking state from the response. Fire and Forget invokes a remote process but does not wait for completion; the remote acknowledges and Salesforce continues. Pattern choice depends on system capabilities, volume, failure handling, and transactionality. ([Integration Patterns](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns))",
+    "Request/Reply error handling: the caller manages exceptions; recovery often means not committing Salesforce state until a successful response, then retrying if needed. The remote procedure must be idempotent because Salesforce (and users) may invoke more than once. Apex callouts have a configurable timeout of up to 120 seconds. Trigger-initiated callouts are asynchronous and are a suboptimal fit for request/reply. ([Integration Patterns](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns))",
+    "Fire and Forget error handling depends on the solution: Flow needs fault paths; Apex callouts only see the initial hand-off; platform events leave processing to the subscriber, with replay id and high-volume event storage of 72 hours (three days). Outbound messaging retries when no positive acknowledgment arrives, for up to 24 hours. Recovery often requires a custom retry mechanism if quality of service demands it. ([Integration Patterns](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns))",
+    "Idempotent receivers track unique message ids and upsert instead of blind insert so duplicate clicks or retries do not create duplicate remote records. Chatty remote call-in or remote process invocation that updates continuously is documented as suboptimal because of traffic, locking, and user-impact. Composite REST can send up to 25 subrequests in one call; inspect the body even on HTTP 200. ([Integration Patterns](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns); [Trailhead](https://trailhead.salesforce.com/content/learn/modules/app-integration-patterns/app-integration-patterns-3))",
+    "Daily API request allocations are edition- and license-specific. Do not invent them here. Event-driven architecture beyond this failure-mode lens is ARCH-007."
+  ],
+  "mental_model": {
+    "analogy": "A courier desk: request/reply is a parcel with a return receipt the clerk waits for; fire-and-forget is a chute drop with a hand-off stamp; the lost-parcel desk is timeout, retry, and poison-message handling; the tracking number is the idempotency key.",
+    "useful_mapping": [
+      "request and reply → clerk waits for the signed receipt and then writes the remote id",
+      "fire and forget → chute drop; processing happens after hand-off",
+      "timeout → how long the clerk will wait (Apex callouts configurable up to 120 seconds)",
+      "retry / outbound messaging → re-attempts when no acknowledgment, up to 24 hours for that feature",
+      "platform event replay → high-volume events stored 72 hours",
+      "idempotency key → tracking number the warehouse will not double-book",
+      "trigger sync callout → clerk leaving the counter during a save—wrong window"
+    ],
+    "where_it_breaks": [
+      "A courier has one tracking system; Salesforce plus ERP plus middleware can each retry, so idempotency must be on the receiver, not only in Apex.",
+      "Platform events are not rolled back with the Salesforce database transaction.",
+      "Edition-specific API allocations are not a tracking number you can guess.",
+      "Composite HTTP 200 can still contain failed subrequests."
+    ]
+  },
+  "teach_back_prompt": "Explain request/reply versus fire-and-forget with the courier desk, then add timeout, retry, and idempotency, and name where the analogy breaks on platform events.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, define request/reply versus fire-and-forget and one failure-mode duty for each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Place a user-button ERP number versus a nightly sync on the pattern map."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "State 120-second callout timeout, 24-hour outbound messaging retry window, and 72-hour event storage with sources."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Design an idempotency key for a double-clicked Submit Order button."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: pattern, failure mode, idempotency, no invented daily API caps."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-ARCH-INT-PAT",
+      "title": "Integration Patterns | Salesforce Architecture Center",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns",
+      "supports": "Request/Reply vs Fire and Forget; error handling and recovery; idempotency; 120-second Apex timeout; trigger callouts suboptimal for request/reply; platform event 72-hour storage; outbound messaging 24-hour retry; composite 25 subrequests and HTTP 200 body check.",
+      "release_or_version": "Architecture Center Fundamentals",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace edition-specific API allocation tables in Limits documentation."
+    },
+    {
+      "source_id": "SF-INT-PAT-GUIDE",
+      "title": "Integration Patterns and Practices",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.integration_patterns_and_practices.meta/integration_patterns_and_practices/integ_pat_intro_overview.htm",
+      "supports": "Canonical pattern catalog and best practices for matching requirements to patterns.",
+      "release_or_version": "Integration Patterns and Practices",
+      "last_verified": "2026-08-16",
+      "limits": "Pattern pages evolve; reverify the specific pattern chapter you quote."
+    },
+    {
+      "source_id": "SF-TH-INT-IDEMP",
+      "title": "Evaluate an Integration Pattern (Trailhead)",
+      "type": "Official Trailhead",
+      "url": "https://trailhead.salesforce.com/content/learn/modules/app-integration-patterns/app-integration-patterns-3",
+      "supports": "Request/Reply is for designs that need a response; idempotent receiver via unique message id and duplicate checks; trigger solutions restricted by governors and async callouts.",
+      "release_or_version": "Trailhead Application Integration Patterns",
+      "last_verified": "2026-08-16",
+      "limits": "Module challenges may simplify; prefer Architecture Center for failure-mode tables."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Architecture Center Integration Patterns",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Request/reply vs fire-and-forget",
+        "Timeout 120 seconds",
+        "Retry and 24-hour OM window",
+        "Events stored 72 hours",
+        "Idempotency key",
+        "No trigger sync callout"
+      ],
+      "accessible_description": "Portrait map of Salesforce integration architecture: two timing patterns, failure-mode desk, official timeout and storage windows, and idempotency."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-ARCH-INT-PAT",
+        "SF-INT-PAT-GUIDE",
+        "SF-TH-INT-IDEMP"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Integration pattern and failure-mode map"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Event[Event in Salesforce] --> QWait{Must Salesforce wait and update from the response in this interaction?}\n  QWait -->|Yes| RR[Remote Process Invocation Request and Reply]\n  QWait -->|No| FF[Remote Process Invocation Fire and Forget]\n  RR --> Caller[Caller handles errors; do not commit until success]\n  FF --> Remote[Remote or bus handles later errors; plan custom retry]\n  RR --> Idem[Idempotent receiver: unique message id]\n  FF --> Idem\n  FF --> OM[Outbound messaging retry up to 24 hours]\n  FF --> PE[Platform events stored 72 hours; replay id]",
+      "decision": "flowchart TD\n  Need[Integration need] --> Q1{User must see the remote result now?}\n  Q1 -->|Yes| UI[UI or Flow plus Apex callout request/reply; timeout up to 120s]\n  Q1 -->|No| Q2{Guaranteed hand-off from Salesforce?}\n  Q2 -->|Yes consider| OM[Outbound messaging or equivalent ack pattern]\n  Q2 -->|Event bus| PE[Platform events; subscriber retries; 72-hour replay]\n  UI --> Q3{Entry is a trigger save?}\n  Q3 -->|Sync HTTP attempted| Stop[Suboptimal/invalid for request/reply; go async or UI-initiated]\n  Any[Any pattern] --> Fail[Design error handling, recovery, idempotency before go-live]\n  Chatty[Continuous two-way updates] --> Avoid[Suboptimal chatty remote call-in / invocation]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Request and Reply: Salesforce invokes a remote process, waits for completion, and tracks state from the response. Fire and Forget: Salesforce does not wait for completion after the remote acknowledges.",
+      "source_ids": ["SF-ARCH-INT-PAT", "SF-INT-PAT-GUIDE"],
+      "scope": "Pattern definitions",
+      "validation": "Architecture Center and Integration Patterns and Practices overviews.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Error handling and recovery are required. Request/Reply: caller handles errors; avoid committing Salesforce state until success; remote must be idempotent. Apex callouts support a configurable timeout up to 120 seconds. Trigger-based synchronous request/reply is suboptimal because trigger callouts are asynchronous.",
+      "source_ids": ["SF-ARCH-INT-PAT", "SF-TH-INT-IDEMP"],
+      "scope": "Request/reply failure modes and timeout",
+      "validation": "Integration Patterns error-handling sections; Trailhead Request/Reply unit.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Fire-and-forget recovery is often custom. Outbound messaging retries without positive acknowledgment for up to 24 hours. High-volume platform event messages are stored for 72 hours (three days) and can be replayed by id. Platform events are not rolled back with the database transaction.",
+      "source_ids": ["SF-ARCH-INT-PAT"],
+      "scope": "Async failure modes and documented windows",
+      "validation": "Architecture Center Fire and Forget error-handling table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Idempotent receivers use unique message identifiers and duplicate checks (often upsert). Composite API allows up to 25 subrequests; HTTP 200 can still include failed subrequests. Continual remote call-in or invocation is suboptimal due to traffic, locking, and user impact.",
+      "source_ids": ["SF-ARCH-INT-PAT", "SF-TH-INT-IDEMP"],
+      "scope": "Idempotency, composite, anti-chatty",
+      "validation": "Architecture Center composite and remote call-in notes; Trailhead idempotency guidance.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Pattern pages remain the source for timeout and storage windows cited here (120 seconds, 24 hours, 72 hours, 25 composite subrequests). Reverify if quoting a new API family.",
+  "unresolved_uncertainty": [
+    "Daily API request allocations and Bulk API batch caps are edition-specific; cite current Limits documentation, do not invent them.",
+    "Exact outbound-messaging retry backoff intervals beyond the documented 24-hour window should be reread from the current pattern page if an interview asks for the curve.",
+    "Middleware-specific QoS (JMS, MuleSoft) is out of this Salesforce-pattern lesson."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Request and Reply",
+      "telugu": "సేల్స్‌ఫోర్స్ రిమోట్ ప్రాసెస్ కోసం వేచి, స్పందనతో స్థితిని నవీకరించే పద్ధతి."
+    },
+    {
+      "english": "Fire and Forget",
+      "telugu": "హ్యాండ్-ఆఫ్ తర్వాత వేచి ఉండకుండా రిమోట్‌కు పంపే పద్ధతి."
+    },
+    {
+      "english": "Idempotency",
+      "telugu": "అదే సందేశం మళ్లీ వచ్చినా ఒకే ఫలితం—డూప్లికేట్ రికార్డులు లేవు."
+    },
+    {
+      "english": "Failure mode",
+      "telugu": "టైమ్‌అవుట్, లోపం, రిట్రై, రికవరీ ఎలా జరుగుతాయో ముందుగా రూపొందించడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I pick request/reply when Salesforce must wait and store the remote result, and fire-and-forget when a hand-off is enough. I design timeout, retry, and idempotency before go-live. I do not put synchronous HTTP on a trigger, and I do not invent daily API caps.",
+    "two_minutes": "User-button ERP numbers are request/reply with a 120-second callout ceiling and an idempotent ERP upsert. Nightly or event-driven work is fire-and-forget with fault paths, outbound-messaging 24-hour retries, or platform-event replay for 72 hours. Duplicates get a message id. Chatty two-way loops are suboptimal. Composite 200 is not success until I read the body."
+  },
+  "terminology": [
+    {
+      "term": "integration architecture",
+      "plain": "The planned pattern, timing, and failure desk between Salesforce and another system.",
+      "precise": "A chosen official pattern (including request/reply or fire-and-forget) plus volume, security, transactionality, and a written error-handling and recovery strategy.",
+      "example": "LAB_Order submit button uses request/reply; LAB_Order status updates from ERP use fire-and-forget events.",
+      "non_example": "'We used REST' with no timing, timeout, or duplicate plan.",
+      "confusable_neighbor": "Named credential: a security mechanism, not a pattern by itself.",
+      "boundary": "Event-driven consistency details continue in ARCH-007."
+    },
+    {
+      "term": "Remote Process Invocation — Request and Reply",
+      "plain": "Salesforce calls out and waits for the answer in this interaction.",
+      "precise": "Salesforce invokes a remote process, waits for completion, and tracks state based on the response. Suited to small, user-driven, timely replies within the callout timeout (configurable up to 120 seconds).",
+      "example": "LWC button creates an ERP order and displays the ERP number.",
+      "non_example": "A before-insert trigger HTTP.send waiting for ERP—suboptimal/invalid for this pattern.",
+      "confusable_neighbor": "Fire and Forget: no wait for completion.",
+      "boundary": "Does not imply unlimited payload size; volume belongs in pattern selection."
+    },
+    {
+      "term": "Remote Process Invocation — Fire and Forget",
+      "plain": "Salesforce hands the work off and continues.",
+      "precise": "Salesforce invokes a remote process but does not wait for completion; the remote acknowledges and processes later. Error handling after hand-off lives on the remote or the bus; recovery is often custom.",
+      "example": "Platform event or outbound message when a LAB_Case is closed.",
+      "non_example": "Blocking the UI until ERP finishes a five-minute job.",
+      "confusable_neighbor": "Batch Data Synchronization: a different pattern for bulk refresh (see the catalog; do not collapse it into fire-and-forget without reading that chapter).",
+      "boundary": "Platform events are not transactional with DML."
+    },
+    {
+      "term": "failure-mode design",
+      "plain": "What you do when the other side is slow, down, or duplicate.",
+      "precise": "The planned combination of caller versus remote error handling, timeout, retry, poison-message/dead-letter behavior, and recovery (including whether Salesforce state commits before success).",
+      "example": "If ERP times out, do not write LAB_Order as Confirmed; show an error and allow a safe retry.",
+      "non_example": "Happy-path named credential with no fault path.",
+      "confusable_neighbor": "Threat modeling (ARCH-004): abuse, not timeout.",
+      "boundary": "Exact middleware retry products are out of scope unless cited."
+    },
+    {
+      "term": "idempotency",
+      "plain": "Doing the same request twice does not create two remote orders.",
+      "precise": "The receiver can detect duplicates via a unique message id and check-before-insert or upsert. Required because UI clicks, retries, and middleware may invoke more than once.",
+      "example": "ERP upserts on Salesforce LAB_Order Id sent as an external key.",
+      "non_example": "Blind insert on every retry of outbound messaging.",
+      "confusable_neighbor": "Salesforce unique field: helpful locally, not a substitute for a remote message id.",
+      "boundary": "Idempotency is a receiver duty, not only an Apex try/catch."
+    },
+    {
+      "term": "timeout and retry windows",
+      "plain": "How long you wait and how long the platform keeps trying a hand-off.",
+      "precise": "Documented examples: Apex callouts configurable up to 120 seconds; outbound messaging retries up to 24 hours without acknowledgment; high-volume platform events stored 72 hours for replay. Daily API caps are not invented here.",
+      "example": "Design the ERP to finish inside the callout timeout, or switch to fire-and-forget.",
+      "non_example": "Claiming a universal 3-call daily API limit as architecture.",
+      "confusable_neighbor": "User patience: a UX NFR, not the same as the 120-second ceiling.",
+      "boundary": "Reverify these windows on the current pattern page before a go-live review."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Ask whether Salesforce must wait",
+      "actor": "Architect + product owner",
+      "trigger": "An integration request",
+      "before": "'Just call the API'",
+      "after": "Request/reply versus fire-and-forget chosen",
+      "observe": "Written timing and who needs the result",
+      "failure": "Picking REST because it is familiar"
+    },
+    {
+      "step": 2,
+      "transition": "Fit the entry point",
+      "actor": "Architect + developer",
+      "trigger": "Pattern chosen",
+      "before": "Trigger as the default",
+      "after": "UI/Flow-initiated callout for request/reply; async or event for fire-and-forget",
+      "observe": "No synchronous HTTP from trigger context",
+      "failure": "Trigger request/reply"
+    },
+    {
+      "step": 3,
+      "transition": "Design the lost-parcel desk",
+      "actor": "Architect + remote owner",
+      "trigger": "Path exists",
+      "before": "Happy path only",
+      "after": "Timeout, retry owner, fault path, and commit rules",
+      "observe": "ERP timeout < 120 seconds or pattern change; OM/event windows cited if used",
+      "failure": "No fault path on a Flow callout"
+    },
+    {
+      "step": 4,
+      "transition": "Put a tracking number on every parcel",
+      "actor": "Architect + remote developer",
+      "trigger": "Retries exist",
+      "before": "Blind inserts",
+      "after": "Idempotent receiver using a unique message or record id",
+      "observe": "Double-submit in UAT creates one remote order",
+      "failure": "Relying on 'the user will only click once'"
+    }
+  ],
+  "when_to_use": [
+    "When an interview asks you to design Salesforce integration architecture and the failure modes of the chosen pattern.",
+    "When you must decide request/reply versus fire-and-forget based on whether Salesforce waits for a remote result.",
+    "When retries, double-clicks, or outbound messaging make idempotency mandatory.",
+    "When a trigger-based callout or a chatty two-way loop is proposed as the default."
+  ],
+  "when_not_to_use": [
+    "Do not use this lesson to invent daily API request allocations; cite current Limits documentation.",
+    "Do not treat named credentials as a complete integration architecture without a pattern and failure desk.",
+    "Do not use fire-and-forget when the user must see the remote number in the same click without a later callback design.",
+    "Do not expand this topic into a full event-driven consistency course (ARCH-007) or a bulk ETL catalog without opening those pattern chapters."
+  ],
+  "configuration_or_code_location": [
+    "Named credentials and remote site settings (sandbox).",
+    "LWC/Flow/Apex callout for request/reply; platform events, outbound messaging, or async Apex for fire-and-forget.",
+    "Architecture Center Integration Patterns pages for error-handling tables.",
+    "LAB_ objects only; no production endpoints with real customer payloads."
+  ],
+  "worked_example": {
+    "scenario": "A LAB_ manufacturer sandbox must (1) let a sales user submit a LAB_Order and see an ERP order number on the page, and (2) send closed-won product codes to a warehouse without blocking the save. The ERP sometimes retries. No production orders.",
+    "inputs": [
+      "User must see ERP number",
+      "Warehouse can lag",
+      "ERP may receive duplicates",
+      "Someone proposed a before-insert trigger callout for both"
+    ],
+    "decisions": [
+      {
+        "decision": "Request/reply from a button or screen Flow plus Apex callout for the ERP number; timeout designed inside 120 seconds.",
+        "because": "Salesforce must wait and track state from the response.",
+        "rejected": "Synchronous HTTP from before-insert trigger"
+      },
+      {
+        "decision": "Fire-and-forget (platform event or outbound message) for the warehouse codes.",
+        "because": "Save should not wait; subscriber handles later errors; events replay for 72 hours if that bus is used.",
+        "rejected": "Chatty two-way updates on every field change"
+      },
+      {
+        "decision": "Send Salesforce LAB_Order Id as an idempotency key; ERP upserts.",
+        "because": "Retries and double-clicks are expected.",
+        "rejected": "Blind insert on every message"
+      }
+    ],
+    "configuration_or_code": [
+      "Stub the ERP with a unique-id upsert in a sandbox mock.",
+      "Do not use production ERP credentials or real customer orders.",
+      "Write fault paths and a commit rule: no Confirmed status without a successful reply on path (1)."
+    ],
+    "output": "A two-pattern design with a failure desk and an idempotency key, and no trigger sync callout.",
+    "verification": [
+      "Double-submit creates one ERP order in the mock.",
+      "Trigger HTTP is not used for request/reply.",
+      "Warehouse path does not block the Opportunity save in the lab script."
+    ],
+    "self_explanation": "I split wait versus not-wait. I designed duplicates as normal. I used documented windows, not invented daily caps."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox plus a mock HTTP endpoint or Salesforce-to-Salesforce-free mock class; synthetic LAB_Order only.",
+    "starting_state_checks": [
+      "You can create a named credential to a non-production mock.",
+      "You will not call a real customer ERP."
+    ],
+    "steps": [
+      "Write a one-page pattern choice: which LAB_ process is request/reply and which is fire-and-forget.",
+      "Implement or stub a callout that sends a unique LAB_Order Id and handles a timeout error in the caller.",
+      "Document idempotency: what the mock does on a second identical id.",
+      "Write why a before-insert trigger was not the entry for request/reply, citing the pattern page."
+    ],
+    "guided_completion": [
+      "If you claimed a daily API cap, replace it with Needs verification and a Limits-doc URL.",
+      "If the Flow has no fault path, add one on paper even if the mock always succeeds."
+    ],
+    "independent_challenge": "Add a fire-and-forget note that names either the 24-hour outbound-messaging retry window or the 72-hour platform-event store, depending on the bus you would pick.",
+    "evidence": [
+      "Pattern page plus timeout/retry sentences.",
+      "Mock log showing one remote record after two submits."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete named credentials and LAB_ Apex.",
+      "Do not leave mock endpoints pointing at the public internet with secrets."
+    ],
+    "limitations": "A mock does not prove ERP SLAs or org API allocations."
+  },
+  "decision_table": [
+    {
+      "signal": "The user or this Salesforce transaction must wait for a remote result and then update state.",
+      "choose": "Remote Process Invocation—Request and Reply from UI or Flow plus Apex, with timeout up to 120 seconds and caller-managed errors.",
+      "not": "A synchronous HTTP callout from a trigger, or fire-and-forget with no callback when the UI must show the number now.",
+      "why": "The pattern definition requires waiting and tracking state; trigger callouts are asynchronous and suboptimal for request/reply."
+    },
+    {
+      "signal": "Salesforce should continue after a successful hand-off; the remote can finish later.",
+      "choose": "Fire and Forget (events, outbound messaging, or async callout) with a written retry owner.",
+      "not": "Block the save until a five-minute ERP job completes.",
+      "why": "Fire-and-forget is defined as not waiting for completion; outbound messaging retries up to 24 hours; events store 72 hours."
+    },
+    {
+      "signal": "The remote or the user may send the same message more than once.",
+      "choose": "Idempotent receiver: unique message or record id and upsert/check-before-insert.",
+      "not": "Blind insert and hope the user clicks once.",
+      "why": "Official guidance: Salesforce cannot guarantee a single invocation, especially from UI and retries."
+    },
+    {
+      "signal": "Two systems would update each other on every field change.",
+      "choose": "Avoid chatty remote call-in / invocation; batch, event, or coarser sync.",
+      "not": "A trigger callout on every edit in both directions.",
+      "why": "Architecture Center marks continual updates as suboptimal for traffic, locking, and user impact."
+    },
+    {
+      "signal": "A composite REST call returns HTTP 200.",
+      "choose": "Inspect the response body for subrequest failures (up to 25 subrequests).",
+      "not": "Treat 200 as all-or-nothing success without reading the body.",
+      "why": "Documented composite behavior: 200 can still include failed subrequests and rollback."
+    }
+  ],
+  "limitations": [
+    "Does not list edition-specific daily API allocations.",
+    "Does not fully teach Bulk Data Synchronization or other catalog patterns—open those chapters when volume is the NFR.",
+    "Middleware QoS products are out of scope.",
+    "Platform-event subscriber code is a neighboring implementation topic."
+  ],
+  "security_notes": [
+    "Named credentials and least-privilege integration users (ARCH-004) are part of the architecture.",
+    "Do not log payloads with personal data.",
+    "Do not call production ERPs from this lesson."
+  ],
+  "common_mistakes": [
+    "Calling REST a pattern.",
+    "Trigger synchronous callouts.",
+    "No idempotency on retries.",
+    "No fault path.",
+    "Inventing daily API caps.",
+    "Treating composite 200 as complete success."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Callout timeout on a user click.",
+      "check": [
+        "Remote duration versus 120-second ceiling",
+        "Whether the work should be fire-and-forget plus later callback"
+      ],
+      "do_not_assume": "Named credentials are always the cause."
+    },
+    {
+      "symptom": "Duplicate orders in the ERP after a retry or double-click.",
+      "check": [
+        "Whether a unique message id was sent",
+        "Whether the ERP upserts"
+      ],
+      "do_not_assume": "Salesforce sent two different business orders."
+    },
+    {
+      "symptom": "Platform event published but subscriber missed it, and DML rolled back.",
+      "check": [
+        "Events are not transactional with DML",
+        "Replay from last successful replay id within 72 hours for high-volume events"
+      ],
+      "do_not_assume": "The event was deleted from the bus immediately."
+    }
+  ],
+  "production_notes": [
+    "Contract the idempotency key with the remote team in writing.",
+    "Monitor outbound-messaging and event delivery; 24-hour and 72-hour windows still expire.",
+    "Reverify Limits for API allocations per edition before go-live."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Request and Reply means which timing?",
+      "options": {
+        "A": "Salesforce invokes a remote process, waits for completion, and tracks state from the response",
+        "B": "Salesforce never waits and never updates state",
+        "C": "Only nightly Batch Apex",
+        "D": "A sharing rule"
+      },
+      "answer": "A",
+      "rationale": "Official pattern definition.",
+      "distractor_explanations": {
+        "B": "That is closer to fire-and-forget.",
+        "C": "A different pattern family.",
+        "D": "Security."
+      },
+      "concept": "Request/Reply",
+      "citation_ids": ["SF-ARCH-INT-PAT", "SF-INT-PAT-GUIDE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Fire and Forget means which timing?",
+      "options": {
+        "A": "Salesforce does not wait for completion after the remote acknowledges the hand-off",
+        "B": "Salesforce always blocks the UI for 120 seconds",
+        "C": "MFA enrollment",
+        "D": "Ownership skew"
+      },
+      "answer": "A",
+      "rationale": "Official fire-and-forget definition.",
+      "distractor_explanations": {
+        "B": "Timeout is a request/reply concern, not the definition of fire-and-forget.",
+        "C": "Security.",
+        "D": "LDV."
+      },
+      "concept": "Fire and Forget",
+      "citation_ids": ["SF-ARCH-INT-PAT"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the documented configurable timeout ceiling for Apex callouts in the pattern guidance?",
+      "options": {
+        "A": "Up to 120 seconds",
+        "B": "Up to 3 seconds always",
+        "C": "72 hours",
+        "D": "24 days"
+      },
+      "answer": "A",
+      "rationale": "Architecture Center: configurable timeout of up to 120 seconds for calls from Apex.",
+      "distractor_explanations": {
+        "B": "Not the cited ceiling.",
+        "C": "Platform event storage, not callout timeout.",
+        "D": "Wrong window."
+      },
+      "concept": "Callout timeout",
+      "citation_ids": ["SF-ARCH-INT-PAT"]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "High-volume platform event messages are stored for how long in the cited guidance?",
+      "options": {
+        "A": "72 hours (three days)",
+        "B": "15 minutes",
+        "C": "15 days like Recycle Bin",
+        "D": "Forever without replay"
+      },
+      "answer": "A",
+      "rationale": "Architecture Center fire-and-forget table: 72 hours / three days.",
+      "distractor_explanations": {
+        "B": "Too short.",
+        "C": "Recycle Bin is a different mechanism.",
+        "D": "Replay is time-bounded."
+      },
+      "concept": "Event storage",
+      "citation_ids": ["SF-ARCH-INT-PAT"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A user must see an ERP order number on the page after clicking Submit. Best pattern family?",
+      "options": {
+        "A": "Request and Reply from UI or Flow plus Apex, not a trigger sync callout",
+        "B": "Fire-and-forget with no callback",
+        "C": "Public Read/Write OWD",
+        "D": "Before-save Flow HTTP from trigger context"
+      },
+      "answer": "A",
+      "rationale": "Salesforce must wait and track state; Trailhead and Architecture Center place this on request/reply, not trigger HTTP.",
+      "distractor_explanations": {
+        "B": "User would not see the number now.",
+        "C": "Security.",
+        "D": "Wrong entry and likely invalid."
+      },
+      "concept": "UI request/reply",
+      "citation_ids": ["SF-ARCH-INT-PAT", "SF-TH-INT-IDEMP"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why must the remote procedure be idempotent for request/reply from a UI?",
+      "options": {
+        "A": "Salesforce cannot guarantee a single invocation; double-clicks and retries happen",
+        "B": "Idempotency is illegal on Salesforce",
+        "C": "It replaces named credentials",
+        "D": "It sets OWD"
+      },
+      "answer": "A",
+      "rationale": "Trailhead and pattern guides: unique message id and duplicate checks.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Security mechanism.",
+        "D": "Sharing."
+      },
+      "concept": "Idempotency",
+      "citation_ids": ["SF-TH-INT-IDEMP", "SF-ARCH-INT-PAT"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Outbound messaging is used. No positive acknowledgment arrives. What does the cited guidance say Salesforce does?",
+      "options": {
+        "A": "Retries for up to 24 hours",
+        "B": "Retries for 72 hours then encrypts the payload",
+        "C": "Never retries",
+        "D": "Deletes the Salesforce record automatically"
+      },
+      "answer": "A",
+      "rationale": "Fire-and-forget table: outbound messaging retries up to 24 hours.",
+      "distractor_explanations": {
+        "B": "72 hours is event storage.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "OM retry",
+      "citation_ids": ["SF-ARCH-INT-PAT"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A before-insert trigger performs a synchronous HTTP callout for request/reply. Architect verdict?",
+      "options": {
+        "A": "Suboptimal/invalid for this pattern; trigger callouts must be async—use UI-initiated callout or fire-and-forget",
+        "B": "The official best solution for request/reply",
+        "C": "Required by composite API",
+        "D": "How outbound messaging works"
+      },
+      "answer": "A",
+      "rationale": "Architecture Center marks synchronous trigger plus async callout as suboptimal for request/reply.",
+      "distractor_explanations": {
+        "B": "Opposite of the cited rating.",
+        "C": "Composite is inbound REST.",
+        "D": "Different feature."
+      },
+      "concept": "No trigger sync RR",
+      "citation_ids": ["SF-ARCH-INT-PAT", "SF-TH-INT-IDEMP"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Two systems update each other on every field change. Pattern guidance?",
+      "options": {
+        "A": "Suboptimal chatty remote call-in or invocation; emphasize locking and user impact",
+        "B": "Always the best Trusted design",
+        "C": "Required for idempotency",
+        "D": "The same as a formula field"
+      },
+      "answer": "A",
+      "rationale": "Architecture Center remote call-in / remote process invocation continual-update notes.",
+      "distractor_explanations": {
+        "B": "Opposite.",
+        "C": "Idempotency is duplicate safety, not chatty loops.",
+        "D": "False."
+      },
+      "concept": "Anti-chatty",
+      "citation_ids": ["SF-ARCH-INT-PAT"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Composite REST returns HTTP 200. What must you still do?",
+      "options": {
+        "A": "Inspect the body; a subrequest may have failed even though the HTTP status is 200 (up to 25 subrequests)",
+        "B": "Assume all subrequests committed",
+        "C": "Treat 200 as a sharing success",
+        "D": "Skip idempotency"
+      },
+      "answer": "A",
+      "rationale": "Architecture Center composite notes.",
+      "distractor_explanations": {
+        "B": "Unsafe.",
+        "C": "Wrong domain.",
+        "D": "Unrelated."
+      },
+      "concept": "Composite 200",
+      "citation_ids": ["SF-ARCH-INT-PAT"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Request/reply recovery versus fire-and-forget recovery?",
+      "options": {
+        "A": "RR: caller often withholds Salesforce commit until success; FF: remote or bus owns later errors and recovery is often custom",
+        "B": "They are identical",
+        "C": "FF always rolls back platform events with DML",
+        "D": "RR forbids timeouts"
+      },
+      "answer": "A",
+      "rationale": "Error-handling tables on the pattern page.",
+      "distractor_explanations": {
+        "B": "Different owners.",
+        "C": "Events are not transactional with DML.",
+        "D": "RR has a 120-second ceiling."
+      },
+      "concept": "Recovery split",
+      "citation_ids": ["SF-ARCH-INT-PAT"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How should you treat an unsourced 'daily API limit is 3' in this architecture?",
+      "options": {
+        "A": "Not a constraint until cited from current Limits documentation; mark Needs verification",
+        "B": "It is the official request/reply timeout",
+        "C": "It is the platform-event storage window",
+        "D": "It replaces idempotency"
+      },
+      "answer": "A",
+      "rationale": "Allocations are edition-specific; this lesson forbids invented caps. Documented windows are 120s / 24h / 72h instead.",
+      "distractor_explanations": {
+        "B": "Timeout is 120 seconds.",
+        "C": "72 hours.",
+        "D": "False."
+      },
+      "concept": "No invented API caps",
+      "citation_ids": ["SF-INT-PAT-GUIDE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "Request and Reply in one sentence?",
+      "back": "Salesforce invokes a remote process, waits, and tracks state from the response."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "Fire and Forget in one sentence?",
+      "back": "Salesforce hands off and does not wait for completion after acknowledgment."
+    },
+    {
+      "id": "F3",
+      "category": "timeout",
+      "front": "Apex callout timeout ceiling cited here?",
+      "back": "Configurable up to 120 seconds."
+    },
+    {
+      "id": "F4",
+      "category": "retry",
+      "front": "Outbound messaging retry window cited here?",
+      "back": "Retries without positive acknowledgment for up to 24 hours."
+    },
+    {
+      "id": "F5",
+      "category": "events",
+      "front": "High-volume platform event storage cited here?",
+      "back": "72 hours (three days); replay by replay id."
+    },
+    {
+      "id": "F6",
+      "category": "idempotency",
+      "front": "How do you make a receiver idempotent?",
+      "back": "Unique message or record id plus check-before-insert or upsert."
+    },
+    {
+      "id": "F7",
+      "category": "boundary",
+      "front": "Trigger synchronous HTTP for request/reply?",
+      "back": "No. Suboptimal/invalid; trigger callouts are async. Use UI-initiated callout or change pattern."
+    },
+    {
+      "id": "F8",
+      "category": "failure",
+      "front": "Request/reply: who handles errors?",
+      "back": "The caller. Often withhold Salesforce commit until success."
+    },
+    {
+      "id": "F9",
+      "category": "failure",
+      "front": "Are platform events rolled back with DML?",
+      "back": "No. They are not processed within the database transaction."
+    },
+    {
+      "id": "F10",
+      "category": "composite",
+      "front": "Composite HTTP 200 means all subrequests succeeded?",
+      "back": "Not necessarily. Inspect the body; up to 25 subrequests; some may have failed."
+    },
+    {
+      "id": "F11",
+      "category": "anti-pattern",
+      "front": "Chatty two-way field-level updates?",
+      "back": "Suboptimal: traffic, locking, user impact. Coarsen the sync."
+    },
+    {
+      "id": "F12",
+      "category": "limits",
+      "front": "May you invent a daily API cap here?",
+      "back": "No. Cite current Limits documentation; allocations are edition-specific."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "User must see ERP number now. Pattern?",
+      "back": "Request/reply from UI/Flow plus Apex, with idempotency and a 120-second-aware timeout."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Warehouse can lag; save must not block. Pattern?",
+      "back": "Fire-and-forget with a retry owner (events, OM, or async)."
+    },
+    {
+      "id": "F15",
+      "category": "security",
+      "front": "Is a named credential a complete integration architecture?",
+      "back": "No. It is a security mechanism. You still need a pattern and a failure desk."
+    },
+    {
+      "id": "F16",
+      "category": "analogy",
+      "front": "Where does the courier-desk analogy break?",
+      "back": "Middleware may retry too, events are not in the DML transaction, and API allocations cannot be guessed."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Contrast request/reply and fire-and-forget for a Salesforce integration architecture.",
+      "answer_30_seconds": "Request/reply: Salesforce waits and stores state from the response. Fire-and-forget: hand-off, then continue. Failure handling and idempotency apply to both.",
+      "answer_2_minutes": "I pick request/reply when the user or this transaction needs the remote result now, inside a callout timeout up to 120 seconds, usually from UI or Flow plus Apex—not from a trigger HTTP. I pick fire-and-forget when a later finish is fine, using events, outbound messaging, or async. I design who retries. I do not call 'REST' a pattern.",
+      "example": "ERP order number on a button versus warehouse codes after close-won.",
+      "tradeoffs": [
+        "User wait vs save latency",
+        "Caller-owned errors vs remote-owned errors"
+      ],
+      "follow_ups": [
+        "What if the remote needs 10 minutes?",
+        "Where does CDC fit? (Neighboring.)"
+      ],
+      "weak_answer_warnings": [
+        "REST as the only answer"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What is failure-mode design on an integration, with one official window?",
+      "answer_30_seconds": "Timeout, who handles the error, retry, recovery, and duplicates. Example: Apex callouts up to 120 seconds; outbound messaging retries up to 24 hours; events stored 72 hours.",
+      "answer_2_minutes": "For request/reply I often withhold Salesforce Confirmed until success. For fire-and-forget I add Flow fault paths or a custom retry if QoS requires it. I never invent a daily API cap. I verify Limits for allocations at go-live. I threat-model the integration user separately (ARCH-004).",
+      "example": "ERP timeout: show error, do not mark LAB_Order Confirmed.",
+      "tradeoffs": [
+        "Wait and show errors vs queue and callback",
+        "Platform retry vs custom retry"
+      ],
+      "follow_ups": [
+        "Poison messages?",
+        "Who owns the dead-letter queue?"
+      ],
+      "weak_answer_warnings": [
+        "Happy path only"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Submit Order button must show an ERP number. Developer puts HTTP.send in before insert. Respond.",
+      "answer_30_seconds": "Reject it. Request/reply from a trigger is suboptimal because callouts there are async. Use LWC or Flow plus Apex. Keep an idempotency key.",
+      "answer_2_minutes": "I walk the pattern page rating. I still need named credentials and a 120-second-aware remote. If ERP is slower than that, I change to fire-and-forget plus a callback that writes the number later. I test double-click. I do not use production orders.",
+      "example": "LAB_Order Submit button in a sandbox mock ERP, not a before-insert HTTP.send.",
+      "tradeoffs": [
+        "Synchronous UX vs ERP duration",
+        "Trigger convenience vs pattern fit"
+      ],
+      "follow_ups": [
+        "Continuation / callback design?",
+        "Composite inbound from ERP instead?"
+      ],
+      "weak_answer_warnings": [
+        "Approving trigger HTTP for UX request/reply"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "ERP creates two orders when a user double-clicks and outbound messaging retries. What failed?",
+      "answer_30_seconds": "Idempotency. The receiver must key on a unique id and upsert. Retries are normal, especially with 24-hour outbound messaging.",
+      "answer_2_minutes": "I put the Salesforce record id or a generated message id on the payload. I contract that with ERP. I do not tell users 'please click once' as the control. I still investigate whether two different LAB_Orders were actually created. Middleware retries count too—the analogy breaks if only Apex is idempotent.",
+      "example": "ERP upserts on LAB_Order.Id so a double-click plus outbound-message retry creates one order.",
+      "tradeoffs": [
+        "At-least-once delivery vs exactly-once business effect",
+        "Natural key vs generated message id"
+      ],
+      "follow_ups": [
+        "What if the first call succeeded and the ack was lost?",
+        "How do you detect poison messages?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the user click only"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Callout times out on the button. How do you decide to stay request/reply?",
+      "answer_30_seconds": "If ERP cannot finish inside the 120-second ceiling, I cannot stay user-blocking request/reply. I switch pattern or make ERP faster.",
+      "answer_2_minutes": "I measure remote duration, not just Salesforce. I check named credential and network, but I do not stop there. If the business still wants the number on the page, we need a faster API or a polling/callback UX. I will not invent that Salesforce allows a 10-minute sync callout.",
+      "example": "ERP report job taking minutes; not a fit for request/reply.",
+      "tradeoffs": [
+        "Change ERP vs change pattern",
+        "Polling UX vs true fire-and-forget"
+      ],
+      "follow_ups": [
+        "Continuation in Flow?",
+        "What is the user-visible status model?"
+      ],
+      "weak_answer_warnings": [
+        "Raising timeout folklore beyond 120 seconds"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A platform event was published, DML later rolled back, and the subscriber still processed. Explain.",
+      "answer_30_seconds": "Platform events are not in the database transaction. Publish is a hand-off. Design for that failure mode or publish after commit.",
+      "answer_2_minutes": "Fire-and-forget on the bus is not undo. Subscribers should be idempotent. Replay id helps within 72 hours for high-volume events if they missed a later message, but it will not un-process a message that already ran. I would look at after-commit publish patterns in current event docs—Needs verification of the exact Apex publish-on-commit APIs in the target version.",
+      "example": "LAB_Order event published then validation failed on a later step.",
+      "tradeoffs": [
+        "Early publish vs after-commit publish",
+        "Subscriber compensation vs tighter transaction"
+      ],
+      "follow_ups": [
+        "Change Data Capture versus platform events?",
+        "ARCH-007 eventual consistency?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming events roll back with DML"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How do you keep integration architecture from becoming a chatty two-way loop?",
+      "answer_30_seconds": "Do not update both systems on every field change. Coarsen to events, batches, or explicit user actions. Continual call-in is documented as suboptimal.",
+      "answer_2_minutes": "I ask which system is system of record (Trusted). I pick one direction per data class. I use fire-and-forget for notifications and request/reply for on-demand commands. I watch locking and user-impact. I still apply least-privilege integration users. Volume may push me to the bulk synchronization chapter rather than more triggers.",
+      "example": "ERP owns price; Salesforce owns the sales process; no per-keystroke sync.",
+      "tradeoffs": [
+        "Freshness vs chatter",
+        "Near-real-time events vs nightly batch"
+      ],
+      "follow_ups": [
+        "When is CDC the right notification?",
+        "How do you prevent update loops?"
+      ],
+      "weak_answer_warnings": [
+        "Trigger callouts both ways"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach integration architecture with the courier desk, then break the analogy, using official windows.",
+      "answer_30_seconds": "Return receipt is request/reply; chute drop is fire-and-forget; lost-parcel desk is timeout and retry; tracking number is idempotency. 120 seconds, 24 hours, 72 hours. The analogy breaks when middleware also retries and events ignore DML rollback.",
+      "answer_2_minutes": "I walk LAB_Order submit versus warehouse notify. I forbid trigger clerks waiting during save. I forbid invented daily caps. I mention composite 200 can still be a failed parcel inside a smiling envelope. I stay with the courier desk and immediately name where it breaks. I point to Architecture Center as the map, not a vendor blog.",
+      "example": "LAB_ manufacturer sandbox with a mock ERP upsert.",
+      "tradeoffs": [
+        "Memorable story vs extra retry actors",
+        "Official windows vs edition allocations"
+      ],
+      "follow_ups": [
+        "What is Batch Data Synchronization in one line?",
+        "Where does ARCH-007 start?"
+      ],
+      "weak_answer_warnings": [
+        "A generic catalog metaphor instead of the courier-desk story",
+        "Invented API caps"
+      ]
+    }
+  ]
+}

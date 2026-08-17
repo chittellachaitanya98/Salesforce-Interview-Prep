@@ -1,0 +1,996 @@
+{
+  "topic_id": "AUTO-009",
+  "slug": "flow-security-and-execution-context",
+  "title": "Flow security and execution context",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AUTO-008"
+  ],
+  "objectives": [
+    "Distinguish user context from system context with sharing and system context without sharing for a Flow interview.",
+    "Explain that default execution context depends on how the Flow is launched, and that Apex-invoked Flows ignore object and field permissions.",
+    "Grant Run Flows or Manage Flow (or per-flow access) so the right users can launch a Flow.",
+    "Connect Create/Update read-only field behavior to the running user’s field access and org preferences."
+  ],
+  "diagnostic_question": "A screen Flow launched from an Experience Cloud page shows Opportunities a guest should not see. What execution context would you inspect first, and what would you change before widening How to Run the Flow?",
+  "definition": "Flow security is who may run the Flow and which records and fields the interview may touch. Execution context is whether that interview uses the running user’s object permissions and FLS (user context) or system context with or without sharing. Default context depends on how the Flow is launched. A Flow called by Apex ignores object and field-level permissions. ([Flow execution context](https://help.salesforce.com/s/articleView?id=platform.flow_distribute_context.htm); [Read-only fields](https://help.salesforce.com/s/articleView?id=sf.flow_considerations_readonlyfields_parent.htm))",
+  "why_it_matters": "System context can expose or update data the user cannot see in the UI. Interviewers listen for user versus system, with versus without sharing, Run Flows versus per-flow access, and Experience Cloud guest risk—not a collapse of all sharing into this lesson.",
+  "sixty_second_explanation": "Think of an airport badge. User context is a passenger boarding pass: you only reach gates your ticket allows. System context with sharing is an employee badge that still respects some doors (sharing) but not every counter policy (object/FLS). System context without sharing is airside access that ignores those doors. Who may even enter the jetway is Run Flows or a specific Flow share. The Flow definition is the badge policy (metadata); the Opportunity rows are the passengers (data).",
+  "deeper_explanation": [
+    "Help: Flows run in user context or system context. In user context, the running user’s profile and permission sets determine object permissions and field-level access. In system context, access depends on whether the Flow runs with sharing or without sharing. Default context depends on how the Flow is launched. ([Execution context](https://help.salesforce.com/s/articleView?id=platform.flow_distribute_context.htm))",
+    "Help: you can force system context with or without sharing, overriding the default. With sharing, the Flow respects sharing rules but ignores object and field permissions. Without sharing, the Flow can access all data. Screen and autolaunched Flows in system context can expose more data than intended, especially on Experience Cloud sites used by external users. Prefer proper FLS and record access; if system context is required, use the minimum fields and records. ([Execution context](https://help.salesforce.com/s/articleView?id=platform.flow_distribute_context.htm))",
+    "When a Flow is launched from Apex, Help states the Flow always ignores object and field-level permissions; Apex with sharing / without sharing decides whether org-wide defaults, roles, sharing rules, teams, and territories are enforced. ([Execution context](https://help.salesforce.com/s/articleView?id=platform.flow_distribute_context.htm))",
+    "REST API: a release update runs Flows via REST in the authenticated user’s context so they cannot edit records the user cannot edit. Do not assume REST still means system context. ([REST user context](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_release_update_user_context_via_rest_api.htm))",
+    "Users need permission to run Flows (Run Flows, Manage Flow, or granular per-flow access). Guest/external users need explicit grants; do not rely on deprecated site-wide shortcuts. Create/Update via record variables still fail on fields the running user cannot edit unless Filter inaccessible fields from flow requests is considered. ([Read-only fields](https://help.salesforce.com/s/articleView?id=sf.flow_considerations_readonlyfields_parent.htm))"
+  ],
+  "mental_model": {
+    "analogy": "An airport badge: passenger boarding pass = user context, employee badge = system context with sharing, airside access = system context without sharing, TSA checkpoint = Run Flows / per-flow access.",
+    "useful_mapping": [
+      "user context → boarding pass: object permissions and FLS of the running user",
+      "system context with sharing → employee badge: sharing still applies, object/FLS ignored",
+      "system context without sharing → airside: can access all data",
+      "How the Flow is launched → which badge is issued by default",
+      "Apex-launched Flow → ignores object/FLS; Apex sharing keywords decide record visibility",
+      "Run Flows / per-flow access → who may enter the jetway at all",
+      "Experience Cloud guest → do not hand out airside badges",
+      "Flow definition → badge policy (metadata); records → passengers (data)"
+    ],
+    "where_it_breaks": [
+      "Sharing, OWD, and role hierarchy details belong to SEC topics; this lesson only says whether the Flow honors them.",
+      "Apex with sharing is not a Flow Builder dropdown.",
+      "Filter inaccessible fields is an org preference, not a badge type.",
+      "Record-triggered default context should be re-read on the current Help page, not memorized from a blog."
+    ]
+  },
+  "teach_back_prompt": "Using the airport badge, explain user context versus system context without sharing, then name one Experience Cloud risk of forcing system context on a screen Flow.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Define user context, system with sharing, and system without sharing."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "What does an Apex-launched Flow ignore, and what do Apex sharing keywords still control?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Experience Cloud screen Flow: what do you check before system context?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "User can open the page but cannot run the Flow: which permissions?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: execution context plus who is allowed to run the Flow."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-FLOW-CTX",
+      "title": "Flow Execution Context",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_distribute_context.htm",
+      "supports": "User vs system context; with vs without sharing; default depends on launch method; Apex-launched Flows ignore object/FLS; Experience Cloud caution.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Default context per launch type can be versioned; re-read the table on the current page."
+    },
+    {
+      "source_id": "SF-HELP-READONLY",
+      "title": "Flow Operations and Read-Only Fields",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_considerations_readonlyfields_parent.htm",
+      "supports": "Create/Update can fail when the running user lacks edit access; Filter inaccessible fields from flow requests.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace choosing execution context."
+    },
+    {
+      "source_id": "SF-HELP-REST-CTX",
+      "title": "Run Flows in User Context via REST API (Release Update)",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_release_update_user_context_via_rest_api.htm",
+      "supports": "Flows invoked via REST API use the authenticated user’s profile and permission sets for object and field access.",
+      "release_or_version": "Enforced earlier; still cited Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Applies to REST-invoked Flows, not every launch type."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Flow execution context Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "who can run the Flow",
+        "user context",
+        "system with sharing",
+        "system without sharing",
+        "Apex launch",
+        "Experience Cloud"
+      ],
+      "accessible_description": "Portrait map: Run Flows gates launch; user context uses the user’s CRUD/FLS; system with sharing honors sharing but not object/FLS; without sharing can access all data; Apex launch ignores object/FLS."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-FLOW-CTX",
+        "SF-HELP-READONLY",
+        "SF-HELP-REST-CTX"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Flow execution context and run access"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  User[Running user] --> Launch[How the Flow is launched]\n  Launch --> Default[Default execution context]\n  Default --> UserCtx[User context: profile and permission sets for object and FLS]\n  Default --> SysShare[System context with sharing]\n  Default --> SysAll[System context without sharing]\n  Launch --> Apex[Launched from Apex]\n  Apex --> IgnoreFLS[Ignores object and FLS]\n  Apex --> ApexShare[Apex with or without sharing for records]\n  User --> Perm[Run Flows or Manage Flow or per-flow access]\n  SysAll --> Data[Can access all data]\n  UserCtx --> FLS[Create/Update may fail on read-only fields]",
+      "decision": "flowchart TD\n  Need[Need a Flow to touch records] --> Q1{Must the interview honor the user’s object permissions and FLS?}\n  Q1 -->|Yes| UserCtx[Keep or force user context; grant only needed CRUD/FLS]\n  Q1 -->|No but honor sharing| SysShare[System context with sharing]\n  Q1 -->|Must see all rows| Q2{Is this Experience Cloud or guest?}\n  Q2 -->|Yes| Stop[Do not default to system without sharing; minimize fields or redesign]\n  Q2 -->|Internal admin automation| SysAll[System context without sharing, minimum fields]\n  Need --> Q3{User cannot launch the Flow at all?}\n  Q3 -->|Yes| Grant[Run Flows, Manage Flow, or share that Flow]\n  Need --> Q4{Invoked via REST?}\n  Q4 -->|Yes| RestUser[Authenticated user context for object and FLS]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "In user context, the running user’s profile and permission sets determine the Flow’s object permissions and field-level access. Default context depends on how the Flow is launched.",
+      "source_ids": ["SF-HELP-FLOW-CTX"],
+      "scope": "User context",
+      "validation": "Flow execution context Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "System context with sharing respects sharing but ignores object and field permissions. System context without sharing can access all data. Screen/autolaunched system context can over-expose data, especially for Experience Cloud external users.",
+      "source_ids": ["SF-HELP-FLOW-CTX"],
+      "scope": "System context",
+      "validation": "Flow execution context Help, including How to Run the Flow override.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A Flow launched from Apex always ignores object and field-level permissions; Apex sharing keywords control whether sharing is enforced.",
+      "source_ids": ["SF-HELP-FLOW-CTX"],
+      "scope": "Apex-launched Flows",
+      "validation": "Execution context Help Apex paragraph.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Flows run via REST API use the authenticated user’s profile and permission sets for object and field access after the user-context release update.",
+      "source_ids": ["SF-HELP-REST-CTX"],
+      "scope": "REST launch",
+      "validation": "Run Flows in User Context via REST API release update.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Create/Update using record variables can fail on fields the running user cannot edit; Filter inaccessible fields from flow requests controls request behavior.",
+      "source_ids": ["SF-HELP-READONLY"],
+      "scope": "Read-only fields",
+      "validation": "Flow Operations and Read-Only Fields.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify How to Run the Flow options and REST/user-context enforcement for Summer '26. Salesforce has been tightening Flow run access; confirm current Run Flows / granular sharing Help.",
+  "unresolved_uncertainty": [
+    "Exact default context for every launch type (record-triggered, scheduled, platform event, Orchestration): Needs verification on the current execution-context table.",
+    "Granular per-flow access UI labels: Needs verification in the target org’s Setup; do not invent click paths."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "execution context",
+      "telugu": "ఫ్లో యూజర్ అనుమతులతో నడుస్తుందా లేక సిస్టమ్ సందర్భంలో నడుస్తుందా."
+    },
+    {
+      "english": "user context",
+      "telugu": "నడిపే యూజర్ ప్రొఫైల్ మరియు పర్మిషన్ సెట్ల FLS మరియు ఆబ్జెక్ట్ అనుమతులు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Execution context decides whose object permissions, FLS, and sharing the Flow uses. User context uses the running user. System with sharing ignores object/FLS but honors sharing. Without sharing can access all data. Apex-launched Flows ignore object/FLS. Users still need permission to run the Flow.",
+    "two_minutes": "I start from launch type, because Help says default context depends on how the Flow starts. I do not force system without sharing on an Experience Cloud screen Flow. I grant Run Flows or share the specific Flow. REST is user context for object/FLS. If Create Records fails on a read-only field, I check FLS and Filter inaccessible fields, not only the canvas. Sharing design details stay in SEC; this lesson is whether the Flow honors them."
+  },
+  "terminology": [
+    {
+      "term": "execution context",
+      "plain": "Whose permissions the Flow interview uses when it reads or writes records.",
+      "precise": "User context versus system context with sharing versus system context without sharing. Default depends on launch method; some Flows can override How to Run the Flow.",
+      "example": "A screen Flow left in user context so a sales user only updates Opportunities they can edit.",
+      "non_example": "The Flow’s API version is not execution context.",
+      "confusable_neighbor": "Debug As another user: a testing aid, not the production default.",
+      "boundary": "OWD/role/sharing rule design is SEC; this topic is whether the Flow honors them."
+    },
+    {
+      "term": "user context",
+      "plain": "The interview uses the running user’s object permissions and field-level security.",
+      "precise": "Help: profile and permission sets determine object permissions and FLS for a Flow in user context.",
+      "example": "User without edit on Amount cannot have the Flow set Amount if it stays in user context.",
+      "non_example": "System context without sharing using that same user as a label only.",
+      "confusable_neighbor": "Run Flows permission: ability to launch, not FLS on Amount.",
+      "boundary": "REST-invoked Flows use this user-context model after the release update."
+    },
+    {
+      "term": "system context with sharing",
+      "plain": "The Flow ignores object and field permissions but still respects sharing.",
+      "precise": "Help: with sharing, the Flow respects sharing rules but ignores object and field permissions.",
+      "example": "Automation updates a field the user’s profile cannot edit, but only on rows the user can see.",
+      "non_example": "User context, which still enforces FLS.",
+      "confusable_neighbor": "Apex with sharing: similar record idea, different product surface.",
+      "boundary": "Still dangerous on Experience Cloud if object/FLS were the only guard."
+    },
+    {
+      "term": "system context without sharing",
+      "plain": "The Flow can access all data, ignoring sharing as well as object/FLS.",
+      "precise": "Help: without sharing, the Flow accesses all data. Use minimum fields and records if this is required.",
+      "example": "Internal cleanup Flow that must close orphan LAB_ Tasks the running admin cannot see via sharing.",
+      "non_example": "A guest-user screen Flow that lists all Opportunities.",
+      "confusable_neighbor": "View All Data on a user: a permission, not the Flow’s How to Run the Flow setting.",
+      "boundary": "Help warns about screen/autolaunched over-exposure, especially external users."
+    },
+    {
+      "term": "running user",
+      "plain": "The user whose identity the interview is associated with.",
+      "precise": "In user context, their profile and permission sets matter. They still need launch permission. Guest users are a special running user.",
+      "example": "Experience Cloud customer running a case-create screen Flow.",
+      "non_example": "The user who last modified the Flow metadata in Setup.",
+      "confusable_neighbor": "Automated Process / default workflow user: neighboring automation identities; confirm current Flow running-user Help before quoting a username.",
+      "boundary": "Needs verification of the exact running user for scheduled Flows on the current page."
+    },
+    {
+      "term": "Run Flows",
+      "plain": "A user permission that allows launching Flows, distinct from Manage Flow.",
+      "precise": "Users need Run Flows, Manage Flow, or granular access to a specific Flow. Release updates have restricted run access; guests need explicit grants.",
+      "example": "Support profile has Run Flows so they can launch the guided Case Flow.",
+      "non_example": "Object Create on Case without any Flow run permission.",
+      "confusable_neighbor": "Manage Flow: build/activate, not only run.",
+      "boundary": "Exact Setup labels for per-flow sharing: Needs verification in-org."
+    },
+    {
+      "term": "Filter inaccessible fields from flow requests",
+      "plain": "An org preference for what happens when Create/Update tries to set a field the user cannot edit.",
+      "precise": "Read-only fields Help: when using a record variable or collection, you can filter inaccessible fields from the request instead of failing.",
+      "example": "Record variable includes a system field; filter strips it so Create Records succeeds.",
+      "non_example": "Changing execution context to hide a missing Run Flows permission.",
+      "confusable_neighbor": "FLS on the profile: the reason the field is inaccessible.",
+      "boundary": "Does not grant extra record visibility."
+    },
+    {
+      "term": "Apex-launched Flow",
+      "plain": "A Flow started from Apex, not from a button the user clicked in Flow Builder.",
+      "precise": "Help: always ignores object and FLS. Apex with sharing / without sharing decides whether sharing is enforced.",
+      "example": "Invocable Flow from a trigger-handler class marked without sharing.",
+      "non_example": "A screen Flow on a Lightning page with no Apex.",
+      "confusable_neighbor": "Subflow: inherits the parent interview’s context unless documented otherwise—Needs verification on current subflow Help.",
+      "boundary": "Apex CRUD/FLS enforcement in the class is APEX-014."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Identify the launch type",
+      "actor": "Admin / developer",
+      "trigger": "New or existing Flow",
+      "before": "Unknown default context",
+      "after": "Launch type listed: screen, autolaunched, record-triggered, REST, Apex",
+      "observe": "Written default from current execution-context Help",
+      "failure": "Assuming every Flow is user context"
+    },
+    {
+      "step": 2,
+      "transition": "Choose How to Run the Flow when the type allows an override",
+      "actor": "Admin",
+      "trigger": "Screen or autolaunched Flow needs a non-default context",
+      "before": "Default launch context",
+      "after": "User, system with sharing, or system without sharing chosen deliberately",
+      "observe": "Advanced / How to Run the Flow matches the written reason",
+      "failure": "System without sharing on an Experience Cloud screen Flow for convenience"
+    },
+    {
+      "step": 3,
+      "transition": "Grant launch access",
+      "actor": "Admin",
+      "trigger": "Users must start the Flow",
+      "before": "Only the builder can run it",
+      "after": "Run Flows, Manage Flow, or per-flow access on the correct profiles/permission sets",
+      "observe": "A non-admin test user can launch; a guest cannot unless explicitly granted",
+      "failure": "Relying on a deprecated site-wide Flow permission"
+    },
+    {
+      "step": 4,
+      "transition": "Test data access, not only the happy path",
+      "actor": "Admin",
+      "trigger": "Context chosen",
+      "before": "Debug as admin only",
+      "after": "Debug or run as a least-privilege user; confirm Get/Create/Update visibility",
+      "observe": "User without FLS cannot set the field in user context; system context behaves as documented",
+      "failure": "Admin-only Debug as proof of security"
+    }
+  ],
+  "when_to_use": [
+    "When choosing Flow execution context: user versus system with sharing versus system without sharing.",
+    "When a screen Flow on Experience Cloud might expose records if run in system context.",
+    "When an Apex-launched Flow ignores object and field permissions and you must check Apex sharing keywords.",
+    "When a user cannot run a Flow and you must grant Run Flows, Manage Flow, or per-flow access.",
+    "When Create/Update fails on read-only fields and you must inspect FLS and Filter inaccessible fields."
+  ],
+  "when_not_to_use": [
+    "Do not use this execution-context lesson as a full OWD, role hierarchy, and sharing-rule design class (SEC).",
+    "Do not force system context without sharing to bypass a missing Run Flows permission.",
+    "Do not treat REST-invoked Flows as system context after the user-context release update.",
+    "Do not confuse fault paths (AUTO-008) with security context.",
+    "Do not debug only as System Administrator and call the Flow secure."
+  ],
+  "configuration_or_code_location": [
+    "Flow Builder: How to Run the Flow / advanced properties (when available for the Flow type).",
+    "Setup: permission sets with Run Flows or Manage Flow; per-flow access if enabled.",
+    "Process Automation Settings: Filter inaccessible fields from flow requests.",
+    "Experience Cloud: guest user profile and Flow access, not only the page component."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox Experience Cloud site lets customer users update their own LAB_ Case comments via a screen Flow. A builder proposes system context without sharing so Get Records is ‘easier’. No production data.",
+    "inputs": [
+      "Screen Flow on a site page",
+      "Customer user can see only their Cases",
+      "Get Records currently queries Case without a tight filter"
+    ],
+    "decisions": [
+      {
+        "decision": "Keep user context so object permissions, FLS, and the user’s record access apply.",
+        "because": "Help warns screen/autolaunched system context can expose more data than intended for external users.",
+        "rejected": "System context without sharing for easier Get Records"
+      },
+      {
+        "decision": "Filter Get Records to the running user’s Cases and grant only needed Case fields.",
+        "because": "Minimum fields and records even if context were widened later.",
+        "rejected": "Get all Cases and hide extras on the Screen"
+      },
+      {
+        "decision": "Grant the customer profile the ability to run this Flow explicitly; do not rely on a site-wide leftover.",
+        "because": "Run access is separate from Case FLS.",
+        "rejected": "Manage Flow on the guest/customer profile"
+      }
+    ],
+    "configuration_or_code": [
+      "How to Run the Flow: user context (or the launch default if it is already user).",
+      "Get Records: Case Id equals a recordId the user already has access to, not all Cases.",
+      "Permission set: Run Flows or per-flow access; Case Read/Edit only on needed fields.",
+      "Test as the customer user, not only as admin."
+    ],
+    "output": "Customer updates their Case; Get Records does not return other customers’ Cases even if a filter is later loosened slightly, because user context plus sharing still constrain rows.",
+    "verification": [
+      "Customer user can launch the Flow; a user without run access cannot.",
+      "Get Records in Debug as the customer does not include another user’s LAB_ Case.",
+      "A field without FLS edit fails or is filtered per org preference, not silently written as admin."
+    ],
+    "self_explanation": "I treated system without sharing as airside access and refused it for Experience Cloud. Launch permission and context are different badges."
+  },
+  "hands_on_lab": {
+    "environment": "Developer sandbox with a least-privilege LAB_ user; no production aliases.",
+    "starting_state_checks": [
+      "You can assign permission sets and run screen Flows.",
+      "A second user exists who lacks View All Data."
+    ],
+    "steps": [
+      "Create a screen Flow that Get Records on a LAB_ object the second user should only partially see.",
+      "Run or Debug as that user in user context and note which rows appear.",
+      "If the Flow type allows, compare How to Run the Flow = system without sharing in sandbox and record the difference—then set it back.",
+      "Remove Run Flows from the user and confirm they cannot launch; restore the intended grant."
+    ],
+    "guided_completion": [
+      "If admin Debug is your only test, you have not tested execution context.",
+      "If you leave system without sharing enabled on a site Flow, stop and revert."
+    ],
+    "independent_challenge": "Document in one paragraph what an Apex-launched version of this Flow would ignore (object/FLS) versus what Apex sharing keywords still control.",
+    "evidence": [
+      "Notes: row counts as least-privilege user vs admin.",
+      "Screenshot or text of How to Run the Flow after revert to the safe setting."
+    ],
+    "stop_recovery_cleanup": [
+      "Revert How to Run the Flow to the least-privilege setting.",
+      "Deactivate the lab Flow."
+    ],
+    "limitations": "Some Flow types do not offer a How to Run the Flow override; record the default from Help instead."
+  },
+  "decision_table": [
+    {
+      "signal": "Experience Cloud or guest users will run a screen Flow that Gets records.",
+      "choose": "User context and tight Get filters; grant only Run access plus needed CRUD/FLS.",
+      "not": "System context without sharing so Get Records is easier.",
+      "why": "Help warns screen/autolaunched system context can expose more data than intended for external users."
+    },
+    {
+      "signal": "Internal automation must update a field the user’s profile cannot edit, but only on rows they can see.",
+      "choose": "System context with sharing, after a written security review.",
+      "not": "System context without sharing, or silently relying on admin Debug.",
+      "why": "Help: with sharing respects sharing and ignores object/field permissions."
+    },
+    {
+      "signal": "Apex invokes the Flow and testers are surprised FLS did not apply.",
+      "choose": "Treat object/FLS as ignored; review the Apex class sharing keyword for record visibility.",
+      "not": "Add FLS to the running user’s profile expecting the Apex-launched Flow to honor it.",
+      "why": "Help: Apex-launched Flows always ignore object and field-level permissions."
+    },
+    {
+      "signal": "Integration calls the Flow via REST and used to update records the caller cannot edit.",
+      "choose": "Design for authenticated user context (object and FLS of that user).",
+      "not": "Assume REST still means system context.",
+      "why": "Release update: REST-run Flows use the authenticated user’s profile and permission sets."
+    },
+    {
+      "signal": "User can open the Lightning page but the Flow will not run.",
+      "choose": "Grant Run Flows, Manage Flow, or per-flow access; do not widen execution context.",
+      "not": "Switch to system without sharing to ‘fix launch’.",
+      "why": "Launch permission is separate from record access inside the interview."
+    }
+  ],
+  "limitations": [
+    "Does not design OWD, roles, or sharing rules (SEC).",
+    "Does not replace fault paths (AUTO-008) or bulk DML (AUTO-007).",
+    "Default context tables can change; re-read Help per launch type.",
+    "Per-flow sharing UI varies by org features."
+  ],
+  "security_notes": [
+    "Never grant Manage Flow to external or guest users to ‘make the button work’.",
+    "System without sharing is an access decision, not a performance tip.",
+    "Fault emails (AUTO-008) can leak fields the user should not see if the Flow ran wide."
+  ],
+  "common_mistakes": [
+    "Forcing system without sharing on Experience Cloud screen Flows.",
+    "Confusing Run Flows with FLS.",
+    "Testing only as System Administrator.",
+    "Assuming REST-invoked Flows still run in system context.",
+    "Expecting an Apex-launched Flow to honor FLS."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "INSUFFICIENT_ACCESS or read-only field error on Create/Update.",
+      "check": [
+        "Execution context",
+        "FLS and Filter inaccessible fields from flow requests"
+      ],
+      "do_not_assume": "The Flow failed to save as metadata."
+    },
+    {
+      "symptom": "User cannot launch the Flow on a page they can see.",
+      "check": [
+        "Run Flows / Manage Flow / per-flow access",
+        "Guest user Flow access on the site"
+      ],
+      "do_not_assume": "Execution context is the launch gate."
+    },
+    {
+      "symptom": "Get Records returns rows the tester cannot see in the UI.",
+      "check": [
+        "How to Run the Flow",
+        "Whether Apex launched the Flow without sharing"
+      ],
+      "do_not_assume": "Sharing rules are broken org-wide."
+    }
+  ],
+  "production_notes": [
+    "Document the chosen execution context in the Flow description.",
+    "Least-privilege UAT user is mandatory before activation on a site.",
+    "Review context again if you change launch type (button vs Apex vs REST)."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In user context, what determines the Flow’s object permissions and FLS?",
+      "options": {
+        "A": "The running user’s profile and permission sets",
+        "B": "Only the Flow API version",
+        "C": "Only organization-wide defaults, never FLS",
+        "D": "The user who last modified the Flow in Setup"
+      },
+      "answer": "A",
+      "rationale": "Execution context Help: user context uses the running user’s profile and permission sets.",
+      "distractor_explanations": {
+        "B": "API version is not FLS.",
+        "C": "User context includes object and field access.",
+        "D": "The metadata author is not the running user."
+      },
+      "concept": "User context",
+      "citation_ids": ["SF-HELP-FLOW-CTX"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "System context with sharing does which pairing?",
+      "options": {
+        "A": "Respects sharing; ignores object and field permissions",
+        "B": "Respects FLS; ignores sharing",
+        "C": "Ignores sharing and FLS and also deletes the Flow",
+        "D": "Applies only to report folders"
+      },
+      "answer": "A",
+      "rationale": "Help: with sharing respects sharing rules but ignores object and field permissions.",
+      "distractor_explanations": {
+        "B": "That reverses the Help sentence.",
+        "C": "Overstated and false.",
+        "D": "Not a reports topic."
+      },
+      "concept": "System with sharing",
+      "citation_ids": ["SF-HELP-FLOW-CTX"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A Flow launched from Apex surprises testers because FLS did not apply. Why?",
+      "options": {
+        "A": "Apex-launched Flows always ignore object and field-level permissions",
+        "B": "Flows never query fields",
+        "C": "Apex cannot launch Flows",
+        "D": "FLS applies only in Classic"
+      },
+      "answer": "A",
+      "rationale": "Execution context Help states that Apex-called Flows ignore object and FLS.",
+      "distractor_explanations": {
+        "B": "Get Records queries fields.",
+        "C": "Apex can launch Flows.",
+        "D": "FLS is not Classic-only."
+      },
+      "concept": "Apex launch",
+      "citation_ids": ["SF-HELP-FLOW-CTX"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Best first choice for an Experience Cloud screen Flow that Gets Cases?",
+      "options": {
+        "A": "User context and minimum fields/records, not system without sharing",
+        "B": "System context without sharing so guests see every Case",
+        "C": "Manage Flow on the guest profile",
+        "D": "Disable FLS org-wide"
+      },
+      "answer": "A",
+      "rationale": "Help warns system context on screen/autolaunched Flows can over-expose data for external users.",
+      "distractor_explanations": {
+        "B": "Opposite of the warning.",
+        "C": "Manage Flow is a builder permission.",
+        "D": "Not an acceptable control."
+      },
+      "concept": "Experience Cloud",
+      "citation_ids": ["SF-HELP-FLOW-CTX"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "After the REST release update, a Flow run via REST API uses whose object and field access?",
+      "options": {
+        "A": "The authenticated user’s profile and permission sets",
+        "B": "Always system context without sharing",
+        "C": "The guest user even for internal integrations",
+        "D": "No user; REST cannot run Flows"
+      },
+      "answer": "A",
+      "rationale": "Release update: REST-run Flows use the authenticated user for object permissions and FLS.",
+      "distractor_explanations": {
+        "B": "That was the older, less safe assumption.",
+        "C": "Not the authenticated integration user.",
+        "D": "REST can invoke Flows."
+      },
+      "concept": "REST user context",
+      "citation_ids": ["SF-HELP-REST-CTX"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Create Records fails because a field on the record variable is not editable for the user. What Help applies?",
+      "options": {
+        "A": "Read-only fields and Filter inaccessible fields from flow requests",
+        "B": "Report chart settings",
+        "C": "Apex inner-class nesting",
+        "D": "Price book entries only"
+      },
+      "answer": "A",
+      "rationale": "Read-only fields Help covers Create/Update when the user lacks edit access.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "APEX-001.",
+        "D": "Too narrow."
+      },
+      "concept": "Read-only fields",
+      "citation_ids": ["SF-HELP-READONLY"]
+    },
+    {
+      "id": "Q7",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Run Flows versus execution context?",
+      "options": {
+        "A": "Run Flows gates who can launch; execution context gates record/field access during the interview",
+        "B": "They are the same setting",
+        "C": "Execution context only exists in Workflow Rules",
+        "D": "Run Flows grants View All Data"
+      },
+      "answer": "A",
+      "rationale": "Launch permission and interview context are separate controls.",
+      "distractor_explanations": {
+        "B": "A common interview fail.",
+        "C": "Context is a Flow topic.",
+        "D": "Run Flows is not View All Data."
+      },
+      "concept": "Launch vs context",
+      "citation_ids": ["SF-HELP-FLOW-CTX"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Get Records returns Cases the tester cannot open in the UI. Likely Flow cause?",
+      "options": {
+        "A": "System context without sharing, or Apex without sharing launching the Flow",
+        "B": "A missing fault path only",
+        "C": "The Flow is metadata so it cannot query",
+        "D": "Entry conditions are always ignored"
+      },
+      "answer": "A",
+      "rationale": "Without sharing can access all data; Apex launch ignores FLS and may ignore sharing depending on the class.",
+      "distractor_explanations": {
+        "B": "Fault paths are AUTO-008.",
+        "C": "Get Records queries data.",
+        "D": "Entry conditions are AUTO-010."
+      },
+      "concept": "Over-wide Get",
+      "citation_ids": ["SF-HELP-FLOW-CTX"]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does Help say about default execution context?",
+      "options": {
+        "A": "It depends on how the Flow is launched",
+        "B": "It is always user context",
+        "C": "It is always system without sharing",
+        "D": "Flows have no context"
+      },
+      "answer": "A",
+      "rationale": "Help: by default the Flow runs in user or system context depending on how it is started.",
+      "distractor_explanations": {
+        "B": "Not always.",
+        "C": "Not always.",
+        "D": "False."
+      },
+      "concept": "Default depends on launch",
+      "citation_ids": ["SF-HELP-FLOW-CTX"]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need a user to launch a Flow but not build Flows. What do you avoid?",
+      "options": {
+        "A": "Giving Manage Flow when Run Flows or per-flow access is enough",
+        "B": "Testing as that user",
+        "C": "Documenting execution context",
+        "D": "Using a permission set"
+      },
+      "answer": "A",
+      "rationale": "Manage Flow is a builder permission; run access can be narrower.",
+      "distractor_explanations": {
+        "B": "You should test as that user.",
+        "C": "You should document context.",
+        "D": "Permission sets are a normal grant path."
+      },
+      "concept": "Least-privilege launch",
+      "citation_ids": ["SF-HELP-FLOW-CTX"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "System without sharing versus View All Data on the user?",
+      "options": {
+        "A": "One is a Flow How to Run the Flow setting; the other is a user permission—do not treat them as identical",
+        "B": "They are the same checkbox",
+        "C": "View All Data only affects Flow metadata",
+        "D": "System without sharing only affects reports"
+      },
+      "answer": "A",
+      "rationale": "Interviewers want the Flow setting distinguished from user permissions.",
+      "distractor_explanations": {
+        "B": "Different surfaces.",
+        "C": "View All Data is record access.",
+        "D": "It affects Flow data access."
+      },
+      "concept": "Setting vs permission",
+      "citation_ids": ["SF-HELP-FLOW-CTX"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A builder changes How to Run the Flow to system without sharing to fix a launch error. What is wrong?",
+      "options": {
+        "A": "Launch errors are run-access problems; widening context does not grant Run Flows",
+        "B": "System without sharing always fixes launch",
+        "C": "Flows cannot be launched by users",
+        "D": "The only fix is Apex"
+      },
+      "answer": "A",
+      "rationale": "Who may run the Flow is separate from execution context.",
+      "distractor_explanations": {
+        "B": "Dangerous and incorrect.",
+        "C": "Users launch screen Flows constantly.",
+        "D": "Declarative grants exist."
+      },
+      "concept": "Do not widen context to launch",
+      "citation_ids": ["SF-HELP-FLOW-CTX"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is Flow execution context?",
+      "back": "Whether the interview uses user context or system context with or without sharing when it touches records."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "What does user context use for object permissions and FLS?",
+      "back": "The running user’s profile and permission sets."
+    },
+    {
+      "id": "F3",
+      "category": "system",
+      "front": "System context with sharing in one sentence?",
+      "back": "Respects sharing rules; ignores object and field permissions."
+    },
+    {
+      "id": "F4",
+      "category": "system",
+      "front": "System context without sharing in one sentence?",
+      "back": "The Flow can access all data. Use minimum fields and records if required."
+    },
+    {
+      "id": "F5",
+      "category": "launch",
+      "front": "What does default execution context depend on?",
+      "back": "How the Flow is launched. Do not assume every type is user context."
+    },
+    {
+      "id": "F6",
+      "category": "apex",
+      "front": "What does an Apex-launched Flow ignore?",
+      "back": "Object permissions and field-level security. Apex sharing keywords still affect record visibility."
+    },
+    {
+      "id": "F7",
+      "category": "rest",
+      "front": "REST-invoked Flow object/FLS after the release update?",
+      "back": "The authenticated user’s profile and permission sets, not automatic system context."
+    },
+    {
+      "id": "F8",
+      "category": "access",
+      "front": "Run Flows versus Manage Flow?",
+      "back": "Run Flows launches interviews. Manage Flow is a builder permission. Prefer the narrower grant."
+    },
+    {
+      "id": "F9",
+      "category": "experience",
+      "front": "Why is system context risky on Experience Cloud screen Flows?",
+      "back": "Help: screen/autolaunched system context can expose more data than intended for external users."
+    },
+    {
+      "id": "F10",
+      "category": "readonly",
+      "front": "Create Records fails on a field the user cannot edit. Where do you look?",
+      "back": "Execution context, FLS, and Filter inaccessible fields from flow requests."
+    },
+    {
+      "id": "F11",
+      "category": "compare",
+      "front": "Launch permission versus execution context?",
+      "back": "Launch is who may start the Flow. Context is what records and fields the interview may touch."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "Does this lesson replace sharing-rule design?",
+      "back": "No. SEC owns OWD/roles/rules. This lesson is whether the Flow honors them."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Get Records shows rows the user cannot open. Likely context issue?",
+      "back": "System without sharing, or Apex without sharing launching the Flow."
+    },
+    {
+      "id": "F14",
+      "category": "test",
+      "front": "Why is admin-only Debug not a security test?",
+      "back": "Admins often have View All Data and FLS the real running user lacks."
+    },
+    {
+      "id": "F15",
+      "category": "metadata",
+      "front": "Is How to Run the Flow metadata or data?",
+      "back": "It is part of the Flow definition (metadata). The rows it reads are business data."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain Flow user context versus system context.",
+      "answer_30_seconds": "User context uses the running user’s object permissions and FLS. System with sharing ignores those but honors sharing. System without sharing can access all data. Default depends on launch type.",
+      "answer_2_minutes": "I cite execution context Help. I do not recite an unofficial table of every trigger type from memory; I say I would re-open the current page. I warn that screen and autolaunched system context can over-expose data, especially Experience Cloud. I separate this from who is allowed to run the Flow.",
+      "example": "Sales user screen Flow stays in user context so Amount FLS still applies.",
+      "tradeoffs": [
+        "User context safety vs system context convenience",
+        "With sharing vs without sharing"
+      ],
+      "follow_ups": [
+        "What does Apex launch change?",
+        "Where is How to Run the Flow?"
+      ],
+      "weak_answer_warnings": [
+        "Saying all Flows run as admin"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What happens when Apex launches a Flow?",
+      "answer_30_seconds": "The Flow ignores object and field-level permissions. Whether sharing is enforced follows the Apex class’s with sharing or without sharing, not a Flow FLS check.",
+      "answer_2_minutes": "I quote Help’s Apex paragraph so the interviewer hears I did not invent it. I still grant users the ability to do whatever the UX requires, but I do not promise FLS inside that interview. CRUD/FLS in the Apex class is a different topic. Subflow inheritance is something I would verify, not guess.",
+      "example": "without sharing handler launches a Flow that updates LAB_ Cases the interactive user cannot see.",
+      "tradeoffs": [
+        "Reusable Apex launch vs user-context screen Flow",
+        "with sharing vs without sharing on the class"
+      ],
+      "follow_ups": [
+        "How would you test it?",
+        "Should the Flow be user-context instead?"
+      ],
+      "weak_answer_warnings": [
+        "Promising FLS still applies"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A guest user on a site sees other customers’ Opportunities in a screen Flow. What do you inspect?",
+      "answer_30_seconds": "How to Run the Flow, Get Records filters, and guest run access. I suspect system context without sharing or an unfiltered Get. I do not add View All Data to the guest.",
+      "answer_2_minutes": "Help’s Experience Cloud warning is the first sentence of my answer. I switch to user context, filter Get Records to recordId the user already may see, and strip fields. I test as the guest. I check whether someone granted Manage Flow. Launch access stays explicit and narrow.",
+      "example": "Get Records of all Opportunities on a site page with system without sharing.",
+      "tradeoffs": [
+        "User context vs redesigning the Get",
+        "Per-flow access vs Run Flows on the profile"
+      ],
+      "follow_ups": [
+        "What if they need one extra field?",
+        "Would you use a named credential here? (No—wrong topic.)"
+      ],
+      "weak_answer_warnings": [
+        "Widening context further to ‘fix’ missing rows"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Create Records fails with a read-only field error for a standard user but works for you as admin. Walk the checks.",
+      "answer_30_seconds": "Compare execution context, the user’s FLS, and Filter inaccessible fields from flow requests. Admin Debug hid the issue.",
+      "answer_2_minutes": "I reproduce as the standard user. If the Flow is user context, FLS explains it. If someone forced system context, I ask why a read-only system field is on the record variable. I consider the filter preference. I do not grant Modify All Data to the user to green the test.",
+      "example": "Record variable maps CreatedDate; user cannot edit it; Create Records faults.",
+      "tradeoffs": [
+        "Filter inaccessible fields vs removing the field from the variable",
+        "User context vs system context"
+      ],
+      "follow_ups": [
+        "Where is the org preference?",
+        "Is this a fault-path problem too?"
+      ],
+      "weak_answer_warnings": [
+        "Only testing as admin"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you choose system context with sharing?",
+      "answer_30_seconds": "When the interview must write a field the user’s profile cannot edit, but must still only touch rows sharing allows. I write that reason down and still minimize fields.",
+      "answer_2_minutes": "I treat it as a security exception, not a default. I reject without sharing unless there is a documented need to see all rows. I still grant launch access separately. I UAT as a user who can see only some rows. I mention Help’s ignore-object-and-FLS sentence so the interviewer knows I am not claiming FLS still applies.",
+      "example": "Internal after-save helper must set a hidden status field on Opportunities the user can already see.",
+      "tradeoffs": [
+        "Hidden field via FLS vs system context",
+        "With sharing vs without sharing"
+      ],
+      "follow_ups": [
+        "Could a before-save Flow avoid this?",
+        "Who reviews the exception?"
+      ],
+      "weak_answer_warnings": [
+        "System with sharing as the default for every Flow"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Users say the Flow button does nothing / they cannot run it, but they can open the record.",
+      "answer_30_seconds": "That is launch access: Run Flows, Manage Flow, or per-flow share—not execution context and not FLS on the record they already opened.",
+      "answer_2_minutes": "I reproduce as that user. I check permission sets, Experience Cloud guest grants, and whether a release update restricted run access. I do not flip How to Run the Flow to system without sharing. I do not give Manage Flow to end users.",
+      "example": "Support profile lost Run Flows after a permission-set cleanup.",
+      "tradeoffs": [
+        "Profile vs permission set",
+        "Org-wide Run Flows vs per-flow access"
+      ],
+      "follow_ups": [
+        "What about guest users?",
+        "How do you find which permission set grants Run Flows?"
+      ],
+      "weak_answer_warnings": [
+        "Changing execution context to fix launch"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How do you talk about metadata versus data in Flow security?",
+      "answer_30_seconds": "How to Run the Flow and run permissions are metadata. The Cases the interview Gets are data. Deploying a context change does not rewrite Case rows, but it can expose them at runtime.",
+      "answer_2_minutes": "I keep the handbook split. Change sets move the Flow. Sharing and FLS assignments are also configuration. I test with LAB_ Cases. I never use production customer rows to prove system without sharing. Recursion and entry criteria are AUTO-010, not security context.",
+      "example": "Deploying system without sharing to production is a metadata change with data-exposure impact.",
+      "tradeoffs": [
+        "Safer user context vs fewer Get filters",
+        "Sandbox guest testing vs production site"
+      ],
+      "follow_ups": [
+        "What belongs in a change set?",
+        "Who signs off on context changes?"
+      ],
+      "weak_answer_warnings": [
+        "Calling execution context ‘just data’"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "An interviewer says ‘Flows always run in system mode like Process Builder.’ How do you respond?",
+      "answer_30_seconds": "That is too coarse. Help says default context depends on how the Flow is launched, and screen/autolaunched Flows can be user or system. REST is user context for object/FLS. Apex launch ignores object/FLS.",
+      "answer_2_minutes": "I acknowledge Process Builder’s reputation and then open the official distinctions: user context, system with sharing, system without sharing, launch-type defaults, Experience Cloud warning, REST update, Apex paragraph. I refuse a single-mode slogan. I also separate Run Flows from context so I do not sound like I collapsed security into one checkbox.",
+      "example": "They expect a site screen Flow to update any Account; you show user context plus FLS failure.",
+      "tradeoffs": [
+        "Simple slogan vs accurate launch-type answer",
+        "Legacy Process Builder mental model vs Flow"
+      ],
+      "follow_ups": [
+        "What did Process Builder actually use? (Do not invent; say you would verify.)",
+        "Where do you read the default table?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing that every Flow is system mode"
+      ]
+    }
+  ]
+}

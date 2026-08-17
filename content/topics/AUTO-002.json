@@ -1,0 +1,467 @@
+{
+  "topic_id": "AUTO-002",
+  "slug": "flow-builder-fundamentals-resources-variables-and-data-",
+  "title": "Flow Builder fundamentals, resources, variables, and data types",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": ["AUTO-001"],
+  "objectives": [
+    "Explain that a flow type in Flow Builder decides which elements and resources you can add and how you distribute the flow.",
+    "Create and use variable resources with the correct data type, including record and collection variables.",
+    "Apply official variable considerations: null versus empty string, Boolean null versus false, and input/output access.",
+    "Keep Flow resources as metadata and the records they read or write as business data."
+  ],
+  "diagnostic_question": "A screen Flow on a record page must accept the current record Id, store a Boolean, and pass a collection into a subflow. Before reading, which resources and data types would you create, and what would you check if the Flow action appears to run with a blank Id?",
+  "definition": "Flow Builder is where you design a flow. A flow type determines which elements and resources you can add and how you distribute the flow. Resources such as variables hold values at run time; data types (including Boolean, number, record, and collections) decide what a variable can store. ([Flow Types](https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm); [Flow Variable Considerations](https://help.salesforce.com/s/articleView?id=sf.flow_considerations_feature_variable.htm); [Build a Flow](https://help.salesforce.com/s/articleView?id=sf.flow_build.htm))",
+  "why_it_matters": "Wrong type, wrong data type, or a variable that is not available for input is a classic interview and debug failure: a Flow action never receives recordId, a Boolean stays null instead of false, or a subflow input name is too long. AUTO-001 chose Flow; this lesson is how Flow actually holds data.",
+  "sixty_second_explanation": "Think of Flow Builder as a recording-studio mixing board. Each channel is a resource. A variable channel has a data type: text, Boolean, number, record, or a collection. Input jacks are Available for Input; output jacks are Available for Output. The board layout—the flow type—decides whether you even get a Screen fader. Blank is null unless you set EmptyString. This is not a formula field, a validation rule, or Apex syntax.",
+  "deeper_explanation": [
+    "Help's Flow Types topic states that a flow or flow version's type determines which elements and resources you can add and how you can distribute the flow. A screen flow requires user interaction because it includes screens, local actions, steps, choices, or dynamic choices, and it does not support Wait elements. An autolaunched no-trigger flow runs in the background and does not support screens, local actions, choices, or choice sets. ([Flow Types](https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm))",
+    "Build a Flow: after you model the process, design it in Flow Builder—choose a category and type, add elements, and connect them (auto-layout creates connectors). New automations belong in Flow Builder; Help notes Process Builder support and updates were scheduled to end 31 December 2025. ([Build a Flow](https://help.salesforce.com/s/articleView?id=sf.flow_build.htm); [Flow Variable Considerations](https://help.salesforce.com/s/articleView?id=sf.flow_considerations_feature_variable.htm))",
+    "Variable considerations: a blank field or resource is null at run time; use {!$GlobalConstant.EmptyString} to treat text as an empty string. Boolean null is not false—filters that look for false miss null. Number variables are treated as integers by default. Record and record collection variables support only Salesforce objects. Percentage values assigned onto a record variable and then used in a formula are divided by 100. ([Flow Variable Considerations](https://help.salesforce.com/s/articleView?id=sf.flow_considerations_feature_variable.htm))",
+    "Available for Input/Output is a contract with callers. Disabling it can break URL parameters, subflows, and pages. Flow actions pass only the record's Id into a Text input variable named recordId; if that variable is missing, the flow still tries to run. Lightning App Builder does not support collection, record, or record collection inputs; text inputs max out at 4,000 characters. A subflow input variable API name can be up to 40 characters. Do not pass a currency merge field (it includes $) into a currency variable via URL. ([Flow Variable Considerations](https://help.salesforce.com/s/articleView?id=sf.flow_considerations_feature_variable.htm))",
+    "This lesson does not replace AUTO-001 tool choice. A Flow variable is not a formula field, not a validation rule, not an approval process, and not an Apex class member. Apex-defined data types exist as a neighboring resource type—do not invent their schema here."
+  ],
+  "mental_model": {
+    "analogy": "A recording-studio mixing board: flow type is which board you rolled into the room; each resource is a channel with a data type; input/output are the jacks other gear can use.",
+    "useful_mapping": [
+      "flow type → which board (screen vs autolaunched) and which faders exist",
+      "variable → a channel that holds a value while the interview runs",
+      "data type → what the channel will accept (text, Boolean, record, collection)",
+      "Available for Input → a jack a Lightning page, URL, or subflow can drive",
+      "recordId → the named text jack a Flow action will plug the record Id into",
+      "null vs EmptyString → silence on the channel versus an explicit empty take",
+      "collection variable → a multi-track that holds many values of one type"
+    ],
+    "where_it_breaks": [
+      "A mixing board does not encode Flow interview limits or DML bulkification (AUTO-006/AUTO-007).",
+      "Apex-defined types are not audio cables; look up that Help topic when they appear.",
+      "Lightning App Builder cannot drive record or collection jacks even if you wired them as input.",
+      "The analogy does not replace formula fields, validation rules, or approval routing."
+    ]
+  },
+  "teach_back_prompt": "Explain to a teammate why a Flow action needs a Text input variable named recordId, why Boolean null is not false, and why that is not a validation rule or an Apex parameter.",
+  "review_schedule": [
+    {"interval": "1 day", "prompt": "From memory: flow type controls elements/resources/distribution; blank is null; recordId is a Text input name."},
+    {"interval": "3 days", "prompt": "Classify five resources: variable, constant, formula, collection, record variable."},
+    {"interval": "7 days", "prompt": "Explain null vs EmptyString and Boolean null vs false with a Get Records filter example."},
+    {"interval": "14 days", "prompt": "Walk a 'Flow action ran but Id is blank' debug without notes."},
+    {"interval": "30 days", "prompt": "Two-minute interview: mixing-board mapping plus Lightning App Builder input limits."}
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-FLOW-TYPES",
+      "title": "Flow Types",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm",
+      "supports": "Flow type determines elements, resources, and distribution; screen vs autolaunched constraints.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Edition and type list can grow; reverify the type picker in the org."
+    },
+    {
+      "source_id": "SF-HELP-FLOW-VARS",
+      "title": "Flow Variable Considerations",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_considerations_feature_variable.htm",
+      "supports": "Null vs EmptyString, Boolean null vs false, number-as-integer, percentage /100, record variables, input/output, recordId, App Builder 4000-char text, subflow 40-char names, currency URL trap.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Process Builder notes are historical; new work is Flow Builder."
+    },
+    {
+      "source_id": "SF-HELP-FLOW-BUILD",
+      "title": "Build a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_build.htm",
+      "supports": "Design in Flow Builder: choose type, add elements, connect (auto-layout connectors).",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "UI navigation (Automation app vs Setup) varies by org."
+    },
+    {
+      "source_id": "SF-HELP-WHICH-TOOL",
+      "title": "Get Started Automating a Business Task with a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm",
+      "supports": "Trigger and type selection context; Flow can run another flow; invocable Apex is an action not a variable type.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define variable data types."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": ["Flow type", "Resources", "Data types", "Input/output", "recordId", "null vs false"],
+      "accessible_description": "Portrait map of Flow Builder type, resources, variable data types, and caller contracts."
+    },
+    "cheat_sheet": {"format": "A4 HTML", "source_footer": ["SF-HELP-FLOW-TYPES", "SF-HELP-FLOW-VARS", "SF-HELP-FLOW-BUILD"]},
+    "system_map": {"format": "zoomable SVG", "title": "How a Flow interview holds data"},
+    "mermaid": {
+      "structure": "flowchart TD\n  Type[Flow type] --> Elems[Allowed elements]\n  Type --> Res[Allowed resources]\n  Type --> Dist[Distribution methods]\n  Res --> Var[Variable with data type]\n  Var --> In[Available for Input]\n  Var --> Out[Available for Output]\n  Var --> Coll[Collection of that type]\n  Var --> Rec[Record variable: Salesforce object only]",
+      "decision": "flowchart TD\n  Need[Need a Flow resource?] --> Q1{Does a caller pass a value in?}\n  Q1 -->|Lightning page or URL or subflow| In[Create variable Available for Input]\n  Q1 -->|Flow action on a record| Rid[Text input named recordId]\n  Need --> Q2{Many values of one type?}\n  Q2 -->|Yes| Col[Collection variable]\n  Q2 -->|One Salesforce record| Rec[Record variable]\n  Need --> Q3{Is this a calculated display with no interview?}\n  Q3 -->|Yes| FF[Formula field not a Flow resource]\n  Q3 -->|No, interview logic| Keep[Keep it a Flow formula or variable]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A flow type determines which elements and resources you can add and how you distribute the flow. Screen flows require interaction and do not support Wait; autolaunched no-trigger flows run in the background without screens or choices.",
+      "source_ids": ["SF-HELP-FLOW-TYPES"],
+      "scope": "Flow types",
+      "validation": "Flow Types Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Blank resource values are null at run time; use $GlobalConstant.EmptyString for an empty text string. Boolean null is not false. Number variables are treated as integers by default. Record variables support only Salesforce objects.",
+      "source_ids": ["SF-HELP-FLOW-VARS"],
+      "scope": "Variable behavior",
+      "validation": "Flow Variable Considerations.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Flow actions pass the record Id only into a Text input variable named recordId. Lightning App Builder does not support collection or record input variables and limits text inputs to 4,000 characters. Subflow input API names can be up to 40 characters.",
+      "source_ids": ["SF-HELP-FLOW-VARS"],
+      "scope": "Input contracts",
+      "validation": "Flow Variable Considerations distribution section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "You design and build the flow in Flow Builder after modeling the process: choose type, add elements, connect them.",
+      "source_ids": ["SF-HELP-FLOW-BUILD"],
+      "scope": "Builder",
+      "validation": "Build a Flow.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Process Builder support and updates were scheduled to end 31 December 2025; Help says create new automations in Flow Builder. Reverify flow type pickers in Summer '26 orgs.",
+  "unresolved_uncertainty": [
+    "Exact list of every resource type and every data type in the New Resource picker is UI-version sensitive; confirm in the org rather than memorizing an unofficial catalog.",
+    "Apex-defined data type schema details are neighboring Help; not fully specified here."
+  ],
+  "telugu_glossary": [
+    {"english": "Flow variable", "telugu": "ఫ్లో నడిచే సమయంలో విలువ ఉంచే ఛానల్."},
+    {"english": "recordId", "telugu": "Flow action ఇచ్చే రికార్డ్ Id కోసం Text ఇన్‌పుట్ పేరు."}
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Flow Builder is the design surface. The flow type decides elements, resources, and distribution. Variables hold typed values for the interview. Blank is null. A Flow action only injects the Id if you expose a Text input named recordId.",
+    "two_minutes": "I pick the type first because a screen Flow can have choices and a no-trigger autolaunched Flow cannot. I create variables with a data type that matches the data: record variables only for Salesforce objects, collections for many values. I mark Available for Input only when a page, URL, or subflow must set the value. I never confuse a Flow variable with a formula field, a validation rule, an approval field update, or an Apex class property."
+  },
+  "terminology": [
+    {
+      "term": "Flow Builder",
+      "plain": "The Setup/Automation canvas where you design a flow.",
+      "precise": "After you model the process, you choose a flow type, add elements, and connect them in Flow Builder.",
+      "example": "New Flow → Screen Flow to collect LAB_ Contact fields.",
+      "non_example": "Object Manager validation rules are not Flow Builder.",
+      "confusable_neighbor": "Apex class editor: code, not declarative elements.",
+      "boundary": "Element palettes differ by type; AUTO-006 owns Decision/Loop detail."
+    },
+    {
+      "term": "flow type",
+      "plain": "The kind of flow, which unlocks elements, resources, and how you launch it.",
+      "precise": "Help: a flow or version's type determines which elements and resources you can add and how you distribute it.",
+      "example": "Screen Flow on a Lightning record page versus autolaunched called by Apex.",
+      "non_example": "A formula field type (Number vs Text) is not a flow type.",
+      "confusable_neighbor": "Trigger on a record-triggered flow: when it starts, still a record-triggered type.",
+      "boundary": "Do not memorize unofficial type counts; use the current type picker."
+    },
+    {
+      "term": "resource",
+      "plain": "A named value the flow can read or write during the interview.",
+      "precise": "Variables, and other resource kinds you create in Flow Builder, hold or calculate values. Variable considerations cover null, data types, and input/output.",
+      "example": "A Text variable LAB_Reason Available for Input.",
+      "non_example": "An Opportunity row in the database is business data, not a Flow resource definition.",
+      "confusable_neighbor": "Formula field on the object: metadata outside the flow.",
+      "boundary": "Constants, formulas, and choices are neighboring resources; this lesson centers variables."
+    },
+    {
+      "term": "variable",
+      "plain": "A resource that stores a value while the flow runs.",
+      "precise": "Create a variable with a data type. Blank is null. Available for Input/Output controls callers. Record variables support only Salesforce objects.",
+      "example": "Boolean variable LAB_IsVip defaulted to false, not left null.",
+      "non_example": "A validation rule formula is not a Flow variable.",
+      "confusable_neighbor": "Assignment element: writes into a variable (AUTO-006).",
+      "boundary": "Do not disable input on a variable a Lightning page still sets."
+    },
+    {
+      "term": "data type",
+      "plain": "The kind of value a variable is allowed to hold.",
+      "precise": "Help calls out Boolean (null is not false), number-as-integer default, percentage divided by 100 in formulas from record variables, record/record collection limited to Salesforce objects, and Apex-defined as a neighboring type.",
+      "example": "Record variable of type Contact versus a Text collection of email addresses.",
+      "non_example": "Picklist value set on the object is not a Flow data type picker choice until you map it.",
+      "confusable_neighbor": "Apex primitive types: related but not the Flow resource picker.",
+      "boundary": "Currency URL merge fields include a symbol and will not bind to a currency variable."
+    },
+    {
+      "term": "collection variable",
+      "plain": "A variable that holds multiple values of one type.",
+      "precise": "Used to store many records or values; Lightning App Builder cannot pass collection inputs. Subflows can receive collections if the child exposes them as input.",
+      "example": "Record collection of LAB_ Tasks to create after a loop (AUTO-006).",
+      "non_example": "A formula field that returns one number is not a collection.",
+      "confusable_neighbor": "Record variable: one record, not many.",
+      "boundary": "DML on collections is AUTO-007."
+    },
+    {
+      "term": "recordId",
+      "plain": "The Text input name a Flow action uses to pass the current record's Id.",
+      "precise": "If the flow has a Text input variable called recordId, the action passes the record Id at runtime; if not, the flow still tries to run.",
+      "example": "Screen Flow on Opportunity with input Text recordId.",
+      "non_example": "A formula field named recordId on the object is not this contract.",
+      "confusable_neighbor": "URL parameters can also set input variables; still not validation.",
+      "boundary": "Only the Id, not other fields, comes from the Flow action."
+    },
+    {
+      "term": "null versus EmptyString",
+      "plain": "Blank means null; EmptyString is an explicit empty text value.",
+      "precise": "Leave a field blank and it is null at run time. To treat text as an empty string, set {!$GlobalConstant.EmptyString}. Boolean null is not false.",
+      "example": "Filter Get Records where Active__c equals false, after setting the Boolean variable to false.",
+      "non_example": "A validation rule using ISBLANK is a different tool.",
+      "confusable_neighbor": "Apex null: similar idea, different language.",
+      "boundary": "Percentage formula scaling is a separate consideration."
+    }
+  ],
+  "mechanics": [
+    {"step": 1, "transition": "Choose the flow type", "actor": "Admin", "trigger": "New Flow", "before": "Unclear whether users must click", "after": "Screen vs autolaunched vs record-triggered type selected", "observe": "Type picker matches how it will be distributed", "failure": "Building screens on an autolaunched no-trigger flow"},
+    {"step": 2, "transition": "Create typed variables", "actor": "Admin", "trigger": "Need to hold a value", "before": "Using unnamed element outputs only", "after": "Named variables with data types and input/output as needed", "observe": "New Resource shows type and input checkbox", "failure": "Leaving a Boolean null then filtering for false"},
+    {"step": 3, "transition": "Wire callers", "actor": "Admin", "trigger": "Lightning page, action, or subflow", "before": "Assuming the Id arrives magically", "after": "recordId Text input for actions; 40-character subflow input names", "observe": "Debug shows the Id populated", "failure": "Passing a currency merge field on a URL"},
+    {"step": 4, "transition": "Keep metadata vs data", "actor": "Admin", "trigger": "Ready to test", "before": "Confusing the flow with sample records", "after": "The flow is metadata; LAB_ records are data", "observe": "Retrieve the .flow file versus a record query", "failure": "Thinking a variable definition inserts Account rows"}
+  ],
+  "when_to_use": [
+    "Use Flow Builder variables when an interview must hold typed values that a formula field on the object cannot keep for the duration of the run.",
+    "Use a Text input named recordId when a Flow action should pass the current record Id into a screen or autolaunched Flow.",
+    "Use a Boolean variable explicitly set to false when a Get Records filter must match checkbox false—not null, and not a validation rule.",
+    "Use a record or collection variable when the Flow will work with Salesforce records, not when a simple formula or approval field update is enough.",
+    "Use this resource model before writing Apex parameters; invocable Apex is an action, not a substitute for Flow data types."
+  ],
+  "when_not_to_use": [
+    "Do not use a Flow variable to replace a formula field that should always display on the record without an interview.",
+    "Do not use Flow resources to block illegal saves—that is a validation rule, not a Boolean variable.",
+    "Do not use a Flow variable as a substitute for an approval process when a person must approve.",
+    "Do not pass collection or record variables from Lightning App Builder; Help says those input types are unsupported there.",
+    "Do not start in Apex to hold a string when a Flow Text variable is the interview's store."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Flows or Automation app → New Flow → type picker.",
+    "Flow Builder Manager → New Resource → Variable.",
+    "Element panel: Available for Input / Output checkboxes.",
+    "Lightning App Builder Flow component: input mapping (manually entered values only)."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox needs LAB_ContactQuickCreate, a screen Flow on Contact that receives the current Account Id from a Flow action, stores a Boolean LAB_IsPriority defaulting to false, and later passes a Text collection of emails into a subflow. No production data.",
+    "inputs": ["Flow action on Account", "Boolean must filter as false, not null", "Subflow input API name under 40 characters"],
+    "decisions": [
+      {"decision": "Create Text input variable recordId.", "because": "Flow actions pass only the record Id into that name.", "rejected": "A record variable input from App Builder"},
+      {"decision": "Create Boolean LAB_IsPriority, default false, not left blank.", "because": "Null is not false in Flow filters.", "rejected": "A validation rule to store the flag"},
+      {"decision": "Keep email addresses in a Text collection; name the subflow input under 40 characters.", "because": "Help caps subflow input API names at 40 characters.", "rejected": "Apex list parameter as the first design"}
+    ],
+    "configuration_or_code": [
+      "Screen Flow LAB_ContactQuickCreate with recordId Text input.",
+      "Boolean variable default false.",
+      "Debug the Flow action and confirm recordId is populated."
+    ],
+    "output": "Action-launched interview has the Account Id; Boolean filters match false; subflow receives the collection.",
+    "verification": [
+      "Debug from the Account action shows recordId filled.",
+      "Get Records using the Boolean false returns expected LAB_ rows; a null Boolean would not."
+    ],
+    "self_explanation": "I wired the official recordId contract and refused to leave Boolean null. I did not use validation or Apex to hold interview state."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ Flow names only.",
+    "starting_state_checks": ["Manage Flow permission", "A LAB_ custom object or Contact you may use"],
+    "steps": [
+      "Create a screen Flow with a Text input variable named recordId.",
+      "Create a Boolean variable defaulted to false and a Text collection variable.",
+      "Put the Flow on a record page via a Flow action or App Builder and debug whether recordId arrives.",
+      "Write one sentence: why a formula field is the wrong store for the Boolean during the interview."
+    ],
+    "guided_completion": ["If recordId is empty, the variable name is wrong or it is not available for input.", "If App Builder cannot bind a collection, that is expected per Help."],
+    "independent_challenge": "Attempt to pass a currency merge field on a URL into a currency variable and explain why Help says it fails.",
+    "evidence": ["Debug screenshot with recordId", "Written null vs false sentence"],
+    "stop_recovery_cleanup": ["Deactivate and delete LAB_ flows", "Do not deploy to production"],
+    "limitations": "Does not prove every distribution method or Apex-defined types."
+  },
+  "decision_table": [
+    {"signal": "A Flow action on a record must pass context into the interview.", "choose": "Text input variable named recordId, Available for Input.", "not": "A record variable named Id, or an Apex constructor.", "why": "Help: actions pass only the record Id into recordId; otherwise the flow still runs."},
+    {"signal": "A Get Records filter must match a checkbox that is false.", "choose": "Boolean variable set to false, not left blank.", "not": "A validation rule, or treating null as false.", "why": "Flow treats Boolean null as different from false."},
+    {"signal": "Lightning App Builder must pass values into the Flow component.", "choose": "Manually entered values on supported scalar inputs; text max 4,000 characters.", "not": "Collection, record, or record collection inputs from App Builder.", "why": "Help says those collection/record inputs are unsupported there."},
+    {"signal": "A child flow must receive a value from a parent Flow.", "choose": "Subflow input whose API name is at most 40 characters, matching types.", "not": "An approval process field update, or a formula field as the wire.", "why": "Subflow element input names are capped at 40 characters."},
+    {"signal": "You only need a value always visible on the record with no interview.", "choose": "A formula field on the object (AUTO-001).", "not": "A Flow variable that never runs.", "why": "Flow resources exist during an interview, not as always-on record compute."}
+  ],
+  "limitations": [
+    "Does not teach before-save vs after-save (AUTO-003) or DML bulkification (AUTO-007).",
+    "Does not catalog every resource kind in the picker.",
+    "Apex-defined types are neighboring.",
+    "Distribution limits differ by type and edition."
+  ],
+  "security_notes": [
+    "Input variables are a public contract; do not expose secrets in URL parameters.",
+    "Running user CRUD/FLS still apply when the flow reads records.",
+    "Never put real customer data in lab variables."
+  ],
+  "common_mistakes": [
+    "Forgetting the recordId Text input on a Flow action.",
+    "Leaving Booleans null and filtering for false.",
+    "Passing record collections from Lightning App Builder.",
+    "Using a Flow variable where a formula field belongs.",
+    "Naming a subflow input longer than 40 characters."
+  ],
+  "troubleshooting": [
+    {"symptom": "Flow action runs but the interview has no Id.", "check": ["Text input named exactly recordId", "Available for Input is enabled"], "do_not_assume": "The action maps every field."},
+    {"symptom": "Get Records returns nothing for a checkbox false filter.", "check": ["Variable is not null", "Compare to false, not a blank resource"], "do_not_assume": "No matching records exist."},
+    {"symptom": "Currency URL parameter fails the flow.", "check": ["Merge fields include a $ symbol", "Pass Id and Get Records instead"], "do_not_assume": "The currency data type is broken."}
+  ],
+  "production_notes": [
+    "Changing input/output on existing variables can break pages and subflows.",
+    "You cannot add new input/output variables to a flow override.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {"id": "Q1", "category": "recall", "difficulty": "Foundation", "prompt": "What does a flow type determine according to Help?", "options": {"A": "Which elements and resources you can add, and how you distribute the flow", "B": "Only the API version of Apex", "C": "Whether validation rules exist on the object", "D": "The org-wide default"}, "answer": "A", "rationale": "Flow Types: type determines elements, resources, and distribution.", "distractor_explanations": {"B": "API version is class/flow versioning, not type.", "C": "Validation rules are a different tool.", "D": "OWD is sharing."}, "concept": "Flow type", "citation_ids": ["SF-HELP-FLOW-TYPES"]},
+    {"id": "Q2", "category": "recall", "difficulty": "Foundation", "prompt": "If you leave a Flow resource value blank, what is it at run time?", "options": {"A": "null, unless you set $GlobalConstant.EmptyString for text", "B": "Always false", "C": "Always an empty string", "D": "The previous interview's value"}, "answer": "A", "rationale": "Blank fields or resources are null; EmptyString is explicit empty text.", "distractor_explanations": {"B": "Boolean false must be set.", "C": "Empty string is not the default for blank.", "D": "Interviews do not reuse values that way."}, "concept": "null", "citation_ids": ["SF-HELP-FLOW-VARS"]},
+    {"id": "Q3", "category": "application", "difficulty": "Intermediate", "prompt": "Why can a Get Records filter on a checkbox equal to a Boolean variable return no rows?", "options": {"A": "The Boolean variable is null, and null is not false", "B": "Validation rules hide all rows", "C": "Formula fields cannot be filtered", "D": "Apex sharing always blocks Get Records"}, "answer": "A", "rationale": "Help: Flow treats null as different from false.", "distractor_explanations": {"B": "Validation blocks saves, not Get Records filters.", "C": "Unrelated.", "D": "Sharing is a different concern."}, "concept": "Boolean null", "citation_ids": ["SF-HELP-FLOW-VARS"]},
+    {"id": "Q4", "category": "application", "difficulty": "Intermediate", "prompt": "A Flow action should pass the current record into a screen Flow. What does Help require?", "options": {"A": "A Text input variable named recordId", "B": "A record collection input in Lightning App Builder", "C": "An Apex trigger", "D": "A validation rule named recordId"}, "answer": "A", "rationale": "Actions pass the record Id into Text input recordId; otherwise the flow still runs.", "distractor_explanations": {"B": "App Builder does not support record/collection inputs.", "C": "Apex is not required.", "D": "Validation is a different tool."}, "concept": "recordId", "citation_ids": ["SF-HELP-FLOW-VARS"]},
+    {"id": "Q5", "category": "recall", "difficulty": "Foundation", "prompt": "Record and record collection variables support which objects?", "options": {"A": "Only Salesforce objects", "B": "Any REST payload without a type", "C": "Only formula fields", "D": "Only approval process steps"}, "answer": "A", "rationale": "Help: record and record collection variables support only Salesforce objects.", "distractor_explanations": {"B": "Apex-defined is a different resource kind.", "C": "Formula fields are not record variables.", "D": "Approvals are a different product."}, "concept": "Record variables", "citation_ids": ["SF-HELP-FLOW-VARS"]},
+    {"id": "Q6", "category": "recall", "difficulty": "Foundation", "prompt": "Lightning App Builder Flow component text input maximum length?", "options": {"A": "4,000 characters", "B": "40 characters", "C": "255 characters", "D": "Unlimited"}, "answer": "A", "rationale": "Help: text input variables accept a maximum length of 4,000 characters in App Builder.", "distractor_explanations": {"B": "40 is the subflow input API name cap.", "C": "Not this limit.", "D": "There is a documented maximum."}, "concept": "App Builder text", "citation_ids": ["SF-HELP-FLOW-VARS"]},
+    {"id": "Q7", "category": "application", "difficulty": "Intermediate", "prompt": "Subflow element: how long can the variable API name be when you pass a variable to a subflow input?", "options": {"A": "Up to 40 characters", "B": "Unlimited", "C": "Exactly 80 characters", "D": "Subflows cannot receive variables"}, "answer": "A", "rationale": "Help: when you pass a variable to a subflow input, the variable API name can be up to 40 characters.", "distractor_explanations": {"B": "There is a cap.", "C": "The documented cap is 40.", "D": "Subflows exist to receive inputs."}, "concept": "Subflow names", "citation_ids": ["SF-HELP-FLOW-VARS"]},
+    {"id": "Q8", "category": "application", "difficulty": "Intermediate", "prompt": "Number variables in Flow are treated how by default?", "options": {"A": "As integers", "B": "As always 18-decimal currency", "C": "As Boolean", "D": "As attachments"}, "answer": "A", "rationale": "Help: number variables are treated as integers by default.", "distractor_explanations": {"B": "Currency is a different type.", "C": "Boolean is separate.", "D": "Not a data type for numbers."}, "concept": "Number type", "citation_ids": ["SF-HELP-FLOW-VARS"]},
+    {"id": "Q9", "category": "scenario", "difficulty": "Intermediate", "prompt": "Why can a URL parameter that passes Account.AnnualRevenue into a currency variable fail?", "options": {"A": "The merge field includes a currency symbol; currency variables accept only numeric values", "B": "Validation rules strip URLs", "C": "Formula fields cannot be queried", "D": "Apex forbids currency"}, "answer": "A", "rationale": "Help: do not pass a currency field via URL merge field because of the symbol; pass Id and look up the value.", "distractor_explanations": {"B": "Unrelated.", "C": "Unrelated.", "D": "Apex is not the cause."}, "concept": "Currency URL", "citation_ids": ["SF-HELP-FLOW-VARS"]},
+    {"id": "Q10", "category": "scenario", "difficulty": "Intermediate", "prompt": "Screen flows, according to Flow Types, require what?", "options": {"A": "User interaction because they include screens, local actions, steps, choices, or dynamic choices", "B": "A Wait element", "C": "An Apex class", "D": "A Classic approval"}, "answer": "A", "rationale": "Screen Flow definition in Flow Types; they do not support Wait elements.", "distractor_explanations": {"B": "Screen flows don't support Wait.", "C": "Apex is optional via actions.", "D": "Approvals are a different tool."}, "concept": "Screen type", "citation_ids": ["SF-HELP-FLOW-TYPES"]},
+    {"id": "Q11", "category": "application", "difficulty": "Intermediate", "prompt": "Disabling Available for Input on an existing variable can do what?", "options": {"A": "Break applications and pages that call the flow and access the variable", "B": "Delete all Opportunity records", "C": "Turn the flow into a validation rule", "D": "Convert the variable into a formula field"}, "answer": "A", "rationale": "Help: disabling input/output can break callers such as URL parameters, subflows, and processes.", "distractor_explanations": {"B": "Resources are metadata, not mass delete.", "C": "Validation is a different tool.", "D": "Formula fields are object metadata."}, "concept": "Input/output", "citation_ids": ["SF-HELP-FLOW-VARS"]},
+    {"id": "Q12", "category": "scenario", "difficulty": "Intermediate", "prompt": "Where should you build new automations after modeling the process?", "options": {"A": "Flow Builder, choosing a type and adding elements", "B": "Only in a validation rule", "C": "Only as a formula field", "D": "Only as unmanaged Apex without a reason"}, "answer": "A", "rationale": "Build a Flow plus AUTO-001: new automations in Flow Builder; Process Builder is not the new-work path.", "distractor_explanations": {"B": "Validation blocks saves.", "C": "Formula computes.", "D": "Apex is complementary."}, "concept": "Build in Flow Builder", "citation_ids": ["SF-HELP-FLOW-BUILD", "SF-HELP-WHICH-TOOL"]}
+  ],
+  "flashcards": [
+    {"id": "F1", "category": "type", "front": "What does flow type control?", "back": "Elements you can add, resources you can add, and how you distribute the flow."},
+    {"id": "F2", "category": "vars", "front": "Blank resource at run time?", "back": "null. Use $GlobalConstant.EmptyString for empty text."},
+    {"id": "F3", "category": "vars", "front": "Boolean null vs false?", "back": "They are different. Filters for false miss null."},
+    {"id": "F4", "category": "vars", "front": "Flow action record context?", "back": "Text input variable named recordId."},
+    {"id": "F5", "category": "vars", "front": "Record variables support?", "back": "Only Salesforce objects."},
+    {"id": "F6", "category": "limits", "front": "App Builder text input cap?", "back": "4,000 characters; no collection or record inputs."},
+    {"id": "F7", "category": "limits", "front": "Subflow input API name cap?", "back": "When you pass a variable to a subflow input, the API name can be up to 40 characters."},
+    {"id": "F8", "category": "type", "front": "Screen Flow and Wait?", "back": "Screen flows do not support Wait elements."},
+    {"id": "F9", "category": "type", "front": "Autolaunched no-trigger screens?", "back": "Not supported: no screens, local actions, choices, or choice sets."},
+    {"id": "F10", "category": "boundary", "front": "Flow variable vs formula field?", "back": "Variable lives in the interview. Formula field computes on the record without a Flow run."},
+    {"id": "F11", "category": "boundary", "front": "Flow variable vs validation rule?", "back": "A variable stores a value. A validation rule blocks an invalid save."},
+    {"id": "F12", "category": "scenario", "front": "Currency on a URL?", "back": "Do not pass the merge field; it includes $. Pass Id and Get Records."},
+    {"id": "F13", "category": "scenario", "front": "Number variables default?", "back": "Treated as integers by default."},
+    {"id": "F14", "category": "builder", "front": "Where do you design the flow?", "back": "Flow Builder: choose type, add elements, connect them."},
+    {"id": "F15", "category": "io", "front": "Disable input on a used variable?", "back": "Can break pages, URLs, and subflows that still pass it."},
+    {"id": "F16", "category": "analogy", "front": "Mixing-board one-liner?", "back": "Type is the board; variables are typed channels; input/output are jacks."}
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is a Flow resource, and how is it different from a formula field?",
+      "answer_30_seconds": "A resource such as a variable holds a typed value during the Flow interview. A formula field computes on the record without running a Flow and is not interview storage.",
+      "answer_2_minutes": "I pick the flow type first because it controls which resources exist. I create variables with data types. I do not use a Flow variable to replace a validation rule or an approval. If the value should always show on the record, that is a formula field (AUTO-001). Apex parameters are a different language.",
+      "example": "LAB_IsPriority Boolean in a screen Flow versus a formula field on Contact that concatenates names.",
+      "tradeoffs": ["Interview storage vs record compute", "Flow vs Apex parameter"],
+      "follow_ups": ["When is EmptyString required?", "Can App Builder pass this variable?"],
+      "weak_answer_warnings": ["Calling every field a Flow resource"]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why does a Flow action need a variable named recordId?",
+      "answer_30_seconds": "Flow actions pass only the record's Id, and only into a Text input variable called recordId. If it is missing, the flow still tries to run—with no Id.",
+      "answer_2_minutes": "I create Text recordId, Available for Input. I do not expect other fields to arrive from the action. I Get Records if I need more fields. I do not use Apex or a validation rule to inject the Id. Lightning App Builder is a different input channel with its own limits: no collections or records, 4,000-character text.",
+      "example": "Account page Flow action launching LAB_ContactQuickCreate.",
+      "tradeoffs": ["Action vs App Builder inputs", "Id vs whole record"],
+      "follow_ups": ["What if the name is RecordID with different casing?", "How do URL parameters set inputs?"],
+      "weak_answer_warnings": ["Assuming all field values are passed"]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Get Records using a Boolean variable returns nothing. Diagnose.",
+      "answer_30_seconds": "Check whether the Boolean is null. Flow does not treat null as false. Set the variable to false, then filter.",
+      "answer_2_minutes": "I look at debug. If the resource was never assigned, it is null. I set a default or an Assignment to false. I do not fix it with a validation rule or Apex. I also remember number variables default to integers and percentage formula scaling if numbers look wrong.",
+      "example": "Filter Active__c equals {!varBoolean} when varBoolean was never set.",
+      "tradeoffs": ["Null vs false", "Filter vs validation"],
+      "follow_ups": ["How would EmptyString appear in a text filter?", "Would a formula field on the object help?"],
+      "weak_answer_warnings": ["Blaming sharing first"]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Lightning App Builder cannot bind your collection input. What does Help say?",
+      "answer_30_seconds": "The Flow component does not support collection, record, or record collection input variables. It only supports manually entered values, with text max 4,000 characters.",
+      "answer_2_minutes": "I redesign: pass a single Id as text and Get Records inside the flow, or launch a screen Flow another way. I do not switch to Apex solely for the input binding. I also do not confuse this with approval process inputs.",
+      "example": "App Builder refusing to map a Contact collection into LAB_ScreenFlow.",
+      "tradeoffs": ["App Builder vs Flow action", "Scalar vs collection"],
+      "follow_ups": ["Could a subflow pass the collection instead?", "What about Experience Cloud?"],
+      "weak_answer_warnings": ["Calling it a platform bug without reading Help"]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you refuse to create a Flow variable at all?",
+      "answer_30_seconds": "When a formula field, validation rule, or approval process already owns the outcome, or when Apex is only being used to hold a string the interview could store.",
+      "answer_2_minutes": "AUTO-001 still applies. Always-on calculate is a formula. Block save is validation. Human route is approval. Interview state is a Flow variable. I also refuse collection inputs from App Builder rather than inventing an Apex wrapper without a complementary-tool reason.",
+      "example": "Displaying Amount times 0.1 on Opportunity is a formula field, not a Flow Number variable.",
+      "tradeoffs": ["Declarative record compute vs interview state", "Flow vs Apex"],
+      "follow_ups": ["What about invocable Apex outputs?", "Can a constant replace this variable?"],
+      "weak_answer_warnings": ["Creating variables for every object field"]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do flow types change resources?",
+      "answer_30_seconds": "Type decides which elements and resources you can add. Screen flows can use choices; autolaunched no-trigger flows cannot have screens or choices.",
+      "answer_2_minutes": "I never start drawing screens on a background autolaunched flow. I pick Screen when a user must interact. I pick autolaunched when a button, another flow, or Apex should run in the background (AUTO-005). Wait is not available on screen flows per Help.",
+      "example": "Choices on LAB_ScreenFlow versus an autolaunched child that only assigns variables.",
+      "tradeoffs": ["Screen vs autolaunched", "Type vs trigger"],
+      "follow_ups": ["Where do record-triggered types fit?", "Why no Wait on screens?"],
+      "weak_answer_warnings": ["Saying all flows have screens"]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "A parent Flow fails when calling a subflow. What variable issue do you check first?",
+      "answer_30_seconds": "The input variable API name length, max 40 characters, and whether the child still exposes that input. Disabling input on an existing variable can break the caller.",
+      "answer_2_minutes": "I compare API names and types. I do not rename casually in production. I do not replace the subflow with a validation rule. If the child is an autolaunched flow, it still cannot show screens. Apex is not the first fix for a 41-character name.",
+      "example": "Parent passing LAB_VeryLongInputVariableNameThatExceedsLimit into a child.",
+      "tradeoffs": ["Name length vs type mismatch", "Subflow vs invocable Apex"],
+      "follow_ups": ["Can you add new inputs to a flow override?", "What is Available for Output for?"],
+      "weak_answer_warnings": ["Rewriting in Apex immediately"]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the mixing-board analogy, then break it.",
+      "answer_30_seconds": "Flow type is which board, variables are typed channels, input/output are jacks, collections are multi-tracks. It breaks on App Builder, where some jacks do not exist, and on AUTO-001 tools that are not channels at all.",
+      "answer_2_minutes": "I add that blank is null, Boolean null is not false, and recordId is a specially named jack for Flow actions. Formula fields, validation rules, and approvals are other rooms in the building, not faders. Apex-defined types are a neighboring cable standard I will not fake.",
+      "example": "Trying to plug a collection jack into Lightning App Builder and finding it missing.",
+      "tradeoffs": ["Teaching vs debug", "Flow vs other automation tools"],
+      "follow_ups": ["Where does Transform fit?", "Where does $Record fit?"],
+      "weak_answer_warnings": ["Using a labeled-drawer story"]
+    }
+  ]
+}

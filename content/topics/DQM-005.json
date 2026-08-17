@@ -1,0 +1,1020 @@
+{
+  "topic_id": "DQM-005",
+  "slug": "mass-transfer-mass-delete-storage-recycle-bin-backup-an",
+  "title": "Mass transfer, mass delete, storage, recycle bin, backup, and restore concepts",
+  "track": "Data management and quality",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 35,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DQM-004"
+  ],
+  "objectives": [
+    "Choose Mass Transfer Records versus a Data Loader OwnerId update when ownership must move in bulk.",
+    "Contrast mass delete (Recycle Bin) with hard delete, and say how restore from the Recycle Bin differs from a backup restore.",
+    "Read Storage Usage as data storage versus file storage, and explain that ownership can affect how usage is attributed.",
+    "Name official backup options (Data Export Service, Data Loader extract, Salesforce Backup) and why you back up before a mass change."
+  ],
+  "diagnostic_question": "A departing rep owns 8,000 Accounts, a sandbox is near its data-storage cap, yesterday's mass delete might still be restorable, and leadership wants a backup before the next Loader update. Which of mass transfer, mass delete, storage, Recycle Bin, backup, and restore do you use—and what would you refuse?",
+  "definition": "Mass Transfer Records changes ownership of supported records in Setup. Mass Delete Records removes supported records, typically into the Recycle Bin where they can be restored for a limited time. Storage Usage separates data storage from file storage. Backup is a copy you keep on purpose (Data Export Service, Data Loader extract, or Salesforce Backup); restore reapplies that copy or undeletes from the Recycle Bin. Hard delete is not a backup path. ([Mass Transfer Records](https://help.salesforce.com/s/articleView?id=platform.admin_transfer.htm); [Best practices to back up Salesforce data](https://help.salesforce.com/s/articleView?id=000334121); [Storage Usage](https://help.salesforce.com/s/articleView?id=000386943))",
+  "why_it_matters": "A mass delete without a backup, or a hard delete you thought was a Recycle Bin delete, is how orgs lose customer history. Interviewers listen for backup-before-mass-change, data versus file storage, and restore order so relationships survive. Mass transfer is an ownership operation, not a substitute for sharing rules.",
+  "sixty_second_explanation": "Think of a self-storage facility. Mass transfer is changing whose name is on the lease—the boxes stay, the accountable person changes. Mass delete moves boxes into a holding cage (Recycle Bin) for a limited time. Hard delete skips the cage. Storage Usage is how many unit-feet of stuff versus bulky files you have rented. Backup is the offsite copy you made before the forklift day. Restore is bringing boxes back from the cage or from the offsite copy—in the right order so lids still fit parents.",
+  "deeper_explanation": [
+    "Mass Transfer Records is the Setup tool for changing owners in bulk on supported objects. It is an ownership operation (DQM-004) at scale. Related-record checkboxes on the transfer page are org- and object-specific—reverify the live page rather than memorizing an unofficial related-list. A Data Loader update of OwnerId is the API-shaped alternative when the Setup tool's object list or volume does not fit. Moving a user who owns a huge pile of rows can trigger sharing recalculation (DQM-006).",
+    "Mass Delete Records in Setup deletes supported records; treat it as a Recycle Bin path unless you have evidence it hard-deleted. Data Loader delete also uses the Recycle Bin; hard_delete does not and requires Bulk API. Recycle Bin Help covers viewing and restoring deleted records; extended retention is a separate setting (confirm in the org). After retention, undelete is gone—that is when a real backup matters. ([undelete()](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_undelete.htm); [Configure Data Loader](https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/configuring_the_data_loader.htm))",
+    "Storage Usage in Setup shows data storage and file storage limits, current use, and a breakdown by component. Help notes there is no standard historical storage trend chart. Rounding can make component percents add to 99% or 101%. User-level storage discussion in Help is based on record ownership—another reason dummy-user parking lots distort both quality and storage pictures. ([How to Monitor Data and File Storage Usage](https://help.salesforce.com/s/articleView?id=000386943))",
+    "Salesforce Help on backup: keep a regular backup and take a point-in-time copy before a major data project. Tools listed include Salesforce Backup (formerly Backup and Restore), Data Export Service (manual or scheduled ZIP of CSVs), Data Loader export, and report export. Salesforce provides Loader/API as a way customers restore if they have a copy; restore order matters so relationships survive. Salesforce Backup & Recover Next documents full then incremental backups and restore of records plus deleted children. That product is licensed—do not assume every org has it. ([Best practices to back up Salesforce data](https://help.salesforce.com/s/articleView?id=000334121); [Salesforce Backup & Recover Next](https://help.salesforce.com/s/articleView?id=xcloud.backup_recover.htm))"
+  ],
+  "mental_model": {
+    "analogy": "A self-storage facility: mass transfer = change the lease name, mass delete = move boxes to the holding cage, Recycle Bin = time-limited cage, hard delete = skip the cage, storage quota = rented unit-feet versus bulky files, backup = offsite copy, restore = bring boxes back in parent-first order.",
+    "useful_mapping": [
+      "Mass Transfer Records → change whose name is on the lease",
+      "OwnerId update via Data Loader → the same idea through a CSV",
+      "Mass Delete / delete → boxes into the holding cage",
+      "Recycle Bin restore / undelete → retrieve from the cage",
+      "hard_delete → never entered the cage",
+      "Data storage → how many record-boxes you rented",
+      "File storage → bulky contents, attachments, files",
+      "Data Export Service → scheduled offsite ZIP of CSVs",
+      "Salesforce Backup → productized backup and restore",
+      "Restore order → lids must meet the right parent boxes"
+    ],
+    "where_it_breaks": [
+      "Sharing recalculation after a transfer is not a lease fee; it can be a long platform job.",
+      "Recycle Bin retention is not the same as a backup policy.",
+      "File storage and data storage are separate meters, unlike one rent bill.",
+      "Salesforce Backup is a product; Data Export Service is not a click-restore of the whole org."
+    ]
+  },
+  "teach_back_prompt": "Explain mass transfer, mass delete, Recycle Bin, storage, backup, and restore without calling backup 'the Recycle Bin.' Name one place the self-storage analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: data vs file storage, Recycle Bin vs backup, mass transfer vs OwnerId update."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given a departing owner, a storage cap, and a mistaken delete, pick the tool for each."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "List official backup options and why restore order matters."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a mass delete that cannot undelete because it was hard_delete or past retention."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: backup before mass change, plus what Salesforce will not magically restore."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-MASS-TRANSFER",
+      "title": "Mass Transfer Records",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.admin_transfer.htm",
+      "supports": "Setup mass transfer of record ownership for supported objects.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Supported objects and related-record checkboxes vary; confirm the live page."
+    },
+    {
+      "source_id": "SF-HELP-BACKUP-BP",
+      "title": "Best practices to back up Salesforce data",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=000334121",
+      "supports": "Backup before major data projects; Data Export Service, Data Loader, report export, Salesforce Backup; customers restore from their copy; restore order matters.",
+      "release_or_version": "Knowledge article",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace a licensed backup product's restore UI."
+    },
+    {
+      "source_id": "SF-HELP-STORAGE",
+      "title": "How to Monitor Data and File Storage Usage in Salesforce",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=000386943",
+      "supports": "Storage Usage page; data vs file storage; no standard historical trend; rounding; ownership-related user storage notes.",
+      "release_or_version": "Knowledge article",
+      "last_verified": "2026-08-16",
+      "limits": "Exact GB entitlements are edition- and contract-specific."
+    },
+    {
+      "source_id": "SF-HELP-SF-BACKUP",
+      "title": "Back Up and Recover Data with Salesforce Backup & Recover Next",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=xcloud.backup_recover.htm",
+      "supports": "Productized full then incremental backups; compare backups; restore records and deleted children.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Licensed product; not present in every org."
+    },
+    {
+      "source_id": "SF-DEV-SOAP-UNDELETE",
+      "title": "undelete()",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_undelete.htm",
+      "supports": "Recycle Bin restore via API; cascade undelete; not every object is undeletable.",
+      "release_or_version": "SOAP API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "UI Recycle Bin retention length is not specified in this API topic."
+    },
+    {
+      "source_id": "SF-DEV-DATALOADER-CFG",
+      "title": "Configure Data Loader",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/configuring_the_data_loader.htm",
+      "supports": "Hard delete skips Recycle Bin; use Bulk API / Bulk API 2.0.",
+      "release_or_version": "Data Loader Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Mass Delete Records UI is a different entry point than hard_delete."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help backup and Storage Usage articles",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Transfer changes owner",
+        "Delete uses Recycle Bin",
+        "Hard delete does not",
+        "Data vs file storage",
+        "Backup before mass change",
+        "Restore order"
+      ],
+      "accessible_description": "Portrait map: mass transfer of ownership, mass delete versus hard delete, Recycle Bin restore versus backup restore, and data versus file storage."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-MASS-TRANSFER",
+        "SF-HELP-BACKUP-BP",
+        "SF-HELP-STORAGE",
+        "SF-DEV-SOAP-UNDELETE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Move, remove, store, copy, return"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Rec[Business records] --> Own[OwnerId]\n  Own --> MT[Mass Transfer Records]\n  Rec --> Del[Mass Delete or Data Loader delete]\n  Del --> Bin[Recycle Bin]\n  Bin --> Und[Restore / undelete]\n  Rec --> Hard[hard_delete Bulk API]\n  Rec --> Store[Storage Usage]\n  Store --> Data[Data storage]\n  Store --> File[File storage]\n  Rec --> Bak[Backup copy]\n  Bak --> Exp[Data Export Service]\n  Bak --> DL[Data Loader extract]\n  Bak --> SFB[Salesforce Backup product]\n  Bak --> Rest[Restore in relationship order]",
+      "decision": "flowchart TD\n  Need[Need a bulk data action?] --> Q1{Change owner only?}\n  Q1 -->|Supported object in Setup| MT[Mass Transfer Records]\n  Q1 -->|Arbitrary object or huge CSV| DLOwn[Data Loader update OwnerId]\n  Need --> Q2{Remove rows?}\n  Q2 -->|May restore soon| MD[Mass delete or delete to Recycle Bin]\n  Q2 -->|Never return| Hard[hard_delete after backup]\n  Need --> Q3{Protect against loss?}\n  Q3 -->|Before the change| Bak[Export or Salesforce Backup]\n  Q3 -->|Already in bin| Und[Recycle Bin restore]\n  Q3 -->|Past retention or hard delete| Rest[Restore from backup copy]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Mass Transfer Records is the Setup capability for transferring record ownership in bulk on supported objects.",
+      "source_ids": ["SF-HELP-MASS-TRANSFER"],
+      "scope": "Mass transfer",
+      "validation": "Mass Transfer Records Help topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Salesforce recommends a regular backup and a point-in-time backup before major data projects such as a mass Data Loader update. Listed tools include Salesforce Backup, Data Export Service, Data Loader export, and report export. Customers restore from a copy they have; restore order matters for relationships.",
+      "source_ids": ["SF-HELP-BACKUP-BP"],
+      "scope": "Backup and restore concepts",
+      "validation": "Best practices to back up Salesforce data.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Storage Usage in Setup shows data storage and file storage limits, current use, and a component breakdown. There is no standard historical storage-usage trend. Component percents can sum to 99% or 101% due to rounding. User storage discussion is based on record ownership.",
+      "source_ids": ["SF-HELP-STORAGE"],
+      "scope": "Storage",
+      "validation": "How to Monitor Data and File Storage Usage.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Salesforce Backup & Recover Next creates a full backup then daily incrementals, can compare backups, and can restore backed-up records and their deleted child records. It is a product, not the Recycle Bin.",
+      "source_ids": ["SF-HELP-SF-BACKUP"],
+      "scope": "Salesforce Backup product",
+      "validation": "Back Up and Recover Data with Salesforce Backup & Recover Next.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "undelete() restores Recycle Bin records when the object is undeletable. hard_delete in Data Loader does not store records in the Recycle Bin.",
+      "source_ids": ["SF-DEV-SOAP-UNDELETE", "SF-DEV-DATALOADER-CFG"],
+      "scope": "Recycle Bin versus hard delete",
+      "validation": "SOAP undelete() and Configure Data Loader.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Salesforce Backup product naming (Backup and Restore → Salesforce Backup / Backup & Recover Next) should be re-read on the live Help page; do not assume every org is licensed.",
+  "unresolved_uncertainty": [
+    "Default Recycle Bin retention days and extended-retention eligibility must be verified in the org; this pack does not invent a number.",
+    "Mass Transfer and Mass Delete supported-object lists and related-record checkboxes are page-specific—open Setup rather than quoting an unofficial list."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Recycle Bin",
+      "telugu": "Delete ayina records ni limited time restore cheyagala holding area."
+    },
+    {
+      "english": "Mass transfer",
+      "telugu": "Chala records owner ni Setup lo okasari marchadam."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Mass transfer changes OwnerId in bulk. Mass delete usually goes to the Recycle Bin; hard delete does not. Storage Usage splits data versus files. Backup is a copy you keep before a mass change. Restore is undelete from the bin or reload from that copy in relationship order.",
+    "two_minutes": "I ask whether we are moving ownership, removing rows, freeing storage, or surviving a mistake. Transfer: Mass Transfer Records or Loader update of OwnerId—watch sharing recalculation. Remove: delete if we may undelete; hard_delete only after a backup. Storage: read data versus file meters; ownership affects who 'holds' data storage. Backup: Export Service, Loader extract, or Salesforce Backup—not the Recycle Bin. I never tell an interviewer that Salesforce will restore production for free if we have no copy."
+  },
+  "terminology": [
+    {
+      "term": "Mass Transfer Records",
+      "plain": "The Setup tool that changes who owns many records at once.",
+      "precise": "A bulk ownership change for supported objects. Related records may be offered as checkboxes on the page—confirm live. Alternative: Data Loader update of OwnerId.",
+      "example": "Transfer LAB_ Accounts from a departing user to a manager in a sandbox.",
+      "non_example": "A sharing rule, which grants access without changing OwnerId.",
+      "confusable_neighbor": "Assignment rule: routes new Leads/Cases, not a historical mass transfer.",
+      "boundary": "Huge single-owner piles are a skew risk when you later move that user (DQM-006)."
+    },
+    {
+      "term": "Mass Delete Records",
+      "plain": "The Setup tool that deletes many supported records at once.",
+      "precise": "Treat as a Recycle Bin delete unless you have evidence of hard delete. Data Loader delete is the CSV-shaped equivalent; hard_delete is the permanent path.",
+      "example": "Mass-delete LAB_ demo Leads in sandbox, then restore one from the Recycle Bin.",
+      "non_example": "Deleting a custom field in Object Manager (metadata, not mass delete of rows).",
+      "confusable_neighbor": "hard_delete: no Recycle Bin.",
+      "boundary": "Supported objects on the Mass Delete page are not every object in the org."
+    },
+    {
+      "term": "Recycle Bin",
+      "plain": "The holding area for deleted records you may still restore.",
+      "precise": "UI restore plus SOAP undelete() for undeletable objects. Retention is limited; extended retention is a separate Help topic. Hard-deleted rows never appear here.",
+      "example": "Restore a LAB_ Contact deleted yesterday via Mass Delete.",
+      "non_example": "A weekly Data Export ZIP, which is a backup copy, not the bin.",
+      "confusable_neighbor": "Salesforce Backup: productized copies and restore, not the bin.",
+      "boundary": "Exact default days: Needs verification in the org."
+    },
+    {
+      "term": "data storage",
+      "plain": "The record-data meter on Storage Usage.",
+      "precise": "Setup → Storage Usage shows the data-storage limit, use, and object breakdown. Distinct from file storage. Help notes no standard historical trend and rounding artifacts. Ownership is part of how user storage is discussed.",
+      "example": "Account and custom-object rows consuming data storage in a full sandbox.",
+      "non_example": "Content bodies and attachments, which Help's example places in file storage.",
+      "confusable_neighbor": "File storage: files, content, many attachments.",
+      "boundary": "Record-size calculations are edition/contract specific—do not invent bytes-per-record here."
+    },
+    {
+      "term": "file storage",
+      "plain": "The files-and-content meter on Storage Usage.",
+      "precise": "A separate limit from data storage. Help's example breakdown includes Content Bodies, Knowledge, Documents, Attachments as file-storage components.",
+      "example": "Many Content bodies driving file-storage percent while data storage is still low.",
+      "non_example": "A custom object's row count, which is data storage.",
+      "confusable_neighbor": "Data storage.",
+      "boundary": "Which file types count: confirm the live Storage Usage tables."
+    },
+    {
+      "term": "backup",
+      "plain": "A copy you keep on purpose so you can restore after a bad mass change.",
+      "precise": "Help: regular backups plus a point-in-time copy before major data work. Tools: Salesforce Backup, Data Export Service, Data Loader export, report export. Having no copy means Salesforce tools cannot invent the old values.",
+      "example": "Export Accounts via Data Export Service before a 50,000-row Loader update (Help's own scenario shape).",
+      "non_example": "Relying only on the Recycle Bin for a field-value overwrite (overwrites are not deletes).",
+      "confusable_neighbor": "Sandbox refresh: a copy of production into a sandbox, not a restore of production.",
+      "boundary": "Salesforce Backup is licensed; Export Service is a ZIP of CSVs, not a one-click org rewind."
+    },
+    {
+      "term": "restore",
+      "plain": "Bring data back from the Recycle Bin or from a backup copy.",
+      "precise": "Undelete for bin rows; Loader/API insert/upsert from exported CSVs; Salesforce Backup restore UI for licensed orgs, including deleted children in Backup & Recover Next. Restore order must preserve parents before children.",
+      "example": "Insert Accounts from last night's export, then Contacts with the new or original Ids as designed.",
+      "non_example": "Inserting children first so lookups fail.",
+      "confusable_neighbor": "undelete: only works while the row is still in the bin and undeletable.",
+      "boundary": "Merge reparenting still cannot be undone (DQM-002)."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Classify move versus remove versus protect",
+      "actor": "Admin",
+      "trigger": "A bulk data request",
+      "before": "One 'mass' button imagined",
+      "after": "Transfer, delete, storage cleanup, or backup/restore named",
+      "observe": "Written intent and recoverability requirement",
+      "failure": "Mass delete when the need was mass transfer"
+    },
+    {
+      "step": 2,
+      "transition": "Take a point-in-time copy",
+      "actor": "Admin",
+      "trigger": "Any mass update or delete",
+      "before": "No extract",
+      "after": "Data Export, Loader extract, or Salesforce Backup snapshot",
+      "observe": "File or backup job id in the ticket",
+      "failure": "Hard delete first, backup later"
+    },
+    {
+      "step": 3,
+      "transition": "Execute the mass action in sandbox first",
+      "actor": "Admin",
+      "trigger": "Copy exists",
+      "before": "Unrehearsed production click",
+      "after": "Mass Transfer or Mass Delete or Loader job on LAB_ data",
+      "observe": "Owner or Recycle Bin evidence on sample rows",
+      "failure": "Production Mass Delete as the first rehearsal (DQM-007)"
+    },
+    {
+      "step": 4,
+      "transition": "Restore with the right tool and order",
+      "actor": "Admin",
+      "trigger": "Mistake or drill",
+      "before": "Unknown whether rows are in the bin",
+      "after": "Undelete if present; else reload from backup parents-first",
+      "observe": "Original Ids restored when undelete is used; lookups intact after backup reload",
+      "failure": "Inserting new Ids and calling it a restore"
+    }
+  ],
+  "when_to_use": [
+    "When ownership must move in bulk and Mass Transfer Records supports the object—or when a Data Loader OwnerId update is the better fit.",
+    "When mass delete should remain recoverable via the Recycle Bin, versus a hard delete that will not.",
+    "When Storage Usage must be read as data storage versus file storage, including ownership's effect on user-level pictures.",
+    "When you need a backup before a mass Data Loader update, using Data Export Service, extract, or Salesforce Backup.",
+    "When restore must choose Recycle Bin undelete versus reloading a backup copy in relationship order."
+  ],
+  "when_not_to_use": [
+    "Do not use mass delete when the business only needed a mass transfer of ownership.",
+    "Do not treat the Recycle Bin as a backup strategy for field overwrites or for hard-deleted rows.",
+    "Do not use hard delete to 'save storage' without a backup and an explicit permanence decision.",
+    "Do not assume Salesforce Backup & Recover Next exists in every org, or that Data Export Service is a one-click production rewind.",
+    "Do not run Mass Delete or Mass Transfer against production customer data as a lab."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Mass Transfer Records.",
+    "Setup → Mass Delete Records.",
+    "Recycle Bin (user and org views as licensed/shown in the org).",
+    "Setup → Storage Usage; Setup → Data Export; Salesforce Backup app if licensed; Data Loader extract/delete/hard_delete."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox 'departing' user owns LAB_ Accounts and Contacts. Storage Usage shows data storage climbing. An admin almost mass-deletes the Accounts to free space. Leadership wants a restore drill. No production data.",
+    "inputs": [
+      "LAB_ Accounts owned by User A",
+      "Related LAB_ Contacts",
+      "Storage Usage screenshot",
+      "No Salesforce Backup license assumed"
+    ],
+    "decisions": [
+      {
+        "decision": "Extract Accounts and Contacts first (point-in-time backup).",
+        "because": "Help: backup before a major data project; overwrites and deletes need a copy.",
+        "rejected": "Mass delete immediately to free storage"
+      },
+      {
+        "decision": "Mass Transfer Accounts (and offered related records) to User B instead of deleting to save storage.",
+        "because": "The business need was ownership, not removal. Delete would not fix a file-storage problem anyway.",
+        "rejected": "Mass delete of Accounts to 'clear the user'"
+      },
+      {
+        "decision": "For the restore drill, delete two LAB_ Contacts, restore from Recycle Bin; separately upsert from the extract to show backup restore order.",
+        "because": "Bin restore keeps Ids; backup restore must respect parents and lookups.",
+        "rejected": "hard_delete as the drill"
+      }
+    ],
+    "configuration_or_code": [
+      "Data Loader extract Account and Contact.",
+      "Setup Mass Transfer Records: User A → User B.",
+      "Delete two Contacts; Recycle Bin restore; compare Ids to the extract."
+    ],
+    "output": "Owners changed; storage did not magically become file storage; two Contacts keep original Ids after undelete; extract remains the overwrite safety net.",
+    "verification": [
+      "User B owns the transferred LAB_ Accounts.",
+      "Undeleted Contact Id matches the extract.",
+      "Storage Usage still shows data versus file as separate meters."
+    ],
+    "self_explanation": "Transfer was ownership. Backup was the extract. The bin was short-term restore. I did not delete to save the wrong storage meter."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ records only.",
+    "starting_state_checks": [
+      "You can open Storage Usage and Recycle Bin.",
+      "You will not mass-delete non-LAB_ records."
+    ],
+    "steps": [
+      "Create two LAB_ Accounts owned by you. Open Storage Usage and note data versus file headings.",
+      "Export those Accounts (Loader or a report). Mass-delete or delete one Account and restore it from the Recycle Bin.",
+      "If Mass Transfer is available, transfer the other Account to a second sandbox user (or skip and write why Loader OwnerId would be the fallback).",
+      "Write one sentence: why the Recycle Bin is not a backup for a field overwrite."
+    ],
+    "guided_completion": [
+      "If restore minted a new Id, you inserted instead of undeleted.",
+      "If you cannot find Mass Transfer, do not invent objects—use OwnerId update on LAB_ rows only."
+    ],
+    "independent_challenge": "List three official backup options from Help and which one your org actually has.",
+    "evidence": [
+      "Storage Usage note (data vs file).",
+      "Restored LAB_ record with original Id."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete remaining LAB_ rows (soft delete).",
+      "Do not hard-delete in production."
+    ],
+    "limitations": "Mass Transfer object list and Salesforce Backup licensing vary."
+  },
+  "decision_table": [
+    {
+      "signal": "A user is leaving; records must keep their Ids and history, only Owner changes.",
+      "choose": "Mass Transfer Records, or Data Loader update of OwnerId if the object/volume needs it.",
+      "not": "Mass delete of those records to 'clear the user.'",
+      "why": "Transfer is an ownership operation. Delete is removal and risks Recycle Bin expiry."
+    },
+    {
+      "signal": "Rows should disappear but might be needed this week.",
+      "choose": "Mass Delete or Data Loader delete, then Recycle Bin / undelete.",
+      "not": "hard_delete, or relying on a backup you never took.",
+      "why": "The Recycle Bin is the short-term holding cage; hard delete skips it."
+    },
+    {
+      "signal": "A 50,000-row field update is about to run.",
+      "choose": "Point-in-time backup (Export Service, Loader extract, or Salesforce Backup) first.",
+      "not": "Skip backup because 'we have the Recycle Bin.'",
+      "why": "Help's backup article uses a mass Loader update as the scenario; overwrites are not deletes."
+    },
+    {
+      "signal": "Storage Usage is high and someone wants to delete Accounts to free file storage.",
+      "choose": "Read whether the meter is data storage or file storage (Content, files, attachments) before deleting rows.",
+      "not": "Mass delete of records to fix a file-storage problem.",
+      "why": "Help separates the two meters and shows file components such as Content Bodies."
+    },
+    {
+      "signal": "Retention passed or the job was hard_delete.",
+      "choose": "Restore from a backup copy, parents before children.",
+      "not": "undelete, which needs Recycle Bin rows.",
+      "why": "undelete() only restores undeletable bin records; hard_delete never entered the bin."
+    }
+  ],
+  "limitations": [
+    "Does not list every Mass Transfer related checkbox.",
+    "Does not quote Recycle Bin days without org verification.",
+    "Does not replace LDV/skew design (DQM-006).",
+    "Salesforce Backup features depend on license."
+  ],
+  "security_notes": [
+    "Mass transfer is a sharing event for every moved row.",
+    "Backup files contain customer data—treat Export ZIPs as sensitive.",
+    "Never mass-delete production to 'see if Recycle Bin works.'"
+  ],
+  "common_mistakes": [
+    "Calling the Recycle Bin a backup.",
+    "Mass deleting to change ownership.",
+    "Hard delete to save storage without a copy.",
+    "Ignoring data versus file storage.",
+    "Restoring children before parents from a CSV backup."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Cannot find a deleted record in the Recycle Bin.",
+      "check": [
+        "Was the operation hard_delete?",
+        "Has retention expired? (confirm org setting)",
+        "Is the object undeletable?"
+      ],
+      "do_not_assume": "Salesforce keeps every delete forever."
+    },
+    {
+      "symptom": "Storage still high after deleting records.",
+      "check": [
+        "Whether the meter is file storage (Content, files).",
+        "Whether rows are still in the Recycle Bin counting toward storage—Needs verification in the org."
+      ],
+      "do_not_assume": "Every delete immediately frees both meters."
+    },
+    {
+      "symptom": "Mass Transfer is missing the object.",
+      "check": [
+        "The live supported-object list.",
+        "Data Loader update of OwnerId as the alternative."
+      ],
+      "do_not_assume": "Every custom object appears on the Mass Transfer page."
+    }
+  ],
+  "production_notes": [
+    "Backup before mass transfer, mass delete, or mass update.",
+    "Rehearse in sandbox (DQM-007).",
+    "This lesson does not authorize production mass delete or hard delete."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does Mass Transfer Records change?",
+      "options": {
+        "A": "Ownership of supported records in bulk",
+        "B": "The API version of Apex classes",
+        "C": "File storage into data storage",
+        "D": "Matching rules"
+      },
+      "answer": "A",
+      "rationale": "Mass Transfer Records is the Setup ownership-transfer tool.",
+      "distractor_explanations": {
+        "B": "Metadata API versions are unrelated.",
+        "C": "The two storage meters stay separate.",
+        "D": "Matching is DQM-003."
+      },
+      "concept": "Mass transfer",
+      "citation_ids": ["SF-HELP-MASS-TRANSFER"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Help's backup article recommends a point-in-time copy when?",
+      "options": {
+        "A": "Before a major data project such as a mass Data Loader update",
+        "B": "Only after hard delete",
+        "C": "Only when creating a validation rule",
+        "D": "Never; Recycle Bin is enough"
+      },
+      "answer": "A",
+      "rationale": "The article's scenario is backing up before a large Loader update; it recommends regular plus point-in-time backups.",
+      "distractor_explanations": {
+        "B": "Backup must exist before permanence.",
+        "C": "Validation is not that trigger.",
+        "D": "The article exists because the bin is not enough."
+      },
+      "concept": "Backup before mass change",
+      "citation_ids": ["SF-HELP-BACKUP-BP"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Storage Usage separates which two meters?",
+      "options": {
+        "A": "Data storage and file storage",
+        "B": "Apex heap and SOQL rows only",
+        "C": "Matching keys and External IDs",
+        "D": "Sandbox and production licenses only"
+      },
+      "answer": "A",
+      "rationale": "Help: monitor both Data Storage and File Storage on Storage Usage.",
+      "distractor_explanations": {
+        "B": "Governor limits are a different topic.",
+        "C": "DQM-003 attributes.",
+        "D": "Licenses are not those two meters."
+      },
+      "concept": "Two storage meters",
+      "citation_ids": ["SF-HELP-STORAGE"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Is there a standard Storage Usage chart of history over time?",
+      "options": {
+        "A": "Help says there is no standard functionality to track historical storage usage over time",
+        "B": "Yes, seven years by default",
+        "C": "Yes, in every Professional Edition Recycle Bin",
+        "D": "History is stored on OwnerId"
+      },
+      "answer": "A",
+      "rationale": "The storage knowledge article states that limitation explicitly.",
+      "distractor_explanations": {
+        "B": "Not documented there.",
+        "C": "Recycle Bin is not a storage-history product.",
+        "D": "OwnerId is not a history chart."
+      },
+      "concept": "No storage history",
+      "citation_ids": ["SF-HELP-STORAGE"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which restore path keeps the original Salesforce Id if the row is still undeletable in the bin?",
+      "options": {
+        "A": "Recycle Bin restore / undelete()",
+        "B": "Insert of a new row from a CSV (new Id)",
+        "C": "Creating a new custom object",
+        "D": "Changing a page layout"
+      },
+      "answer": "A",
+      "rationale": "undelete restores the existing record. Insert creates a new Id.",
+      "distractor_explanations": {
+        "B": "That is a new record.",
+        "C": "Metadata, not restore.",
+        "D": "Layout is metadata."
+      },
+      "concept": "Undelete keeps Id",
+      "citation_ids": ["SF-DEV-SOAP-UNDELETE"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A mass field overwrite went wrong. Why is the Recycle Bin the wrong first hope?",
+      "options": {
+        "A": "Overwrites are updates, not deletes—the bin never received the old values",
+        "B": "The Recycle Bin always stores every prior field value",
+        "C": "Updates are hard deletes",
+        "D": "Storage Usage undoes updates"
+      },
+      "answer": "A",
+      "rationale": "Help's backup scenario is a mass update. The bin holds deleted records, not prior column values.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Update is not hard delete.",
+        "D": "Storage does not roll back fields."
+      },
+      "concept": "Overwrite needs backup",
+      "citation_ids": ["SF-HELP-BACKUP-BP"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which official tools does the backup article list?",
+      "options": {
+        "A": "Salesforce Backup, Data Export Service, Data Loader export, and report export",
+        "B": "Only matching rules",
+        "C": "Only Apex tests",
+        "D": "Only page layouts"
+      },
+      "answer": "A",
+      "rationale": "Those four families are named in the backup best-practices article.",
+      "distractor_explanations": {
+        "B": "DQM-003.",
+        "C": "Tests are not backups.",
+        "D": "Layouts are metadata."
+      },
+      "concept": "Backup tool list",
+      "citation_ids": ["SF-HELP-BACKUP-BP"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Salesforce Backup & Recover Next incremental backups do what after the first full backup?",
+      "options": {
+        "A": "Daily incremental backups of adds, changes, and deletes without overwriting the previous backup",
+        "B": "They replace the Recycle Bin retention setting",
+        "C": "They hard-delete production nightly",
+        "D": "They convert file storage into data storage"
+      },
+      "answer": "A",
+      "rationale": "The product Help describes full then daily incremental backups that record adds, changes, and deletes.",
+      "distractor_explanations": {
+        "B": "Different feature.",
+        "C": "Backup is not a delete job.",
+        "D": "Meters stay separate."
+      },
+      "concept": "Incremental backup",
+      "citation_ids": ["SF-HELP-SF-BACKUP"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Mass Transfer is not listed for your custom object. Official-shaped fallback?",
+      "options": {
+        "A": "Data Loader update of OwnerId after an extract",
+        "B": "Mass Delete then insert",
+        "C": "A validation rule that changes Owner",
+        "D": "A matching rule"
+      },
+      "answer": "A",
+      "rationale": "OwnerId is updatable; Loader update is the CSV-shaped transfer. Delete+insert mints new Ids.",
+      "distractor_explanations": {
+        "B": "Breaks Ids and lookups.",
+        "C": "Validation rejects; it does not assign.",
+        "D": "Matching is identity."
+      },
+      "concept": "Loader OwnerId fallback",
+      "citation_ids": ["SF-HELP-MASS-TRANSFER", "SF-HELP-BACKUP-BP"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Hard delete versus Recycle Bin restore?",
+      "options": {
+        "A": "hard_delete never stores rows in the Recycle Bin, so undelete cannot bring them back",
+        "B": "hard_delete always keeps a 90-day bin copy",
+        "C": "They are identical",
+        "D": "hard_delete only deletes metadata"
+      },
+      "answer": "A",
+      "rationale": "Configure Data Loader: hard-deleted records cannot be recovered from the Recycle Bin.",
+      "distractor_explanations": {
+        "B": "Not documented as a hidden bin.",
+        "C": "Opposite recoverability.",
+        "D": "It deletes records."
+      },
+      "concept": "Hard delete vs bin",
+      "citation_ids": ["SF-DEV-DATALOADER-CFG"]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Why can Storage Usage component percents add to 99% or 101%?",
+      "options": {
+        "A": "Rounding to one decimal place",
+        "B": "Apex heap overflow",
+        "C": "Duplicate rules",
+        "D": "Missing External IDs"
+      },
+      "answer": "A",
+      "rationale": "Help: the page rounds to one decimal place, so breakdowns can appear as 99% or 101%.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Storage rounding",
+      "citation_ids": ["SF-HELP-STORAGE"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Help says restore order matters. What goes wrong if you ignore it?",
+      "options": {
+        "A": "Child records can fail lookups because parents are not present yet",
+        "B": "Storage meters swap names",
+        "C": "Validation rules become matching rules",
+        "D": "Apex classes undelete themselves"
+      },
+      "answer": "A",
+      "rationale": "The backup article: restore in an order that preserves relationships to related records.",
+      "distractor_explanations": {
+        "B": "Meters do not swap.",
+        "C": "Different topics.",
+        "D": "Classes are metadata."
+      },
+      "concept": "Restore order",
+      "citation_ids": ["SF-HELP-BACKUP-BP"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "transfer",
+      "front": "What does Mass Transfer Records do?",
+      "back": "Changes ownership of supported records in bulk in Setup."
+    },
+    {
+      "id": "F2",
+      "category": "delete",
+      "front": "Mass delete versus hard delete?",
+      "back": "Mass delete / delete uses the Recycle Bin. hard_delete does not store rows there."
+    },
+    {
+      "id": "F3",
+      "category": "bin",
+      "front": "Is the Recycle Bin a backup?",
+      "back": "No. It holds deleted records for a limited time. Overwrites never enter the bin."
+    },
+    {
+      "id": "F4",
+      "category": "storage",
+      "front": "Two Storage Usage meters?",
+      "back": "Data storage (records) and file storage (files/content/attachments as shown on the page)."
+    },
+    {
+      "id": "F5",
+      "category": "storage",
+      "front": "Standard historical storage trend?",
+      "back": "Help: no standard functionality to track historical storage usage over time."
+    },
+    {
+      "id": "F6",
+      "category": "backup",
+      "front": "When to take a point-in-time backup?",
+      "back": "Before a major data project such as a mass Data Loader update, plus keep regular backups."
+    },
+    {
+      "id": "F7",
+      "category": "backup",
+      "front": "Name official backup options from Help.",
+      "back": "Salesforce Backup, Data Export Service, Data Loader export, and report export."
+    },
+    {
+      "id": "F8",
+      "category": "restore",
+      "front": "Why does restore order matter?",
+      "back": "Parents and related records must exist so lookups and relationships survive."
+    },
+    {
+      "id": "F9",
+      "category": "backup",
+      "front": "Does Salesforce invent old values if you have no copy?",
+      "back": "No. Help says customers restore using a copy they have, via Loader/API or a backup product."
+    },
+    {
+      "id": "F10",
+      "category": "product",
+      "front": "Salesforce Backup & Recover Next versus Recycle Bin?",
+      "back": "A licensed backup product with full/incremental copies and restore—not the delete holding cage."
+    },
+    {
+      "id": "F11",
+      "category": "transfer",
+      "front": "Fallback if Mass Transfer lacks your object?",
+      "back": "Data Loader update of OwnerId after an extract. Do not delete-and-insert."
+    },
+    {
+      "id": "F12",
+      "category": "storage",
+      "front": "Why can percents add to 101% on Storage Usage?",
+      "back": "Rounding to one decimal place."
+    },
+    {
+      "id": "F13",
+      "category": "owner",
+      "front": "How does ownership relate to storage talk in Help?",
+      "back": "User storage usage is discussed based on record ownership."
+    },
+    {
+      "id": "F14",
+      "category": "restore",
+      "front": "Undelete versus insert-from-backup?",
+      "back": "Undelete keeps the original Id. Insert creates a new Id unless you have a careful upsert design."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Departing user: transfer or delete?",
+      "back": "Mass transfer (or OwnerId update) if you need the records. Delete only if removal is the real intent—and back up first."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Mass transfer versus mass delete—when do you use each?",
+      "answer_30_seconds": "Mass transfer changes OwnerId and keeps the records. Mass delete removes them, usually into the Recycle Bin. If the business still needs the rows, transfer. If they must go, delete after a backup.",
+      "answer_2_minutes": "I start from intent. Departing rep: Mass Transfer Records or Loader OwnerId update, and I watch sharing recalculation on large piles. Cleanup of lab rows: mass delete or Loader delete. I never delete to 'clear a user' if history matters. I mention hard delete only when permanence is explicit. I rehearse in sandbox.",
+      "example": "8,000 LAB_ Accounts to a manager via Mass Transfer; 20 demo Leads mass-deleted.",
+      "tradeoffs": [
+        "Keep history vs free storage",
+        "Setup tool vs Loader OwnerId"
+      ],
+      "follow_ups": [
+        "What if the object is not on the Mass Transfer page?",
+        "Related contacts?"
+      ],
+      "weak_answer_warnings": [
+        "Deleting to change ownership"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you explain backup versus the Recycle Bin?",
+      "answer_30_seconds": "The Recycle Bin holds deleted records for a limited time. A backup is a copy you keep—Export Service, Loader extract, or Salesforce Backup. Field overwrites never enter the bin, so a mass update needs a backup.",
+      "answer_2_minutes": "I use Help's 50,000-row update scenario. I list the four tool families. I say Salesforce will not invent yesterday's values without a copy. I distinguish licensed Salesforce Backup restore from manually reloading CSVs in parent-first order. I admit default bin days need org verification. Hard delete skips the bin entirely.",
+      "example": "Extract Accounts before a Status__c Loader update; bin would not help if the update succeeds.",
+      "tradeoffs": [
+        "Export ZIP vs backup product",
+        "Bin speed vs backup completeness"
+      ],
+      "follow_ups": [
+        "What is incremental backup?",
+        "Does Export Service restore with one click?"
+      ],
+      "weak_answer_warnings": [
+        "Calling the Recycle Bin the backup strategy"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Storage is 'full' and someone wants to mass-delete Accounts. What do you check first?",
+      "answer_30_seconds": "Storage Usage: is the hot meter data storage or file storage? Deleting Accounts will not fix Content-body file storage. Then ask whether the business meant transfer, archive, or delete—and back up first.",
+      "answer_2_minutes": "I open Storage Usage and read the two meters and the component tables. I mention rounding so we do not chase 101%. I mention ownership's role in user-level storage talk. If data storage is the issue, I still refuse unbacked-up mass delete. I consider Recycle Bin retention—deleted rows may not free what people think (Needs verification). File storage wants a files/content plan, not Account homicide.",
+      "example": "File storage 90% Content Bodies; data storage 40%—Account mass delete is the wrong lever.",
+      "tradeoffs": [
+        "Delete vs archive vs buy storage",
+        "Data rows vs files"
+      ],
+      "follow_ups": [
+        "Is there a storage history chart?",
+        "Who owns the biggest objects?"
+      ],
+      "weak_answer_warnings": [
+        "Deleting Accounts to fix file storage"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Yesterday's mass delete must come back. Walk official options.",
+      "answer_30_seconds": "If rows are still in the Recycle Bin and undeletable, restore/undelete to keep Ids. If retention passed or it was hard_delete, restore from a backup copy in relationship order. If there is no copy, say that honestly.",
+      "answer_2_minutes": "I search the bin and use queryAll if needed. I restore parents first when using undelete of cascade-deleted children. I will not insert replacements and call it identical. If we must reload CSVs, I follow Help's restore-order warning. I mention Salesforce Backup restore of records and deleted children only if the org has that product. I do not invent a 15-day figure unless I have verified it in that org.",
+      "example": "Sandbox Mass Delete of LAB_ Contacts; restore from org Recycle Bin same day; Ids match the pre-delete extract.",
+      "tradeoffs": [
+        "Undelete vs CSV reload",
+        "Speed vs Id stability"
+      ],
+      "follow_ups": [
+        "Cascade undelete?",
+        "Merge reparenting?"
+      ],
+      "weak_answer_warnings": [
+        "Promising Salesforce Support will rewind the org with no copy"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "Design a minimum backup practice for an admin team that only has Data Export Service and Data Loader.",
+      "answer_30_seconds": "Schedule Data Export Service. Before any mass update or delete, run a Loader extract of the objects in play. Store the files securely. Practice a parent-then-child reload in sandbox.",
+      "answer_2_minutes": "I do not pretend Export Service is Salesforce Backup. I still follow Help: regular plus point-in-time. I name report export as a narrow extra, not a full backup. I include metadata separately (deploy/retrieve)—this topic is records. I document restore order. I refuse hard delete in production without that extract. If they later buy Salesforce Backup, I treat it as additive.",
+      "example": "Weekly export + Account extract an hour before a 50k update.",
+      "tradeoffs": [
+        "Schedule lag vs on-demand extract",
+        "CSV restore labor vs product restore"
+      ],
+      "follow_ups": [
+        "Attachments?",
+        "Who can download the ZIP?"
+      ],
+      "weak_answer_warnings": [
+        "Relying only on Recycle Bin"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Mass Transfer finished but some related Contacts still show the old owner. How do you talk about it?",
+      "answer_30_seconds": "Mass Transfer related-record checkboxes are object- and page-specific. I reopen the tool's options rather than inventing a list. Then I consider a Contact OwnerId update if Contact ownership is independent.",
+      "answer_2_minutes": "I do not claim every child always follows Account. I check what the live Mass Transfer page offered. I extract leftovers and decide whether Contact owner should match Account. I watch volume for sharing recalculation. I do not mass-delete stragglers. Needs verification of the exact related checkboxes in that org and edition.",
+      "example": "Account transferred; Contact owner still User A because the related checkbox was unchecked.",
+      "tradeoffs": [
+        "Keep Contact owners vs align to Account",
+        "Setup tool vs Loader"
+      ],
+      "follow_ups": [
+        "Opportunities too?",
+        "Does transfer change Created By?"
+      ],
+      "weak_answer_warnings": [
+        "A memorized unofficial related-list as if it were universal"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "An exec says 'Salesforce backs us up, so we can hard-delete.' Respond.",
+      "answer_30_seconds": "I ask which product and which restore drill they have. Recycle Bin is not a backup. Hard delete skips the bin. Data Export Service is a ZIP, not a rewind. Salesforce Backup is licensed. Without a copy and a rehearsal, I refuse.",
+      "answer_2_minutes": "I separate platform durability from customer-owned backup. Help tells customers to keep copies and restore from them. I offer a sandbox hard-delete drill only on LAB_ data after an extract. I will not hard-delete production to test folklore. I mention restore order and that overwrites also need copies. I stay calm and specific.",
+      "example": "Org has weekly export but never restored it; exec wanted hard_delete of 'old' Opportunities.",
+      "tradeoffs": [
+        "Storage savings vs irreversible loss",
+        "Product backup vs CSV labor"
+      ],
+      "follow_ups": [
+        "What does Backup & Recover Next restore?",
+        "Who owns the ZIP encryption?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing that hard delete is safe because 'Salesforce has backups'"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "Teach the self-storage analogy and where it breaks.",
+      "answer_30_seconds": "Transfer changes the lease name, delete moves boxes to a time-limited cage, hard delete skips the cage, storage is unit-feet versus bulky files, backup is the offsite copy. It breaks because sharing recalculation is not rent, and Export Service is not a one-click rewind.",
+      "answer_2_minutes": "I map restore order to putting parent boxes down first. I map dummy-user ownership to one person 'holding' all leases—storage talk and later skew. I break it: two meters, licensed Salesforce Backup versus a ZIP, Recycle Bin not covering overwrites. I avoid library and drawer language.",
+      "example": "Teaching a BA why deleting Accounts will not shrink Content file storage.",
+      "tradeoffs": [
+        "Story vs Help product names",
+        "Cage vs offsite copy"
+      ],
+      "follow_ups": [
+        "Name the four backup families without the analogy.",
+        "Name data versus file storage without the analogy."
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer analogy"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,999 @@
+{
+  "topic_id": "AUTO-013",
+  "slug": "flow-testing-debugging-versioning-deployment-and-produc",
+  "title": "Flow testing, debugging, versioning, deployment, and production support",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AUTO-012"
+  ],
+  "objectives": [
+    "Debug a Flow in Flow Builder and read element-level results before activation.",
+    "Create and run automated Flow tests, including Setup Application Test Execution alongside Apex tests where available.",
+    "Explain versions: activating a version deactivates the previous one; running interviews continue on the version they started.",
+    "Deploy Flows knowing an active Flow in a change set arrives inactive unless the production deploy-as-active setting is used, and activate after deploy."
+  ],
+  "diagnostic_question": "A Flow works in sandbox Debug but not after a change-set deploy. What version is active in production, and what does Help say about deploying an active Flow?",
+  "definition": "Flow testing is Debug plus automated Flow tests that you can run in Builder or, in later APIs, with Apex tests in Application Test Execution. Versioning means one active version; activating another deactivates the prior, while in-flight interviews keep the version they started. Deployment via change sets typically delivers an active Flow as inactive; you activate in the destination (or use the production setting that allows deploying a new active version). Production support is Debug, tests, versions, and paused-interview awareness—not editing live production as the first move. ([Activate a Flow](https://help.salesforce.com/s/articleView?id=platform.flow_distribute_activate.htm); [Special Behavior in Deployments](https://help.salesforce.com/s/articleView?id=platform.deploy_special_behavior.htm))",
+  "why_it_matters": "Interviewers ask why production is inactive after deploy, whether running interviews jump versions, and how you test record-triggered Flows. ‘I clicked Activate in sandbox so production is live’ is a fail.",
+  "sixty_second_explanation": "Think of a theater. Debug and Flow tests are dress rehearsal. Versions are understudies: only one cast is on stage (active), but a show that already started keeps its original cast (running interviews). Deployment is the touring company: Help says an active Flow in a change set usually arrives inactive—you still have to raise the curtain in the new house. Production support is the stage manager’s headset, not rewriting the script mid-show.",
+  "deeper_explanation": [
+    "Activate Help: when you activate a version, any previously active version is deactivated. Running interviews continue on the version they started. After moving a Flow from sandbox to production you may need to save as a new version before Activate; always debug using rollback mode after that move because orgs differ. ([Activate](https://help.salesforce.com/s/articleView?id=platform.flow_distribute_activate.htm))",
+    "Change sets: you can include only one version of a Flow. If there is no active version, the latest inactive is used. An active Flow in a change set is deployed to its destination as inactive. Activate manually after deployment. Deploying creates a version in the destination. Production orgs can enable deploying a new active version via change sets or Metadata API; that setting does not appear in non-production orgs because you can always deploy a new active version there. ([Special Behavior](https://help.salesforce.com/s/articleView?id=platform.deploy_special_behavior.htm))",
+    "Debug in Flow Builder shows element details; later releases added element-level summaries and an updated screen-flow debugger. Debug is not a substitute for automated Flow tests or a bulk Data Loader rehearsal (AUTO-007). ([Debug summaries](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_debug_summaries.htm))",
+    "Winter/Spring releases unified Flow tests with Apex tests: Test Discovery / Test Runner APIs (API 65.0+) and Setup Application Test Execution to run both. Application Test History may still show only async Apex history—Needs verification of Flow history UI. CLI: `flow run test` / `flow get test` in later Salesforce CLI notes. ([Unified testing](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_debug_unified_testing.htm))",
+    "Production support: reproduce in sandbox, compare active versions, check paused interviews, fault emails (AUTO-008), and whether the change set omitted the version you thought. Do not Debug against real customer data as the first step."
+  ],
+  "mental_model": {
+    "analogy": "A theater: Debug/tests = dress rehearsal, versions = understudies (one cast on stage), running interviews = a show that keeps its original cast, deploy = touring company that arrives with the curtain down unless you raise it.",
+    "useful_mapping": [
+      "Debug → dress rehearsal on the sandbox stage",
+      "automated Flow test → recorded rehearsal you can rerun",
+      "active version → tonight’s cast",
+      "inactive versions → understudies on the bench",
+      "running interview → a show that already started on its original cast",
+      "change set deploy → touring company arriving inactive",
+      "Activate in destination → raise the curtain",
+      "Flow metadata → the script; records → the audience/ticket data"
+    ],
+    "where_it_breaks": [
+      "The production deploy-as-active setting can raise the curtain automatically—confirm it is enabled before you assume inactive.",
+      "Saving as a new version after sandbox-to-prod is a Help caution, not every deploy path.",
+      "CLI test commands are versioned; do not invent flags.",
+      "Debug As user is not a full security test (AUTO-009)."
+    ]
+  },
+  "teach_back_prompt": "Using the theater, explain why a running interview does not jump to the newly activated version, then say what Help says about an active Flow in a change set.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Activate version B. What happens to version A and to running interviews?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Change set: how many Flow versions, and is the destination active?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Where can you run Flow tests next to Apex tests?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Sandbox works, production does not. Version and activate checklist."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: debug, tests, versions, deploy, support."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-ACTIVATE",
+      "title": "Activate or Deactivate a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_distribute_activate.htm",
+      "supports": "Activating a version deactivates the previous; running interviews continue on the started version; sandbox-to-prod activate caution and rollback-mode debug.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "UI (Automation app vs Setup) varies; confirm in-org."
+    },
+    {
+      "source_id": "SF-HELP-DEPLOY",
+      "title": "Special Behavior in Deployments — Flows",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.deploy_special_behavior.htm",
+      "supports": "One version per change set; active deploys as inactive; activate after deploy; production setting to deploy a new active version.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Metadata API / unlocked packages can differ; reverify your pipeline."
+    },
+    {
+      "source_id": "SF-HELP-UNIFIED-TEST",
+      "title": "Streamline Automated Flow and Apex Test Retrieval and Execution",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_debug_unified_testing.htm",
+      "supports": "Test Discovery and Test Runner APIs (65.0+); Application Test Execution runs Apex and Flow tests.",
+      "release_or_version": "Release notes cited Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Application Test History may not yet show Flow history; do not invent that it does."
+    },
+    {
+      "source_id": "SF-HELP-DEBUG-SUM",
+      "title": "Debug Flows at a Glance with the Element-Level Summaries",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_debug_summaries.htm",
+      "supports": "Debug Details show element-level summaries (for example how many records an Update Records element updated).",
+      "release_or_version": "Summer '25 note, still cited Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace automated tests or bulk rehearsal."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Activate and deployment Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Debug",
+        "Flow tests",
+        "versions",
+        "running interviews",
+        "change set inactive",
+        "production support"
+      ],
+      "accessible_description": "Portrait map: Debug and tests before activate; one active version; in-flight interviews keep their version; change sets arrive inactive; raise the curtain in production; support from sandbox first."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-ACTIVATE",
+        "SF-HELP-DEPLOY",
+        "SF-HELP-UNIFIED-TEST"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Flow version and deploy path"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Build[Save Flow version] --> Debug[Debug in Flow Builder]\n  Debug --> Tests[Automated Flow tests]\n  Tests --> Act[Activate version]\n  Act --> Prev[Previous version deactivated]\n  Act --> Run[New interviews use active version]\n  Old[Already running interviews] --> Keep[Continue on started version]\n  Act --> CS[Change set one version]\n  CS --> Dest[Destination usually inactive]\n  Dest --> Act2[Activate in destination unless deploy-as-active]",
+      "decision": "flowchart TD\n  Need[Need to change a Flow] --> Q1{Where are you?}\n  Q1 -->|Sandbox| Debug[Debug plus Flow tests; then activate]\n  Q1 -->|Production incident| Sand[Reproduce in sandbox; do not start by editing prod]\n  Debug --> Q2{Deploying by change set?}\n  Q2 -->|Yes| Inactive[Expect inactive in destination; activate; confirm version]\n  Q2 -->|Prod setting on| Active[May deploy a new active version - verify the setting]\n  Need --> Q3{Users mid-interview?}\n  Q3 -->|Yes| Keep[They stay on the version they started; plan communication]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Activating a Flow version deactivates the previously active version. Running interviews continue on the version they started.",
+      "source_ids": ["SF-HELP-ACTIVATE"],
+      "scope": "Versioning",
+      "validation": "Activate or Deactivate a Flow.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "A change set can include only one Flow version. An active Flow deploys to the destination as inactive unless you use the production setting that allows deploying a new active version. Activate after deploy.",
+      "source_ids": ["SF-HELP-DEPLOY"],
+      "scope": "Deployment",
+      "validation": "Special Behavior in Deployments.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Automated Flow tests can be run with Apex tests from Application Test Execution; Test Discovery and Test Runner APIs exist at API 65.0+.",
+      "source_ids": ["SF-HELP-UNIFIED-TEST"],
+      "scope": "Testing",
+      "validation": "Unified testing release note.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Flow Builder Debug provides element-level summaries of what happened at each element.",
+      "source_ids": ["SF-HELP-DEBUG-SUM"],
+      "scope": "Debugging",
+      "validation": "Element-level summaries release note.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify Application Test Execution/History behavior and CLI `flow run test` for Summer '26 / your CLI version.",
+  "unresolved_uncertainty": [
+    "Whether Application Test History lists Flow tests yet: the cited note said not yet—Needs verification.",
+    "Exact Metadata API status-active behavior for your project’s deploy tool: Needs verification against current Metadata API Flow docs."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Flow version",
+      "telugu": "ఫ్లో యొక్క ఒక సేవ్; ఒకటే యాక్టివ్‌గా ఉంటుంది."
+    },
+    {
+      "english": "Debug",
+      "telugu": "Flow Builderలో ఇంటర్వ్యూను పరీక్షగా నడపడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I Debug and run Flow tests in sandbox, then activate. Activating B deactivates A, but running interviews stay on A. A change set usually lands inactive in production; I activate there. I do not treat sandbox Activate as production go-live.",
+    "two_minutes": "I start from Help: one version in a change set, active becomes inactive at the destination unless the production deploy-as-active setting is on. I compare version numbers in both orgs. I use Application Test Execution when we have automated Flow tests. For incidents I reproduce in sandbox, check paused interviews, and read fault emails. I debug with rollback after sandbox-to-prod because Help says orgs differ. The script is metadata; tickets are data."
+  },
+  "terminology": [
+    {
+      "term": "Debug",
+      "plain": "Run the Flow from Flow Builder with a test record or inputs and inspect each element.",
+      "precise": "Debug Details can show element-level summaries (for example records updated). Not a bulk proof and not production’s first tool.",
+      "example": "Debug an Opportunity update to Closed Won and read Get Records count.",
+      "non_example": "Editing the Flow in production while users run it.",
+      "confusable_neighbor": "Setup debug logs: different product surface.",
+      "boundary": "Some formula entry criteria have had Debug errors (AUTO-010)."
+    },
+    {
+      "term": "Flow test",
+      "plain": "A saved automated test for a (usually record-triggered) Flow you can rerun.",
+      "precise": "Can be run from Builder and, with API 65.0+, via Test Discovery/Test Runner and Application Test Execution with Apex tests.",
+      "example": "Test: Stage changes to Closed Won creates two Tasks.",
+      "non_example": "A single manual Debug you did not save.",
+      "confusable_neighbor": "Apex unit test: different metadata, now launchable in the same Setup page.",
+      "boundary": "Not every Flow type supports the same test features—verify in-org."
+    },
+    {
+      "term": "Flow version",
+      "plain": "One saved edition of the Flow. Only one version is active.",
+      "precise": "Activate deactivates the previous. Change sets carry one version. Deploy creates a version in the destination.",
+      "example": "Version 3 active in sandbox; version 2 still active in production after a forgotten Activate.",
+      "non_example": "A Process Builder version from AUTO-012.",
+      "confusable_neighbor": "API version on the Flow: runtime behavior version, not the saved-version number.",
+      "boundary": "Maximum stored versions: Needs verification; do not invent a number."
+    },
+    {
+      "term": "active version",
+      "plain": "The version new interviews use.",
+      "precise": "Help: activating a version deactivates any previously active version.",
+      "example": "Activate v4; v3 is inactive for new interviews.",
+      "non_example": "A Debug of an inactive version proving production is live.",
+      "confusable_neighbor": "Deploy-as-active setting: can make a deployed version active in production when enabled.",
+      "boundary": "Screen Flows on pages still need the page to point at the Flow."
+    },
+    {
+      "term": "running interview",
+      "plain": "A Flow run that already started, including paused screen or waited interviews.",
+      "precise": "Continues on the version it started even after you activate another version.",
+      "example": "User mid-screen Flow stays on v2 after you activate v3.",
+      "non_example": "The next user who clicks the button after activate—they get v3.",
+      "confusable_neighbor": "Paused Flow interviews in Setup: operational list, neighboring UI.",
+      "boundary": "How long paused interviews live: Needs verification on current limits Help."
+    },
+    {
+      "term": "change set Flow deploy",
+      "plain": "Sending a Flow version to another org with a change set.",
+      "precise": "One version only. Active in source typically becomes inactive in destination. Activate after deploy. Dependencies listed can include all versions—add the ones you need.",
+      "example": "Outbound change set with v4; production stays on v3 until someone Activates v4.",
+      "non_example": "Data Loader of Opportunities.",
+      "confusable_neighbor": "Metadata API / CLI project deploy: read current special-behavior notes for status.",
+      "boundary": "Unlocked packaging status fields differ—Needs verification."
+    },
+    {
+      "term": "deploy as active",
+      "plain": "A production setting that allows a deploy to activate a new Flow version.",
+      "precise": "Help: available in production orgs; not shown in scratch/sandbox/developer orgs because those can always deploy a new active version.",
+      "example": "Pipeline sets status active because the production setting is on.",
+      "non_example": "Assuming every change set auto-activates without checking.",
+      "confusable_neighbor": "Activate button in Flow Builder.",
+      "boundary": "Who may enable the setting: verify permission and risk."
+    },
+    {
+      "term": "Application Test Execution",
+      "plain": "Setup page that can run Apex tests and automated Flow tests together.",
+      "precise": "Replaces the older Apex-only Test Execution page per the unified-testing note. History page may still be Apex-only.",
+      "example": "Select LAB_ClosedWon Flow tests and related Apex tests, Run.",
+      "non_example": "Flow Builder Debug of one record.",
+      "confusable_neighbor": "Apex Test Execution (old name).",
+      "boundary": "Edition/API 65+ availability as cited."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Rehearse",
+      "actor": "Admin",
+      "trigger": "Flow saved in sandbox",
+      "before": "Unknown behavior",
+      "after": "Debug covers happy, fault, and a bulk-ish sample; Flow tests saved",
+      "observe": "Element summaries match expected Get/Create counts",
+      "failure": "Activate after one happy Debug"
+    },
+    {
+      "step": 2,
+      "transition": "Activate in sandbox",
+      "actor": "Admin",
+      "trigger": "Tests pass",
+      "before": "Inactive or older version live",
+      "after": "Intended version active; prior deactivated",
+      "observe": "Flows list shows Active on the correct version",
+      "failure": "Activating the wrong version"
+    },
+    {
+      "step": 3,
+      "transition": "Deploy",
+      "actor": "Admin / DevOps",
+      "trigger": "Sandbox signed off",
+      "before": "Production on an older version",
+      "after": "Change set or pipeline delivered one version; destination activation confirmed",
+      "observe": "Production version number and Active flag",
+      "failure": "Assuming change set auto-activated"
+    },
+    {
+      "step": 4,
+      "transition": "Support",
+      "actor": "Admin",
+      "trigger": "Production incident",
+      "before": "Guessing in prod Builder",
+      "after": "Sandbox reproduce, version compare, paused-interview check, fault email",
+      "observe": "Written version IDs in both orgs",
+      "failure": "Saving over production without a version plan"
+    }
+  ],
+  "when_to_use": [
+    "When you must Debug a Flow and read element-level results before activation.",
+    "When you add automated Flow tests and run them with Apex tests in Application Test Execution.",
+    "When activating a version and you must explain what happens to the previous version and to running interviews.",
+    "When deploying by change set and you must activate in the destination (or confirm deploy-as-active).",
+    "When production support starts with version compare and sandbox reproduce, not a live edit."
+  ],
+  "when_not_to_use": [
+    "Do not treat one Debug as a bulk-safe proof (AUTO-007).",
+    "Do not assume a change set leaves the Flow active in production.",
+    "Do not expect running interviews to jump to the newly activated version.",
+    "Do not Debug first on production customer records.",
+    "Do not invent CLI flags or Test History behavior that the cited note says is not there yet."
+  ],
+  "configuration_or_code_location": [
+    "Flow Builder: Debug, Tests, Activate/Deactivate.",
+    "Automation app or Setup → Flows → Related versions list.",
+    "Setup → Application Test Execution (and Outbound Change Sets).",
+    "Process Automation Settings: deploy new active versions in production (name: verify in-org)."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox LAB_ Closed Won Flow (AUTO-007/010) is v4 and active. You deploy v4 by change set to production, which is still on v2. Users report no Tasks. No production data in the lab write-up.",
+    "inputs": [
+      "Change set with one Flow version",
+      "Production deploy-as-active setting unknown",
+      "Users creating Closed Won Opportunities"
+    ],
+    "decisions": [
+      {
+        "decision": "Open production Flow versions before rebuilding.",
+        "because": "Help: active source deploys inactive; v4 may be sitting Inactive.",
+        "rejected": "Immediately rewrite the Flow in production"
+      },
+      {
+        "decision": "Activate v4 in production after a rollback-mode Debug if you had to save a new version.",
+        "because": "Activate Help warns orgs differ after sandbox-to-prod.",
+        "rejected": "Assume sandbox Activate already turned production on"
+      },
+      {
+        "decision": "Keep v2 until v4 is active; tell support that in-flight interviews on v2 stay on v2.",
+        "because": "Running interviews continue on the started version.",
+        "rejected": "Telling users their open screen Flow already has v4"
+      }
+    ],
+    "configuration_or_code": [
+      "Production Flows: confirm v4 exists and whether it is Inactive.",
+      "Debug v4 in production only if policy allows; prefer a full sandbox copy.",
+      "Activate v4; confirm v2 Inactive.",
+      "Re-run Application Test Execution if tests were deployed."
+    ],
+    "output": "New Closed Won interviews use v4; production Active flag matches sandbox intent.",
+    "verification": [
+      "Version list: v4 Active, v2 Inactive.",
+      "A new LAB_ Opportunity in a full sandbox or authorized test creates Tasks.",
+      "Change-set component list included the intended version only."
+    ],
+    "self_explanation": "The touring company arrived with the curtain down. I raised it instead of rewriting the play."
+  },
+  "hands_on_lab": {
+    "environment": "Two sandboxes or a sandbox plus a second Developer org if you can use change sets. LAB_ Flows only.",
+    "starting_state_checks": [
+      "You can create a record-triggered Flow and Debug it.",
+      "You are not using production customer records."
+    ],
+    "steps": [
+      "Build or open a LAB_ Flow, Debug a success and a fault path, save a Flow test if the type allows.",
+      "Activate version 1, save a trivial change as version 2, activate v2, and confirm v1 is inactive.",
+      "If you have a second org, upload a change set and record whether the Flow arrives inactive.",
+      "Write one support note: running interviews stay on the started version."
+    ],
+    "guided_completion": [
+      "If both versions show Active, you misread the list.",
+      "If you skipped Debug, you are not ready to activate."
+    ],
+    "independent_challenge": "Open Application Test Execution and see whether your Flow test appears next to Apex tests (API 65+ orgs).",
+    "evidence": [
+      "Notes: version Active flags before/after.",
+      "Debug element summary for Create or Update Records."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate lab Flows.",
+      "Do not leave a broken version Active."
+    ],
+    "limitations": "Change-set steps require two orgs; skip deploy and still complete Debug/version steps."
+  },
+  "decision_table": [
+    {
+      "signal": "You just saved a record-triggered Flow in sandbox.",
+      "choose": "Debug plus a saved Flow test before Activate.",
+      "not": "Activate after one happy-path click and deploy.",
+      "why": "Debug summaries and automated tests are the rehearsal; Activate starts new interviews."
+    },
+    {
+      "signal": "You activated version 5 while users are mid-screen Flow on version 4.",
+      "choose": "Plan that those interviews finish on version 4; only new interviews use 5.",
+      "not": "Tell them they already have the new screens.",
+      "why": "Help: running interviews continue on the version they started."
+    },
+    {
+      "signal": "Change set deployed and production behavior is unchanged.",
+      "choose": "Check whether the new version is Inactive and Activate it (unless deploy-as-active is on).",
+      "not": "Rebuild the Flow from scratch in production.",
+      "why": "Special Behavior: active Flows deploy inactive; activate after deploy."
+    },
+    {
+      "signal": "You need regression on every deploy.",
+      "choose": "Automated Flow tests in Application Test Execution (and CI if you have Test Runner APIs).",
+      "not": "Only a manual Debug by whoever is free.",
+      "why": "Unified testing note exists so Flow tests can run with Apex tests."
+    },
+    {
+      "signal": "Production Flow faults for one user.",
+      "choose": "Compare versions, reproduce in sandbox, read fault email/log (AUTO-008).",
+      "not": "Debug on the live customer record as step one.",
+      "why": "Support is version-aware and sandbox-first; customer data is not a lab."
+    }
+  ],
+  "limitations": [
+    "Does not replace bulk, fault, security, or entry-criteria lessons.",
+    "CLI and Test History details are versioned.",
+    "Package/CLI deploy status may differ from change sets.",
+    "Not every Flow type has the same test coverage features."
+  ],
+  "security_notes": [
+    "Do not Debug production customer records to ‘see the values’.",
+    "Flow tests should use LAB_ data.",
+    "Activate rights are powerful; least-privilege builders vs activators."
+  ],
+  "common_mistakes": [
+    "Assuming change sets activate Flows.",
+    "Thinking running interviews jump versions.",
+    "Skipping Debug and Flow tests.",
+    "Editing production as the first support step.",
+    "Deploying the wrong version because the change set grabbed an inactive latest."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Works in sandbox, not in production after deploy.",
+      "check": [
+        "Destination Active flag and version number",
+        "Whether the change set included the intended version",
+        "Missing referenced fields/components"
+      ],
+      "do_not_assume": "Flow Builder is broken in production."
+    },
+    {
+      "symptom": "Users still see old screens after you activated a new version.",
+      "check": [
+        "Whether they are in a running interview started on the old version",
+        "Browser cache / page still pointing at another Flow"
+      ],
+      "do_not_assume": "Activate failed before you check interviews."
+    },
+    {
+      "symptom": "Cannot click Activate after a sandbox-to-production move.",
+      "check": [
+        "Help: you may need to save as a new version first",
+        "Your user has Manage Flow / activate rights"
+      ],
+      "do_not_assume": "The Flow metadata is corrupt."
+    }
+  ],
+  "production_notes": [
+    "Checklist: tests, version, destination Active, Explorer, fault owner.",
+    "Communicate in-flight interview behavior before a breaking screen change.",
+    "Prefer pipelines that record Flow status explicitly."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "You activate version 3. What happens to version 2?",
+      "options": {
+        "A": "Version 2 is deactivated for new interviews",
+        "B": "Both stay active",
+        "C": "Version 2 is deleted automatically",
+        "D": "Version 2 becomes a report"
+      },
+      "answer": "A",
+      "rationale": "Help: activating a version deactivates any previously active version.",
+      "distractor_explanations": {
+        "B": "Only one active version.",
+        "C": "Not automatic delete.",
+        "D": "Wrong track."
+      },
+      "concept": "One active version",
+      "citation_ids": ["SF-HELP-ACTIVATE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "A user started an interview on version 2. You activate version 3. What happens to that interview?",
+      "options": {
+        "A": "It continues on version 2",
+        "B": "It always jumps to version 3 immediately",
+        "C": "It is deleted",
+        "D": "It becomes Apex"
+      },
+      "answer": "A",
+      "rationale": "Running interviews continue on the version they started.",
+      "distractor_explanations": {
+        "B": "The common interview fail.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "In-flight version",
+      "citation_ids": ["SF-HELP-ACTIVATE"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How many Flow versions can a change set include?",
+      "options": {
+        "A": "Only one version",
+        "B": "Every version automatically",
+        "C": "None; Flows cannot be in change sets",
+        "D": "Exactly 99"
+      },
+      "answer": "A",
+      "rationale": "Special Behavior: you can include only one version of a Flow in a change set.",
+      "distractor_explanations": {
+        "B": "Dependencies may list more; you still include one version.",
+        "C": "They can.",
+        "D": "Not a required count."
+      },
+      "concept": "One version in CS",
+      "citation_ids": ["SF-HELP-DEPLOY"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "An active Flow in a change set typically arrives in the destination how?",
+      "options": {
+        "A": "Inactive; activate after deploy unless the production deploy-as-active setting applies",
+        "B": "Always active, no exceptions",
+        "C": "As a Workflow Rule",
+        "D": "As business data rows"
+      },
+      "answer": "A",
+      "rationale": "Help: deployed as inactive; activate manually; production setting can allow active deploy.",
+      "distractor_explanations": {
+        "B": "Ignores the default special behavior.",
+        "C": "AUTO-012.",
+        "D": "Flow is metadata."
+      },
+      "concept": "Deploy inactive",
+      "citation_ids": ["SF-HELP-DEPLOY"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where can you run automated Flow tests next to Apex tests, per the unified-testing note?",
+      "options": {
+        "A": "Application Test Execution in Setup",
+        "B": "Only in Classic reports",
+        "C": "Only on a price book",
+        "D": "Only inside a Loop"
+      },
+      "answer": "A",
+      "rationale": "Release note: run Apex and automated Flow tests in Application Test Execution.",
+      "distractor_explanations": {
+        "B": "Wrong place.",
+        "C": "Wrong object.",
+        "D": "AUTO-007."
+      },
+      "concept": "Unified tests",
+      "citation_ids": ["SF-HELP-UNIFIED-TEST"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What did element-level Debug summaries add for an Update Records element?",
+      "options": {
+        "A": "A glance at how many records were updated after the element ran",
+        "B": "Automatic production activation",
+        "C": "A Java public modifier",
+        "D": "A sharing rule"
+      },
+      "answer": "A",
+      "rationale": "Debug summaries release note uses Update Records as the example.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "APEX-001.",
+        "D": "SEC."
+      },
+      "concept": "Debug summaries",
+      "citation_ids": ["SF-HELP-DEBUG-SUM"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Sandbox v4 works. Production still behaves like v2 after a change set. First check?",
+      "options": {
+        "A": "Whether v4 is Inactive in production",
+        "B": "Whether Apex public equals Java public",
+        "C": "Whether reports exist",
+        "D": "Whether paused interviews on v2 are the only remaining old behavior"
+      },
+      "answer": "A",
+      "rationale": "Default deploy leaves the Flow inactive.",
+      "distractor_explanations": {
+        "B": "Apex visibility is APEX-001, not Flow activation.",
+        "C": "Reports do not activate a Flow version.",
+        "D": "Paused interviews can explain some users, but the first check is still whether v4 is Active."
+      },
+      "concept": "Forgot Activate",
+      "citation_ids": ["SF-HELP-DEPLOY"]
+    },
+    {
+      "id": "Q8",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Debug versus a saved Flow test?",
+      "options": {
+        "A": "Debug is an interactive rehearsal; a Flow test is automated and rerunnable, including in Application Test Execution",
+        "B": "They are the same metadata",
+        "C": "Flow tests replace Activate",
+        "D": "Debug deploys the Flow"
+      },
+      "answer": "A",
+      "rationale": "Both are required in a serious pipeline; they are not identical.",
+      "distractor_explanations": {
+        "B": "Different artifacts.",
+        "C": "Tests do not activate.",
+        "D": "Debug does not deploy."
+      },
+      "concept": "Debug vs test",
+      "citation_ids": ["SF-HELP-DEBUG-SUM", "SF-HELP-UNIFIED-TEST"]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why might Activate be unavailable right after a sandbox-to-production move?",
+      "options": {
+        "A": "Help: you may need to save the Flow as a new version first",
+        "B": "Flows can never be activated in production",
+        "C": "You must convert it to Workflow",
+        "D": "Trigger order must be 0"
+      },
+      "answer": "A",
+      "rationale": "Activate Help: after moving from sandbox to production you cannot click Activate until you save as a new version.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "AUTO-012.",
+        "D": "AUTO-010."
+      },
+      "concept": "Save new version",
+      "citation_ids": ["SF-HELP-ACTIVATE"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Deploy-as-active setting appears where, per Help?",
+      "options": {
+        "A": "Production orgs; not in scratch, sandbox, or Developer orgs",
+        "B": "Only on reports",
+        "C": "Only in Process Builder",
+        "D": "Only for guest users"
+      },
+      "answer": "A",
+      "rationale": "Special Behavior: the setting does not appear in non-production orgs because those can always deploy a new active version.",
+      "distractor_explanations": {
+        "B": "Wrong track.",
+        "C": "Legacy.",
+        "D": "AUTO-009."
+      },
+      "concept": "Setting location",
+      "citation_ids": ["SF-HELP-DEPLOY"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "If the Flow has no active version when you upload the outbound change set, what is used?",
+      "options": {
+        "A": "The latest inactive version",
+        "B": "A random Apex class",
+        "C": "Nothing; upload is impossible",
+        "D": "Every version merged"
+      },
+      "answer": "A",
+      "rationale": "Special Behavior: if no active version, the latest inactive version is used.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Upload can still happen.",
+        "D": "Only one version is included."
+      },
+      "concept": "Latest inactive",
+      "citation_ids": ["SF-HELP-DEPLOY"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Application Test History might not show Flow results yet. What should you not claim?",
+      "options": {
+        "A": "That the History page always lists Flow test history",
+        "B": "That Application Test Execution can run Flow tests per the note",
+        "C": "That API 65.0+ has Test Discovery/Test Runner",
+        "D": "That you should reverify the UI"
+      },
+      "answer": "A",
+      "rationale": "The cited note said Flow test history was not available on that page yet.",
+      "distractor_explanations": {
+        "B": "The note supports this.",
+        "C": "The note supports this.",
+        "D": "Correct caution."
+      },
+      "concept": "Needs verification UI",
+      "citation_ids": ["SF-HELP-UNIFIED-TEST"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "debug",
+      "front": "What is Flow Debug?",
+      "back": "A Builder rehearsal that runs an interview and shows element-level results. Not a bulk proof."
+    },
+    {
+      "id": "F2",
+      "category": "test",
+      "front": "What is a Flow test?",
+      "back": "A saved automated test you can rerun, including from Application Test Execution with Apex tests."
+    },
+    {
+      "id": "F3",
+      "category": "version",
+      "front": "What does Activate do to the previous version?",
+      "back": "Deactivates it. New interviews use the newly active version."
+    },
+    {
+      "id": "F4",
+      "category": "version",
+      "front": "Do running interviews switch versions on Activate?",
+      "back": "No. They continue on the version they started."
+    },
+    {
+      "id": "F5",
+      "category": "deploy",
+      "front": "Change set: how many Flow versions?",
+      "back": "Only one. If none is active, the latest inactive is used."
+    },
+    {
+      "id": "F6",
+      "category": "deploy",
+      "front": "Active Flow in a change set arrives how by default?",
+      "back": "Inactive in the destination. Activate after deploy unless deploy-as-active applies."
+    },
+    {
+      "id": "F7",
+      "category": "deploy",
+      "front": "Where does the deploy-as-active setting appear?",
+      "back": "Production orgs. Not in scratch, sandbox, or Developer orgs."
+    },
+    {
+      "id": "F8",
+      "category": "activate",
+      "front": "Sandbox-to-production Activate blocked?",
+      "back": "Help: you may need to save as a new version first, then Debug in rollback mode."
+    },
+    {
+      "id": "F9",
+      "category": "support",
+      "front": "Sandbox works, production does not. First flags?",
+      "back": "Destination version number and Active flag, plus missing dependencies."
+    },
+    {
+      "id": "F10",
+      "category": "users",
+      "front": "Users see old screens after Activate. Why might that be OK?",
+      "back": "They may be in a running interview that started on the old version."
+    },
+    {
+      "id": "F11",
+      "category": "api",
+      "front": "Unified Flow/Apex test APIs from which API version in the note?",
+      "back": "API 65.0 and later for Test Discovery and Test Runner."
+    },
+    {
+      "id": "F12",
+      "category": "anti-pattern",
+      "front": "Is sandbox Activate the same as production go-live?",
+      "back": "No. Production may still have an inactive deployed version."
+    },
+    {
+      "id": "F13",
+      "category": "boundary",
+      "front": "Does Debug prove bulk-safe design?",
+      "back": "No. One-record Debug is AUTO-013 rehearsal; bulk DML is AUTO-007."
+    },
+    {
+      "id": "F14",
+      "category": "history",
+      "front": "Can you claim Test History always shows Flow tests?",
+      "back": "No. The cited note said Flow history was not on that page yet. Reverify."
+    },
+    {
+      "id": "F15",
+      "category": "metadata",
+      "front": "Is a Flow version metadata or data?",
+      "back": "The version is metadata. The records it Creates in a test are data."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you test a Flow before activation?",
+      "answer_30_seconds": "Debug in Flow Builder and read element summaries. Save automated Flow tests and run them—Application Test Execution can run them with Apex tests. Then activate.",
+      "answer_2_minutes": "I do a happy path, a fault path, and at least a small multi-record rehearsal if it is record-triggered (AUTO-007). I do not treat Debug as enough for go-live. I mention API 65+ unified tests without inventing History-page behavior. I activate only the version I tested.",
+      "example": "Debug Closed Won, save a Flow test that expects two Tasks, run it in Application Test Execution.",
+      "tradeoffs": [
+        "Manual Debug vs automated Flow tests",
+        "Speed vs coverage"
+      ],
+      "follow_ups": [
+        "Which Flow types support tests?",
+        "CLI commands?"
+      ],
+      "weak_answer_warnings": [
+        "I just Activate"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What happens when you activate a new Flow version?",
+      "answer_30_seconds": "The previous version deactivates. New interviews use the new version. Interviews already running stay on the version they started.",
+      "answer_2_minutes": "I cite Activate Help. I plan communication for screen Flows and paused interviews. I check the Related versions list, not only the canvas. I mention you may need a new save after sandbox-to-prod before Activate, and to Debug in rollback mode because orgs differ.",
+      "example": "Activate v5; a user mid-wizard remains on v4 until they finish.",
+      "tradeoffs": [
+        "Breaking change vs waiting for interviews to drain",
+        "Deactivate entirely vs swap versions"
+      ],
+      "follow_ups": [
+        "How do you find paused interviews?",
+        "What is rollback-mode Debug?"
+      ],
+      "weak_answer_warnings": [
+        "Everyone instantly gets the new version including in-flight"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Change set deployed. Production behavior unchanged. Walk the diagnosis.",
+      "answer_30_seconds": "Open production versions. The new version is probably Inactive. Activate it, or confirm deploy-as-active was off. Also confirm the change set carried the intended version.",
+      "answer_2_minutes": "I compare version numbers. If no active version was in the set, Help says the latest inactive was uploaded—maybe the wrong one. I check dependencies. I Debug in a full sandbox rather than editing production. I do not rebuild from scratch as step one.",
+      "example": "v4 Inactive in production; v2 still Active.",
+      "tradeoffs": [
+        "Manual Activate vs enabling deploy-as-active",
+        "Change sets vs CLI"
+      ],
+      "follow_ups": [
+        "What if components are missing?",
+        "How do you prevent this next time?"
+      ],
+      "weak_answer_warnings": [
+        "Sandbox Activate already did production"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "You cannot click Activate on a Flow just moved into production. What does Help say?",
+      "answer_30_seconds": "Save it as a new version first, then Activate. Debug in rollback mode because sandbox and production differ.",
+      "answer_2_minutes": "I treat this as a documented org-difference issue, not a corrupt Flow. I check my permissions. I do not copy XML by hand to ‘fix’ Activate. After it is active I rerun tests if they deployed. I watch in-flight interviews.",
+      "example": "Change-set Flow requires Save As New Version before the Activate button enables.",
+      "tradeoffs": [
+        "Extra version number vs staying inactive",
+        "Rollback Debug vs skipping it"
+      ],
+      "follow_ups": [
+        "Does Metadata API have the same quirk?",
+        "Needs verification for your pipeline."
+      ],
+      "weak_answer_warnings": [
+        "The Flow is broken forever"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "How should a team run Flow tests in CI?",
+      "answer_30_seconds": "Use automated Flow tests and the Test Discovery/Test Runner APIs (65.0+) or CLI `flow run test` as documented for your CLI version. Do not rely on a human Debug in CI.",
+      "answer_2_minutes": "I cite the unified-testing note and the CLI weekly note without inventing flags. I keep tests on LAB_ data. I still run a sandbox Debug for new UX. I do not claim Application Test History shows Flow results if the note said it does not yet. Apex tests that invoke Flows are a neighboring pattern I would verify.",
+      "example": "Pipeline calls Test Runner for Flow plus Apex after deploy to a scratch org.",
+      "tradeoffs": [
+        "Builder tests vs Apex-invoked Flow tests",
+        "CLI plugin versions"
+      ],
+      "follow_ups": [
+        "What is `flow get test`?",
+        "Which editions?"
+      ],
+      "weak_answer_warnings": [
+        "CI is just Activate"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Users report the old screen after you activated a new version an hour ago.",
+      "answer_30_seconds": "Ask if they started the interview before Activate. Those runs stay on the old version. New starts should be new. Also check they are on the right Lightning page/Flow.",
+      "answer_2_minutes": "I look at paused interviews. I do not immediately deactivate. I confirm Active version in Setup. I may ask them to cancel and restart if the business allows. I treat this as expected Help behavior, not a cache myth only—though I still rule out a second Flow on the page.",
+      "example": "Service console screen Flow started at 9:00; you activated v6 at 9:10.",
+      "tradeoffs": [
+        "Force cancel vs let them finish",
+        "Deactivate entirely during a breaking change"
+      ],
+      "follow_ups": [
+        "How long can a paused interview live?",
+        "Needs verification."
+      ],
+      "weak_answer_warnings": [
+        "Activate failed because of cache only"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Metadata versus data in testing and deploy?",
+      "answer_30_seconds": "The Flow version and its tests are metadata you deploy. The Opportunities you Debug are data. Deploying v4 does not create last week’s Tasks.",
+      "answer_2_minutes": "Change sets move one version. Test records stay behind unless you seed LAB_ data. I never use production customer rows as the first Debug. Fault logs created in tests are data to delete. AUTO-012 migrate is also metadata; this lesson is how that metadata is versioned and shipped.",
+      "example": "Retrieving the Flow XML does not include production Task rows.",
+      "tradeoffs": [
+        "Seed data in sandbox vs empty Debug",
+        "Change set vs source-driven project"
+      ],
+      "follow_ups": [
+        "Do Flow tests travel in the change set?",
+        "Verify current metadata types."
+      ],
+      "weak_answer_warnings": [
+        "Deploying a Flow copies the records it once created"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "A director wants you to ‘hot-fix the Flow in production now.’ How do you answer?",
+      "answer_30_seconds": "I reproduce in sandbox, fix, Debug, test, deploy, and Activate in production. I will not start by saving over the live version without a version plan and a rollback version.",
+      "answer_2_minutes": "I acknowledge severity. I still compare versions and fault messages first—maybe Activate was forgotten (this lesson) or entry criteria (AUTO-010). If a true fix is needed, I use the theater: do not rewrite the script mid-show; put a new cast on after rehearsal. I keep the prior version to reactivate. I mention in-flight interviews. I do not Debug on the customer’s Opportunity as the design environment.",
+      "example": "Production Inactive v4; the ‘bug’ is a missed Activate, not a canvas error.",
+      "tradeoffs": [
+        "Speed vs sandbox discipline",
+        "Reactivate prior version vs forward fix"
+      ],
+      "follow_ups": [
+        "What is your rollback button?",
+        "Who can Activate in production?"
+      ],
+      "weak_answer_warnings": [
+        "Yes, I edit production first every time"
+      ]
+    }
+  ]
+}

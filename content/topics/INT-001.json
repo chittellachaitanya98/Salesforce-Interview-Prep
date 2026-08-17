@@ -1,0 +1,1005 @@
+{
+  "topic_id": "INT-001",
+  "slug": "integration-patterns-and-the-why-what-when-how-much-and",
+  "title": "Integration patterns and the “why, what, when, how much, and how fast” decision model",
+  "track": "Integration and APIs",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "PROG-006"
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer official Help and Developer Guides over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "objectives": [
+    "Apply the why / what / when / how much / how fast questions before picking an integration pattern.",
+    "Name the official Salesforce integration patterns (request-and-reply, fire-and-forget, batch, remote call-in, data virtualization) and the process/data/virtual plus sync/async selection matrix.",
+    "Separate integration metadata (named credentials, connected apps, event definitions) from the business records the integration moves.",
+    "Defend a pattern choice in an interview without jumping to a specific API first."
+  ],
+  "diagnostic_question": "A warehouse system must receive Salesforce orders. Stakeholders say 'just call their API.' What five questions do you ask before choosing a pattern, and which official pattern would you reject if volume is nightly millions of rows?",
+  "definition": "Salesforce Integration Patterns and Practices describe reusable strategies for connecting the Salesforce Platform to other applications. The interview-ready decision model is: why (business outcome), what (objects and payload), when (timing and trigger), how much (volume), and how fast (latency). Those answers map onto official patterns such as Remote Process Invocation—Request and Reply, Fire and Forget, Batch Data Synchronization, Remote Call-In, and Data Virtualization. ([Integration Patterns](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns))",
+  "why_it_matters": "Teams that start with REST vs SOAP, or 'we will use a trigger callout,' skip the decision model and then hit timeouts, duplicate rows, or unsustainable API volume. Interviewers listen for pattern names and for volume/latency trade-offs, not for a favorite API.",
+  "sixty_second_explanation": "Treat an integration like a seaport dispatcher. Why is the cargo moving (order complete vs nightly truth). What is on the pallet (which objects). When does the ship leave (user click vs overnight). How much cargo (one order vs a million rows). How fast must it arrive (seconds vs hours). Those answers pick request-and-reply, fire-and-forget, batch, remote call-in, or data virtualization—not the other way around.",
+  "deeper_explanation": [
+    "The official Integration Patterns document is for designers and architects. Each pattern has context, problem, forces, solution, and results. It is not a product-feature catalog. UI mashups are explicitly out of that document's scope. ([Integration Patterns overview](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns))",
+    "Pattern categories: Process (orchestrate work across apps), Data (keep information timely across stores), Virtual (read or write external data without copying it into Salesforce). Timing is synchronous (caller waits) or asynchronous (caller continues). The selection matrix maps type × timing × direction (Salesforce-to-other vs other-to-Salesforce) onto a key pattern. ([Pattern Selection Guide](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns))",
+    "The five-question model is how you fill that matrix. Why: business process and source of truth. What: objects, keys, and payload shape. When: user action, record save, schedule, or inbound event. How much: record count and burst vs steady. How fast: user waiting on a screen vs eventually consistent overnight. How much and how fast usually decide batch versus request-and-reply.",
+    "API choice (REST, SOAP, Bulk, events) belongs to INT-002 after the pattern is chosen. Auth belongs to INT-004. Do not invent SLA numbers; cite the current Developer Limits and Allocations guide for the org edition."
+  ],
+  "mental_model": {
+    "analogy": "A seaport dispatcher: ships, barges, and cranes are patterns; cargo manifests are payloads; tide tables are timing; tonnage is how much; promised arrival is how fast.",
+    "useful_mapping": [
+      "why → why this cargo must move (business outcome)",
+      "what → which pallets and tracking numbers (objects and keys)",
+      "when → scheduled sailing vs tug on demand (trigger)",
+      "how much → one crate vs a container ship (volume)",
+      "how fast → same-hour courier vs overnight freighter (latency)",
+      "request-and-reply → tug waits at the dock until the warehouse stamps the receipt",
+      "fire-and-forget → tug drops the barge and leaves; warehouse radios later",
+      "batch → nightly container ship",
+      "data virtualization → looking at the warehouse camera instead of storing the crates",
+      "pattern metadata → berth assignments (named credentials, event definitions); records → the actual crates"
+    ],
+    "where_it_breaks": [
+      "A real seaport has weather; Salesforce has governor limits and API allocations that this analogy does not quantify.",
+      "Virtualization is not a camera if the remote system is down—users see errors, not a cached picture, unless you design a fallback.",
+      "Middleware (MuleSoft and others) can sit between docks; the pattern still applies, the hop count grows.",
+      "Do not stretch this into a catalog-of-APIs story; APIs are vehicles, not the dispatch decision."
+    ]
+  },
+  "teach_back_prompt": "Walk a teammate through why, what, when, how much, and how fast for a Salesforce-to-ERP order, then name the official pattern you would pick and one you would refuse.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "List the five decision questions and one official pattern each of how much and how fast would change."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "From the selection matrix, pick a pattern for Salesforce-to-ERP sync vs ERP-to-Salesforce call-in."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain process vs data vs virtual integration without naming a specific API."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Troubleshoot a timeout: which decision-model answer was probably wrong?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: defend batch over request-and-reply using volume and latency."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-INT-PATTERNS",
+      "title": "Integration Patterns (Salesforce Architects / Fundamentals)",
+      "type": "Official architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns",
+      "supports": "Official pattern list, pattern template, process/data/virtual categories, sync/async selection matrix, direction tables.",
+      "release_or_version": "Architects Fundamentals / Summer '26 verification date",
+      "last_verified": "2026-08-16",
+      "limits": "Patterns are strategies, not edition-specific product SKUs. UI mashups are out of scope."
+    },
+    {
+      "source_id": "SF-INT-PATTERNS-DEV",
+      "title": "Integration Patterns and Practices (Developer docs atlas)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.integration_patterns_and_practices.meta/integration_patterns_and_practices/integ_pat_intro_overview.htm",
+      "supports": "Same pattern catalog and intent: common integration scenarios, selection matrix, tips.",
+      "release_or_version": "Integration Patterns and Practices",
+      "last_verified": "2026-08-16",
+      "limits": "Atlas navigation can redirect; re-open from the Architects Fundamentals copy if the atlas path changes."
+    },
+    {
+      "source_id": "SF-TH-INT-PATTERNS",
+      "title": "Trailhead: Learn About Integration Patterns and Designs",
+      "type": "Official Trailhead",
+      "url": "https://trailhead.salesforce.com/content/learn/modules/app-integration-patterns/app-integration-patterns-1",
+      "supports": "Lightning Platform pattern list used in architect learning: request and reply, fire and forget, batch, remote call-in, data virtualization.",
+      "release_or_version": "Live Trailhead",
+      "last_verified": "2026-08-16",
+      "limits": "Module names can change; treat as learning path, not the legal pattern definition."
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Five questions: why what when how much how fast",
+        "Type: process / data / virtual",
+        "Timing: sync / async",
+        "Official patterns",
+        "API choice is later (INT-002)"
+      ],
+      "accessible_description": "Portrait map: five decision questions feed a type-and-timing matrix that selects an official Salesforce integration pattern before an API is chosen."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-INT-PATTERNS",
+        "SF-INT-PATTERNS-DEV",
+        "SF-TH-INT-PATTERNS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "From decision questions to official integration patterns"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Why[Why: business outcome] --> What[What: objects keys payload]\n  What --> When[When: trigger timing]\n  When --> Much[How much: volume]\n  Much --> Fast[How fast: latency]\n  Fast --> Type{Type: process data virtual}\n  Type --> Time{Timing: sync or async}\n  Time --> Pat[Official pattern]\n  Pat --> Api[API choice is INT-002]",
+      "decision": "flowchart TD\n  Need[Need an integration] --> Q1{User waiting on this transaction?}\n  Q1 -->|Yes and volume is small| RR[Request and Reply]\n  Q1 -->|No ack is enough| FF[Fire and Forget]\n  Need --> Q2{Nightly or large how much?}\n  Q2 -->|Thousands to millions| Batch[Batch Data Synchronization]\n  Need --> Q3{Must Salesforce store a copy?}\n  Q3 -->|No live remote truth| Virt[Data Virtualization]\n  Need --> Q4{Remote system initiates?}\n  Q4 -->|Yes| RCI[Remote Call-In]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Official Salesforce integration patterns include Remote Process Invocation—Request and Reply, Remote Process Invocation—Fire and Forget, Batch Data Synchronization, Remote Call-In, UI Update Based on Data Changes, and Data Virtualization.",
+      "source_ids": [
+        "SF-INT-PATTERNS",
+        "SF-INT-PATTERNS-DEV"
+      ],
+      "scope": "Pattern catalog",
+      "validation": "Pattern Summary table in Integration Patterns.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Patterns are classified as Process, Data, or Virtual integration, and timing is Synchronous or Asynchronous. A selection matrix maps type and timing (and direction) onto a key pattern.",
+      "source_ids": [
+        "SF-INT-PATTERNS"
+      ],
+      "scope": "Selection matrix",
+      "validation": "Pattern Approach and Pattern Selection Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Data Virtualization means Salesforce accesses external data in real time without persisting a copy that then must be reconciled.",
+      "source_ids": [
+        "SF-INT-PATTERNS",
+        "SF-TH-INT-PATTERNS"
+      ],
+      "scope": "Virtual integration",
+      "validation": "Data Virtualization row in the official pattern list.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "The Integration Patterns document addresses common scenarios with strategies, not a single implementation, and treats UI mashups as out of scope.",
+      "source_ids": [
+        "SF-INT-PATTERNS-DEV"
+      ],
+      "scope": "Purpose and scope",
+      "validation": "Overview purpose and scope paragraphs.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify the Architects Fundamentals Integration Patterns page for Summer '26; pattern names are stable, product adapters are not.",
+  "unresolved_uncertainty": [
+    "Exact API request allocations and Bulk thresholds are edition- and license-specific; use the current Developer Limits and Allocations Quick Reference rather than memorized numbers.",
+    "Whether a given org has Salesforce Connect licenses for virtualization is an edition/SKU fact—Needs verification in the target org."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Integration pattern",
+      "telugu": "రెండు సిస్టమ్‌లను కలపడానికి అధికారిక వ్యూహం."
+    },
+    {
+      "english": "How much / how fast",
+      "telugu": "ఎంత డేటా, ఎంత త్వరగా కావాలి అనే నిర్ణయం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I do not start with REST. I ask why, what, when, how much, and how fast. Those answers pick request-and-reply, fire-and-forget, batch, remote call-in, or data virtualization from the official Integration Patterns guide.",
+    "two_minutes": "Why is the business outcome and source of truth. What is the payload and keys. When is the trigger. How much is volume. How fast is latency. I map type (process, data, virtual) and timing (sync, async) on the official selection matrix. A user waiting on one order is request-and-reply. Millions of rows overnight is batch. Live ERP stock with no copy is virtualization. API names come after the pattern, in INT-002."
+  },
+  "terminology": [
+    {
+      "term": "integration pattern",
+      "plain": "A named strategy for connecting Salesforce to another system, not a specific API.",
+      "precise": "An official Salesforce Integration Patterns strategy such as Request and Reply or Batch Data Synchronization, described independently of one product implementation.",
+      "example": "Choosing Batch Data Synchronization for a nightly ERP item master before picking Bulk API 2.0.",
+      "non_example": "Calling 'we will use REST' a pattern without answering volume or latency.",
+      "confusable_neighbor": "API family (REST vs SOAP): a vehicle, chosen after the pattern.",
+      "boundary": "This lesson owns the decision model and pattern names; INT-002 owns API families."
+    },
+    {
+      "term": "why / what / when / how much / how fast",
+      "plain": "Five questions that force a pattern choice before tools.",
+      "precise": "Why = business outcome; what = objects and payload; when = trigger; how much = volume; how fast = latency. Together they fill the official type × timing matrix.",
+      "example": "Why: invoice posted. What: Invoice__c plus lines. When: after status = Posted. How much: tens per hour. How fast: user needs the ERP number on screen → request-and-reply.",
+      "non_example": "Skipping how much and using a synchronous callout for a million-row load.",
+      "confusable_neighbor": "Agile 'why' user stories: related but not the Integration Patterns matrix.",
+      "boundary": "Do not invent numeric SLAs here; measure them with the stakeholder and limits docs."
+    },
+    {
+      "term": "Request and Reply",
+      "plain": "Salesforce calls a remote process and waits for the result in the same conversation.",
+      "precise": "Remote Process Invocation—Request and Reply: Salesforce invokes a remote process, waits for completion, and tracks state from the response.",
+      "example": "Screen action creates an ERP order and writes the ERP order number back before the user leaves the page.",
+      "non_example": "Publishing a platform event and not waiting—that is fire-and-forget.",
+      "confusable_neighbor": "Remote Call-In: the remote system calls Salesforce, not the other way.",
+      "boundary": "Implementation options (Apex callout, External Services) are later topics."
+    },
+    {
+      "term": "Fire and Forget",
+      "plain": "Salesforce starts remote work and does not wait for the remote job to finish.",
+      "precise": "Remote Process Invocation—Fire and Forget: the remote process acknowledges, then Salesforce continues without waiting for completion.",
+      "example": "Opportunity Closed Won publishes an event; middleware fulfills later and may write back in another transaction.",
+      "non_example": "Http.send in a controller that blocks the UI until ERP returns.",
+      "confusable_neighbor": "Batch: scheduled bulk sync, not a single fire-and-forget message.",
+      "boundary": "Delivery guarantees depend on the chosen transport (events vs outbound message); do not invent them here."
+    },
+    {
+      "term": "Batch Data Synchronization",
+      "plain": "Move or refresh lots of records on a schedule, not one-by-one in a user click.",
+      "precise": "Official pattern: data in Salesforce and an external system is created or refreshed in a batch manner in either direction.",
+      "example": "Nightly Bulk API 2.0 upsert of LAB_Item__c from the ERP item master.",
+      "non_example": "A before-save Flow callout on every item edit in the UI.",
+      "confusable_neighbor": "Composite API: still synchronous, not the batch pattern.",
+      "boundary": "Bulk API details are INT-002."
+    },
+    {
+      "term": "Remote Call-In",
+      "plain": "An outside system creates, reads, updates, or deletes Salesforce data.",
+      "precise": "Official pattern: a remote system operates on data stored on the Salesforce Platform.",
+      "example": "An ERP posts REST updates to Account when the customer master changes.",
+      "non_example": "Salesforce Connect querying ERP without storing a copy (virtualization).",
+      "confusable_neighbor": "Request and Reply: Salesforce is the caller.",
+      "boundary": "Auth for inbound APIs is INT-004."
+    },
+    {
+      "term": "Data Virtualization",
+      "plain": "Show or act on remote data live, without keeping a Salesforce copy to reconcile.",
+      "precise": "Official pattern: Salesforce accesses external data in real time, removing the need to persist and then reconcile that data.",
+      "example": "External object LAB_ERP_Order__x on a related list, fetched through Salesforce Connect.",
+      "non_example": "Nightly copy of ERP orders into a custom object.",
+      "confusable_neighbor": "Files Connect / reports on copied data: copies are not virtualization.",
+      "boundary": "Connect adapters and licenses are INT-009."
+    },
+    {
+      "term": "selection matrix",
+      "plain": "The official table that maps process/data/virtual and sync/async (and direction) to a key pattern.",
+      "precise": "Pattern Selection Guide tables in Integration Patterns: Integrating Salesforce with another system vs integrating another system with Salesforce.",
+      "example": "Process + synchronous + Salesforce-initiated → Request and Reply.",
+      "non_example": "Picking Bulk API because 'it is modern' without using the matrix.",
+      "confusable_neighbor": "Which API Do I Use table (INT-002): protocol and format, not pattern type.",
+      "boundary": "Middleware hops do not replace the matrix; they implement it."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Capture why and what",
+      "actor": "Architect + BA",
+      "trigger": "Someone asked for 'an integration'",
+      "before": "API name is already in the ticket",
+      "after": "Written outcome, source of truth, objects, and keys",
+      "observe": "Decision notes naming objects and the system of record",
+      "failure": "Starting with REST vs SOAP"
+    },
+    {
+      "step": 2,
+      "transition": "Capture when, how much, how fast",
+      "actor": "Architect + ops",
+      "trigger": "Outcome is clear",
+      "before": "Timing and volume guessed",
+      "after": "Trigger, volume band, and latency expectation written",
+      "observe": "Numbers or bands agreed with the stakeholder (not invented SLAs)",
+      "failure": "Assuming every integration is real-time"
+    },
+    {
+      "step": 3,
+      "transition": "Apply the selection matrix",
+      "actor": "Architect",
+      "trigger": "Five answers exist",
+      "before": "Pattern unnamed",
+      "after": "Official pattern named, including direction",
+      "observe": "Type × timing × direction mapped to one key pattern",
+      "failure": "Mixing request-and-reply with a million-row nightly load"
+    },
+    {
+      "step": 4,
+      "transition": "Only then choose APIs and auth",
+      "actor": "Developer",
+      "trigger": "Pattern agreed",
+      "before": "Tools unconstrained",
+      "after": "INT-002 API family and INT-004 auth as follow-on decisions",
+      "observe": "Design record lists pattern first, API second",
+      "failure": "Hard-coding tokens because 'the pattern is done'"
+    }
+  ],
+  "when_to_use": [
+    "When an interview or design review asks you to choose among integration patterns using why, what, when, how much, and how fast.",
+    "When a ticket already names REST or a trigger callout but nobody has stated volume (how much) or latency (how fast).",
+    "When you must map process versus data versus virtual integration onto the official selection matrix.",
+    "When reconciling whether Salesforce should store a copy or use data virtualization.",
+    "When explaining that pattern metadata (credentials, event definitions) is not the same as the business records moved."
+  ],
+  "when_not_to_use": [
+    "Do not use this decision model as a substitute for picking REST vs SOAP vs Bulk vs GraphQL (INT-002) after the pattern is chosen.",
+    "Do not treat the five questions as an OAuth grant catalog (INT-004) or a named-credential how-to (INT-006).",
+    "Do not use integration patterns to justify untested production callouts or real customer payloads in a lab.",
+    "Do not claim a UI mashup is covered by Integration Patterns—the official overview puts that out of scope.",
+    "Do not invent how-much thresholds or how-fast SLAs; cite org limits and stakeholder requirements."
+  ],
+  "configuration_or_code_location": [
+    "Architecture decision record: five answers plus selected official pattern.",
+    "Sandbox only for any later proof: LAB_ objects, never production data.",
+    "Follow-on Setup: Named Credentials / Connected Apps only after INT-004.",
+    "Follow-on APIs: REST/SOAP/Bulk/events only after INT-002."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab models ACME shipping. Salesforce Opportunity Close should create a shipment in a fake ERP. Stakeholders initially say 'call REST from a trigger.' Volume is tens of closes per hour; the sales user must see the ERP shipment number on the Opportunity before leaving the page. A second feed of 400,000 item-master rows arrives each night. No production data.",
+    "inputs": [
+      "User-facing latency for the shipment number",
+      "Tens of interactive orders per hour",
+      "Nightly 400,000 item rows",
+      "LAB_Opportunity and LAB_Item__c in a disposable sandbox"
+    ],
+    "decisions": [
+      {
+        "decision": "Interactive shipment uses Request and Reply, not a trigger-only fire-and-forget.",
+        "because": "How fast is 'on the page'; how much is small. Official Request and Reply waits for the remote completion and tracks state from the response.",
+        "rejected": "Platform event with no UI wait, which cannot show the ERP number in the same click"
+      },
+      {
+        "decision": "Item master uses Batch Data Synchronization.",
+        "because": "How much is hundreds of thousands; how fast is overnight. The official batch pattern refreshes data in either direction in a batch manner.",
+        "rejected": "Synchronous REST per row from a UI save"
+      }
+    ],
+    "configuration_or_code": [
+      "Write a one-page decision record with why/what/when/how much/how fast for both flows.",
+      "Do not implement callouts in this lesson; INT-006 owns named-credential REST.",
+      "Name the follow-on APIs as candidates only: UI-path REST/Composite vs nightly Bulk API 2.0 (INT-002)."
+    ],
+    "output": "Two named official patterns with volume and latency justification; no production deployment.",
+    "verification": [
+      "Decision record contains all five questions for both flows.",
+      "Interactive path is labeled Request and Reply; nightly path is labeled Batch Data Synchronization.",
+      "No LAB_ records from production were used."
+    ],
+    "self_explanation": "How fast split the two designs. I did not let 'REST' replace the pattern name."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox or scratch org; synthetic LAB_ objects only. No production aliases.",
+    "starting_state_checks": [
+      "You can create a custom object and a text field in this org.",
+      "You will not call a real customer ERP."
+    ],
+    "steps": [
+      "Create custom object LAB_ShipmentRequest__c with fields VolumeBand__c and LatencyNeed__c (picklists) and SuggestedPattern__c (text).",
+      "Insert three LAB_ShipmentRequest__c rows: (small, user-waiting), (small, later-ok), (large, overnight).",
+      "Write an Apex or anonymous-script mapping that stamps SuggestedPattern__c with Request and Reply, Fire and Forget, or Batch Data Synchronization based only on those two fields.",
+      "Query the three rows and screenshot or log the suggested patterns; confirm the large/overnight row is not Request and Reply."
+    ],
+    "guided_completion": [
+      "If the large overnight row is Request and Reply, the how-much/how-fast mapping is wrong.",
+      "If the script hard-codes an API name instead of a pattern name, rewrite it."
+    ],
+    "independent_challenge": "Add a fourth row for 'do not copy, live remote read' and stamp Data Virtualization.",
+    "evidence": [
+      "SOQL output or test assertion showing three distinct official pattern names.",
+      "Written five-question answers for the user-waiting row."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ShipmentRequest__c and any helper Apex from the sandbox.",
+      "Do not deploy this mapping to production."
+    ],
+    "limitations": "This lab proves the decision model, not a live ERP callout or Bulk job."
+  },
+  "decision_table": [
+    {
+      "signal": "User is blocked until the remote system returns a key, and how much is a handful of records.",
+      "choose": "Remote Process Invocation—Request and Reply.",
+      "not": "Nightly batch or fire-and-forget with no response on the same click.",
+      "why": "Official Request and Reply waits for completion and tracks state from the remote response."
+    },
+    {
+      "signal": "Salesforce must notify another system but the user does not wait; a later write-back is acceptable.",
+      "choose": "Remote Process Invocation—Fire and Forget.",
+      "not": "Synchronous callout in a trigger that risks timeouts on every save.",
+      "why": "Fire and Forget acknowledges and hands control back without waiting for remote completion."
+    },
+    {
+      "signal": "How much is thousands to millions and how fast is hours, not seconds.",
+      "choose": "Batch Data Synchronization (often later implemented with Bulk APIs).",
+      "not": "Per-record REST from the UI or a synchronous composite loop for the whole set.",
+      "why": "The official batch pattern refreshes data in a batch manner in either direction."
+    },
+    {
+      "signal": "The remote system is the caller that must create or update Salesforce records.",
+      "choose": "Remote Call-In with inbound APIs (auth in INT-004).",
+      "not": "Salesforce Connect virtualization, which does not store a Salesforce copy to update.",
+      "why": "Remote Call-In is the official pattern for a remote system operating on Platform data."
+    },
+    {
+      "signal": "Users must see live remote rows and you refuse to keep a second copy to reconcile.",
+      "choose": "Data Virtualization (Salesforce Connect / external objects in INT-009).",
+      "not": "Batch copy 'just in case' that reintroduces reconciliation.",
+      "why": "Official Data Virtualization accesses external data in real time without persisting a copy."
+    }
+  ],
+  "limitations": [
+    "Does not select REST vs SOAP vs Bulk vs GraphQL.",
+    "Does not configure OAuth, connected apps, or named credentials.",
+    "Does not quantify API allocations; those are edition-specific.",
+    "UI mashups are out of the official Integration Patterns scope."
+  ],
+  "security_notes": [
+    "Pattern choice does not replace least-privilege connected apps and named credentials (INT-004).",
+    "Never put production tokens or real customer payloads in a lab.",
+    "Remote Call-In widens the inbound surface; treat it as an API contract."
+  ],
+  "common_mistakes": [
+    "Naming an API before answering how much and how fast.",
+    "Using request-and-reply for a million-row nightly load.",
+    "Calling a nightly copy 'virtualization'.",
+    "Assuming fire-and-forget means 'no error handling'.",
+    "Confusing Remote Call-In (inbound) with Request and Reply (Salesforce calls out)."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Interactive callout times out when a user saves.",
+      "check": [
+        "How fast requirement may be wrong for a slow ERP, or how much is too large for sync.",
+        "Consider fire-and-forget plus later write-back, or move heavy work to batch."
+      ],
+      "do_not_assume": "A bigger timeout in Apex is the architecture."
+    },
+    {
+      "symptom": "Duplicate or stale copies of ERP data in Salesforce.",
+      "check": [
+        "You may have chosen data integration when virtualization fitted.",
+        "Keys and system of record (why/what) were not written down."
+      ],
+      "do_not_assume": "The remote API is randomly duplicating rows."
+    }
+  ],
+  "production_notes": [
+    "Record the five answers in the design review before build.",
+    "Revisit how much and how fast after the first production week of metrics.",
+    "This lesson authorizes no production deployment."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does the official Remote Process Invocation—Request and Reply pattern describe?",
+      "options": {
+        "A": "Salesforce invokes a remote process, waits for completion, and tracks state from the response",
+        "B": "Salesforce never waits and only publishes a platform event",
+        "C": "A remote system must be the only caller into Salesforce",
+        "D": "Data is always copied overnight with Bulk API"
+      },
+      "answer": "A",
+      "rationale": "The official pattern summary states Salesforce waits for completion and tracks state based on the remote response.",
+      "distractor_explanations": {
+        "B": "That is closer to fire-and-forget.",
+        "C": "That is Remote Call-In.",
+        "D": "That is Batch Data Synchronization, and Bulk is an API not the pattern definition."
+      },
+      "concept": "Request and Reply",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which official category is Data Virtualization?",
+      "options": {
+        "A": "Virtual integration: access external data in real time without persisting a copy to reconcile",
+        "B": "Process integration that always uses SOAP",
+        "C": "A Bulk API 2.0 job type",
+        "D": "An OAuth grant type"
+      },
+      "answer": "A",
+      "rationale": "The pattern list and Virtual category describe real-time access without persisting data that then needs reconciliation.",
+      "distractor_explanations": {
+        "B": "Virtualization is not 'SOAP process integration'.",
+        "C": "Bulk is an API family (INT-002).",
+        "D": "OAuth is INT-004."
+      },
+      "concept": "Data Virtualization",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-TH-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In the Pattern Selection Guide, timing Synchronous means:",
+      "options": {
+        "A": "The caller waits; the result returns in that request/response operation",
+        "B": "The caller always uses a nightly batch window",
+        "C": "Salesforce never calls out",
+        "D": "Only GraphQL is allowed"
+      },
+      "answer": "A",
+      "rationale": "The official Timing dimension defines synchronous as blocking, real-time request/response.",
+      "distractor_explanations": {
+        "B": "That is a how-fast/how-much choice, often async batch.",
+        "C": "Direction is a separate table.",
+        "D": "GraphQL is an API, not a timing definition."
+      },
+      "concept": "Synchronous timing",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A user must see an ERP order number on the same Lightning page after clicking Create Order. How much is one order. Which pattern fits first?",
+      "options": {
+        "A": "Request and Reply, because how fast is user-blocking and how much is small",
+        "B": "Batch Data Synchronization, because all ERP work is batch",
+        "C": "Data Virtualization, because all orders must stay only in ERP even the new number",
+        "D": "Remote Call-In, because Salesforce is never the caller"
+      },
+      "answer": "A",
+      "rationale": "User-waiting plus small volume matches Request and Reply. Batch and call-in do not match the trigger or direction.",
+      "distractor_explanations": {
+        "B": "Batch is for large, deferred how-much/how-fast.",
+        "C": "You still need a response to stamp the number; virtualization is live query of existing remote rows.",
+        "D": "Salesforce is initiating."
+      },
+      "concept": "How fast vs how much",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You must refresh 400,000 item-master rows from ERP every night. Which official pattern?",
+      "options": {
+        "A": "Batch Data Synchronization",
+        "B": "Request and Reply from a record-triggered Flow on each item",
+        "C": "UI Update Based on Data Changes as the primary copy mechanism",
+        "D": "Skip patterns and hard-code username-password in Apex"
+      },
+      "answer": "A",
+      "rationale": "Large how much and overnight how fast match Batch Data Synchronization.",
+      "distractor_explanations": {
+        "B": "Per-row sync callouts fight limits and UX.",
+        "C": "UI Update is about refreshing the Salesforce UI when Salesforce data changes, not nightly ERP copies.",
+        "D": "Auth shortcuts are INT-004 and unsafe."
+      },
+      "concept": "Batch vs interactive",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-TH-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "ERP will push customer-master changes into Salesforce Accounts. Salesforce does not initiate. Which pattern?",
+      "options": {
+        "A": "Remote Call-In",
+        "B": "Request and Reply from a Salesforce trigger",
+        "C": "Data Virtualization only, with no Salesforce Account row",
+        "D": "UI mashup, which the Integration Patterns overview fully specifies"
+      },
+      "answer": "A",
+      "rationale": "A remote system creating or updating Platform data is Remote Call-In.",
+      "distractor_explanations": {
+        "B": "That is Salesforce-initiated.",
+        "C": "If you store Account, you are not virtualizing that copy.",
+        "D": "UI mashups are out of the document's scope."
+      },
+      "concept": "Remote Call-In",
+      "citation_ids": [
+        "SF-INT-PATTERNS-DEV"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need live warehouse quantity on a Salesforce page and you refuse to store a second copy. Which pattern?",
+      "options": {
+        "A": "Data Virtualization",
+        "B": "Batch Data Synchronization every five minutes",
+        "C": "Fire and Forget with no read path",
+        "D": "Metadata API retrieve of the warehouse"
+      },
+      "answer": "A",
+      "rationale": "Virtualization is real-time access without persisting a copy to reconcile.",
+      "distractor_explanations": {
+        "B": "Copies require reconciliation—the opposite goal.",
+        "C": "Fire and forget does not display live remote rows.",
+        "D": "Metadata API is for org customizations, not warehouse rows."
+      },
+      "concept": "Virtual vs copy",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A teammate says the integration pattern is 'REST.' What is the interview-ready correction?",
+      "options": {
+        "A": "REST is an API family (INT-002); first answer why, what, when, how much, and how fast, then name an official pattern",
+        "B": "REST is always Request and Reply",
+        "C": "REST is always Batch",
+        "D": "REST replaces OAuth"
+      },
+      "answer": "A",
+      "rationale": "Patterns are strategies; REST is a protocol choice after the decision model.",
+      "distractor_explanations": {
+        "B": "REST can implement several patterns.",
+        "C": "Bulk is the usual large-volume API, and even then the pattern is batch.",
+        "D": "Auth is separate (INT-004)."
+      },
+      "concept": "Pattern vs API",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-TH-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Opportunity Closed Won should notify billing, but the sales user must not wait. Which pattern?",
+      "options": {
+        "A": "Fire and Forget, with any write-back in a later transaction",
+        "B": "Request and Reply blocking the save until billing finishes posting",
+        "C": "Data Virtualization of the Opportunity",
+        "D": "Skip error handling because fire-and-forget means no failures"
+      },
+      "answer": "A",
+      "rationale": "The official Fire and Forget pattern does not wait for remote completion; acknowledgment is enough for the Salesforce side of the click.",
+      "distractor_explanations": {
+        "B": "That ignores how fast = user not waiting.",
+        "C": "Opportunity is already in Salesforce.",
+        "D": "You still design retries and monitoring (INT-008/INT-010)."
+      },
+      "concept": "Fire and Forget",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement correctly separates integration metadata from business data?",
+      "options": {
+        "A": "A named credential or platform-event definition is metadata; Opportunity rows moved by the integration are business data",
+        "B": "API responses are metadata and custom objects are always metadata",
+        "C": "Connected apps are business data",
+        "D": "Batch jobs copy metadata into ERP"
+      },
+      "answer": "A",
+      "rationale": "Credentials and event types are configuration/metadata; the records synchronized are data.",
+      "distractor_explanations": {
+        "B": "Reverses the split.",
+        "C": "Connected apps are metadata/configuration.",
+        "D": "Batch sync moves data, not 'metadata into ERP' as a definition."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Process integration vs data integration in the official Pattern Approach?",
+      "options": {
+        "A": "Process: functional flow across apps; Data: keep information timely across stores",
+        "B": "Process always means Batch API; Data always means GraphQL",
+        "C": "They are identical to OAuth vs named credentials",
+        "D": "Process is inbound only; data is outbound only"
+      },
+      "answer": "A",
+      "rationale": "The Pattern Approach section defines process vs data (and virtual) this way.",
+      "distractor_explanations": {
+        "B": "APIs are not the category definitions.",
+        "C": "Auth is INT-004.",
+        "D": "Direction is a separate selection table."
+      },
+      "concept": "Process vs data",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Salesforce-initiated synchronous process integration maps to which key pattern in the selection matrix?",
+      "options": {
+        "A": "Remote Process Invocation—Request and Reply",
+        "B": "Batch Data Synchronization",
+        "C": "Remote Call-In only",
+        "D": "UI mashup"
+      },
+      "answer": "A",
+      "rationale": "Integrating Salesforce with another system: Process + Synchronous → Request and Reply.",
+      "distractor_explanations": {
+        "B": "Batch is the async data pattern for the other-to-Salesforce table (and large volume).",
+        "C": "Call-in is the other-system-initiated table.",
+        "D": "Out of scope."
+      },
+      "concept": "Selection matrix",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "decision",
+      "front": "Name the five integration decision questions.",
+      "back": "Why (outcome), what (payload/objects), when (trigger), how much (volume), how fast (latency)."
+    },
+    {
+      "id": "F2",
+      "category": "patterns",
+      "front": "Official name for wait-for-remote-completion from Salesforce?",
+      "back": "Remote Process Invocation—Request and Reply."
+    },
+    {
+      "id": "F3",
+      "category": "patterns",
+      "front": "Official name for invoke-and-do-not-wait from Salesforce?",
+      "back": "Remote Process Invocation—Fire and Forget."
+    },
+    {
+      "id": "F4",
+      "category": "patterns",
+      "front": "When is Batch Data Synchronization the key pattern?",
+      "back": "When copies are refreshed in a batch manner, typically large how much and slower how fast."
+    },
+    {
+      "id": "F5",
+      "category": "patterns",
+      "front": "What is Remote Call-In?",
+      "back": "A remote system creates, retrieves, updates, or deletes Salesforce Platform data."
+    },
+    {
+      "id": "F6",
+      "category": "patterns",
+      "front": "What is Data Virtualization in the official list?",
+      "back": "Salesforce accesses external data in real time without persisting a copy that must then be reconciled."
+    },
+    {
+      "id": "F7",
+      "category": "matrix",
+      "front": "Three official type categories?",
+      "back": "Process, Data, and Virtual integration."
+    },
+    {
+      "id": "F8",
+      "category": "matrix",
+      "front": "Synchronous vs asynchronous in the selection guide?",
+      "back": "Synchronous: caller waits on request/response. Asynchronous: caller continues; results or faults arrive later."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "User waiting + small how much → which pattern?",
+      "back": "Request and Reply, not nightly batch."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "Why is 'REST' not an integration pattern?",
+      "back": "REST is an API family. Patterns are strategies chosen with why/what/when/how much/how fast."
+    },
+    {
+      "id": "F11",
+      "category": "scope",
+      "front": "Are UI mashups in Integration Patterns scope?",
+      "back": "No. The official overview places UI mashups outside that document's scope."
+    },
+    {
+      "id": "F12",
+      "category": "metadata",
+      "front": "Named credential vs Opportunity rows?",
+      "back": "Named credential is integration metadata; Opportunity rows are business data."
+    },
+    {
+      "id": "F13",
+      "category": "direction",
+      "front": "Salesforce calls ERP vs ERP calls Salesforce?",
+      "back": "Salesforce-initiated uses the 'Integrating Salesforce with another system' table; ERP-initiated uses Remote Call-In."
+    },
+    {
+      "id": "F14",
+      "category": "trap",
+      "front": "Does fire-and-forget mean no monitoring?",
+      "back": "No. You still design acknowledgment, retries, and later diagnosis (INT-008/INT-010)."
+    },
+    {
+      "id": "F15",
+      "category": "trap",
+      "front": "Is a five-minute copy the same as virtualization?",
+      "back": "No. A copy still needs reconciliation; virtualization reads the remote system live."
+    },
+    {
+      "id": "F16",
+      "category": "interview",
+      "front": "What should you refuse if how much is millions and how fast is seconds on the UI?",
+      "back": "Do not promise Request and Reply for the whole set; split interactive exceptions from batch, or challenge the latency."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk through the why, what, when, how much, and how fast model for a Salesforce integration.",
+      "answer_30_seconds": "Why is the business outcome and source of truth. What is objects and keys. When is the trigger. How much is volume. How fast is latency. Those five pick an official pattern before REST or SOAP.",
+      "answer_2_minutes": "I write the five answers with the stakeholder. Then I classify process versus data versus virtual, and sync versus async, using the Integration Patterns selection matrix and direction (Salesforce-initiated vs remote call-in). Only then do I name APIs. A common fail is picking REST because it is familiar while how much is a nightly million-row load that wants batch.",
+      "example": "Order create on a page: small how much, user-blocking how fast → Request and Reply. Item master: large how much, overnight how fast → Batch Data Synchronization.",
+      "tradeoffs": [
+        "Latency vs volume",
+        "Copy vs virtualize"
+      ],
+      "follow_ups": [
+        "What if the ERP cannot meet the how-fast number?",
+        "Who owns the customer-master key?"
+      ],
+      "weak_answer_warnings": [
+        "Starting with an API name",
+        "Inventing SLA milliseconds"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Name the official Salesforce integration patterns you actually use in design reviews.",
+      "answer_30_seconds": "Request and Reply, Fire and Forget, Batch Data Synchronization, Remote Call-In, Data Virtualization, and UI Update Based on Data Changes. I treat them as strategies, not products.",
+      "answer_2_minutes": "I can state each in one sentence from the official summary: wait vs not wait, batch copies, inbound CRUD, live remote access, and UI refresh on Salesforce data changes. I also say UI mashups are out of that document's scope so I do not pretend Visualforce mashup is a listed pattern.",
+      "example": "I put the pattern name in the design record header before the API list.",
+      "tradeoffs": [
+        "Coverage vs over-fitting one pattern"
+      ],
+      "follow_ups": [
+        "Which pattern is missing if we need Salesforce UI to update without refresh?"
+      ],
+      "weak_answer_warnings": [
+        "Listing only REST and SOAP"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Sales wants the ERP shipment number on-screen at Opportunity close. Ops wants 400,000 items synced nightly. How do you apply the decision model?",
+      "answer_30_seconds": "Two integrations. Interactive: how fast is on-page, how much is one order → Request and Reply. Nightly: how much is huge, how fast is hours → Batch Data Synchronization.",
+      "answer_2_minutes": "I refuse a single trigger callout for both. I write why/what/when for each. I warn that putting the nightly load on Request and Reply will hit timeouts and API allocations. I leave Bulk vs SOAP to INT-002 once batch is chosen. I keep LAB_ data in sandbox for any proof of concept.",
+      "example": "ACME lab: Close Won screen vs LAB_Item__c nightly upsert as two rows in the decision table.",
+      "tradeoffs": [
+        "User experience vs throughput"
+      ],
+      "follow_ups": [
+        "What if Close Won volume becomes thousands per minute?"
+      ],
+      "weak_answer_warnings": [
+        "One REST service for both"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "ERP owns customer master and will push changes. Salesforce users still work on Accounts. Pattern?",
+      "answer_30_seconds": "Remote Call-In: the remote system creates or updates Platform data. I still document keys and conflict rules because this is data integration, not virtualization.",
+      "answer_2_minutes": "Direction is other-system-to-Salesforce. If we stored Accounts, we accepted a copy and must design matching keys—the Integration Patterns sidebars stress surrogate keys. If we refused a copy, we would be in Data Virtualization instead and Accounts would not be the system of record for those fields. Auth for the inbound API is a later INT-004 conversation.",
+      "example": "ERP PATCH to Account via REST with an External Id; Salesforce does not call ERP for that update.",
+      "tradeoffs": [
+        "Copy plus inbound API vs live external object"
+      ],
+      "follow_ups": [
+        "Who wins if a Salesforce user edits the same field?"
+      ],
+      "weak_answer_warnings": [
+        "Calling this Request and Reply"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A synchronous callout on Opportunity save times out in production. What decision-model mistake do you look for first?",
+      "answer_30_seconds": "How fast was promised as user-blocking while the ERP cannot meet it, or how much grew beyond a single-record request-and-reply. I consider fire-and-forget plus later write-back.",
+      "answer_2_minutes": "I check whether a trigger callout is running on bulk loads too—how much silently became a batch problem. I do not 'just raise the timeout' as architecture. I re-run why (must the user wait?) and split the path. Monitoring belongs with INT-010; the pattern mistake is still the first diagnosis.",
+      "example": "Data Loader updated 5,000 Opportunities and each fired a callout.",
+      "tradeoffs": [
+        "UX wait vs eventual consistency"
+      ],
+      "follow_ups": [
+        "Was the callout in before-save or after-save?"
+      ],
+      "weak_answer_warnings": [
+        "Blame the network only"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Leaders say Salesforce reports do not match ERP inventory. Virtualization was the intent. What happened?",
+      "answer_30_seconds": "Someone likely built a copy (batch) and called it virtualization. Official virtualization does not persist a second store to reconcile.",
+      "answer_2_minutes": "I ask whether rows live in a custom object. If yes, we are in data integration and need keys, cadence, and reconciliation (INT-010). If they truly used Salesforce Connect, then the mismatch is live remote errors, filters, or user permissions—not a stale copy. I will not invent Connect row limits; those are edition- and adapter-specific.",
+      "example": "Nightly LAB_Inventory__c copy vs LAB_Inventory__x external object.",
+      "tradeoffs": [
+        "Report performance on copies vs live remote latency"
+      ],
+      "follow_ups": [
+        "Are external objects even licensed?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming reports never work on external objects without checking current Connect docs"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you refuse Request and Reply even if the user wants it?",
+      "answer_30_seconds": "When how much is large, how fast cannot be met by the remote SLA, or the work must survive Salesforce transaction limits. I renegotiate UX or split the pattern.",
+      "answer_2_minutes": "Official Request and Reply is for waiting on a remote process. If the remote system is a warehouse batch job, I will not block a Lightning save. I offer fire-and-forget with a status field, or a screen that polls a later Remote Call-In update. I cite the selection matrix rather than taste.",
+      "example": "Credit check that takes two minutes: do not Http.send in the click path.",
+      "tradeoffs": [
+        "Synchronous certainty vs platform limits"
+      ],
+      "follow_ups": [
+        "What status field would you show the user?"
+      ],
+      "weak_answer_warnings": [
+        "Always say yes to real-time"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the seaport analogy, then say where it breaks.",
+      "answer_30_seconds": "Why/what/when/how much/how fast are dispatcher questions. Patterns are ship types. It breaks because governors, API allocations, and Connect licenses are not tide tables I can invent.",
+      "answer_2_minutes": "I map request-and-reply to a tug that waits for a stamp, batch to a container ship, virtualization to watching the warehouse instead of storing crates. I then say middleware adds extra docks, remote downtime is not a pretty camera freeze-frame, and UI mashups are out of the official pattern book. APIs are vehicles, not the dispatch decision.",
+      "example": "Whiteboard the five questions, then overlay the official pattern names.",
+      "tradeoffs": [
+        "Teaching clarity vs false precision"
+      ],
+      "follow_ups": [
+        "Where do named credentials sit in the analogy?"
+      ],
+      "weak_answer_warnings": [
+        "Generic furniture metaphor or a catalog of APIs"
+      ]
+    }
+  ]
+}

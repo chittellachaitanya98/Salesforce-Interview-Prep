@@ -1,0 +1,1056 @@
+{
+  "topic_id": "APEX-017",
+  "slug": "debug-logs-exception-traces-checkpoints-monitoring-and-",
+  "title": "Debug logs, exception traces, checkpoints, monitoring, and production diagnosis",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-016"
+  ],
+  "objectives": [
+    "Use a targeted debug log / trace flag instead of org-wide FINEST.",
+    "Read an exception trace to the first application frame and know governor exceptions are unhandleable.",
+    "Place checkpoints for heap and variables when System.debug would flood the log.",
+    "Diagnose production via monitoring and LAB_ reproduction, not live customer DML."
+  ],
+  "diagnostic_question": "UNABLE_TO_LOCK_ROW is intermittent in production. Someone left FINEST on for every user. How do you use debug logs, exception traces, checkpoints, monitoring, and production diagnosis without making it worse?",
+  "definition": "Debug logs record one request's Apex, SOQL, DML, and callouts when a trace flag is active. Exception traces are the stack to the throwing line. Checkpoints snapshot variables and heap at a line. Monitoring is Apex Jobs, Scheduled Jobs, the debug-log list, and official limit usage. Production diagnosis reproduces with LAB_ data and the smallest trace. ([Debugging Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm); [Apex Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm))",
+  "why_it_matters": "Org-wide FINEST fills log allocation and still misses the failing user. Interviewers want a trace-flag plan, a stack read, a checkpoint, and a rule against experimenting on customer rows.",
+  "sixty_second_explanation": "Flight data recorder: a debug log is the FDR for one flight when the tower sets a trace flag. Exception traces are the black-box stack—read down to your LAB_ class, not only LimitException. Checkpoints are freeze-frames of the gauges. Monitoring is the airport board: Apex Jobs, daily async, failed schedules. Production diagnosis reconstructs the flight in a sandbox with LAB_ passengers. Turn the FDR off when the flight is done.",
+  "deeper_explanation": [
+    "Debugging Apex covers debug logs, Developer Console, and checkpoints. Logs consume an org allocation; they are not infinite. Set a trace flag on a user or class with a level and an expiration. Org-wide FINEST is a last resort. ([Debugging Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging.htm))",
+    "Exception traces list the call stack. Governor exceptions cannot be handled (governors page). Read the first frame that is your code. DmlException includes row-level errors. Do not log secrets. ([Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+    "Checkpoints snapshot variables and heap at a line in a sandbox. They beat 200 System.debug lines that blow the log. They are not a production APM. Reverify Console clicks on the current Debugging topic.",
+    "Monitoring: Apex Jobs, Scheduled Jobs, CronTrigger, AsyncApexJob, debug-log list, REST limits for DailyAsyncApexExecutions (APEX-011). Email deliverability is APEX-014. Event usage is APEX-012.",
+    "Production diagnosis: reproduce in sandbox with LAB_ data and a targeted trace flag. Do not add System.debug to production as the first move. Do not DML customer rows to see. Capture user, time window, and request. Expire the trace flag."
+  ],
+  "mental_model": {
+    "analogy": "A flight data recorder: debug logs are the FDR for one flight, exception traces are the black-box stack, checkpoints are freeze-frames of the gauges, monitoring is the airport board, and production diagnosis is a sandbox reconstruction—not yanking cables on a live airliner.",
+    "useful_mapping": [
+      "FDR for one flight → debug log for one request",
+      "tower enables recorder → trace flag with expiration",
+      "black-box stack → exception trace to your LAB_ line",
+      "gauge freeze-frame → checkpoint heap/variables",
+      "airport board → Apex Jobs / Scheduled Jobs / limits",
+      "org-wide FINEST → leaving every FDR running until the tape is full",
+      "sandbox reconstruction → LAB_ reproduction",
+      "live cable-yank → unplanned production DML"
+    ],
+    "where_it_breaks": [
+      "Log retention hours/counts are org allocations—do not invent the number; look at Setup.",
+      "Checkpoints are a Console tool, not an always-on production profiler.",
+      "The FDR analogy does not encode Event Monitoring product SKUs."
+    ]
+  },
+  "teach_back_prompt": "Walk a lock-row incident: which trace flag, how you read the exception trace, when you would use a checkpoint, and what you refuse to do in production.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Trace flag on one user vs org-wide FINEST."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Read a stack to the first LAB_ frame."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "When a checkpoint beats System.debug."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Apex Jobs vs debug log vs REST limits."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute production diagnosis without touching customer rows."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-DEBUG",
+      "title": "Debugging Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging.htm",
+      "supports": "Debug logs, Developer Console, checkpoints, trace-flag style debugging.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Exact log-retention counts and Setup label clicks should be re-read; do not invent them."
+    },
+    {
+      "source_id": "SF-APEX-GOV",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "Governor exceptions cannot be handled; CPU/SOQL/DML/callout rows you will see in logs.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Log size is not a substitute for these governors."
+    },
+    {
+      "source_id": "SF-APEX-DEVGUIDE",
+      "title": "Apex Developer Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm",
+      "supports": "Hub for checkpoints, debug log levels, and monitoring-adjacent topics in the current TOC.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Deep links move; follow the live Debugging section."
+    },
+    {
+      "source_id": "SF-APEX-QUEUEABLE",
+      "title": "Queueable Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_queueing_jobs.htm",
+      "supports": "Apex Jobs / AsyncApexJob monitoring for async failures during diagnosis.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Job-type choice remains APEX-011."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Trace flag",
+        "Debug log",
+        "Exception stack",
+        "Checkpoint",
+        "Apex Jobs",
+        "Sandbox reproduce"
+      ],
+      "accessible_description": "Trace flag; Debug log; Exception stack; Checkpoint; Apex Jobs; Sandbox reproduce"
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-DEBUG",
+        "SF-APEX-GOV"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "How small can this production diagnosis stay?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Symptom[User-reported failure] --> Scope[Time user and request]\n  Scope --> Mon[Monitoring: Apex Jobs Scheduled Jobs limits]\n  Mon --> Flag[Trace flag on that user or class with expiry]\n  Flag --> Log[Debug log for one request]\n  Log --> Stack[Exception trace to first LAB_ frame]\n  Stack --> Cp[Checkpoint in sandbox if heap or variables unclear]\n  Cp --> Repro[Reproduce with LAB_ data]\n  Repro --> Off[Expire the trace flag]",
+      "decision": "flowchart TD\n  Need[Need visibility?] --> Q1{Is it async?}\n  Q1 -->|Yes| Jobs[Apex Jobs / AsyncApexJob first]\n  Q1 -->|Sync UI| Q2{Do you know the user?}\n  Q2 -->|Yes| User[User-level trace flag, not org FINEST]\n  Q2 -->|No| Class[Class-level flag with expiry]\n  Need --> Q3{Need variable values?}\n  Q3 -->|Sandbox| Cp[Checkpoint]\n  Q3 -->|Production| Avoid[Do not spray System.debug; reproduce in sandbox]\n  Need --> Q4{Governor name only?}\n  Q4 -->|Read the stack| Frame[First application frame plus Limits rows in the log]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Debug logs capture a request when a trace flag is active. Use targeted flags with expiration; logs consume org allocation.",
+      "source_ids": [
+        "SF-APEX-DEBUG"
+      ],
+      "scope": "Debug logs",
+      "validation": "Debugging Apex.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Governor exceptions cannot be handled. Exception traces still point at the application frame that exhausted the limit.",
+      "source_ids": [
+        "SF-APEX-GOV",
+        "SF-APEX-DEBUG"
+      ],
+      "scope": "Exception traces",
+      "validation": "Governors plus debugging.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Checkpoints snapshot variables and heap at a line and are preferable to flooding System.debug.",
+      "source_ids": [
+        "SF-APEX-DEBUG",
+        "SF-APEX-DEVGUIDE"
+      ],
+      "scope": "Checkpoints",
+      "validation": "Debugging Apex / Guide TOC.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Async failures are monitored via Apex Jobs / AsyncApexJob. Production diagnosis belongs in a sandbox with LAB_ data, not unplanned customer DML.",
+      "source_ids": [
+        "SF-APEX-QUEUEABLE",
+        "SF-APEX-DEBUG"
+      ],
+      "scope": "Monitoring and production",
+      "validation": "Queueable monitoring plus debugging discipline.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify Developer Console checkpoint UI and debug-log retention on the Summer '26 Debugging Apex page. Do not invent retention hours.",
+  "unresolved_uncertainty": [
+    "Exact maximum stored debug logs / retention hours are org allocation—Needs verification in Setup, not invented here.",
+    "Event Monitoring / Shield SKU capabilities are neighboring products, not this lesson's default toolkit."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Debug log",
+      "telugu": "One-request flight recorder when a trace flag is on."
+    },
+    {
+      "english": "Checkpoint",
+      "telugu": "Freeze-frame of heap and variables at a line."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I set a targeted trace flag, read the debug log and exception trace to my LAB_ frame, use checkpoints in sandbox for heap, watch Apex Jobs for async, and reproduce with LAB_ data. I expire the flag. I do not leave org-wide FINEST on.",
+    "two_minutes": "I start with monitoring: is it a failed Queueable, a scheduled miss, or a sync click? I flag one user or class. I read SOQL/DML/LIMIT_USAGE in the log and the stack's first application line. Governor exceptions are unhandleable—I redesign, I do not catch. Checkpoints replace debug spam. Production: no customer DML experiments, no secret logging. I turn the flag off."
+  },
+  "terminology": [
+    {
+      "term": "debug log",
+      "plain": "The recording of one request.",
+      "precise": "Generated when a trace flag applies. Contains Apex, SOQL, DML, limits, exceptions.",
+      "example": "A 2 MB log from the failing sales user at 10:04.",
+      "non_example": "A unit-test assert.",
+      "confusable_neighbor": "Apex Job row: async status, not the full log.",
+      "boundary": "Allocation-limited; expire flags."
+    },
+    {
+      "term": "trace flag",
+      "plain": "Who/what is recorded and at what level.",
+      "precise": "User or class flag with start/end time and debug levels.",
+      "example": "User flag on the failing agent, expire in two hours.",
+      "non_example": "Org-wide FINEST for a week.",
+      "confusable_neighbor": "Permission set.",
+      "boundary": "Smallest flag that captures the bug."
+    },
+    {
+      "term": "exception trace",
+      "plain": "The stack printed with the error.",
+      "precise": "Frames from the throw to the entry. Read the first LAB_ line.",
+      "example": "Class.method line 42 in LAB_InventoryService.",
+      "non_example": "A toast that says 'Error'.",
+      "confusable_neighbor": "Checkpoint: values, not the stack.",
+      "boundary": "Governor traces still have an application frame."
+    },
+    {
+      "term": "checkpoint",
+      "plain": "A freeze-frame of variables/heap at a line.",
+      "precise": "Set in Developer Console on sandbox code. Inspect without 200 debugs.",
+      "example": "Checkpoint on the FOR UPDATE list size.",
+      "non_example": "System.debug(JSON.serializePretty(rows)) in a loop.",
+      "confusable_neighbor": "Trace flag: who is logged.",
+      "boundary": "Not an always-on production profiler."
+    },
+    {
+      "term": "monitoring",
+      "plain": "Ongoing boards, not a one-off log.",
+      "precise": "Apex Jobs, Scheduled Jobs, failed emails, REST limits, debug-log list.",
+      "example": "Holding batch count near 100.",
+      "non_example": "A single System.debug.",
+      "confusable_neighbor": "CDC allocations (APEX-012).",
+      "boundary": "Look here first for async."
+    },
+    {
+      "term": "production diagnosis",
+      "plain": "Finding the cause without harming production data.",
+      "precise": "Reproduce with LAB_ data, smallest trace, then fix and test (APEX-016).",
+      "example": "Sandbox replay of the lock order.",
+      "non_example": "Update a customer Opportunity to 'see if it still fails'.",
+      "confusable_neighbor": "Anonymous Apex in production as a first step.",
+      "boundary": "Expire flags; no secret logs."
+    },
+    {
+      "term": "System.debug",
+      "plain": "A log line you write.",
+      "precise": "Useful sparingly at INFO/FINE. Floods and can contain PII.",
+      "example": "One debug of Limits.getQueries() after a loop.",
+      "non_example": "Debug in a 200-row loop at FINEST.",
+      "confusable_neighbor": "Checkpoint.",
+      "boundary": "Prefer checkpoints for large heaps."
+    },
+    {
+      "term": "LIMIT_USAGE",
+      "plain": "Log rows that show governor consumption.",
+      "precise": "Compare against Execution Governors and Limits (100 SOQL, 150 DML, 10 sendEmail, 100 callouts).",
+      "example": "LIMIT_USAGE_FOR_NS showing 99 SOQL.",
+      "non_example": "Daily async REST resource (org, not per-request).",
+      "confusable_neighbor": "CPU 10,000 ms sync / 60,000 ms async.",
+      "boundary": "Cite the governors URL, do not invent."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Scope the incident",
+      "actor": "Developer + admin",
+      "trigger": "User reports a failure",
+      "before": "No time/user",
+      "after": "Note user, UTC time, sync vs async",
+      "observe": "Apex Jobs row or UI error text",
+      "failure": "Enabling org FINEST first"
+    },
+    {
+      "step": 2,
+      "transition": "Set a small trace flag",
+      "actor": "Developer",
+      "trigger": "Need a log",
+      "before": "No flag or org-wide",
+      "after": "User or class flag with expiry",
+      "observe": "One debug log for the repro click",
+      "failure": "Leaving FINEST overnight"
+    },
+    {
+      "step": 3,
+      "transition": "Read stack and LIMIT_USAGE",
+      "actor": "Developer",
+      "trigger": "Log captured",
+      "before": "Only the toast",
+      "after": "First LAB_ frame + governor row",
+      "observe": "Written root cause",
+      "failure": "Catching LimitException"
+    },
+    {
+      "step": 4,
+      "transition": "Reproduce in sandbox; expire the flag",
+      "actor": "Developer",
+      "trigger": "Hypothesis",
+      "before": "Live customer DML",
+      "after": "LAB_ data + checkpoint if needed + test",
+      "observe": "Failing test from APEX-016",
+      "failure": "Production anonymous update"
+    }
+  ],
+  "when_to_use": [
+    "When a single user request fails: a targeted debug log / trace flag, not org-wide FINEST.",
+    "When the toast is generic: read the exception trace to the first LAB_ frame.",
+    "When heap or a collection looks wrong: a checkpoint in sandbox instead of serializePretty in a loop.",
+    "When jobs sit Holding or fail: monitoring Apex Jobs before another deploy.",
+    "When the bug is production-only: production diagnosis via LAB_ reproduction and the smallest flag.",
+    "When LIMIT_USAGE in the log must be compared to Execution Governors and Limits, not a blog."
+  ],
+  "when_not_to_use": [
+    "Do not leave org-wide FINEST debug logs running as a lifestyle.",
+    "Do not diagnose by DML on customer production rows.",
+    "Do not catch governor exceptions because the trace named a limit.",
+    "Do not flood System.debug in a 200-row loop and call it monitoring.",
+    "Do not invent log-retention hours; look at Setup allocation.",
+    "Do not treat checkpoints as a production always-on profiler."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Debug Logs / Trace Flags.",
+    "Developer Console: logs, checkpoints, progress.",
+    "Setup → Apex Jobs / Scheduled Jobs.",
+    "REST limits resource for daily async (APEX-011)."
+  ],
+  "worked_example": {
+    "scenario": "Sales users hit UNABLE_TO_LOCK_ROW on LAB_Inventory__c around 10:00. Someone enabled org FINEST. No production data changes allowed beyond a trace flag.",
+    "inputs": [
+      "Time window",
+      "Two users",
+      "Suspect FOR UPDATE plus callout",
+      "Sandbox available"
+    ],
+    "decisions": [
+      {
+        "decision": "Expire org FINEST; set a two-hour user trace flag on one failing user.",
+        "because": "Debugging Apex: targeted logs; allocation is finite.",
+        "rejected": "Leave FINEST through the weekend."
+      },
+      {
+        "decision": "Read the exception trace to LAB_InventoryService and LIMIT_USAGE; look for FOR_UPDATE_LOCKS_RELEASE.",
+        "because": "Locking + callout (APEX-010/013) is a known pair.",
+        "rejected": "Catch DmlException and retry 20 times in production."
+      },
+      {
+        "decision": "Reproduce in sandbox with two LAB_ scripts and a checkpoint on the locked list; then write a test.",
+        "because": "Production diagnosis uses LAB_ data.",
+        "rejected": "Update a live customer inventory row."
+      }
+    ],
+    "configuration_or_code": [
+      "Trace flag: user = failing agent, Apex = FINE, expire +2h.",
+      "Search log for EXCEPTION_THROWN, FOR_UPDATE, CALLOUT.",
+      "Sandbox checkpoint on rows.size() before Http.send."
+    ],
+    "output": "Root cause: callout between FOR UPDATE and DML. Flag expired. Test from APEX-016 locks the sequence.",
+    "verification": [
+      "Org FINEST removed.",
+      "One captured log contains the stack to LAB_InventoryService.",
+      "Sandbox repro without customer Ids."
+    ],
+    "self_explanation": "Small FDR, read the black box, freeze-frame in the hangar, no live-cable yank."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ service that can throw.",
+    "starting_state_checks": [
+      "Developer Console access",
+      "You will expire any flag you create"
+    ],
+    "steps": [
+      "Write LAB_Boom.explode() that divides by zero after a SOQL.",
+      "Set a user trace flag, run the method, download the debug log.",
+      "Set a checkpoint on the SOQL list and inspect heap/variables.",
+      "Delete/expire the trace flag; add a test that asserts the exception type (APEX-016)."
+    ],
+    "guided_completion": [
+      "If you cannot find LAB_Boom in the stack, you opened the wrong log.",
+      "If the flag is still active tomorrow, you failed the cleanup."
+    ],
+    "independent_challenge": "Find LIMIT_USAGE rows and map two of them to the governors table (SOQL 100, DML 150).",
+    "evidence": [
+      "Redacted log snippet with the LAB_ frame",
+      "Screenshot or note that the flag expired"
+    ],
+    "stop_recovery_cleanup": [
+      "Expire all LAB_ trace flags",
+      "Delete LAB_Boom if it is not needed"
+    ],
+    "limitations": "Does not prove Event Monitoring SKUs or production log download policies."
+  },
+  "decision_table": [
+    {
+      "signal": "One user can reproduce a sync error.",
+      "choose": "User-level trace flag with a short expiry; read that debug log.",
+      "not": "Org-wide FINEST.",
+      "why": "Debugging Apex: targeted flags; allocation is finite."
+    },
+    {
+      "signal": "Queueable fails hours later.",
+      "choose": "Apex Jobs / AsyncApexJob first; then a class-level flag if you need a log.",
+      "not": "Only System.debug in the trigger that enqueued it.",
+      "why": "Monitoring boards catch async; the parent request log is gone."
+    },
+    {
+      "signal": "You need collection contents at line 88.",
+      "choose": "Sandbox checkpoint.",
+      "not": "JSON.serializePretty in a 200-row loop in production.",
+      "why": "Checkpoints exist to avoid log floods."
+    },
+    {
+      "signal": "Stack says LimitException: Too many SOQL queries.",
+      "choose": "Find the first LAB_ frame; redesign the query (APEX-007/018). Do not catch it.",
+      "not": "try/catch and return null.",
+      "why": "Governors: unhandleable; the trace still names your loop."
+    },
+    {
+      "signal": "Leadership wants a 'quick prod update to see'.",
+      "choose": "Refuse; reproduce with LAB_ data in sandbox.",
+      "not": "Anonymous DML on a customer Opportunity.",
+      "why": "Production diagnosis does not experiment on customer rows."
+    },
+    {
+      "signal": "You need a daily async number during an incident.",
+      "choose": "REST limits / governors page (250,000 or licenses×200).",
+      "not": "Guess 10,000 from memory.",
+      "why": "Cite Execution Governors and Limits."
+    }
+  ],
+  "limitations": [
+    "Log retention counts are not invented here.",
+    "Does not configure Event Monitoring licenses.",
+    "Checkpoint UI labels should be re-read.",
+    "Does not replace APM products."
+  ],
+  "security_notes": [
+    "Never System.debug session IDs, named-credential secrets, or full PII payloads.",
+    "Downloaded logs are data—treat them as confidential.",
+    "Trace flags are privileged; expire them."
+  ],
+  "common_mistakes": [
+    "Org-wide FINEST left on.",
+    "Reading only the governor name, not the LAB_ frame.",
+    "Debug in a loop that blows the log.",
+    "Catching LimitException.",
+    "Anonymous production DML as diagnosis."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "No debug log after the user clicked.",
+      "check": [
+        "Flag expired?",
+        "Wrong user?",
+        "Log allocation full?"
+      ],
+      "do_not_assume": "Apex did not run."
+    },
+    {
+      "symptom": "Log truncated.",
+      "check": [
+        "Level too fine",
+        "Loop debugs",
+        "Need a checkpoint instead"
+      ],
+      "do_not_assume": "The exception did not happen."
+    },
+    {
+      "symptom": "Async error, empty UI log.",
+      "check": [
+        "Apex Jobs",
+        "Trace on the async user/context"
+      ],
+      "do_not_assume": "The trigger log contains the Queueable body."
+    },
+    {
+      "symptom": "Cannot find your class in the stack.",
+      "check": [
+        "Managed package frames",
+        "Constructor vs execute",
+        "Wrong request"
+      ],
+      "do_not_assume": "Salesforce hid your code."
+    }
+  ],
+  "production_notes": [
+    "Change-control any production trace flag; expire it.",
+    "Prefer sandbox checkpoints over production debug spam.",
+    "No customer-row experiments are authorized."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "A debug log is generated when:",
+      "options": {
+        "A": "A trace flag applies to the request",
+        "B": "Every org click always",
+        "C": "Only in unit tests",
+        "D": "Only after sendEmail"
+      },
+      "answer": "A",
+      "rationale": "Debugging Apex: flags produce logs.",
+      "distractor_explanations": {
+        "B": "That would exhaust allocation.",
+        "C": "Tests have their own logs if flagged.",
+        "D": "Unrelated."
+      },
+      "concept": "Trace flag",
+      "citation_ids": [
+        "SF-APEX-DEBUG"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Best first flag for one failing sales user?",
+      "options": {
+        "A": "User-level flag with a short expiration",
+        "B": "Org-wide FINEST for a month",
+        "C": "No flag, only production DML",
+        "D": "SeeAllData"
+      },
+      "answer": "A",
+      "rationale": "Smallest recorder that captures the flight.",
+      "distractor_explanations": {
+        "B": "Fills allocation.",
+        "C": "Unsafe.",
+        "D": "A test annotation."
+      },
+      "concept": "Targeted flag",
+      "citation_ids": [
+        "SF-APEX-DEBUG"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Governor LimitException can be caught and ignored?",
+      "options": {
+        "A": "No. The governors page says the exception cannot be handled",
+        "B": "Yes, always",
+        "C": "Yes in tests only",
+        "D": "Yes if you use USER_MODE"
+      },
+      "answer": "A",
+      "rationale": "Unhandleable governor exceptions.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Unrelated."
+      },
+      "concept": "Unhandleable",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need variable values at a line without flooding the log.",
+      "options": {
+        "A": "Sandbox checkpoint",
+        "B": "System.debug in a 200-row loop in production",
+        "C": "Org FINEST",
+        "D": "sendEmail the heap"
+      },
+      "answer": "A",
+      "rationale": "Checkpoints snapshot heap/variables.",
+      "distractor_explanations": {
+        "B": "Flood.",
+        "C": "Wrong tool.",
+        "D": "Nonsense."
+      },
+      "concept": "Checkpoint",
+      "citation_ids": [
+        "SF-APEX-DEBUG"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Queueable failed at 02:00. Where first?",
+      "options": {
+        "A": "Apex Jobs / AsyncApexJob monitoring",
+        "B": "Yesterday's UI debug log for a different user",
+        "C": "EventBus.publish 150",
+        "D": "SeeAllData"
+      },
+      "answer": "A",
+      "rationale": "Async monitoring boards.",
+      "distractor_explanations": {
+        "B": "Wrong request.",
+        "C": "Events.",
+        "D": "Tests."
+      },
+      "concept": "Async monitor",
+      "citation_ids": [
+        "SF-APEX-QUEUEABLE"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "LIMIT_USAGE in a log should be compared to:",
+      "options": {
+        "A": "Execution Governors and Limits (for example 100 SOQL, 150 DML)",
+        "B": "A 2018 blog",
+        "C": "sendEmail daily guesses",
+        "D": "Library analogies"
+      },
+      "answer": "A",
+      "rationale": "Official table.",
+      "distractor_explanations": {
+        "B": "Stale.",
+        "C": "Wrong family.",
+        "D": "Forbidden metaphor."
+      },
+      "concept": "LIMIT_USAGE",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Production diagnosis first move?",
+      "options": {
+        "A": "Reproduce with LAB_ data in sandbox; smallest trace if needed",
+        "B": "Anonymous update on a customer Opportunity",
+        "C": "Catch LimitException in production",
+        "D": "Enable FINEST for all users"
+      },
+      "answer": "A",
+      "rationale": "Safe reconstruction.",
+      "distractor_explanations": {
+        "B": "Forbidden here.",
+        "C": "Unhandleable.",
+        "D": "Allocation burn."
+      },
+      "concept": "Prod diagnosis",
+      "citation_ids": [
+        "SF-APEX-DEBUG"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Exception traces help because they:",
+      "options": {
+        "A": "Show the stack to the throwing line, including your LAB_ frame",
+        "B": "Reset governors",
+        "C": "Send email",
+        "D": "Disable sharing"
+      },
+      "answer": "A",
+      "rationale": "Read the application frame.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Stack",
+      "citation_ids": [
+        "SF-APEX-DEBUG"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "System.debug in a loop at FINEST often causes:",
+      "options": {
+        "A": "Truncated or missing later log lines, including the exception",
+        "B": "Unlimited heap",
+        "C": "Automatic checkpoints",
+        "D": "75% coverage"
+      },
+      "answer": "A",
+      "rationale": "Logs are finite.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Tests."
+      },
+      "concept": "Debug flood",
+      "citation_ids": [
+        "SF-APEX-DEBUG"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "FOR_UPDATE_LOCKS_RELEASE in the log means:",
+      "options": {
+        "A": "A callout released FOR UPDATE locks (APEX-010/013)",
+        "B": "Sharing is off",
+        "C": "Coverage failed",
+        "D": "sendEmail hit 10"
+      },
+      "answer": "A",
+      "rationale": "Official lock-release token.",
+      "distractor_explanations": {
+        "B": "Security.",
+        "C": "Tests.",
+        "D": "Email."
+      },
+      "concept": "Lock token",
+      "citation_ids": [
+        "SF-APEX-DEBUG"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Checkpoints are primarily a tool for:",
+      "options": {
+        "A": "Sandbox/Developer Console inspection of variables and heap",
+        "B": "Always-on production APM",
+        "C": "Daily async capacity",
+        "D": "Named credentials"
+      },
+      "answer": "A",
+      "rationale": "Debugging Apex checkpoints.",
+      "distractor_explanations": {
+        "B": "Not their job.",
+        "C": "APEX-011.",
+        "D": "APEX-013."
+      },
+      "concept": "Checkpoint scope",
+      "citation_ids": [
+        "SF-APEX-DEBUG"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "After capturing the log you should:",
+      "options": {
+        "A": "Expire the trace flag",
+        "B": "Leave FINEST forever",
+        "C": "Email the log to a public ticket with secrets",
+        "D": "Delete Apex Jobs history to hide it"
+      },
+      "answer": "A",
+      "rationale": "Finite allocation and least privilege.",
+      "distractor_explanations": {
+        "B": "Harmful.",
+        "C": "Security fail.",
+        "D": "Destroys monitoring."
+      },
+      "concept": "Expire flag",
+      "citation_ids": [
+        "SF-APEX-DEBUG"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "log",
+      "front": "What is a debug log?",
+      "back": "A recording of one request when a trace flag applies."
+    },
+    {
+      "id": "F2",
+      "category": "flag",
+      "front": "Targeted vs org FINEST?",
+      "back": "Flag one user/class with expiry; org FINEST fills allocation."
+    },
+    {
+      "id": "F3",
+      "category": "stack",
+      "front": "How to read an exception trace?",
+      "back": "Walk to the first application/LAB_ frame, not only the governor name."
+    },
+    {
+      "id": "F4",
+      "category": "gov",
+      "front": "Can you catch LimitException?",
+      "back": "No. Governors page: cannot be handled."
+    },
+    {
+      "id": "F5",
+      "category": "cp",
+      "front": "What is a checkpoint?",
+      "back": "A freeze-frame of variables/heap at a line in the Console."
+    },
+    {
+      "id": "F6",
+      "category": "cp",
+      "front": "Checkpoint vs debug loop?",
+      "back": "Prefer checkpoints when serializePretty would flood the log."
+    },
+    {
+      "id": "F7",
+      "category": "mon",
+      "front": "Async failed overnight. First board?",
+      "back": "Apex Jobs / AsyncApexJob."
+    },
+    {
+      "id": "F8",
+      "category": "prod",
+      "front": "Production diagnosis rule?",
+      "back": "Reproduce with LAB_ data; do not DML customer rows to see."
+    },
+    {
+      "id": "F9",
+      "category": "lim",
+      "front": "LIMIT_USAGE maps to?",
+      "back": "Execution Governors and Limits rows (SOQL 100, DML 150, ...)."
+    },
+    {
+      "id": "F10",
+      "category": "sec",
+      "front": "What never goes in a log?",
+      "back": "Secrets, session IDs, unnecessary PII."
+    },
+    {
+      "id": "F11",
+      "category": "off",
+      "front": "After the flight?",
+      "back": "Expire the trace flag."
+    },
+    {
+      "id": "F12",
+      "category": "token",
+      "front": "FOR_UPDATE_LOCKS_RELEASE?",
+      "back": "Callout released locking statements."
+    },
+    {
+      "id": "F13",
+      "category": "trunc",
+      "front": "Log truncated. Try?",
+      "back": "Lower level, remove loop debugs, use a checkpoint."
+    },
+    {
+      "id": "F14",
+      "category": "async",
+      "front": "Does the trigger log contain Queueable execute?",
+      "back": "Usually not; flag/monitor the async job."
+    },
+    {
+      "id": "F15",
+      "category": "heap",
+      "front": "Need heap at a line?",
+      "back": "Checkpoint, not JSON.serializePretty in production."
+    },
+    {
+      "id": "F16",
+      "category": "mon",
+      "front": "Daily async during an incident?",
+      "back": "REST limits / governors formula—do not guess 10,000."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you take a debug log without harming the org?",
+      "answer_30_seconds": "Set a user or class trace flag with a short expiration and the lowest level that shows the bug. Download that request's log. Expire the flag. Do not leave org-wide FINEST on.",
+      "answer_2_minutes": "I explain allocation is finite. I match the flag to the failing user. I look at EXCEPTION_THROWN and LIMIT_USAGE. I never log secrets. I cite Debugging Apex, not a blog of log-retention hours I cannot see.",
+      "example": "Two-hour user flag on the agent who hits the inventory error.",
+      "tradeoffs": [
+        "User vs class flag",
+        "FINE vs FINEST"
+      ],
+      "follow_ups": [
+        "What if the user is a site guest?",
+        "Log allocation full?"
+      ],
+      "weak_answer_warnings": [
+        "Org FINEST for a week"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you read an exception trace in an interview?",
+      "answer_30_seconds": "I start at the throw, walk to the first LAB_ class/method/line, then map governor names to the official table. I do not stop at System.LimitException.",
+      "answer_2_minutes": "I mention unhandleable governors. I look at DmlException row errors. I connect the frame to a test I will write (APEX-016). I do not invent line numbers I did not see.",
+      "example": "LAB_InventoryService.decrement line 42 under a LimitException: Too many SOQL queries.",
+      "tradeoffs": [
+        "Governor name vs application frame",
+        "Managed package frames"
+      ],
+      "follow_ups": [
+        "What if every frame is Salesforce internal?",
+        "Constructor vs execute?"
+      ],
+      "weak_answer_warnings": [
+        "Catch LimitException and return null"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "When do you use a checkpoint instead of System.debug?",
+      "answer_30_seconds": "When I need heap or collection contents at a line and debug would flood or truncate the log. Checkpoints are a sandbox Console tool, not production APM.",
+      "answer_2_minutes": "I set the checkpoint, run the LAB_ script, inspect, remove it. I do not serializePretty Trigger.new in production. I reverify Console steps on the Debugging topic.",
+      "example": "Checkpoint on the FOR UPDATE list before a callout.",
+      "tradeoffs": [
+        "Snapshot vs spam",
+        "Sandbox vs production"
+      ],
+      "follow_ups": [
+        "Can checkpoints fire in production?",
+        "Heap vs CPU in the snapshot?"
+      ],
+      "weak_answer_warnings": [
+        "200 debugs as a badge of thoroughness"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Queueable failed at 02:00. Walk monitoring then logs.",
+      "answer_30_seconds": "Apex Jobs first for status and exception. Then a class-level flag if I need a body log on the next run. I do not look at yesterday's UI click log.",
+      "answer_2_minutes": "I query AsyncApexJob. I check daily async remaining if the error is capacity. I may run the batch in sandbox with LAB_ data. I expire flags. I connect APEX-011.",
+      "example": "Failed LAB_ArchiveBatch execute in Apex Jobs with a QueryException.",
+      "tradeoffs": [
+        "Board vs FDR",
+        "Capacity vs code"
+      ],
+      "follow_ups": [
+        "Flex Queue Holding?",
+        "CronTrigger next fire?"
+      ],
+      "weak_answer_warnings": [
+        "Only adding debug to the trigger that enqueued it"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "What do you refuse to do during production diagnosis?",
+      "answer_30_seconds": "DML on customer rows to see, org-wide FINEST, logging secrets, catching governors, and leaving flags on.",
+      "answer_2_minutes": "I write a sandbox repro and a test. I use the smallest flag if I must see production once. I treat downloaded logs as confidential. I will say Needs verification for retention hours rather than invent them.",
+      "example": "Manager asks to flip a live Opportunity stage to reproduce.",
+      "tradeoffs": [
+        "Safety vs speed",
+        "One production log vs sandbox first"
+      ],
+      "follow_ups": [
+        "Who approves a prod trace flag?",
+        "Redaction standard?"
+      ],
+      "weak_answer_warnings": [
+        "Anonymous update as curiosity"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "No log appeared after the user clicked.",
+      "answer_30_seconds": "Wrong user, expired flag, allocation full, or the work was async. Check Apex Jobs and the flag list before rewriting code.",
+      "answer_2_minutes": "I confirm the user Id on the flag. I clear old logs if allocation is full—after saving the useful ones. I do not enable FINEST for everyone as the fix.",
+      "example": "Flag was on a sandbox user while they reproduced in production.",
+      "tradeoffs": [
+        "Wrong org vs wrong user",
+        "Allocation vs level"
+      ],
+      "follow_ups": [
+        "How do you see allocation?",
+        "Class flag vs user flag?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming Apex did not run"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "How do logs relate to governors and transactions?",
+      "answer_30_seconds": "A log is one transaction/request. LIMIT_USAGE maps to the official per-transaction table. A new Queueable execute is a new log if flagged. Rollback still shows DML that later undid.",
+      "answer_2_minutes": "I connect APEX-010: you may see DML then EXCEPTION then no commit. I will not claim logs reset governors. I cite 100 SOQL / 150 DML / 10 sendEmail / 100 callouts / 120 s from the governors page when I see those rows.",
+      "example": "Log shows 150 DML then LimitException; savepoint rollbacks counted as DML (APEX-010).",
+      "tradeoffs": [
+        "One request vs org daily",
+        "Seen DML vs committed DML"
+      ],
+      "follow_ups": [
+        "Does a log include after-commit events?",
+        "Callout time vs CPU?"
+      ],
+      "weak_answer_warnings": [
+        "Treating the log as a second governor table with different numbers"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "How do you keep diagnosis from becoming permanent debug code?",
+      "answer_30_seconds": "Time-boxed flags, checkpoints instead of leftover debugs, tests that lock the repro, then delete the noise. Monitoring boards stay; FDR lines do not.",
+      "answer_2_minutes": "I fail a PR that adds System.debug(user) in a loop. I ask for a test from APEX-016. I keep Apex Jobs monitoring. I do not ship FINEST.",
+      "example": "PR removes 40 debug lines and adds a test named decrements_without_callout_under_lock.",
+      "tradeoffs": [
+        "Temporary FDR vs permanent tests",
+        "Boards vs leftover debug"
+      ],
+      "follow_ups": [
+        "Is LoggingLevel.ERROR OK in production?",
+        "Platform Events for logs?"
+      ],
+      "weak_answer_warnings": [
+        "Leaving debugs 'for the next incident'"
+      ]
+    }
+  ]
+}

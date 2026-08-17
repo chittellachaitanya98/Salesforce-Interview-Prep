@@ -1,0 +1,984 @@
+{
+  "topic_id": "LWC-004",
+  "slug": "public-properties-methods-composition-slots-and-lifecyc",
+  "title": "Public properties/methods, composition, slots, and lifecycle hooks",
+  "track": "Lightning Web Components",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-003"
+  ],
+  "objectives": [
+    "Compose a parent Lightning web component that sets public properties and calls public methods on a child.",
+    "Use unnamed and named slots so a parent can pass markup into a child template.",
+    "Place constructor work after super(), and remember public properties are not set until after construction.",
+    "Distinguish owner versus container in a parent/child containment hierarchy."
+  ],
+  "diagnostic_question": "A parent template nests c-lab-child. The child reads an @api recordId as undefined in the constructor, the parent cannot call a helper that was not decorated, and markup the parent passed never appears. Which public property, method, slot, and lifecycle hook rules failed?",
+  "definition": "Composition nests child Lightning web components in a parent template. The owner can set public properties, call public methods, and listen for events. Slots are placeholders for markup the parent passes in. constructor() runs parent-then-child, must call super() first, and does not yet have public properties or children. ([Compose Components](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-compose.html); [Slots](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-slots.html); [constructor hook](https://developer.salesforce.com/docs/platform/lwc/guide/create-lifecycle-hooks-created.html))",
+  "why_it_matters": "Interviewers listen for @api as the parent/child contract, slots versus properties, and the constructor trap of reading recordId too early. Treating every nested tag as a disk-nested folder (LWC-002) or shouting down with events (LWC-005) mixes later lessons into this one.",
+  "sixty_second_explanation": "Picture a restaurant pass window. The parent chef writes tickets onto the child's @api properties and can call an @api method like a spoken 'fire table 4'. Slots are empty plates the parent fills with garnish markup. constructor() is unlocking the station: call super() first; tickets are not on the rail yet. connectedCallback() is when the station is on the line. Do not stuff an Aura component onto an LWC plate.",
+  "deeper_explanation": [
+    "The owner is the component that owns the template. It can set public properties on composed children, call methods on them, and listen for their events. A container is weaker: it can read but not change public properties of contained components, call methods, and listen for some bubbled events. Parent/child is defined in the parent's HTML, while both folders sit as siblings under lwc. ([Compose Components](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-compose.html))",
+    "The JavaScript file documents that the public API is public properties and methods annotated with @api. Parents set those properties as HTML attributes (kebab-case). Undecorated fields stay internal. ([Component JavaScript File](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-javascript.html))",
+    "A slot is a placeholder for markup the parent passes into the child's body. Unnamed slots take default body content; named slots match slot=\"name\". You cannot pass an Aura component into a slot. DOM passed into a slot is not in the child's shadow tree: use this.querySelector, not this.template.querySelector, to reach it. ([Slots](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-slots.html))",
+    "constructor() fires when the instance is created, parent then child. The first statement must be super() with no parameters. Do not inspect attributes, children, or public properties there—they are not ready. Properties are assigned after construction and before connectedCallback(). Add host attributes in connectedCallback(), not in the constructor. ([constructor hook](https://developer.salesforce.com/docs/platform/lwc/guide/create-lifecycle-hooks-created.html))"
+  ],
+  "mental_model": {
+    "analogy": "A restaurant pass window: @api properties are tickets the parent chef sets on the child station; @api methods are 'fire' calls; slots are empty plates the parent garnishes; constructor is unlocking the station before tickets arrive.",
+    "useful_mapping": [
+      "parent template → chef side of the pass",
+      "child component → line station",
+      "@api property → ticket the parent writes",
+      "@api method → spoken fire call the parent may invoke",
+      "unnamed slot → default plate",
+      "named slot → labeled plate (firstName, lastName)",
+      "constructor → unlock station; tickets not on the rail yet",
+      "connectedCallback → station is on the line"
+    ],
+    "where_it_breaks": [
+      "Owner versus container power is a framework rule, not kitchen rank.",
+      "Slotted markup stays in the parent's DOM identity; querySelector rules are not dinnerware.",
+      "Aura cannot go in an LWC slot even if it 'looks like garnish'.",
+      "Other lifecycle hooks (render, renderedCallback, errorCallback) are more than opening the station."
+    ]
+  },
+  "teach_back_prompt": "Draw a parent/child pair: which @api properties the parent sets, which method it may call, where a named slot is filled, and why recordId is undefined in the child's constructor.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "What can an owner set, call, and listen for on a child?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Unnamed versus named slots, and why Aura cannot fill a slot."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "constructor versus connectedCallback for public properties."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Debug this.querySelector versus this.template.querySelector for slotted nodes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: composition, @api, slots, lifecycle."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-COMPOSE",
+      "title": "Compose Components",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-compose.html",
+      "supports": "Owner vs container; parent/child in HTML not nested folders; owner sets public properties, calls methods, listens for events.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Event payload rules are LWC-005."
+    },
+    {
+      "source_id": "SF-LWC-SLOTS",
+      "title": "Pass Markup into Slots",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-slots.html",
+      "supports": "Unnamed and named slots; Aura cannot be passed into a slot; slotted nodes are not in the child's shadow tree; slotchange.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Light DOM slot behavior is neighboring; this lesson uses the documented shadow-slot querySelector split."
+    },
+    {
+      "source_id": "SF-LWC-CTOR",
+      "title": "Run Code When a Component Is Created",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-lifecycle-hooks-created.html",
+      "supports": "constructor parent-to-child, super() first, no public properties or children yet; properties set before connectedCallback.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Full lifecycle flow for renderedCallback and errorCallback is on the lifecycle overview page; do not invent undocumented order details."
+    },
+    {
+      "source_id": "SF-LWC-JS-FILE",
+      "title": "Component JavaScript File",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-javascript.html",
+      "supports": "Public API via @api properties and methods.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every @api boolean-attribute quirk; reverify Fields, Properties, and Attributes when a boolean @api misbehaves."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Parent composes child in HTML",
+        "@api properties down",
+        "@api methods called by parent",
+        "Slots for markup",
+        "constructor too early for recordId",
+        "connectedCallback after properties"
+      ],
+      "accessible_description": "Portrait parent/child map: parent template nests the child, sets @api attributes, may call @api methods, fills slots, and must not read public properties in the child's constructor."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-COMPOSE",
+        "SF-LWC-SLOTS",
+        "SF-LWC-CTOR",
+        "SF-LWC-JS-FILE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Parent/child composition, slots, and constructor timing"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  ParentHtml[parent.html template] -->|nests tag| Child[c-lab-child]\n  ParentHtml -->|kebab-case attributes| ApiProp[child @api properties]\n  ParentJs[parent JavaScript] -->|calls| ApiMeth[child @api methods]\n  ParentHtml -->|body markup| Slot[child slot placeholder]\n  Ctor[constructor super first] -->|properties not set| Child\n  Props[Public properties assigned] --> Conn[connectedCallback]\n  ChildFolder[lwc/labChild sibling folder] -.->|not nested on disk| ParentFolder[lwc/labParent]",
+      "decision": "flowchart TD\n  Need[Need parent/child UI?] --> Q1{Pass data or markup?}\n  Q1 -->|Typed values or recordId| Api[@api property set from parent template]\n  Q1 -->|Parent-provided HTML| Slot[Child <slot> unnamed or named]\n  Q1 -->|Parent must invoke behavior| Meth[@api method called from parent JS]\n  Need --> Q2{Where to read recordId?}\n  Q2 -->|constructor| No[Too early: properties not assigned]\n  Q2 -->|connectedCallback or later| Yes[Properties are set]\n  Q1 -->|Aura markup into LWC slot| Forbidden[Not supported]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "The owner component can set public properties on composed children, call methods on them, and listen for events. Parent/child is declared in HTML; folders remain siblings under lwc.",
+      "source_ids": ["SF-LWC-COMPOSE"],
+      "scope": "Composition",
+      "validation": "Compose Components owner/container and parent/child HTML.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "The public API of a Lightning web component is public properties and methods annotated with @api.",
+      "source_ids": ["SF-LWC-JS-FILE"],
+      "scope": "Public properties and methods",
+      "validation": "Component JavaScript File public API bullet.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Slots let a parent pass markup into a child. Aura components cannot be passed into a slot. Slotted DOM is not in the child's shadow tree.",
+      "source_ids": ["SF-LWC-SLOTS"],
+      "scope": "Slots",
+      "validation": "Pass Markup into Slots.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "constructor() runs parent then child, must start with super(), and must not inspect public properties or children. Properties are assigned after construction and before connectedCallback().",
+      "source_ids": ["SF-LWC-CTOR"],
+      "scope": "Lifecycle constructor",
+      "validation": "Run Code When a Component Is Created.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Handbook rewrite 2026-08-16. Reverify lifecycle overview and @api boolean attribute details on the current LWC Developer Guide.",
+  "unresolved_uncertainty": [
+    "Complete renderedCallback / errorCallback / render() order is on the lifecycle overview page, which did not return a full body this session—Needs verification before quoting a full hook table.",
+    "Boolean @api attribute presence rules: reverify Fields, Properties, and Attributes if an interview drills into true/false markup."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "@api property",
+      "telugu": "పేరెంట్ సెట్ చేసే బహిరంగ టికెట్."
+    },
+    {
+      "english": "slot",
+      "telugu": "పేరెంట్ నింపే ఖాళీ ప్లేట్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "A parent composes a child in HTML, sets @api properties, may call @api methods, and fills slots with markup. constructor is too early for public properties; use connectedCallback or later.",
+    "two_minutes": "I separate disk folders (siblings under lwc) from parent/child in the template. I decorate only the contract with @api. I use slots when the parent supplies markup, not when it supplies a record Id. I never pass Aura into an LWC slot. I call super() first and I do not read recordId in the constructor."
+  },
+  "terminology": [
+    {
+      "term": "composition",
+      "plain": "Nesting a child Lightning web component in a parent template.",
+      "precise": "Parent/child is defined in parent HTML. Folders are siblings under lwc, not nested directories.",
+      "example": "labParent.html contains <c-lab-child record-id={recordId}></c-lab-child>.",
+      "non_example": "lwc/labParent/labChild/ as a nested folder.",
+      "confusable_neighbor": "Aura composition with {!v.body}.",
+      "boundary": "Events up the tree are LWC-005."
+    },
+    {
+      "term": "owner",
+      "plain": "The component whose template contains the children.",
+      "precise": "The owner can set public properties, call methods, and listen for any events fired by composed components.",
+      "example": "c-todo-app owning nested c-todo-item instances.",
+      "non_example": "A sibling on the same Lightning page that does not contain the child in its template.",
+      "confusable_neighbor": "container, which cannot change public properties of contained components.",
+      "boundary": "Lightning page App Builder placement is not ownership."
+    },
+    {
+      "term": "@api property",
+      "plain": "A public field the parent may set as an attribute.",
+      "precise": "Part of the component public API. Parents typically pass kebab-case attributes that map to camelCase fields.",
+      "example": "@api recordId; parent markup record-id={recordId}.",
+      "non_example": "A private field the parent tries to set without @api.",
+      "confusable_neighbor": "@track, which is deep observation, not public exposure.",
+      "boundary": "Do not mutate objects the parent passed; data flows down (data guidelines, LWC-006)."
+    },
+    {
+      "term": "@api method",
+      "plain": "A public function the parent may call on the child.",
+      "precise": "Annotated with @api so the owner can invoke it. Undecorated methods are not the public API.",
+      "example": "@api reset() { this.value = ''; } called from the parent after querySelector.",
+      "non_example": "A private helper the parent calls by poking undocumented internals.",
+      "confusable_neighbor": "Apex public method, which is server visibility.",
+      "boundary": "How the parent obtains the child instance (refs vs querySelector) can vary by API version—Needs verification of the preferred current pattern."
+    },
+    {
+      "term": "slot",
+      "plain": "A placeholder in the child template the parent fills with markup.",
+      "precise": "Unnamed slot takes default body. Named slots match slot=\"name\". Aura cannot be passed into a slot.",
+      "example": "<slot name=\"firstName\"></slot> filled by <span slot=\"firstName\">Willy</span>.",
+      "non_example": "Passing a record Id through a slot instead of an @api property.",
+      "confusable_neighbor": "Visualforce facet, a different composition model.",
+      "boundary": "slotchange fires only for direct children of the slot node."
+    },
+    {
+      "term": "constructor()",
+      "plain": "The hook that runs when the instance is created.",
+      "precise": "Parent then child. First statement super() with no parameters. Do not inspect public properties, attributes, or children. Do not add host attributes here.",
+      "example": "constructor() { super(); this.template.addEventListener is still the wrong place for host attributes. }",
+      "non_example": "Reading this.recordId in constructor and treating undefined as a platform bug.",
+      "confusable_neighbor": "connectedCallback, which runs after properties are assigned.",
+      "boundary": "HTML custom-elements constructor rules apply."
+    },
+    {
+      "term": "connectedCallback()",
+      "plain": "The hook after the element is inserted and properties have been assigned.",
+      "precise": "The constructor topic states properties are assigned after construction and before connectedCallback. Use it to add host attributes and to start work that needs public properties.",
+      "example": "connectedCallback() { this.setAttribute('role', 'region'); }",
+      "non_example": "Calling super() only here and skipping constructor.",
+      "confusable_neighbor": "renderedCallback, which runs after render—details Need verification on the overview page.",
+      "boundary": "Unsubscribe and cleanup belong in disconnectedCallback (later lesson / overview)."
+    },
+    {
+      "term": "container",
+      "plain": "A middle component that wraps children but is itself inside the owner.",
+      "precise": "A container can read but not change public properties of contained components, call methods, and listen for some bubbled events.",
+      "example": "c-todo-wrapper between c-todo-app and c-todo-item in the Guide example.",
+      "non_example": "The owner that authors the outer template.",
+      "confusable_neighbor": "Lightning App Builder region, which is a page container, not this owner/container pair.",
+      "boundary": "Bubbling details are LWC-005."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Compose in the parent template",
+      "actor": "Developer",
+      "trigger": "Need reusable child UI",
+      "before": "One giant template",
+      "after": "Parent HTML nests <c-lab-child> with a sibling folder under lwc",
+      "observe": "Both bundles exist as siblings; parent markup has a closing child tag",
+      "failure": "Nesting the child folder inside the parent folder"
+    },
+    {
+      "step": 2,
+      "transition": "Declare the public contract",
+      "actor": "Developer",
+      "trigger": "Parent must pass values or call behavior",
+      "before": "All child fields private",
+      "after": "@api properties and methods only for the contract",
+      "observe": "Parent attribute maps to the decorated field",
+      "failure": "Parent setting a private field by convention"
+    },
+    {
+      "step": 3,
+      "transition": "Choose slots versus properties",
+      "actor": "Developer",
+      "trigger": "Parent has markup or data",
+      "before": "Confusion between HTML and values",
+      "after": "Slots for markup, @api for typed values",
+      "observe": "Named slot content appears in the child's placeholder",
+      "failure": "Passing Aura into the slot"
+    },
+    {
+      "step": 4,
+      "transition": "Respect constructor timing",
+      "actor": "Developer",
+      "trigger": "Need initialization",
+      "before": "Reading recordId in constructor",
+      "after": "super() first; read public properties in connectedCallback or later",
+      "observe": "recordId populated in connectedCallback in the parent/child lab",
+      "failure": "Adding host attributes in constructor"
+    }
+  ],
+  "when_to_use": [
+    "When a parent Lightning web component must set public properties on a child or call a public @api method.",
+    "When composition in the parent template is the right split instead of one giant component.",
+    "When the parent should pass markup into child slots rather than encoding HTML as a string property.",
+    "When lifecycle hooks matter: constructor is too early for public properties; connectedCallback runs after they are assigned.",
+    "When you must refuse Aura markup inside an LWC slot."
+  ],
+  "when_not_to_use": [
+    "Do not use this composition lesson as a substitute for custom events or Lightning Message Service (LWC-005).",
+    "Do not treat @api public properties as a data-access choice versus wire or Apex (LWC-006).",
+    "Do not use slots when the parent only has a record Id—that is an @api property, not markup.",
+    "Do not invent a full lifecycle order-of-execution table beyond the constructor facts cited here.",
+    "Do not compose production customer pages from this parent/child lab."
+  ],
+  "configuration_or_code_location": [
+    "lwc/labParent/labParent.html nesting <c-lab-child>.",
+    "lwc/labChild/labChild.js with @api fields and methods.",
+    "labChild.html <slot> and named slots.",
+    "constructor and connectedCallback in the child class."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab needs labParent to show a LAB_ contact card. The child needs a public name, a reset method, a named footer slot, and must not read name in the constructor. No production data.",
+    "inputs": [
+      "Parent owns the template",
+      "Child folder is a sibling under lwc",
+      "Footer markup supplied by the parent"
+    ],
+    "decisions": [
+      {
+        "decision": "Decorate name and reset with @api; set name from parent attributes.",
+        "because": "The public API is @api properties and methods.",
+        "rejected": "Parent poking a private field"
+      },
+      {
+        "decision": "Put a named footer slot on the child and pass markup from the parent.",
+        "because": "Slots are for parent-provided markup.",
+        "rejected": "Passing HTML as an innerHTML string property"
+      },
+      {
+        "decision": "Log name in connectedCallback, not constructor.",
+        "because": "Public properties are assigned after construction.",
+        "rejected": "Treating undefined record/name in constructor as a Salesforce bug"
+      }
+    ],
+    "configuration_or_code": [
+      "labChild.js: import { LightningElement, api } from 'lwc'; export default class LabChild extends LightningElement { @api name; @api reset() { this.name = ''; } constructor() { super(); } connectedCallback() { /* name is assigned */ } }",
+      "labChild.html: <template><p>{name}</p><slot name=\"footer\"></slot></template>",
+      "labParent.html: <c-lab-child name={displayName}><span slot=\"footer\">LAB_ footer</span></c-lab-child>"
+    ],
+    "output": "Parent shows the child with name and footer markup. Constructor does not rely on name.",
+    "verification": [
+      "name is undefined if read before connectedCallback in a constructor log.",
+      "Footer span appears in the named slot.",
+      "Aura component is not used inside the slot."
+    ],
+    "self_explanation": "Composition was HTML nesting plus @api plus slots plus constructor timing."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable scratch org; labParent and labChild only.",
+    "starting_state_checks": [
+      "Two sibling folders under lwc.",
+      "No production record Ids required."
+    ],
+    "steps": [
+      "Create labChild with @api label, an @api ping() method that sets a private note, and an unnamed slot plus a named slot=\"badge\".",
+      "Create labParent that sets label on <c-lab-child>, passes inner markup into both slots, and calls ping() from a button handler using a supported child lookup.",
+      "In labChild constructor, call super() only. In connectedCallback, read this.label and confirm it is populated.",
+      "Attempt (in a comment, not production) passing an Aura component into the slot and record that the Guide forbids it."
+    ],
+    "guided_completion": [
+      "If label is undefined in connectedCallback, the parent attribute name may not match the @api field.",
+      "If slotted markup is missing, check slot=\"badge\" spelling versus name=\"badge\"."
+    ],
+    "independent_challenge": "Handle slotchange on the unnamed slot and write one sentence: it fires for direct children of the slot, not deep descendants.",
+    "evidence": [
+      "Parent HTML showing child tag, attributes, and slot fillers.",
+      "Child JS showing super() in constructor and @api members; note that label is read in connectedCallback."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete labParent and labChild.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not fully specify renderedCallback order; see unresolved_uncertainty."
+  },
+  "decision_table": [
+    {
+      "signal": "Parent has a record Id or string the child must receive.",
+      "choose": "Public @api property set from the parent template attribute.",
+      "not": "A slot filled with the Id as text as the only contract.",
+      "why": "Typed values are public properties; slots are for markup."
+    },
+    {
+      "signal": "Parent must supply heading HTML or a footer.",
+      "choose": "Child <slot> unnamed or named; parent passes markup.",
+      "not": "innerHTML assignment inside the child from a string property.",
+      "why": "Slots exist so parents pass markup into the child template."
+    },
+    {
+      "signal": "Parent must invoke child behavior on a button.",
+      "choose": "An @api method on the child called from parent JavaScript.",
+      "not": "A private method the parent reaches by undocumented internals.",
+      "why": "The public API is @api properties and methods."
+    },
+    {
+      "signal": "Child needs the public property during startup.",
+      "choose": "Read it in connectedCallback or later, after properties are assigned.",
+      "not": "Read it in constructor before super's world has attributes.",
+      "why": "constructor topic: properties are not passed yet; they arrive before connectedCallback."
+    }
+  ],
+  "limitations": [
+    "Does not teach CustomEvent bubbling (LWC-005).",
+    "Does not teach wire/LDS (LWC-006).",
+    "Full hook table Needs verification from the lifecycle overview page.",
+    "Boolean @api attribute quirks Need verification on the properties page."
+  ],
+  "security_notes": [
+    "Do not expose internals with @api 'just in case'.",
+    "Slotted markup still runs in the page; do not slot untrusted HTML.",
+    "recordId on a child does not bypass FLS."
+  ],
+  "common_mistakes": [
+    "Reading @api fields in constructor.",
+    "Forgetting super().",
+    "Nesting component folders on disk.",
+    "Passing Aura into an LWC slot.",
+    "Using this.template.querySelector to find slotted nodes."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Public property is undefined in constructor.",
+      "check": [
+        "Move the read to connectedCallback.",
+        "Confirm the parent attribute maps to the @api name."
+      ],
+      "do_not_assume": "App Builder failed to pass recordId at all."
+    },
+    {
+      "symptom": "Parent markup does not appear in the child.",
+      "check": [
+        "Child has <slot> or named slot matching slot=\"name\".",
+        "You did not try to pass an Aura component."
+      ],
+      "do_not_assume": "CSS hid the slot."
+    }
+  ],
+  "production_notes": [
+    "Keep @api surface small and documented.",
+    "Do not add host attributes in constructor.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where is the parent/child relationship defined?",
+      "options": {
+        "A": "In the parent HTML template; folders remain siblings under lwc",
+        "B": "By nesting the child folder inside the parent folder",
+        "C": "Only in js-meta.xml targets",
+        "D": "Only in Apex"
+      },
+      "answer": "A",
+      "rationale": "Compose Components: parent-child is defined in parentComponent.html; folders sit in the same lwc directory.",
+      "distractor_explanations": {
+        "B": "Nested folders are illegal (LWC-002).",
+        "C": "Targets expose the parent, not the child relationship.",
+        "D": "Apex does not compose LWC templates."
+      },
+      "concept": "Composition location",
+      "citation_ids": ["SF-LWC-COMPOSE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What can the owner do to composed children?",
+      "options": {
+        "A": "Set public properties, call methods, and listen for events",
+        "B": "Only listen for Lightning Message Service",
+        "C": "Change child private fields by name",
+        "D": "Nest Aura inside every slot by default"
+      },
+      "answer": "A",
+      "rationale": "The owner controls composed components that way.",
+      "distractor_explanations": {
+        "B": "LMS is cross-DOM, not the owner/child default.",
+        "C": "Private fields are not the public API.",
+        "D": "Aura cannot be passed into a slot."
+      },
+      "concept": "Owner powers",
+      "citation_ids": ["SF-LWC-COMPOSE"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How do you expose a public property or method?",
+      "options": {
+        "A": "Annotate it with @api",
+        "B": "Name it public without a decorator",
+        "C": "Put it in js-meta.xml only",
+        "D": "Declare it global like Apex"
+      },
+      "answer": "A",
+      "rationale": "The JS file topic: public API via @api properties and methods.",
+      "distractor_explanations": {
+        "B": "Undecorated fields are local to the module by default.",
+        "C": "meta.xml is targets, not JS visibility.",
+        "D": "Apex global is a different language."
+      },
+      "concept": "@api",
+      "citation_ids": ["SF-LWC-JS-FILE"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Can you pass an Aura component into an LWC slot?",
+      "options": {
+        "A": "No. You cannot pass an Aura component into a slot",
+        "B": "Yes, always",
+        "C": "Only if isExposed is true",
+        "D": "Only in constructor"
+      },
+      "answer": "A",
+      "rationale": "Slots topic: you can’t pass an Aura component into a slot.",
+      "distractor_explanations": {
+        "B": "Explicitly unsupported.",
+        "C": "isExposed is unrelated.",
+        "D": "Lifecycle does not lift the restriction."
+      },
+      "concept": "Slots vs Aura",
+      "citation_ids": ["SF-LWC-SLOTS"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why is this.recordId undefined in constructor even though the parent set record-id?",
+      "options": {
+        "A": "Public properties are assigned after construction and before connectedCallback",
+        "B": "@api does not work for recordId",
+        "C": "Parents cannot set properties",
+        "D": "You forgot CSS"
+      },
+      "answer": "A",
+      "rationale": "constructor topic: properties aren’t passed yet; they are assigned before connectedCallback.",
+      "distractor_explanations": {
+        "B": "recordId is a common @api pattern on record pages.",
+        "C": "Owners set public properties.",
+        "D": "CSS is unrelated."
+      },
+      "concept": "constructor timing",
+      "citation_ids": ["SF-LWC-CTOR"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What must be the first statement in constructor()?",
+      "options": {
+        "A": "super() with no parameters",
+        "B": "this.recordId = null",
+        "C": "document.write()",
+        "D": "return false"
+      },
+      "answer": "A",
+      "rationale": "Custom elements spec via the constructor topic: first statement super() with no parameters.",
+      "distractor_explanations": {
+        "B": "Do not inspect or assign public properties there as initialization of the contract.",
+        "C": "document.write is forbidden.",
+        "D": "Do not use a non-simple return."
+      },
+      "concept": "super()",
+      "citation_ids": ["SF-LWC-CTOR"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Slotted span is not found with this.template.querySelector('span'). What should you use?",
+      "options": {
+        "A": "this.querySelector('span') because slotted nodes are not in the child's shadow tree",
+        "B": "document.write",
+        "C": "Apex SOQL",
+        "D": "Always this.template.querySelector"
+      },
+      "answer": "A",
+      "rationale": "Slots: use this.querySelector for elements passed via slots.",
+      "distractor_explanations": {
+        "B": "Forbidden in constructor and not a query API.",
+        "C": "Unrelated.",
+        "D": "template.querySelector is for the child's shadow tree."
+      },
+      "concept": "Slotted DOM queries",
+      "citation_ids": ["SF-LWC-SLOTS"]
+    },
+    {
+      "id": "Q8",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Owner versus container?",
+      "options": {
+        "A": "Owner can set public properties; container can read but not change them",
+        "B": "They are identical",
+        "C": "Container always owns the page",
+        "D": "Owner cannot listen for events"
+      },
+      "answer": "A",
+      "rationale": "Compose Components lists owner powers versus weaker container powers.",
+      "distractor_explanations": {
+        "B": "The Guide distinguishes them.",
+        "C": "Owner owns the template.",
+        "D": "Owner can listen for events."
+      },
+      "concept": "Owner vs container",
+      "citation_ids": ["SF-LWC-COMPOSE"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You need to add a data attribute on the host during startup. Where?",
+      "options": {
+        "A": "connectedCallback, not constructor",
+        "B": "Only in CSS",
+        "C": "Only in js-meta.xml",
+        "D": "constructor before super()"
+      },
+      "answer": "A",
+      "rationale": "Do not add attributes to the host during construction; use another hook such as connectedCallback.",
+      "distractor_explanations": {
+        "B": "CSS is not how you set data attributes.",
+        "C": "Configuration XML is not the host element.",
+        "D": "super() must be first; host attributes still do not belong in constructor."
+      },
+      "concept": "Host attributes",
+      "citation_ids": ["SF-LWC-CTOR"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "constructor flow direction?",
+      "options": {
+        "A": "Parent then child",
+        "B": "Child then parent always",
+        "C": "Random",
+        "D": "Only the child"
+      },
+      "answer": "A",
+      "rationale": "The constructor flows from parent to child.",
+      "distractor_explanations": {
+        "B": "That is not the cited constructor order.",
+        "C": "Order is specified.",
+        "D": "Parent constructor runs first."
+      },
+      "concept": "constructor order",
+      "citation_ids": ["SF-LWC-CTOR"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Parent wants to pass 'Willy' into a firstName area of the child. Best tool?",
+      "options": {
+        "A": "A named slot firstName, or an @api firstName property if it is just a string value",
+        "B": "Lightning Message Service only",
+        "C": "An Aura application event",
+        "D": "A nested folder named firstName"
+      },
+      "answer": "A",
+      "rationale": "The slots example passes Willy into a named firstName slot; a string can also be an @api property. Choose slot when it is markup.",
+      "distractor_explanations": {
+        "B": "LMS is for cross-DOM, not parent/child defaults.",
+        "C": "Aura events are the wrong model.",
+        "D": "Folders are not slots."
+      },
+      "concept": "Named slots vs properties",
+      "citation_ids": ["SF-LWC-SLOTS", "SF-LWC-COMPOSE"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "slotchange did not fire when a nested footer inside slotted content toggled. Why might that be?",
+      "options": {
+        "A": "slotchange fires when a direct child of the slot changes, not when descendants inside that child change",
+        "B": "slotchange never exists",
+        "C": "Only Aura slots fire slotchange",
+        "D": "You must key the slot with index"
+      },
+      "answer": "A",
+      "rationale": "The slots topic: changes within children of the slot do not trigger slotchange.",
+      "distractor_explanations": {
+        "B": "All slot elements support slotchange.",
+        "C": "This is LWC slots.",
+        "D": "Unrelated to list keys."
+      },
+      "concept": "slotchange",
+      "citation_ids": ["SF-LWC-SLOTS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "composition",
+      "front": "Where do parent and child folders live?",
+      "back": "As siblings under lwc. Parent/child is declared in the parent HTML template."
+    },
+    {
+      "id": "F2",
+      "category": "composition",
+      "front": "What can the owner set and call on a child?",
+      "back": "Public properties and public methods; it can also listen for events."
+    },
+    {
+      "id": "F3",
+      "category": "api",
+      "front": "How is the public API declared?",
+      "back": "Annotate public properties and methods with @api."
+    },
+    {
+      "id": "F4",
+      "category": "slots",
+      "front": "What is a slot?",
+      "back": "A placeholder in the child template for markup the parent passes in."
+    },
+    {
+      "id": "F5",
+      "category": "slots",
+      "front": "Can Aura go into an LWC slot?",
+      "back": "No. You cannot pass an Aura component into a slot."
+    },
+    {
+      "id": "F6",
+      "category": "lifecycle",
+      "front": "First line of constructor()?",
+      "back": "super() with no parameters, before touching this."
+    },
+    {
+      "id": "F7",
+      "category": "lifecycle",
+      "front": "Are public properties set in constructor?",
+      "back": "No. They are assigned after construction and before connectedCallback."
+    },
+    {
+      "id": "F8",
+      "category": "lifecycle",
+      "front": "constructor order?",
+      "back": "constructor fires parent then child. Call super() first."
+    },
+    {
+      "id": "F9",
+      "category": "slots",
+      "front": "How to query slotted elements from the child?",
+      "back": "this.querySelector, not this.template.querySelector."
+    },
+    {
+      "id": "F10",
+      "category": "composition",
+      "front": "Owner vs container on public properties?",
+      "back": "Owner can set them; container can read but not change them."
+    },
+    {
+      "id": "F11",
+      "category": "lifecycle",
+      "front": "Where to add host attributes?",
+      "back": "Not in constructor. Use connectedCallback or another later hook."
+    },
+    {
+      "id": "F12",
+      "category": "slots",
+      "front": "Named slot matching?",
+      "back": "Child <slot name=\"firstName\">; parent uses slot=\"firstName\" on the filler."
+    },
+    {
+      "id": "F13",
+      "category": "api",
+      "front": "Parent attribute for recordId?",
+      "back": "Typically record-id on the child tag mapping to @api recordId."
+    },
+    {
+      "id": "F14",
+      "category": "slots",
+      "front": "When does slotchange fire?",
+      "back": "When a direct child of the slot node is added or removed, not deep descendant edits."
+    },
+    {
+      "id": "F15",
+      "category": "boundary",
+      "front": "Is composition the same as custom events?",
+      "back": "No. This lesson is down via @api/slots; events up the tree are LWC-005."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do parent and child Lightning web components relate?",
+      "answer_30_seconds": "The parent template nests the child tag. Folders are siblings under lwc. The owner sets @api properties, may call @api methods, and can listen for events.",
+      "answer_2_minutes": "I distinguish owner from container. I refuse nested folders. I map kebab-case attributes to @api fields. I use slots for markup. I do not use LMS for this parent/child pair.",
+      "example": "labParent.html nests <c-lab-child name={displayName}></c-lab-child> with labChild as a sibling bundle.",
+      "tradeoffs": [
+        "One fat component vs composition",
+        "Property vs slot"
+      ],
+      "follow_ups": [
+        "What can a container not do?",
+        "Where do events fit?"
+      ],
+      "weak_answer_warnings": [
+        "Nesting folders on disk"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What is @api for on a child Lightning web component?",
+      "answer_30_seconds": "It marks the public properties and methods a parent is allowed to use. Undecorated fields are not that contract.",
+      "answer_2_minutes": "I import api from lwc. I keep the surface small. I set properties from parent markup. I call methods from parent JS. I do not confuse @api with @track or with Apex public.",
+      "example": "@api recordId and @api reset() on labChild.",
+      "tradeoffs": [
+        "Small public API vs convenience",
+        "Method vs event for child-to-parent"
+      ],
+      "follow_ups": [
+        "Why not decorate every field?",
+        "How does kebab-case mapping work?"
+      ],
+      "weak_answer_warnings": [
+        "@api on every private helper"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Parent needs to inject a footer into the child. Property or slot?",
+      "answer_30_seconds": "A slot, usually named footer, so the parent passes markup. Use @api only if it is a typed value, not HTML structure.",
+      "answer_2_minutes": "I show unnamed versus named slots from the Guide's Willy/Wonka example. I forbid Aura in the slot. I query slotted nodes with this.querySelector. I still pass recordId as @api, not as a slot.",
+      "example": "<slot name=\"footer\"></slot> filled by <span slot=\"footer\">LAB_ footer</span> in the parent.",
+      "tradeoffs": [
+        "Named slots vs a single unnamed slot",
+        "Markup slot vs string property"
+      ],
+      "follow_ups": [
+        "What is slotchange?",
+        "Can two unnamed slots exist?"
+      ],
+      "weak_answer_warnings": [
+        "innerHTML as the default composition tool"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "recordId is undefined in the child's constructor. Is App Builder broken?",
+      "answer_30_seconds": "Usually no. Public properties are not assigned yet. Read recordId in connectedCallback or later after super() in constructor.",
+      "answer_2_minutes": "I recite parent-then-child constructor, super() first, no children, no public properties. I add host attributes in connectedCallback. If it is still undefined there, then I check the parent attribute name and the page target providing recordId.",
+      "example": "constructor() { super(); } connectedCallback() { console.log(this.recordId); } on a record-page child.",
+      "tradeoffs": [
+        "connectedCallback vs renderedCallback for DOM work",
+        "Failing fast vs waiting for the hook"
+      ],
+      "follow_ups": [
+        "Can you add host attributes in constructor?",
+        "What is forbidden in constructor besides properties?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming FLS for constructor undefined"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Parent cannot call child.reset(). What do you check?",
+      "answer_30_seconds": "reset must be @api. The parent must hold a child instance. A private method is invisible on purpose.",
+      "answer_2_minutes": "I check the decorator import, the method spelling, and that we are not calling before the child exists. I prefer documenting the public method rather than reaching into the child's shadow. I do not turn it into an LMS message for a direct child.",
+      "example": "Child @api reset(); parent button handler calls the child's reset after the child is rendered.",
+      "tradeoffs": [
+        "Public method vs child dispatching an event",
+        "querySelector vs refs — current preferred lookup Needs verification"
+      ],
+      "follow_ups": [
+        "Should reset be an event instead?",
+        "When is the child instance available?"
+      ],
+      "weak_answer_warnings": [
+        "Calling undocumented private helpers"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Slotted content is missing and querySelector in the child returns null. Walk the checks.",
+      "answer_30_seconds": "Match slot name, use this.querySelector for slotted nodes, confirm it is not Aura, and confirm the parent actually passed body markup.",
+      "answer_2_minutes": "I remember slotted nodes are not in the child's shadow tree, so this.template.querySelector misses them. Multiple unnamed slots duplicate content—usually have one. Dynamic slot attributes on fillers are coerced to strings. I do not debug CSS first.",
+      "example": "Parent <span slot=\"badge\">N</span> and child <slot name=\"badge\"></slot>; child uses this.querySelector('span').",
+      "tradeoffs": [
+        "Slots vs passing a badge string as @api",
+        "Shadow query vs light query"
+      ],
+      "follow_ups": [
+        "What does slotchange not see?",
+        "Can slot name be dynamic on the <slot> element?"
+      ],
+      "weak_answer_warnings": [
+        "Using template.querySelector for slotted DOM"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you not split into parent/child?",
+      "answer_30_seconds": "When there is no reuse and no slot/property contract—just extra files. Also when a base component already is the child you need.",
+      "answer_2_minutes": "Composition pays off for reuse and for owner control of tickets and plates. A single small template can stay one bundle. lightning-button is composition with a base child. I will not split just to nest folders. Events across the page still are not this lesson.",
+      "example": "Keep a 15-line banner in one LWC; extract labBadge only when two parents need the same badge plus slot.",
+      "tradeoffs": [
+        "Reuse vs indirection",
+        "Base component vs custom child"
+      ],
+      "follow_ups": [
+        "What is an owner versus a Lightning page?",
+        "When do slots beat properties?"
+      ],
+      "weak_answer_warnings": [
+        "A child component for every paragraph"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach parent/child with the pass-window analogy and where it breaks.",
+      "answer_30_seconds": "Parent chef writes @api tickets, calls @api fire methods, and fills slot plates. constructor unlocks the station before tickets arrive. It breaks on owner versus container rank and on Aura not being garnish.",
+      "answer_2_minutes": "I draw the mermaid: parent HTML to child, properties down, methods called, slots filled, constructor then connectedCallback. I say folders are hallway siblings. I refuse generic catalog metaphors. I leave bubbling and LMS for the next topic.",
+      "example": "labParent / labChild with name property, footer slot, ping method, constructor super only.",
+      "tradeoffs": [
+        "Analogy vs precise hook names",
+        "Teaching slots vs teaching events"
+      ],
+      "follow_ups": [
+        "What must you not invent about other hooks?",
+        "How does a container differ?"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphors",
+        "Full invented lifecycle table"
+      ]
+    }
+  ]
+}

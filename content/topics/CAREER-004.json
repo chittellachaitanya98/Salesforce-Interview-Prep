@@ -1,0 +1,1156 @@
+{
+  "topic_id": "CAREER-004",
+  "slug": "debugging-live-scenarios-without-guessing",
+  "title": "Debugging live scenarios without guessing",
+  "track": "Interview and workplace mastery",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "CAREER-003"
+  ],
+  "objectives": [
+    "Reproduce a live Salesforce scenario as the affected user before naming a Flow, trigger, or field.",
+    "Split a live failure into access versus data versus automation with observable evidence, not guesses.",
+    "Explain that debug logs record database operations, system processes, and errors, and that class or trigger trace flags override levels but do not generate logs.",
+    "Change one thing, retest the same scenario, and refuse unofficial log-size or governor numbers."
+  ],
+  "diagnostic_question": "A sales rep says Closed Won fails in production. Before you guess a Flow, what do you reproduce as that user, how do you tell access from data from automation, and what would a debug log actually prove?",
+  "definition": "Debugging live scenarios without guessing is a workplace diagnostic protocol: reproduce the failure as the affected user, classify access versus data versus automation, then collect a debug log only when logging is actually enabled. A debug log can record database operations, system processes, and errors during a transaction or unit test. Class and trigger trace flags override other logging levels but do not cause logs to be generated or saved. ([Debug Log](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log.htm); [Order of Precedence](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log_precedence.htm))",
+  "why_it_matters": "Interviewers fail candidates who edit three Flows from a Slack screenshot. Access, bad data, and automation can look identical on a ticket. Guessing burns production, hides the real cause, and skips the evidence a debug log can provide when a user trace flag is actually on.",
+  "sixty_second_explanation": "Treat a live Salesforce failure like ER triage: vitals before incision. Reproduce the scenario as the patient (the affected user). Then decide whether the organ system is access, data, or automation. A debug log is the lab panel for database, system, and error events. Setting class or trigger trace flags is turning the monitor's sensitivity up; it does not admit the patient or start the recording. One intervention, then recheck vitals. Do not quote unofficial log-size numbers.",
+  "deeper_explanation": [
+    "Apex debugging uses the Developer Console and debug logs. Exception handling is a neighboring skill; this lesson is how you collect evidence on a live scenario instead of guessing which automation fired. ([Debugging Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging.htm))",
+    "A debug log can record database operations, system processes, and errors when a transaction runs or unit tests run. Documented contents include database changes, HTTP callouts, Apex errors, Apex resource use, and automated workflow processes such as workflow rules, assignment rules, approval processes, and validation rules. It does not include actions triggered by time-based workflows, or standard or custom controllers used in Visualforce email templates. ([Debug Log](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log.htm))",
+    "You can retain and manage debug logs for specific users, including yourself, and for classes and triggers. Setting class and trigger trace flags does not cause logs to be generated or saved. Those flags override other logging levels, including user trace flags, but they do not cause logging to occur. If logging is enabled when classes or triggers execute, logs are generated at execution time. View logs from Setup by searching Debug Logs. ([Debug Log](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log.htm))",
+    "Trace flags override other logging logic. The Developer Console sets a trace flag when it loads, and that flag remains until it expires. If you have no active trace flags, synchronous and asynchronous Apex tests use documented default levels. If no relevant trace flags are active and no tests are running, an API debugging header can set levels; requests without that header generate transient logs that are not saved unless another rule applies. If none of these cases apply, logs are not generated or persisted. ([Order of Precedence](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log_precedence.htm))",
+    "Salesforce publishes debug log size, volume-window, retention, and org-accumulation limits on the Debug Log page. Quote that page in an interview. Do not invent unofficial megabyte or governor numbers from blogs. Needs verification whenever an interviewer asks for a number you have not just re-read. ([Debug Log](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log.htm))",
+    "If Apex Code is FINEST, the log includes details of all Apex variable assignments. Do not trace code that handles passwords or other sensitive data, including community self-registration. Session IDs are replaced with SESSION_ID_REMOVED in Apex debug logs. ([Debug Log](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log.htm))"
+  ],
+  "mental_model": {
+    "analogy": "ER triage protocol: take vitals and name the organ system before you cut. A live Salesforce ticket is the ambulance radio, not a license to open Flow Builder.",
+    "useful_mapping": [
+      "reported symptom → chief complaint on the radio",
+      "reproduce as the affected user → vitals on that patient, not a different one",
+      "access versus data versus automation → three organ systems in the differential",
+      "user trace flag → start the monitor so a recording exists",
+      "class or trigger trace flag → change the monitor's sensitivity; it does not start the recording",
+      "debug log → lab panel of database, system, and error events",
+      "one change then retest → one intervention, then recheck vitals",
+      "guessing three Flows at once → incision without vitals"
+    ],
+    "where_it_breaks": [
+      "Salesforce is not medicine; you still need change control and a sandbox for risky cuts.",
+      "A debug log is not a complete patient history: time-based workflow actions and Visualforce email-template controllers are documented exclusions.",
+      "FINEST logging can spill sensitive variable values; an ER monitor does not print passwords.",
+      "Log size, retention, and volume limits are published numbers you must re-read, not triage folklore.",
+      "Reproducing as a user in production may be forbidden; use a sandbox clone of the scenario when policy requires it."
+    ]
+  },
+  "teach_back_prompt": "Walk a teammate through ER triage on a Closed Won failure: reproduce as the user, split access versus data versus automation, then explain why a class trace flag alone will not create a debug log. Name one place the ER analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: what a debug log records, and why class or trigger trace flags do not generate logs."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify four live tickets as access, data, or automation using the decision table."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Teach the ER triage analogy and two places it breaks."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk one live scenario from reproduce-as-user through one change and a retest."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Give a two-minute interview answer on debugging live scenarios without guessing, including precedence."
+    }
+  ],
+  "retrieval_practice": {
+    "before_reveal": "Attempt the diagnostic, decision table, MCQs, and interview prompts from memory before opening the explanation.",
+    "confidence": "Record how sure you are that class/trigger flags generate logs; correct that misconception after feedback.",
+    "feedback": "For each miss, name whether you guessed access, data, or automation without evidence.",
+    "transfer": "Apply the same protocol to a Flow-or-Apex live scenario you have not seen in this lesson."
+  },
+  "sources": [
+    {
+      "source_id": "SF-APEX-DEBUG",
+      "title": "Debugging Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging.htm",
+      "supports": "Apex debugging support via Developer Console and debug logs; exceptions as a neighboring topic.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Overview only; log contents and precedence are on the child pages."
+    },
+    {
+      "source_id": "SF-APEX-LOG",
+      "title": "Debug Log",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log.htm",
+      "supports": "What debug logs record; user vs class/trigger flags; flags override levels but do not generate logs; Setup Debug Logs; documented exclusions; FINEST sensitive-data warning; published size/retention/volume limits.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Limit numbers can change; re-read this page rather than memorizing unofficial blog figures."
+    },
+    {
+      "source_id": "SF-APEX-PREC",
+      "title": "Debug Log Order of Precedence",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log_precedence.htm",
+      "supports": "Trace flags override other logging logic; Developer Console sets a trace flag on load; default test levels; API header and entry-point levels; logs not generated if none apply; class/trigger flags do not generate logs.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Exact default category names should be re-read from the live page if quoted in an exam setting."
+    },
+    {
+      "source_id": "SF-HELP-CODE-LOG",
+      "title": "Salesforce Help — Debug Logs",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.code_debug_log.htm",
+      "supports": "Setup-oriented debug log and trace-flag administration for users.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Help HTML was not fully retrieved this session; Setup click-paths are Needs verification against the live article."
+    },
+    {
+      "source_id": "SF-HELP-PROCESS-LOG",
+      "title": "Salesforce Help — Troubleshoot Using Debug Logs",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.process_troubleshoot_debuglogs.htm",
+      "supports": "Using debug logs while troubleshooting automated processes.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Help HTML was not fully retrieved this session; process-builder versus Flow UI labels are Needs verification."
+    },
+    {
+      "source_id": "SF-TH-PD1-DEBUG",
+      "title": "Cert Prep: Platform Developer — Testing, Debugging, and Deployment",
+      "type": "Official Trailhead",
+      "url": "https://trailhead.salesforce.com/content/learn/modules/platform-developer-i-certification-prep-testing-debugging-and-deployment",
+      "supports": "PD1-oriented practice on testing, debugging, and deployment scenarios.",
+      "release_or_version": "Live Trailhead",
+      "last_verified": "2026-08-16",
+      "limits": "Cert-prep orientation, not a substitute for the Apex Debug Log reference. Unit names can change."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer official Help, Developer Guide, and Trailhead over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Reproduce as the user",
+        "Access vs data vs automation",
+        "User trace flag starts logging",
+        "Class/trigger flags override only",
+        "Debug log: DB, system, errors",
+        "One change then retest"
+      ],
+      "accessible_description": "Portrait triage map: reproduce the live scenario as the affected user; split access, data, and automation; enable a user trace flag before expecting a debug log; treat class and trigger flags as level overrides only; read database, system, and error events; change one thing and retest.",
+      "alt_text": "Six-zone map of debugging live Salesforce scenarios: reproduce as user, differential diagnosis, trace flags, debug log contents, and one-change retest."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-LOG",
+        "SF-APEX-PREC",
+        "SF-APEX-DEBUG",
+        "SF-HELP-CODE-LOG"
+      ],
+      "accessible_description": "Printable triage sheet: reproduce as user, three organ systems, what logs record, what class/trigger flags do not do, and a reminder not to invent log-size numbers."
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Live symptom → reproduce as user → evidence → one change",
+      "accessible_description": "A diagnostic path from a live ticket through user reproduction, access/data/automation split, optional debug log, and a single change with retest.",
+      "legend": "Protocol is handbook diagnostic practice; log mechanics are from the Apex Developer Guide."
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Ticket[Live user symptom] --> Repro[Reproduce as that user]\n  Repro --> Triage{Access data or automation?}\n  Triage -->|Access| Acc[Sharing FLS permission]\n  Triage -->|Data| Dat[Record values related rows]\n  Triage -->|Automation| Auto[Flow validation Apex]\n  Auto --> UserFlag[User trace flag enables logging]\n  UserFlag --> ClassFlag[Class or trigger flag overrides levels only]\n  ClassFlag --> Log[Debug log: database system errors]\n  Log --> One[One change then retest]",
+      "decision": "flowchart TD\n  Live[Live scenario] --> Q1{Reproduced as the user?}\n  Q1 -->|No| StopGuess[Do not guess; get path and sample]\n  Q1 -->|Yes| Q2{Missing UI or access denied?}\n  Q2 -->|Yes| AccessFirst[Treat as access first]\n  Q2 -->|No| Q3{Wrong values and no error?}\n  Q3 -->|Yes| DataFirst[Inspect records first]\n  Q3 -->|No| Q4{Error or unexpected automation?}\n  Q4 -->|Yes| EnableLog[User trace flag then read the debug log]\n  Q4 -->|No| Split[Split access vs data vs automation with evidence]",
+      "sequence": "sequenceDiagram\n  participant User as Affected user\n  participant Flag as User trace flag\n  participant Class as Class or trigger flag\n  participant Log as Debug log\n  User->>Flag: Reproduce the live scenario\n  Note over Class: Overrides levels only\n  Note over Class: Does not generate logs\n  Flag->>Log: If logging is enabled, record DB system errors\n  Log->>User: Read evidence then one change and retest"
+    }
+  },
+  "visual_model": {
+    "steps": [
+      "Reproduce the live scenario as the affected user, not as a system administrator who can see everything.",
+      "Classify access, data, or automation with a visible check before opening a log.",
+      "Turn on a user trace flag when you need a saved debug log; do not expect class or trigger flags to create one.",
+      "Read database, system, and error events; do not assume time-based workflow actions are in the log.",
+      "Make one change, then retest the same scenario.",
+      "Cite current Debug Log limits; do not invent megabyte or governor numbers."
+    ]
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A debug log can record database operations, system processes, and errors that occur when executing a transaction or running unit tests, including database changes, HTTP callouts, Apex errors, Apex resource use, and automated workflow processes such as workflow rules, assignment rules, approval processes, and validation rules.",
+      "source_ids": [
+        "SF-APEX-LOG"
+      ],
+      "scope": "Debug log contents",
+      "validation": "Matched to the Apex Developer Guide Debug Log page reviewed 2026-08-16.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Setting class and trigger trace flags does not cause logs to be generated or saved; those flags override other logging levels, including user trace flags, but they do not cause logging to occur. If logging is enabled when classes or triggers execute, logs are generated at execution time.",
+      "source_ids": [
+        "SF-APEX-LOG",
+        "SF-APEX-PREC"
+      ],
+      "scope": "Class and trigger trace flags",
+      "validation": "Wording appears on both the Debug Log page and the Order of Precedence page.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Trace flags override all other logging logic; the Developer Console sets a trace flag when it loads. If none of the documented cases apply (active trace flags, default test logging, API debugging header, or entry-point log level), logs are not generated or persisted.",
+      "source_ids": [
+        "SF-APEX-PREC"
+      ],
+      "scope": "Debug log order of precedence",
+      "validation": "Matched to the Order of Precedence page reviewed 2026-08-16.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "The debug log does not include information from actions triggered by time-based workflows, and it does not include information from standard or custom controllers used in Visualforce email templates.",
+      "source_ids": [
+        "SF-APEX-LOG"
+      ],
+      "scope": "Documented log exclusions",
+      "validation": "Matched to the Debug Log note on that page.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "If the Apex Code log level is FINEST, the debug log includes details of all Apex variable assignments; do not trace Apex that handles sensitive data such as passwords. Session IDs are replaced with SESSION_ID_REMOVED in Apex debug logs.",
+      "source_ids": [
+        "SF-APEX-LOG"
+      ],
+      "scope": "FINEST and sensitive data",
+      "validation": "Matched to the Debug Log FINEST warning and session-id note.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-006",
+      "claim": "You can retain and manage debug logs for specific users, including yourself, and for classes and triggers; from Setup, search Debug Logs to view or download a log.",
+      "source_ids": [
+        "SF-APEX-LOG",
+        "SF-HELP-CODE-LOG"
+      ],
+      "scope": "User-scoped logs and Setup access",
+      "validation": "Developer Guide states user-scoped logs and Setup Debug Logs; Help article is listed for Setup administration but its HTML was not fully retrieved this session.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-007",
+      "claim": "Salesforce publishes debug log size, generation-volume, retention, and org-accumulation limits on the Debug Log page. Interview answers should cite that page rather than unofficial blog numbers.",
+      "source_ids": [
+        "SF-APEX-LOG"
+      ],
+      "scope": "Published limits; do not invent numbers",
+      "validation": "Limits section exists on the Debug Log page reviewed 2026-08-16; exact figures should be re-read before quoting.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-008",
+      "claim": "Apex provides debugging support through the Developer Console and debug logs.",
+      "source_ids": [
+        "SF-APEX-DEBUG"
+      ],
+      "scope": "Debugging Apex overview",
+      "validation": "Matched to the Debugging Apex page reviewed 2026-08-16.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Handbook interview rewrite 2026-08-16 against live Apex Developer Guide Debug Log and precedence pages (Summer '26 / API 67.0). Help article bodies were not fully retrieved; Setup click-paths remain Needs verification.",
+  "unresolved_uncertainty": [
+    "Exact Setup click-paths and UI labels on the Help debug-log articles were not fully retrieved this session; reverify in the live Help pages.",
+    "Quote current Debug Log size, retention, and volume-window figures from the live page; do not invent unofficial megabyte or governor numbers.",
+    "Whether a given org allows login-as or production trace flags is policy, not a platform constant."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Debug log",
+      "telugu": "లావాదేవీలో డేటాబేస్, సిస్టమ్, లోపాలను నమోదు చేసే లాగ్."
+    },
+    {
+      "english": "Trace flag",
+      "telugu": "లాగ్ స్థాయిని సెట్ చేసే జెండా; క్లాస్/ట్రిగర్ జెండా లాగ్‌ను సృష్టించదు."
+    },
+    {
+      "english": "Reproduce as user",
+      "telugu": "సమస్య ఉన్న యూజర్‌గా అదే దృశ్యాన్ని మళ్లీ చేయడం."
+    },
+    {
+      "english": "Guessing",
+      "telugu": "సాక్ష్యం లేకుండా ఫ్లో లేదా ట్రిగర్‌ను ఊహించడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I reproduce the live scenario as the affected user. I split access, data, and automation before I touch a Flow. A debug log records database, system, and error events. Class and trigger trace flags override levels; they do not generate logs. I change one thing and retest.",
+    "two_minutes": "I refuse to guess from a screenshot. I walk the same clicks as the user, or I put a user trace flag on that user. Missing fields are access until proven otherwise; wrong values with no error are data; an error or surprise automation is when I read a debug log. I know class and trigger flags only override levels. I will not quote unofficial log-size numbers; I will open the current Debug Log page. One change, then the same scenario again."
+  },
+  "terminology": [
+    {
+      "term": "debug log",
+      "plain": "A recording of what the platform did in one transaction or test.",
+      "precise": "A debug log can record database operations, system processes, and errors when executing a transaction or running unit tests, including database changes, callouts, Apex errors, Apex resources, and automated workflow processes.",
+      "example": "After a failed Closed Won save with a user trace flag on, you open the log and read VALIDATION and WORKFLOW events.",
+      "non_example": "A Slack screenshot of the error toast with no log attached.",
+      "confusable_neighbor": "Event Monitoring / Event Log File: different product family, not this debug-log recording.",
+      "boundary": "Time-based workflow actions and Visualforce email-template controllers are documented exclusions."
+    },
+    {
+      "term": "trace flag",
+      "plain": "A switch that sets how much detail a log would capture if logging is on.",
+      "precise": "Trace flags override other logging logic. User-scoped flags are how you retain logs for a person. Class and trigger trace flags override levels, including user trace flags, but do not generate or save logs.",
+      "example": "A 24-hour user trace flag on the failing sales rep so the next Closed Won attempt writes a log.",
+      "non_example": "Adding a class trace flag on OpportunityTrigger and assuming a log will appear without any user or console logging enabled.",
+      "confusable_neighbor": "Debug level (DEBUG, INFO, FINEST): the verbosity, not the switch that starts capture.",
+      "boundary": "Developer Console sets a trace flag when it loads; that flag lasts until it expires."
+    },
+    {
+      "term": "reproduce as user",
+      "plain": "Do the same clicks, with the same access, as the person who reported the live scenario.",
+      "precise": "Handbook diagnostic step: recreate the live scenario as the affected user (or with their trace flag) because administrator access hides sharing and FLS failures.",
+      "example": "Log in as the LAB_ sales user in a sandbox and click Closed Won on the same Opportunity pattern.",
+      "non_example": "Editing the Flow as a system administrator who can see every field, then declaring it 'works for me.'",
+      "confusable_neighbor": "Login As in production: may be blocked by policy; sandbox reproduction is the usual safe path.",
+      "boundary": "This is diagnostic protocol, not a Salesforce metadata type."
+    },
+    {
+      "term": "access vs data vs automation",
+      "plain": "Three different causes that look like one 'Salesforce is broken' ticket.",
+      "precise": "Access is sharing, FLS, or permission. Data is record values and related rows. Automation is validation, Flow, workflow, approval, or Apex. Split them with evidence before guessing.",
+      "example": "Rep cannot see Amount: check FLS before opening a debug log. Amount is blank: inspect the record. Amount is fine and save errors: then log automation.",
+      "non_example": "Deactivating three Flows because one user cannot see a button.",
+      "confusable_neighbor": "Order of execution: the sequence automation runs in, not the first split of a live ticket.",
+      "boundary": "Deep order-of-execution detail belongs in automation/Apex topics; this lesson is the first split."
+    },
+    {
+      "term": "logging level",
+      "plain": "How noisy the recording is for each category.",
+      "precise": "Categories such as Database, Workflow, Validation, Apex Code, and System have levels. Class and trigger flags override other levels. Apex Code FINEST includes all variable assignments.",
+      "example": "Raising Workflow to FINE on a user trace flag so assignment and approval lines are visible.",
+      "non_example": "Setting FINEST on Apex that stores passwords during community self-registration.",
+      "confusable_neighbor": "API debugging header: another way to set levels when no relevant trace flag is active.",
+      "boundary": "Default test levels are documented on the precedence page; re-read them rather than inventing a matrix."
+    },
+    {
+      "term": "one-change retest",
+      "plain": "Change a single suspected cause, then run the same live scenario again.",
+      "precise": "Handbook control: after evidence, alter one automation, permission, or data fix, then reproduce as the same user so you know which change mattered.",
+      "example": "Deactivate one record-triggered Flow, then have the LAB_ user click Closed Won again.",
+      "non_example": "Turning off four Flows, a validation rule, and a trigger in one save, then claiming victory.",
+      "confusable_neighbor": "Binary search on a large org: still change one cohort at a time, not all at once.",
+      "boundary": "Production changes still need change control; the protocol does not authorize cowboy edits."
+    },
+    {
+      "term": "code unit",
+      "plain": "One discrete chunk of work inside the transaction, marked in the log.",
+      "precise": "A code unit is a discrete unit of work within a transaction (for example a trigger, validation rule, or approval). A class is not a discrete unit of code. CODE_UNIT_STARTED and CODE_UNIT_FINISHED delimit units. An execution unit is the whole transaction.",
+      "example": "Reading CODE_UNIT_STARTED for a validation rule that blocked Closed Won.",
+      "non_example": "Treating an Apex class name as a code unit just because it appears in Setup.",
+      "confusable_neighbor": "Execution unit: the full transaction bounded by EXECUTION_STARTED and EXECUTION_FINISHED.",
+      "boundary": "Log-line format details are in the Debug Log page; do not memorize pipe layouts for interviews unless asked."
+    },
+    {
+      "term": "guessing",
+      "plain": "Naming a Flow, trigger, or field without reproducing the live scenario or reading evidence.",
+      "precise": "The failure mode this lesson forbids: changing automation from a ticket title instead of user reproduction, an access/data/automation split, and a debug log when logging is enabled.",
+      "example": "Deactivating Opportunity_ClosedWon_Flow because the ticket said 'Flow broke Closed Won,' with no user reproduction.",
+      "non_example": "Hypothesizing 'likely FLS' after you already reproduced as the user and saw a hidden Amount field.",
+      "confusable_neighbor": "A working hypothesis: allowed after vitals, and it must be tested with one change.",
+      "boundary": "Interview speed still requires a hypothesis; it must be evidence-tied."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Reproduce the live scenario as the user",
+      "actor": "Admin or developer",
+      "trigger": "A live ticket with a symptom",
+      "before": "Only a screenshot or hearsay",
+      "after": "Same clicks, same record pattern, same profile constraints",
+      "observe": "Whether the failure happens for that user and not for an administrator",
+      "failure": "Declaring 'works for me' under System Administrator"
+    },
+    {
+      "step": 2,
+      "transition": "Split access vs data vs automation",
+      "actor": "Admin or developer",
+      "trigger": "Scenario reproduced",
+      "before": "One undifferentiated 'Salesforce bug'",
+      "after": "A named organ system with a check you can show",
+      "observe": "Hidden field, blank value, or error message on save",
+      "failure": "Opening Flow Builder before checking FLS"
+    },
+    {
+      "step": 3,
+      "transition": "Enable logging, then read the debug log",
+      "actor": "Admin or developer",
+      "trigger": "Automation or error still suspected",
+      "before": "No saved log, or only a class flag",
+      "after": "A user trace flag (or Developer Console flag) and a log of database, system, and error events",
+      "observe": "VALIDATION, WORKFLOW, or Apex error lines for that transaction",
+      "failure": "Setting only a class or trigger trace flag and waiting for a log that never appears"
+    },
+    {
+      "step": 4,
+      "transition": "One change, then retest the same scenario",
+      "actor": "Admin or developer",
+      "trigger": "A specific event in the log or a confirmed access/data cause",
+      "before": "Several suspected automations still on",
+      "after": "Exactly one change, then the same user path",
+      "observe": "The live scenario now succeeds or the log line is gone",
+      "failure": "Flipping four automations in one save"
+    }
+  ],
+  "when_to_use": [
+    "When debugging a live user-reported scenario and you would otherwise start guessing which Flow or trigger fired.",
+    "When a live production scenario fails for one person and you must reproduce it as that user before reading logs.",
+    "When interviewers ask how you debug live scenarios without guessing, including what a debug log actually records.",
+    "When a scenario shows an error or unexpected save and you need database, system, and error events from a debug log.",
+    "When someone added only a class or trigger trace flag and is confused that no log appeared for the live scenario."
+  ],
+  "when_not_to_use": [
+    "Do not debug by guessing a live scenario and editing three Flows at once before reproducing as the user.",
+    "Do not treat class or trigger trace flags as a way to generate logs while debugging live scenarios.",
+    "Do not enable Apex Code FINEST on a live scenario that assigns passwords or other sensitive variables.",
+    "Do not skip the access check and jump to Apex guessing when the live scenario is a missing button or hidden field.",
+    "Do not quote unofficial log-size or governor numbers while debugging; mark them Needs verification and open the current Debug Log page."
+  ],
+  "configuration_or_code_location": [
+    "Setup: Quick Find Debug Logs — view and download logs for traced users",
+    "Trace flags on users (generate/save logs when logging is enabled) versus class/trigger flags (override levels only)",
+    "Developer Console: sets a trace flag when it loads, until the flag expires",
+    "Apex Developer Guide: Debug Log and Debug Log Order of Precedence",
+    "Sandbox first for reproducing live scenarios; production trace flags only with change control"
+  ],
+  "worked_example": {
+    "scenario": "In a mock interview, a sales rep cannot mark Opportunity LAB_Northwind to Closed Won in production. A teammate already guessed Opportunity_AutoClose_Flow and wants it deactivated. You have ten minutes to debug the live scenario without guessing.",
+    "inputs": [
+      "Symptom: Closed Won fails for one sales profile",
+      "Administrator can save Closed Won on the same record type",
+      "Unknown: FLS on Amount, a validation rule, a record-triggered Flow, a trigger"
+    ],
+    "decisions": [
+      {
+        "decision": "Reproduce as the LAB_ sales user in sandbox (or with that user's trace flag) before touching the Flow.",
+        "because": "Administrator success proves the metadata can run; the live scenario may be access.",
+        "rejected": "Deactivating Opportunity_AutoClose_Flow from the ticket title"
+      },
+      {
+        "decision": "If the user path errors on save, enable a user trace flag and read database, validation, and workflow lines; do not add only a class trace flag.",
+        "because": "Class and trigger flags override levels but do not generate logs.",
+        "rejected": "Setting OpportunityTrigger to FINEST and waiting for a blank Debug Logs list"
+      },
+      {
+        "decision": "After the log names one validation rule, disable or fix that one rule, then retest Closed Won as the same user.",
+        "because": "One change then retest tells you which cause was real.",
+        "rejected": "Turning off the Flow, the trigger, and two validation rules in one deploy"
+      }
+    ],
+    "configuration_or_code": [
+      "Do not deactivate the Flow yet. Clone the Opportunity pattern in sandbox as the sales user.",
+      "If Amount is invisible, check FLS and page layout before logs.",
+      "If save errors, add a user trace flag, reproduce Closed Won, open Setup Debug Logs, and read VALIDATION/WORKFLOW/Apex error lines.",
+      "Apply one fix, reproduce the same live scenario again."
+    ],
+    "output": "A named cause (for example a validation rule the admin never hit) and a retest as the sales user—not a guessed Flow deactivation.",
+    "verification": [
+      "The LAB_ sales user can be shown the same failure or the same success after one change.",
+      "If a log was needed, it exists for that user, not merely a class flag with an empty Debug Logs list.",
+      "Time-based workflow is not cited as 'missing from the log' unless that exclusion is relevant."
+    ],
+    "self_explanation": "The candidate earned credit by reproducing the live scenario as the user, splitting access versus data versus automation, and knowing class/trigger flags do not generate logs."
+  },
+  "hands_on_lab": {
+    "environment": "Trailhead Playground or Developer Edition with a LAB_ sales user and synthetic Opportunity data only. No production org.",
+    "starting_state_checks": [
+      "You can create a LAB_ Opportunity and a second user who is not a system administrator",
+      "You will not place FINEST on Apex that stores passwords"
+    ],
+    "steps": [
+      "Create a LAB_ sales user who cannot see Amount (remove FLS) and confirm an administrator can still see it.",
+      "As the LAB_ user, try a Closed Won-style edit and record whether the failure is hidden fields (access) versus an error toast (automation) versus blank values (data).",
+      "Add a user trace flag for the LAB_ user, reproduce the failing save, then open Debug Logs and download the log if one was stored.",
+      "Add only a class or trigger trace flag, turn the user flag off, reproduce again, and confirm no new saved log appears from the class flag alone.",
+      "Fix exactly one cause (restore Amount FLS or adjust one validation rule), then retest the same scenario as the LAB_ user."
+    ],
+    "guided_completion": [
+      "State which organ system you proved first: access, data, or automation.",
+      "Say out loud: class and trigger trace flags override levels but do not generate logs."
+    ],
+    "independent_challenge": "A teammate sets FINEST on an Apex class used in self-registration. Explain the sensitive-variable risk and what you would do instead.",
+    "evidence": [
+      "Notes showing the LAB_ user reproduction and which organ system you named first.",
+      "A statement that the class-only flag did not produce a saved debug log, matching the Developer Guide."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete or expire LAB_ trace flags so they do not keep generating logs.",
+      "Restore FLS on Amount if you used it only for the lab.",
+      "Delete LAB_ Opportunities if your org policy requires cleanup."
+    ],
+    "limitations": "Playground UI labels vary. Do not invent log-size numbers; open the current Debug Log page if asked. Help Setup paths are Needs verification."
+  },
+  "decision_table": [
+    {
+      "signal": "Live scenario fails for one user; administrator cannot reproduce it",
+      "choose": "Reproduce as that user and check access (sharing, FLS, permission) first",
+      "not": "Guess a Flow or trigger from the ticket title",
+      "why": "Administrator access hides the access organ system that the live user actually hits"
+    },
+    {
+      "signal": "Same user, fields visible, values wrong, no error on save",
+      "choose": "Inspect record data and related rows before debug logs",
+      "not": "Enable FINEST on a trigger and hunt Apex first",
+      "why": "Wrong data is not an automation mystery until values and related records are checked"
+    },
+    {
+      "signal": "Save errors or unexpected automation after access and data look clean",
+      "choose": "Put a user trace flag on, reproduce, and read database, system, and error events",
+      "not": "Set only a class or trigger trace flag and wait for a log",
+      "why": "Class and trigger flags override levels but do not generate or save logs"
+    },
+    {
+      "signal": "You think three Flows might be involved in the live scenario",
+      "choose": "Change one automation or permission, then retest the same user path",
+      "not": "Disable all three Flows in one save and call it debugging",
+      "why": "One change then retest is how you stop guessing which cause was real"
+    },
+    {
+      "signal": "Someone asks you to quote debug log megabyte or retention numbers from memory",
+      "choose": "Open the current Debug Log limits section and cite it, or say Needs verification",
+      "not": "Invent unofficial blog figures or governor counts",
+      "why": "Salesforce publishes those limits on the Debug Log page and they can change"
+    }
+  ],
+  "limitations": [
+    "Debug logs omit time-based workflow actions and Visualforce email-template controllers.",
+    "Log size, retention, and volume windows are published on the Debug Log page; do not invent them.",
+    "Production trace flags and login-as may be blocked by org policy.",
+    "Help Setup click-paths were not fully retrieved this session and remain Needs verification."
+  ],
+  "security_notes": [
+    "FINEST Apex Code logging includes variable assignments; do not trace password-handling Apex.",
+    "Session IDs are replaced with SESSION_ID_REMOVED in Apex debug logs; other sensitive values may still appear.",
+    "Downloaded logs can contain business data; treat them as production-sensitive.",
+    "Reproducing as a user in production can expose data you should not see; prefer sandbox LAB_ users."
+  ],
+  "common_mistakes": [
+    "Guessing a Flow from a screenshot without reproducing the live scenario as the user.",
+    "Setting class or trigger trace flags and assuming logs will appear.",
+    "Treating a missing button as an Apex bug instead of access.",
+    "Changing several automations at once so the retest proves nothing.",
+    "Enabling FINEST on code that handles passwords.",
+    "Quoting unofficial debug log size numbers in an interview."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "No debug log after you 'turned logging on'",
+      "check": [
+        "Is there an active user trace flag or Developer Console flag, not only a class/trigger flag?",
+        "Did the user actually execute a transaction after the flag was active?",
+        "Did precedence leave you with no persisted log (no flags, no tests, no debugging header)?"
+      ],
+      "do_not_assume": "Salesforce failed to write logs because class flags were set"
+    },
+    {
+      "symptom": "Live scenario fails for one user and works for you",
+      "check": [
+        "Did you reproduce as that user?",
+        "FLS, sharing, permission set, and page layout?",
+        "Different record type or app?"
+      ],
+      "do_not_assume": "A trigger is broken because an administrator can save"
+    },
+    {
+      "symptom": "Expected time-based workflow never appears in the log",
+      "check": [
+        "The Debug Log page documents that time-based workflow actions are not included"
+      ],
+      "do_not_assume": "The time-based action did not run solely because it is missing from this log"
+    }
+  ],
+  "production_notes": [
+    "Expire trace flags after the investigation so they do not keep generating logs.",
+    "Prefer sandbox reproduction of live scenarios; production flags need change control.",
+    "If log volume hits published org limits, users cannot add or edit trace flags until logs are deleted—re-read the current page rather than inventing the threshold."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "What can a Salesforce debug log record during a transaction or unit test?",
+      "options": {
+        "A": "Database operations, system processes, and errors, including database changes, callouts, Apex errors, and automated workflow processes",
+        "B": "Only System.debug strings typed by developers",
+        "C": "Every time-based workflow action that later fires",
+        "D": "Field-level security settings from Setup"
+      },
+      "answer": "A",
+      "rationale": "The Debug Log page lists database operations, system processes, and errors, plus database changes, HTTP callouts, Apex errors, resources, and workflow/assignment/approval/validation processes.",
+      "distractor_explanations": {
+        "B": "System.debug lines can appear, but the log is not limited to them.",
+        "C": "Time-based workflow actions are a documented exclusion.",
+        "D": "FLS is configuration; it is not what the log 'records' as its purpose."
+      },
+      "concept": "Debug log contents",
+      "citation_ids": [
+        "SF-APEX-LOG"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "What is true of class and trigger trace flags?",
+      "options": {
+        "A": "They override other logging levels, including user trace flags, but they do not cause logs to be generated or saved",
+        "B": "They always generate a saved debug log for every class execution",
+        "C": "They disable user trace flags permanently",
+        "D": "They replace the need to reproduce a live scenario as the user"
+      },
+      "answer": "A",
+      "rationale": "Both the Debug Log page and the precedence page state that class and trigger flags override levels but do not generate or save logs.",
+      "distractor_explanations": {
+        "B": "They do not cause logs to be generated or saved.",
+        "C": "They override levels while logging is enabled; they do not permanently disable user flags.",
+        "D": "Trace flags are not a substitute for reproducing the live scenario."
+      },
+      "concept": "Class and trigger trace flags",
+      "citation_ids": [
+        "SF-APEX-LOG",
+        "SF-APEX-PREC"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A live Closed Won scenario fails for a sales user and works for you as an administrator. What is the best first move?",
+      "options": {
+        "A": "Reproduce the scenario as that sales user and check access before guessing a Flow",
+        "B": "Deactivate every record-triggered Flow on Opportunity",
+        "C": "Set only a trigger trace flag and wait for a log",
+        "D": "Quote a log-size number from a blog and increase heap"
+      },
+      "answer": "A",
+      "rationale": "Administrator success often means access, not broken automation. Reproduce as the user; do not guess.",
+      "distractor_explanations": {
+        "B": "Mass deactivation is guessing and skips the access organ system.",
+        "C": "A trigger flag does not generate logs.",
+        "D": "Do not invent log-size or governor numbers."
+      },
+      "concept": "Reproduce as user",
+      "citation_ids": [
+        "SF-APEX-LOG",
+        "SF-HELP-CODE-LOG"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You set a class trace flag on OpportunityService and no saved debug log appears after a live save. Why might that be?",
+      "options": {
+        "A": "Class trace flags override levels but do not generate or save logs unless logging is otherwise enabled",
+        "B": "Debug logs never record database operations",
+        "C": "The Developer Console cannot set trace flags",
+        "D": "Validation rules cannot appear in any log"
+      },
+      "answer": "A",
+      "rationale": "If logging is not enabled via a user flag, console flag, test defaults, or other documented case, class flags alone will not persist a log.",
+      "distractor_explanations": {
+        "B": "Logs can record database operations.",
+        "C": "The Developer Console sets a trace flag when it loads.",
+        "D": "Validation rules are listed among automated processes a log can include."
+      },
+      "concept": "Flags do not generate logs",
+      "citation_ids": [
+        "SF-APEX-LOG",
+        "SF-APEX-PREC"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Amount is visible, populated, and the save shows no error, but a related LAB_Shipment__c row is missing. Which organ system is this live scenario?",
+      "options": {
+        "A": "Data — inspect records and related rows before guessing Apex",
+        "B": "Access — always FLS first when values look fine",
+        "C": "Automation — immediately set FINEST on all triggers",
+        "D": "Guessing — deactivate a random Flow"
+      },
+      "answer": "A",
+      "rationale": "Wrong or missing related data with no error is the data split, not an invitation to guess automation.",
+      "distractor_explanations": {
+        "B": "Visible, populated Amount argues against an FLS miss on that field.",
+        "C": "FINEST on all triggers is not the first move and has sensitive-data risk.",
+        "D": "Guessing is what this lesson forbids."
+      },
+      "concept": "Access vs data vs automation",
+      "citation_ids": [
+        "SF-APEX-LOG"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which debug log exclusion is documented on the Debug Log page?",
+      "options": {
+        "A": "Actions triggered by time-based workflows, and standard or custom controllers used in Visualforce email templates",
+        "B": "Validation rules never appear",
+        "C": "HTTP callouts never appear",
+        "D": "Approval processes never appear"
+      },
+      "answer": "A",
+      "rationale": "The Debug Log page notes those two exclusions. Validation, callouts, and approvals are listed as things logs can contain.",
+      "distractor_explanations": {
+        "B": "Validation rules are listed as included automated processes.",
+        "C": "HTTP callouts are listed as included information.",
+        "D": "Approval processes are listed as included automated processes."
+      },
+      "concept": "Log exclusions",
+      "citation_ids": [
+        "SF-APEX-LOG"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You found a likely validation rule in the log. What next when debugging the live scenario?",
+      "options": {
+        "A": "Change that one rule (or its condition), then retest the same user path",
+        "B": "Disable every validation rule, Flow, and trigger on the object together",
+        "C": "Set Apex Code to FINEST on password-handling self-registration code",
+        "D": "Invent a 2 MB log cap from a blog and stop investigating"
+      },
+      "answer": "A",
+      "rationale": "One change then retest is how you confirm the cause instead of guessing.",
+      "distractor_explanations": {
+        "B": "Multiple simultaneous changes destroy evidence.",
+        "C": "FINEST on password-handling Apex is a documented sensitive-data risk.",
+        "D": "Do not invent unofficial log-size numbers."
+      },
+      "concept": "One-change retest",
+      "citation_ids": [
+        "SF-APEX-LOG"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "When does the Developer Console affect debug logging?",
+      "options": {
+        "A": "It sets a trace flag when it loads, and that flag remains in effect until it expires",
+        "B": "It permanently disables all user trace flags",
+        "C": "It is the only way Salesforce can record database operations",
+        "D": "It generates logs for class flags even when no logging is enabled"
+      },
+      "answer": "A",
+      "rationale": "The precedence page states the Developer Console sets a trace flag on load until expiry.",
+      "distractor_explanations": {
+        "B": "It does not permanently disable user flags.",
+        "C": "Setup user trace flags and tests can also produce logs.",
+        "D": "Class flags still do not generate logs by themselves."
+      },
+      "concept": "Developer Console trace flag",
+      "citation_ids": [
+        "SF-APEX-PREC"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "If no relevant trace flags are active, no tests are running, and the API request has no debugging header, what happens?",
+      "options": {
+        "A": "Logs are not generated or persisted, unless another logging rule is in effect",
+        "B": "Salesforce always saves a FINEST log for every click",
+        "C": "Class trace flags still write a file to Debug Logs",
+        "D": "Time-based workflow actions fill the log overnight"
+      },
+      "answer": "A",
+      "rationale": "The precedence page says if none of the cases apply, logs are not generated or persisted. API requests without debugging headers generate transient unsaved logs unless another rule applies.",
+      "distractor_explanations": {
+        "B": "FINEST is not the default for every click.",
+        "C": "Class flags do not generate logs.",
+        "D": "Time-based workflow actions are excluded from the debug log."
+      },
+      "concept": "Precedence and persistence",
+      "citation_ids": [
+        "SF-APEX-PREC",
+        "SF-APEX-LOG"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Why is Apex Code FINEST dangerous on a live community self-registration scenario?",
+      "options": {
+        "A": "FINEST includes details of all Apex variable assignments, which can include passwords",
+        "B": "FINEST deletes all debug logs in the org",
+        "C": "FINEST disables sharing for community users",
+        "D": "FINEST is required before any user trace flag works"
+      },
+      "answer": "A",
+      "rationale": "The Debug Log page warns that FINEST includes all Apex variable assignments and calls out self-registration password risk.",
+      "distractor_explanations": {
+        "B": "FINEST does not wipe the org's logs as its purpose.",
+        "C": "Logging level is not a sharing rewrite.",
+        "D": "User flags do not require FINEST."
+      },
+      "concept": "FINEST sensitive data",
+      "citation_ids": [
+        "SF-APEX-LOG"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "An interviewer asks you to recite the exact debug log megabyte cap and 15-minute volume window from memory. Best response?",
+      "options": {
+        "A": "Cite the current Debug Log limits section or say Needs verification rather than inventing unofficial numbers",
+        "B": "Invent 2 MB because that is a common blog figure",
+        "C": "Say there are no limits of any kind",
+        "D": "Say class trace flags remove all limits"
+      },
+      "answer": "A",
+      "rationale": "Salesforce publishes limits on the Debug Log page. This lesson forbids inventing unofficial sizes.",
+      "distractor_explanations": {
+        "B": "Blog figures are how candidates fail this topic.",
+        "C": "Limits exist on the official page.",
+        "D": "Class flags do not remove published limits."
+      },
+      "concept": "Do not invent log-size numbers",
+      "citation_ids": [
+        "SF-APEX-LOG"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where do you view a stored debug log from Setup, according to the Developer Guide?",
+      "options": {
+        "A": "Quick Find Debug Logs, then View or Download next to the log",
+        "B": "Schema Builder only",
+        "C": "The Recycle Bin",
+        "D": "Translation Workbench"
+      },
+      "answer": "A",
+      "rationale": "The Debug Log page says to enter Debug Logs in Quick Find, select Debug Logs, then View or Download.",
+      "distractor_explanations": {
+        "B": "Schema Builder is data model, not log storage.",
+        "C": "Deleted records are not debug logs.",
+        "D": "Translation Workbench is labeling, not logging."
+      },
+      "concept": "Setup Debug Logs",
+      "citation_ids": [
+        "SF-APEX-LOG",
+        "SF-HELP-CODE-LOG"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "What three kinds of events can a debug log record?",
+      "back": "Database operations, system processes, and errors during a transaction or unit test."
+    },
+    {
+      "id": "F2",
+      "category": "flags",
+      "front": "Do class or trigger trace flags generate saved debug logs?",
+      "back": "No. They override logging levels, including user flags, but they do not generate or save logs."
+    },
+    {
+      "id": "F3",
+      "category": "protocol",
+      "front": "What is the first move on a live scenario that fails for one user?",
+      "back": "Reproduce as that user. Do not guess a Flow from a screenshot."
+    },
+    {
+      "id": "F4",
+      "category": "split",
+      "front": "Name the three organ systems in this debugging protocol.",
+      "back": "Access (sharing/FLS/permission), data (values and related rows), and automation (validation/Flow/Apex)."
+    },
+    {
+      "id": "F5",
+      "category": "precedence",
+      "front": "What does the Developer Console do to logging when it loads?",
+      "back": "It sets a trace flag that remains in effect until it expires."
+    },
+    {
+      "id": "F6",
+      "category": "exclusion",
+      "front": "Which workflow-related actions are documented as missing from the debug log?",
+      "back": "Actions triggered by time-based workflows are not included."
+    },
+    {
+      "id": "F7",
+      "category": "security",
+      "front": "Why is Apex Code FINEST risky on live password-handling code?",
+      "back": "FINEST includes all Apex variable assignments, which can capture passwords."
+    },
+    {
+      "id": "F8",
+      "category": "protocol",
+      "front": "What does one-change retest mean?",
+      "back": "Alter a single suspected cause, then run the same live scenario as the same user."
+    },
+    {
+      "id": "F9",
+      "category": "limits",
+      "front": "How should you answer an interview question about debug log size limits?",
+      "back": "Cite the current Debug Log page or say Needs verification. Do not invent unofficial numbers."
+    },
+    {
+      "id": "F10",
+      "category": "precedence",
+      "front": "If no trace flags, no tests, and no debugging header apply, are logs persisted?",
+      "back": "No. Logs are not generated or persisted unless another logging rule is in effect."
+    },
+    {
+      "id": "F11",
+      "category": "contents",
+      "front": "Name three automated processes a debug log can include.",
+      "back": "Workflow rules, assignment rules, approval processes, and validation rules are listed."
+    },
+    {
+      "id": "F12",
+      "category": "setup",
+      "front": "How do you open a stored debug log from Setup?",
+      "back": "Quick Find Debug Logs, then View or Download next to the log."
+    },
+    {
+      "id": "F13",
+      "category": "analogy",
+      "front": "In the ER triage analogy, what is a class trace flag?",
+      "back": "Changing the monitor's sensitivity. It does not admit the patient or start the recording."
+    },
+    {
+      "id": "F14",
+      "category": "security",
+      "front": "How do Apex debug logs treat session IDs?",
+      "back": "Session IDs are replaced with SESSION_ID_REMOVED."
+    },
+    {
+      "id": "F15",
+      "category": "units",
+      "front": "Is an Apex class a discrete code unit in the debug log?",
+      "back": "No. The Debug Log page says a class is not a discrete unit of code; a trigger is one example of a code unit."
+    },
+    {
+      "id": "F16",
+      "category": "guessing",
+      "front": "Why is deactivating three Flows at once not debugging a live scenario?",
+      "back": "You cannot tell which change mattered. Reproduce, split causes, then one change and retest."
+    },
+    {
+      "id": "F17",
+      "category": "contents",
+      "front": "Can a debug log include HTTP callouts?",
+      "back": "Yes. The Debug Log page lists HTTP callouts among recorded information."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk me through how you debug a live Salesforce scenario without guessing.",
+      "answer_30_seconds": "I reproduce as the affected user, split access versus data versus automation, then collect a debug log only if logging is actually enabled. Class flags do not generate logs. I change one thing and retest.",
+      "answer_2_minutes": "A ticket is a chief complaint, not a Flow name. I recreate the live path as that user because my admin session hides FLS and sharing. Missing UI is access; wrong values with no error is data; an error toast is when I put a user trace flag on and read database, system, and error events. I will not set only a class trace flag and wait. I will not quote unofficial log-size numbers. One change, same scenario again.",
+      "example": "Closed Won fails for sales, works for admin: reproduce as sales, find Amount hidden by FLS, restore FLS, retest—no Flow guessed.",
+      "tradeoffs": [
+        "Speed of sounding decisive versus collecting vitals",
+        "Sandbox reproduction versus production trace flags"
+      ],
+      "follow_ups": [
+        "What if login-as is forbidden in production?",
+        "When do you involve a developer versus an admin?"
+      ],
+      "weak_answer_warnings": [
+        "Opening Flow Builder in the first sentence",
+        "Saying class trace flags create logs"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What does a debug log actually contain, and what does it not?",
+      "answer_30_seconds": "It can record database operations, system processes, and errors, including callouts, Apex errors, and workflow, assignment, approval, and validation. It does not include time-based workflow actions or Visualforce email-template controllers.",
+      "answer_2_minutes": "I treat the log as a lab panel, not a complete history. I look for database changes, HTTP callouts, Apex errors, resource use, and automated processes listed on the Debug Log page. I will not claim time-based workflow actions are in that recording. I mention FINEST variable-assignment risk if they ask about verbosity. Limits exist on that page; I will not invent megabytes.",
+      "example": "A validation rule blocking Closed Won shows as a validation event; a time-based field update later that night may not appear in this log.",
+      "tradeoffs": [
+        "More log detail versus sensitive variable capture",
+        "Waiting for a time-based action versus using another evidence path"
+      ],
+      "follow_ups": [
+        "What is a code unit versus an execution unit?",
+        "Where do you view the log in Setup?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming the log includes every automation Salesforce can run",
+        "Inventing log-size numbers"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A teammate set a trigger trace flag to FINEST and says there is still no log. What do you tell them?",
+      "answer_30_seconds": "Class and trigger trace flags override other logging levels but do not generate or save logs. Enable a user trace flag or use the Developer Console, then reproduce the live scenario.",
+      "answer_2_minutes": "I quote the Developer Guide: those flags override user-flag levels but do not cause logging. If logging is enabled when the trigger runs, the override applies. If nothing enabled logging, Debug Logs stays empty. I would add a user trace flag on the person reproducing the live scenario, click the same save, then View the log. I would also warn that FINEST can print variable assignments, so I would not leave it on password-handling Apex.",
+      "example": "OpportunityTrigger flag at FINEST, empty Debug Logs list; adding a user flag on the LAB_ sales user produces a log on the next save.",
+      "tradeoffs": [
+        "User-flag noise versus missing evidence",
+        "FINEST detail versus sensitive data"
+      ],
+      "follow_ups": [
+        "What does the Developer Console set when it loads?",
+        "What if tests are running with no flags?"
+      ],
+      "weak_answer_warnings": [
+        "Telling them to set another class flag",
+        "Blaming a platform outage without checking flags"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "How do you tell access problems from data problems from automation on a live ticket?",
+      "answer_30_seconds": "If the user cannot see or click what I can, I check sharing, FLS, and permissions. If they see fields but values or related rows are wrong with no error, I inspect data. If save errors or surprise automation, I log.",
+      "answer_2_minutes": "I reproduce as the user so I am not debugging my own profile. A missing button or greyed field is access until proven otherwise. A blank Amount that I can see as admin is still often FLS. A visible Amount of zero with a missing child shipment is data. An error on Closed Won is when a user trace flag and debug log earn their keep. I do not deactivate Flows to 'see what happens' across all three organ systems at once.",
+      "example": "Partner user cannot edit Stage: sharing/FLS first. Internal user has Stage but Amount is 0 from a bad import: data. Internal user gets a validation error: log.",
+      "tradeoffs": [
+        "Spending time on FLS versus jumping to Apex",
+        "Inspecting records versus immediately enabling logs"
+      ],
+      "follow_ups": [
+        "Where does order of execution fit?",
+        "What if Experience Cloud users are involved?"
+      ],
+      "weak_answer_warnings": [
+        "Calling every failure a trigger bug",
+        "Skipping reproduce-as-user"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "You changed a Flow, a validation rule, and a trigger in one deploy, and Closed Won now works. What did you do wrong?",
+      "answer_30_seconds": "I cannot tell which change fixed the live scenario. That is guessing with extra steps. I should have changed one thing and retested as the same user.",
+      "answer_2_minutes": "Interviewers want control, not luck. After I had evidence, I should have altered a single cause—one validation formula, or one Flow, or one permission—then reproduced Closed Won as the LAB_ sales user. If it still failed, I would restore and try the next hypothesis. A bundled deploy that 'fixes prod' teaches the org nothing and is hard to roll back safely. I would also confirm I was not relying on a class flag that never generated a log.",
+      "example": "Log showed one validation rule; you disable only that rule, retest Closed Won as sales, then document the rule—not a triple deploy.",
+      "tradeoffs": [
+        "Faster bundled fix versus learnable evidence",
+        "Change-set size versus diagnostic clarity"
+      ],
+      "follow_ups": [
+        "How do you roll back if the bundle is already in production?",
+        "When is a feature flag acceptable?"
+      ],
+      "weak_answer_warnings": [
+        "Defending the triple change as efficiency",
+        "Still not reproducing as the user"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "The expected time-based field update never shows in your debug log. What do you conclude?",
+      "answer_30_seconds": "I do not conclude the action never ran solely from this log. The Debug Log page says it does not include actions triggered by time-based workflows.",
+      "answer_2_minutes": "I separate 'not in this recording' from 'did not execute.' I would look at time-based workflow queues, paused Flow interviews, or a later user transaction, depending on the automation type. I would still reproduce the original live scenario as the user for the synchronous part. I will not invent a governor number to explain the missing lines. If they ask about Visualforce email-template controllers, those are another documented exclusion.",
+      "example": "A time-based update to Follow_Up_Date__c overnight is absent from today's Closed Won log; you check the time-based queue instead of rewriting a trigger.",
+      "tradeoffs": [
+        "Waiting for the scheduled action versus using a different evidence source",
+        "Synchronous log detail versus asynchronous gaps"
+      ],
+      "follow_ups": [
+        "How would you debug a paused Flow interview?",
+        "What else is excluded from the debug log?"
+      ],
+      "weak_answer_warnings": [
+        "Saying time-based workflow always appears in the same log",
+        "Inventing a log-size reason for the gap"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Explain debug log order of precedence at a level that would satisfy a hiring manager.",
+      "answer_30_seconds": "Trace flags override other logging logic. The Developer Console sets a flag when it loads. Class and trigger flags override levels but do not generate logs. If nothing applies, logs are not persisted.",
+      "answer_2_minutes": "I start with trace flags as the override. Console load creates a flag until expiry. Tests without active flags use documented default levels. If no relevant flags and no tests, an API debugging header can set levels; without it, logs may be transient and unsaved. An entry point such as a Visualforce debugging parameter can set levels. Class and trigger flags still only override verbosity. If none of those cases apply, nothing is generated or persisted. That is why guessing 'logging is always on' fails live scenarios.",
+      "example": "API integration save with no header and no user flag: no saved log, so you add a user trace flag and reproduce.",
+      "tradeoffs": [
+        "Console convenience versus leftover flags after you close it",
+        "Test default levels versus production silence"
+      ],
+      "follow_ups": [
+        "What are the default test category levels?",
+        "How do TraceFlag and DebugLevel Tooling API objects fit?"
+      ],
+      "weak_answer_warnings": [
+        "Memorizing unofficial default matrices from blogs",
+        "Saying class flags persist logs by themselves"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach debugging live scenarios without guessing using the ER triage analogy, and say where it breaks.",
+      "answer_30_seconds": "Vitals before incision: reproduce as the user, name access versus data versus automation, then read a debug log if the monitor is actually recording. Class flags only change sensitivity. The analogy breaks because logs omit time-based actions and FINEST can print passwords.",
+      "answer_2_minutes": "The ambulance radio is the ticket. I take vitals on that patient, not on a healthy administrator. Access, data, and automation are the organ systems. A user trace flag starts the monitor. A class trace flag is a sensitivity knob that does not admit the patient. The lab panel is database, system, and error events. One medication, then recheck. It breaks in four places: we still need change control; time-based workflow is not on this panel; FINEST can leak variables; published log limits are not folklore and I will not invent them. I invite the interviewer to pick a live scenario and watch the protocol.",
+      "example": "VP wants a Flow deactivated from Slack; you ask to reproduce as the rep and show Amount is hidden—incision avoided.",
+      "tradeoffs": [
+        "Plain-language analogy versus sounding untechnical",
+        "Triage speed versus change-control delay"
+      ],
+      "follow_ups": [
+        "Where does the analogy break for Experience Cloud?",
+        "How do you keep this from delaying a Sev-1?"
+      ],
+      "weak_answer_warnings": [
+        "Using a generic furniture-catalog metaphor instead of ER triage",
+        "Forgetting that class flags do not generate logs"
+      ]
+    }
+  ]
+}

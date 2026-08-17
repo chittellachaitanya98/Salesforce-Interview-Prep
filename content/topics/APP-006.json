@@ -1,0 +1,999 @@
+{
+  "topic_id": "APP-006",
+  "slug": "files-content-notes-libraries-and-document-management-b",
+  "title": "Files, Content, Notes, Libraries, and document-management boundaries",
+  "track": "Sales, service, and productivity applications",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APP-005"
+  ],
+  "objectives": [
+    "Map an uploaded file to ContentDocument (identity), ContentVersion (this binary), ContentDocumentLink (who/where it is shared), and ContentDistribution (external public link).",
+    "Place Notes (ContentNote) and Libraries (Content Workspace) on that same Files model, not as Attachment or Document (Classic) first choices.",
+    "Choose record-linked Files versus a Library versus a public ContentDistribution versus Knowledge (APP-004).",
+    "State API rules: create files via ContentVersion; query share locations via ContentDocumentLink."
+  ],
+  "diagnostic_question": "A PDF must live on an Opportunity, be versioned, be visible to a teammate, sit in a team library, and later get a time-boxed public URL. Which objects do you create, and which Classic Attachment or Knowledge article would you refuse?",
+  "definition": "Salesforce Files is not one table. ContentDocument is the document identity uploaded to Salesforce Files or Salesforce CRM Content. ContentVersion is a specific binary version of that document. ContentDocumentLink is the share row to a user, group, record, or library (and to ContentNote). ContentDistribution is information about sharing a document externally via a public URL. Notes and Libraries use this model; Classic Attachment/Document are legacy boundaries. ([ContentDocument](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contentdocument.htm); [ContentVersion](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contentversion.htm); [ContentDocumentLink](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contentdocumentlink.htm); [Standard Objects list — ContentDistribution](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_list.htm))",
+  "why_it_matters": "Interviewers fail people who SOQL ContentDocument to 'upload a file,' who treat Attachment as the Lightning Files model, who confuse a Library with Knowledge, or who email a perpetual public link when they needed a ContentDocumentLink to a private record. Sharing is the link row, not the binary.",
+  "sixty_second_explanation": "Think of a film production. ContentDocument is the movie's identity—the title that stays as cuts change. ContentVersion is this cut of the film, the actual frames. ContentDocumentLink is a screening pass: who (user, group, record, library) may see that title. ContentDistribution is a public trailer URL that can expire. Notes are sticky-script pages in the same vault. Libraries are studio rooms that hold titles. You do not create the movie by inserting the identity first; you publish a cut (ContentVersion) and the identity appears.",
+  "deeper_explanation": [
+    "ContentDocument represents a document uploaded to a library in Salesforce Files or Salesforce CRM Content (API 21.0+ for Files; 17.0+ for CRM Content). LatestPublishedVersionId points at the current ContentVersion. Use ContentDocument to retrieve, query, update, and delete the latest version; use ContentVersion to create and version. To create a document, insert ContentVersion without ContentDocumentId—the parent ContentDocument is created automatically. To add a revision, set an existing ContentDocumentId. ([ContentDocument](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contentdocument.htm))",
+    "ContentVersion is a specific version of a document in CRM Content or Files. FirstPublishLocationId can be a user (personal files), a library, or other ContentDocumentLink-supported records so you create and share in one transaction. ([ContentVersion](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contentversion.htm))",
+    "ContentDocumentLink is the link between a CRM Content document, Salesforce file, or ContentNote and where it is shared: users, groups, records (including custom objects that support feed tracking), and CRM Content libraries. Query it to see locations or files at a location. A ContentDocument delete cascades links; that cascade does not fire ContentDocumentLink delete triggers. ([ContentDocumentLink](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contentdocumentlink.htm))",
+    "ContentDistribution represents information about sharing a document externally (API 32.0+). It is the public/expiring-link object, not the share-to-a-record object. ([Standard Objects](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_list.htm))",
+    "Notes in Lightning are ContentNote files in this model, linked with ContentDocumentLink. Libraries are Content Workspace rooms with membership—still Files, not Knowledge articles (APP-004) and not Chatter posts (APP-005). Classic Attachment and Document remain conversion/legacy boundaries; do not design new Lightning apps on Attachment. File size and org storage caps: Needs verification in current Help."
+  ],
+  "mental_model": {
+    "analogy": "Film production: ContentDocument = the movie identity/title, ContentVersion = this cut of the film, ContentDocumentLink = screening pass (user/group/record/library), ContentDistribution = public trailer URL, Note = sticky script page, Library = studio room.",
+    "useful_mapping": [
+      "Uploaded bytes → stored on a ContentVersion",
+      "Stable file Id users talk about → ContentDocument",
+      "Share to Opportunity → ContentDocumentLink to the record",
+      "Share to a team room → ContentDocumentLink to a Library (Content Workspace)",
+      "Public URL for a customer → ContentDistribution",
+      "Lightning Note → ContentNote plus links",
+      "Insert path → ContentVersion first, ContentDocument created for you",
+      "Knowledge article → different product (APP-004), not a Library"
+    ],
+    "where_it_breaks": [
+      "Changing ContentDocument owner deletes/inserts ContentDocumentLink rows to owners.",
+      "Cascaded link deletes on file delete do not run ContentDocumentLink triggers.",
+      "A public distribution is not a Salesforce user share.",
+      "The analogy does not encode storage quotas, virus scan, or Files Connect to external drives."
+    ]
+  },
+  "teach_back_prompt": "Draw File → ContentDocument → ContentVersion → ContentDocumentLink and ContentDistribution, then say why inserting ContentDocument first is the wrong API move.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Name the four Files objects and one job each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Choose link vs distribution vs library vs Knowledge for five asks."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "How do you create a file in Apex/API?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Why a user cannot see a file that exists."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: Files object graph plus legacy Attachment boundary."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-DEV-CONTENTDOCUMENT",
+      "title": "ContentDocument | Object Reference",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contentdocument.htm",
+      "supports": "ContentDocument is the uploaded document identity in Files/CRM Content. Create via ContentVersion without ContentDocumentId; revisions set ContentDocumentId. LatestPublishedVersionId. Owner change affects links. Delete cascade notes.",
+      "release_or_version": "Object Reference / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list UI click paths or storage quotas."
+    },
+    {
+      "source_id": "SF-DEV-CONTENTVERSION",
+      "title": "ContentVersion | Object Reference",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contentversion.htm",
+      "supports": "ContentVersion is a specific version/binary. FirstPublishLocationId can create and share in one transaction to users, libraries, or records supported by ContentDocumentLink.",
+      "release_or_version": "Object Reference / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Binary size limits not quoted here."
+    },
+    {
+      "source_id": "SF-DEV-CONTENTDOCUMENTLINK",
+      "title": "ContentDocumentLink | Object Reference",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_contentdocumentlink.htm",
+      "supports": "Link between file/ContentNote and user, group, record, or library. Query share locations. Cascaded deletes on ContentDocument delete do not trigger ContentDocumentLink triggers.",
+      "release_or_version": "Object Reference / API 21.0+",
+      "last_verified": "2026-08-16",
+      "limits": "ShareType/Visibility enum values: confirm in the field reference before coding."
+    },
+    {
+      "source_id": "SF-DEV-OBJECT-LIST",
+      "title": "Standard Objects list (ContentDistribution definition)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_list.htm",
+      "supports": "ContentDistribution represents information about sharing a document externally (API 32.0+). ContentDocument/Version/Link one-line definitions match the object pages.",
+      "release_or_version": "Object Reference",
+      "last_verified": "2026-08-16",
+      "limits": "List page is a catalog; field-level behavior lives on each object page."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Object Reference over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "File to ContentDocument",
+        "ContentVersion binary",
+        "ContentDocumentLink shares",
+        "ContentDistribution public URL",
+        "Notes and Libraries",
+        "Not Attachment not Knowledge"
+      ],
+      "accessible_description": "Portrait map: upload creates ContentVersion and ContentDocument; links share to people and records; distributions are external URLs; libraries are rooms; notes are ContentNote."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-DEV-CONTENTDOCUMENT",
+        "SF-DEV-CONTENTVERSION",
+        "SF-DEV-CONTENTDOCUMENTLINK",
+        "SF-DEV-OBJECT-LIST"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Files object graph"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  File[Uploaded file] --> CD[ContentDocument identity]\n  CD --> CV[ContentVersion this binary]\n  CV --> CDL[ContentDocumentLink who can see it]\n  CV --> Dist[ContentDistribution public/expiring link]\n  CDL --> Rec[Record user group or Library]\n  Note[ContentNote] --> CD\n  Note --> CDL",
+      "decision": "flowchart TD\n  Need[Need to store a document] --> Q1{Who must see it?}\n  Q1 -->|People on a CRM record| LinkR[ContentVersion plus ContentDocumentLink to the record]\n  Q1 -->|A working team with a room| Lib[Library Content Workspace plus link]\n  Q1 -->|External person with no Salesforce user| Dist[ContentDistribution public or expiring URL]\n  Q1 -->|Short private memo on a record| Note[Lightning Note ContentNote plus link]\n  Q1 -->|Approved reusable SOP| Know[Knowledge article APP-004 not a Library]\n  Q1 -->|New Lightning app on Classic Attachment| Stop[Do not design on Attachment; use Files]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "ContentDocument represents a document uploaded to Salesforce Files or Salesforce CRM Content. To create a document, create a ContentVersion without ContentDocumentId; the parent ContentDocument is created automatically. New versions require an existing ContentDocumentId.",
+      "source_ids": ["SF-DEV-CONTENTDOCUMENT"],
+      "scope": "ContentDocument create path",
+      "validation": "ContentDocument Object Reference usage notes.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "ContentVersion represents a specific version of a document. FirstPublishLocationId can be a user, a public library, or other records supported by ContentDocumentLink so the first share happens in the same transaction.",
+      "source_ids": ["SF-DEV-CONTENTVERSION"],
+      "scope": "ContentVersion",
+      "validation": "ContentVersion Object Reference, FirstPublishLocationId.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "ContentDocumentLink represents the link between a CRM Content document, Salesforce file, or ContentNote and where it is shared (users, groups, records, libraries). Use it to query share locations. Cascaded link deletes from ContentDocument delete do not fire ContentDocumentLink triggers.",
+      "source_ids": ["SF-DEV-CONTENTDOCUMENTLINK"],
+      "scope": "Sharing links",
+      "validation": "ContentDocumentLink Object Reference.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "ContentDistribution represents information about sharing a document externally (API 32.0+).",
+      "source_ids": ["SF-DEV-OBJECT-LIST"],
+      "scope": "External sharing",
+      "validation": "Standard Objects catalog definition of ContentDistribution.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Files Connect, enhanced ContentDistribution preferences, and ContentDocLinkEventLog (API 65.0+) continue to evolve; reverify distribution preferences in Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact ContentDistribution expiry field names and password options should be read from the object page before coding.",
+    "ShareType and Visibility valid values: confirm in field reference; do not invent I/C/A meanings in an interview unless you have the field help open."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "ContentDocument",
+      "telugu": "ఫైల్ గుర్తింపు — కట్‌లు మారినా ఉండే టైటిల్."
+    },
+    {
+      "english": "ContentDocumentLink",
+      "telugu": "ఎవరు/ఎక్కడ చూడవచ్చో చెప్పే స్క్రీనింగ్ పాస్ వరుస."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Files split identity, binary, share, and public URL. ContentDocument is identity. ContentVersion is this binary—insert it to create the file. ContentDocumentLink is who can see it (user, group, record, library, note). ContentDistribution is an external link. Do not start new apps on Classic Attachment.",
+    "two_minutes": "I draw File to ContentDocument to ContentVersion, then branch to ContentDocumentLink and ContentDistribution. I query links to debug 'I cannot see the file.' I use FirstPublishLocationId when I want the first share in one transaction. Libraries are rooms, Knowledge is articles, Chatter is the wall. Notes are ContentNote in the same graph. Owner changes rebuild owner links. Cascaded deletes skip link triggers—I will not put logic only on those triggers."
+  },
+  "terminology": [
+    {
+      "term": "ContentDocument",
+      "plain": "The file's identity: the title that remains as versions change.",
+      "precise": "Document uploaded to Files or CRM Content. LatestPublishedVersionId points at the current version. Not inserted directly to create a file.",
+      "example": "ContentDocument for LAB_SOW.pdf with two versions.",
+      "non_example": "Inserting ContentDocument in Apex as the upload step.",
+      "confusable_neighbor": "ContentVersion: the bytes for one cut.",
+      "boundary": "CRM Content versus Files API versions 17 vs 21 as documented."
+    },
+    {
+      "term": "ContentVersion",
+      "plain": "This cut of the file: the actual binary and version fields.",
+      "precise": "Specific version. Create without ContentDocumentId to mint a new file. Set ContentDocumentId to revise. FirstPublishLocationId can share immediately.",
+      "example": "Version 2 of LAB_SOW.pdf uploaded as a new ContentVersion on the same ContentDocumentId.",
+      "non_example": "Updating Description on ContentDocument and expecting bytes to change.",
+      "confusable_neighbor": "Attachment.Body on Classic Attachment.",
+      "boundary": "VersionData size limits: Needs verification."
+    },
+    {
+      "term": "ContentDocumentLink",
+      "plain": "The screening pass: where the file is shared.",
+      "precise": "Links a file or ContentNote to users, groups, records, or libraries. Query to find locations. Cascaded delete on file delete does not fire this object's delete triggers.",
+      "example": "Link from LAB_SOW ContentDocument to Opportunity LAB_Northwind Q3.",
+      "non_example": "A public URL (that is ContentDistribution).",
+      "confusable_neighbor": "Share record on Account (manual sharing), which is not Files.",
+      "boundary": "ShareType/Visibility: read field help before coding."
+    },
+    {
+      "term": "ContentDistribution",
+      "plain": "An external public (often expiring) link to a file.",
+      "precise": "Represents information about sharing a document externally (API 32.0+). Not a Salesforce-user share row.",
+      "example": "Customer review URL for LAB_SOW.pdf with an expiration the org configured.",
+      "non_example": "ContentDocumentLink to a Contact record.",
+      "confusable_neighbor": "Experience Cloud file visibility for logged-in users.",
+      "boundary": "Password and expiry fields: confirm on the object page."
+    },
+    {
+      "term": "Library",
+      "plain": "A studio room: a named workspace with members that holds Files.",
+      "precise": "CRM Content / Content Workspace. Files link here via ContentDocumentLink. FirstPublishLocationId can be the library. Not a Knowledge data category.",
+      "example": "LAB_Legal library containing LAB_SOW.pdf.",
+      "non_example": "A Knowledge data category named Legal.",
+      "confusable_neighbor": "Files related list on a record (record library vs org Library).",
+      "boundary": "Library permissions vs record sharing: both can apply."
+    },
+    {
+      "term": "Note",
+      "plain": "A Lightning note stored as a file (ContentNote) and linked like other Files.",
+      "precise": "ContentNote uses ContentDocument/Version/Link. ContentDocumentLink docs explicitly include ContentNote.",
+      "example": "Note 'LAB discovery recap' linked to Opportunity LAB_Northwind Q3.",
+      "non_example": "Classic Note object assumed to be the Lightning Files note.",
+      "confusable_neighbor": "Chatter post (APP-005).",
+      "boundary": "Classic Note vs ContentNote conversion: Needs verification if still migrating."
+    },
+    {
+      "term": "Attachment",
+      "plain": "Classic related-list file storage, not the Lightning Files graph.",
+      "precise": "Legacy ParentId + Body model. Do not design new Lightning experiences on it. Convert to Files when required.",
+      "example": "Old Case attachment still ParentId = Case.",
+      "non_example": "A Files related list on a Lightning Opportunity.",
+      "confusable_neighbor": "ContentVersion, which is the modern binary.",
+      "boundary": "Conversion tools and remaining API support: reverify."
+    },
+    {
+      "term": "FirstPublishLocationId",
+      "plain": "Where the first version is published, so you can create and share together.",
+      "precise": "On ContentVersion. User personal files, a public library, or other ContentDocumentLink-supported records. Lets you skip a separate first link DML in one transaction.",
+      "example": "Insert ContentVersion with FirstPublishLocationId = Opportunity Id for LAB_Northwind Q3.",
+      "non_example": "A ContentDistribution Id.",
+      "confusable_neighbor": "LinkedEntityId on ContentDocumentLink for later extra shares.",
+      "boundary": "Which objects are valid: the Version page says those ContentDocumentLink supports."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Publish a cut",
+      "actor": "User or Apex",
+      "trigger": "Need a new file",
+      "before": "No ContentDocument",
+      "after": "ContentVersion inserted without ContentDocumentId; ContentDocument exists",
+      "observe": "LatestPublishedVersionId on the new ContentDocument",
+      "failure": "Inserting ContentDocument as the first DML"
+    },
+    {
+      "step": 2,
+      "transition": "Share internally",
+      "actor": "User or Apex",
+      "trigger": "Others must see it",
+      "before": "Only first publish location",
+      "after": "ContentDocumentLink rows to records, users, groups, or a Library",
+      "observe": "Query links by ContentDocumentId or LinkedEntityId",
+      "failure": "Emailing a public distribution when a record link was enough"
+    },
+    {
+      "step": 3,
+      "transition": "Revise",
+      "actor": "User or Apex",
+      "trigger": "New binary",
+      "before": "Version 1 latest",
+      "after": "New ContentVersion with existing ContentDocumentId",
+      "observe": "Title/owner/publish status update on the document when latest publishes",
+      "failure": "Creating a second ContentDocument for the same SOW"
+    },
+    {
+      "step": 4,
+      "transition": "Share externally only if needed",
+      "actor": "User with permission",
+      "trigger": "Non-Salesforce party needs the bytes",
+      "before": "Internal links only",
+      "after": "ContentDistribution with org-approved expiry/password practice",
+      "observe": "Distribution record related to the version",
+      "failure": "Perpetual public URL for a confidential SOW"
+    }
+  ],
+  "when_to_use": [
+    "When a File must be versioned as ContentDocument plus ContentVersion rather than Classic Attachment.",
+    "When visibility is a ContentDocumentLink to a user, group, record, or Library—not a public URL.",
+    "When an external person needs a ContentDistribution public or expiring link.",
+    "When a Lightning Note or Library workspace should stay on the Files model, not Knowledge and not Chatter."
+  ],
+  "when_not_to_use": [
+    "Do not insert ContentDocument to 'upload'; insert ContentVersion without ContentDocumentId.",
+    "Do not use ContentDistribution when a ContentDocumentLink to a Salesforce user or record is enough.",
+    "Do not treat a Library as Knowledge (APP-004) or as a Chatter feed (APP-005).",
+    "Do not design new Lightning apps on Classic Attachment/Document, or put delete logic only on ContentDocumentLink if files are deleted from ContentDocument (cascade skips those triggers)."
+  ],
+  "configuration_or_code_location": [
+    "Files related list on records; Libraries / Content Workspaces in the Files app.",
+    "Apex/API: insert ContentVersion; query ContentDocumentLink; optional ContentDistribution.",
+    "Setup → Salesforce Files settings; Content permissions.",
+    "Object Reference pages for the four objects in this lesson."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox: AE uploads LAB_SOW.pdf to Opportunity LAB_Northwind Q3, then adds it to library LAB_Legal, then needs a customer-facing link for 7 days. Legal also types a Lightning Note. No production files.",
+    "inputs": [
+      "Opportunity Id as FirstPublishLocationId",
+      "Library LAB_Legal Id",
+      "Need a public review URL",
+      "Apex or UI—same objects"
+    ],
+    "decisions": [
+      {
+        "decision": "Insert ContentVersion with FirstPublishLocationId = Opportunity, not a lone ContentDocument insert.",
+        "because": "Object Reference create path.",
+        "rejected": "Classic Attachment on the Opportunity"
+      },
+      {
+        "decision": "Second ContentDocumentLink to LAB_Legal library for the team room.",
+        "because": "Links are how libraries and extra records see the file.",
+        "rejected": "Uploading a second copy into the library"
+      },
+      {
+        "decision": "ContentDistribution for the customer URL; Note as ContentNote linked to the Opportunity.",
+        "because": "Distribution is external share info; Notes are in the link model.",
+        "rejected": "A Knowledge article for a one-off SOW PDF"
+      }
+    ],
+    "configuration_or_code": [
+      "UI: Files related list on LAB_Northwind Q3 → upload LAB_SOW.pdf.",
+      "Add to library LAB_Legal (creates another link).",
+      "Create public link / distribution if the org allows; set expiry if the UI offers it.",
+      "New Note on the Opportunity; confirm it is not a Chatter post."
+    ],
+    "output": "One ContentDocument, at least one Version, links to Opportunity and Library, optional Distribution, a ContentNote.",
+    "verification": [
+      "SOQL ContentDocumentLink where ContentDocumentId = the file returns Opportunity and Library LinkedEntityIds.",
+      "A second upload as version 2 keeps the same ContentDocument Id.",
+      "A user without a link cannot open the file (sharing)."
+    ],
+    "self_explanation": "I treated identity, binary, internal passes, and public trailer as four objects. I did not duplicate the PDF."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; synthetic LAB_ files only. No customer PDFs.",
+    "starting_state_checks": [
+      "You can upload Files on an Opportunity or Account.",
+      "Do not create public links to real customer data."
+    ],
+    "steps": [
+      "Upload LAB_dummy.txt to a LAB_ Opportunity from the Files related list.",
+      "Open the file's sharing and note users/records/libraries (ContentDocumentLink in API terms).",
+      "Upload a second version of the same file; confirm it is still one document identity.",
+      "If Libraries exist, add the file to a LAB_ library. Do not create a public ContentDistribution unless the sandbox policy allows dummy files."
+    ],
+    "guided_completion": [
+      "If you see Attachment in Classic only, switch to Lightning Files related list.",
+      "If a teammate cannot see it, you need a link, not another upload."
+    ],
+    "independent_challenge": "Write the SOQL you would use to list LinkedEntityId values for a ContentDocumentId (from the Object Reference example pattern).",
+    "evidence": [
+      "Notes: one ContentDocument, two versions.",
+      "List of share targets you observed."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ files and notes.",
+      "Delete any dummy public links."
+    ],
+    "limitations": "May not prove ContentDistribution expiry fields if UI is gated."
+  },
+  "decision_table": [
+    {
+      "signal": "PDF must live on an Opportunity and version over time.",
+      "choose": "Salesforce Files: ContentVersion insert (FirstPublishLocationId = Opportunity) → ContentDocument + ContentDocumentLink.",
+      "not": "Classic Attachment, or a new ContentDocument insert as the upload.",
+      "why": "Object Reference: create via ContentVersion; identity is created for you."
+    },
+    {
+      "signal": "The legal team needs a shared room of SOWs, not one Opportunity related list.",
+      "choose": "A Library (Content Workspace) plus ContentDocumentLink to that library.",
+      "not": "A Knowledge data category or a Chatter group as the document vault.",
+      "why": "Libraries are first-class link targets on ContentDocumentLink."
+    },
+    {
+      "signal": "A customer with no Salesforce user must download the SOW.",
+      "choose": "ContentDistribution (external share information), with expiry/password as the org allows.",
+      "not": "Only a ContentDocumentLink to a Contact they cannot log in as.",
+      "why": "ContentDistribution is the documented external-sharing object."
+    },
+    {
+      "signal": "A short recap typed in Lightning on the record.",
+      "choose": "Lightning Note (ContentNote) linked via ContentDocumentLink.",
+      "not": "A Chatter post if they need Notes UI, or a Knowledge article.",
+      "why": "ContentDocumentLink explicitly includes ContentNote."
+    },
+    {
+      "signal": "Reusable approved procedure for all agents, not a PDF on one Case.",
+      "choose": "Knowledge article (APP-004).",
+      "not": "A Files library pretending to be the article corpus.",
+      "why": "Knowledge is publication; Files is document management."
+    }
+  ],
+  "limitations": [
+    "Does not quote storage or file-size caps.",
+    "Does not configure Files Connect to external drives.",
+    "ShareType enum values not memorized here.",
+    "Classic Attachment conversion tooling is neighboring."
+  ],
+  "security_notes": [
+    "ContentDistribution URLs can leak confidential files—prefer links to Salesforce users when possible.",
+    "Library membership and record sharing both affect who opens a file.",
+    "Never upload real customer documents in this lab."
+  ],
+  "common_mistakes": [
+    "Inserting ContentDocument to upload.",
+    "Using Attachment in new Lightning apps.",
+    "Duplicate uploads instead of new versions.",
+    "Public distribution for internal shares.",
+    "Logic only on ContentDocumentLink delete when files are deleted from ContentDocument."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "File exists but teammate cannot open it.",
+      "check": [
+        "ContentDocumentLink to their user, group, record they can read, or library they belong to",
+        "Record sharing on the Opportunity",
+        "Library membership"
+      ],
+      "do_not_assume": "The binary failed to upload."
+    },
+    {
+      "symptom": "Apex 'upload' fails inserting ContentDocument.",
+      "check": [
+        "Insert ContentVersion without ContentDocumentId instead",
+        "FirstPublishLocationId if you need an immediate share"
+      ],
+      "do_not_assume": "FLS on ContentDocument is the only issue."
+    },
+    {
+      "symptom": "Delete trigger on ContentDocumentLink never ran when the file was deleted.",
+      "check": [
+        "Object Reference: cascaded link delete does not fire those triggers",
+        "Put logic on ContentDocument delete if you must"
+      ],
+      "do_not_assume": "The trigger is inactive."
+    }
+  ],
+  "production_notes": [
+    "Prefer record links over public distributions for confidential Files.",
+    "Version, do not duplicate, SOWs.",
+    "Review ContentDistribution settings with security before enabling org-wide public links."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How do you create a new Salesforce file in the API?",
+      "options": {
+        "A": "Insert ContentVersion without setting ContentDocumentId so the parent ContentDocument is created",
+        "B": "Insert ContentDocument first, then the version",
+        "C": "Insert ContentDistribution only",
+        "D": "Insert a Classic Attachment and name it Files"
+      },
+      "answer": "A",
+      "rationale": "ContentDocument Object Reference: create a version without ContentDocumentId; the parent document is created automatically.",
+      "distractor_explanations": {
+        "B": "The documented path is Version first.",
+        "C": "Distribution is external sharing.",
+        "D": "Legacy model."
+      },
+      "concept": "Create path",
+      "citation_ids": ["SF-DEV-CONTENTDOCUMENT"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is ContentVersion?",
+      "options": {
+        "A": "A specific version of a document in Salesforce Files or CRM Content",
+        "B": "Only the share row",
+        "C": "Only the public URL",
+        "D": "A Knowledge article type"
+      },
+      "answer": "A",
+      "rationale": "Object Reference definition of ContentVersion.",
+      "distractor_explanations": {
+        "B": "That is ContentDocumentLink.",
+        "C": "That is ContentDistribution.",
+        "D": "APP-004."
+      },
+      "concept": "ContentVersion",
+      "citation_ids": ["SF-DEV-CONTENTVERSION"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How do you add a new version of an existing file?",
+      "options": {
+        "A": "Insert ContentVersion with the existing ContentDocumentId",
+        "B": "Insert a second ContentDocument with the same name",
+        "C": "Update LatestPublishedVersionId manually only",
+        "D": "Insert ContentDistribution"
+      },
+      "answer": "A",
+      "rationale": "When adding a new version you must specify an existing ContentDocumentId.",
+      "distractor_explanations": {
+        "B": "Creates a duplicate identity.",
+        "C": "The platform updates document fields when the latest version publishes.",
+        "D": "Wrong object."
+      },
+      "concept": "Revisions",
+      "citation_ids": ["SF-DEV-CONTENTDOCUMENT"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What can LinkedEntityId on ContentDocumentLink point at?",
+      "options": {
+        "A": "Users, groups, records (including feed-tracked custom objects), and CRM Content libraries",
+        "B": "Only Opportunity",
+        "C": "Only Forecasts",
+        "D": "Only Price Books"
+      },
+      "answer": "A",
+      "rationale": "ContentDocumentLink Object Reference: users, groups, records, libraries; ContentNote included in the object purpose.",
+      "distractor_explanations": {
+        "B": "Opportunity is one of many.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Link targets",
+      "citation_ids": ["SF-DEV-CONTENTDOCUMENTLINK"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is ContentDistribution?",
+      "options": {
+        "A": "Information about sharing a document externally",
+        "B": "The binary version",
+        "C": "The identity row only",
+        "D": "A Sales Process"
+      },
+      "answer": "A",
+      "rationale": "Standard Objects list: ContentDistribution represents information about sharing a document externally (API 32.0+).",
+      "distractor_explanations": {
+        "B": "ContentVersion.",
+        "C": "ContentDocument.",
+        "D": "APP-002."
+      },
+      "concept": "ContentDistribution",
+      "citation_ids": ["SF-DEV-OBJECT-LIST"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why use FirstPublishLocationId on ContentVersion?",
+      "options": {
+        "A": "To create the file and share it with an initial record, group, user, or library in one transaction",
+        "B": "To create a Knowledge article",
+        "C": "To set Forecast Category",
+        "D": "To convert a Lead"
+      },
+      "answer": "A",
+      "rationale": "ContentVersion Help: setting FirstPublishLocationId allows create and initial share together.",
+      "distractor_explanations": {
+        "B": "APP-004.",
+        "C": "APP-002.",
+        "D": "APP-001."
+      },
+      "concept": "FirstPublishLocationId",
+      "citation_ids": ["SF-DEV-CONTENTVERSION"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "File deleted; ContentDocumentLink delete trigger did not run. Why might that be documented?",
+      "options": {
+        "A": "Cascaded ContentDocumentLink deletes from ContentDocument delete do not trigger those triggers",
+        "B": "Triggers cannot exist on that object",
+        "C": "Files cannot be deleted",
+        "D": "Only ContentDistribution has triggers"
+      },
+      "answer": "A",
+      "rationale": "Object Reference notes that cascaded link delete does not fire ContentDocumentLink triggers.",
+      "distractor_explanations": {
+        "B": "Triggers are mentioned for insert/update/delete of links themselves.",
+        "C": "Files can be deleted.",
+        "D": "False."
+      },
+      "concept": "Cascade trigger gap",
+      "citation_ids": ["SF-DEV-CONTENTDOCUMENTLINK", "SF-DEV-CONTENTDOCUMENT"]
+    },
+    {
+      "id": "Q8",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "ContentDocumentLink versus ContentDistribution?",
+      "options": {
+        "A": "Link is internal share to user/group/record/library; Distribution is external sharing information",
+        "B": "They are the same object",
+        "C": "Link is the binary",
+        "D": "Distribution is the identity"
+      },
+      "answer": "A",
+      "rationale": "Object Reference plus catalog definitions.",
+      "distractor_explanations": {
+        "B": "Different objects.",
+        "C": "Version is the binary.",
+        "D": "Document is identity."
+      },
+      "concept": "Link vs distribution",
+      "citation_ids": ["SF-DEV-CONTENTDOCUMENTLINK", "SF-DEV-OBJECT-LIST"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Library versus Knowledge?",
+      "options": {
+        "A": "A Library is a Files workspace (link target); Knowledge is published articles (APP-004)",
+        "B": "They are synonyms",
+        "C": "Knowledge is ContentVersion",
+        "D": "Libraries convert Leads"
+      },
+      "answer": "A",
+      "rationale": "This topic's boundary. ContentDocumentLink lists libraries as share targets.",
+      "distractor_explanations": {
+        "B": "Interview fail.",
+        "C": "Wrong layer.",
+        "D": "APP-001."
+      },
+      "concept": "Library vs Knowledge",
+      "citation_ids": ["SF-DEV-CONTENTDOCUMENTLINK"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Lightning Note on an Opportunity uses which model?",
+      "options": {
+        "A": "ContentNote with ContentDocumentLink (Files model)",
+        "B": "Classic Attachment only",
+        "C": "Forecast Category",
+        "D": "Web-to-Case"
+      },
+      "answer": "A",
+      "rationale": "ContentDocumentLink represents links for Salesforce files or ContentNote.",
+      "distractor_explanations": {
+        "B": "Legacy.",
+        "C": "APP-002.",
+        "D": "APP-003."
+      },
+      "concept": "Notes",
+      "citation_ids": ["SF-DEV-CONTENTDOCUMENTLINK"]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does LatestPublishedVersionId on ContentDocument reference?",
+      "options": {
+        "A": "The latest ContentVersion",
+        "B": "A ContentDistribution",
+        "C": "A Campaign",
+        "D": "A Milestone"
+      },
+      "answer": "A",
+      "rationale": "ContentDocument field LatestPublishedVersionId looks up ContentVersion.",
+      "distractor_explanations": {
+        "B": "External share.",
+        "C": "APP-001.",
+        "D": "APP-004."
+      },
+      "concept": "Latest version pointer",
+      "citation_ids": ["SF-DEV-CONTENTDOCUMENT"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "New Lightning Case UI must attach files. Which storage do you design on?",
+      "options": {
+        "A": "Salesforce Files (ContentVersion / ContentDocument / ContentDocumentLink)",
+        "B": "Classic Attachment as the long-term model",
+        "C": "Opportunity Stage",
+        "D": "Lead Settings"
+      },
+      "answer": "A",
+      "rationale": "This lesson's boundary: do not design new Lightning apps on Attachment.",
+      "distractor_explanations": {
+        "B": "Legacy.",
+        "C": "APP-002.",
+        "D": "APP-001."
+      },
+      "concept": "Not Attachment",
+      "citation_ids": ["SF-DEV-CONTENTDOCUMENT"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "structure",
+      "front": "File object chain?",
+      "back": "Uploaded file → ContentDocument identity → ContentVersion binary → ContentDocumentLink and/or ContentDistribution."
+    },
+    {
+      "id": "F2",
+      "category": "create",
+      "front": "API create of a new file?",
+      "back": "Insert ContentVersion without ContentDocumentId; the parent ContentDocument is created."
+    },
+    {
+      "id": "F3",
+      "category": "version",
+      "front": "How to add a revision?",
+      "back": "Insert ContentVersion with the existing ContentDocumentId."
+    },
+    {
+      "id": "F4",
+      "category": "link",
+      "front": "What is ContentDocumentLink?",
+      "back": "Share row to user, group, record, or library (and ContentNote)."
+    },
+    {
+      "id": "F5",
+      "category": "distribution",
+      "front": "What is ContentDistribution?",
+      "back": "Information about sharing a document externally (public URL), API 32.0+."
+    },
+    {
+      "id": "F6",
+      "category": "first-publish",
+      "front": "FirstPublishLocationId purpose?",
+      "back": "Create and share to a user, library, or record in one ContentVersion transaction."
+    },
+    {
+      "id": "F7",
+      "category": "note",
+      "front": "Lightning Note storage?",
+      "back": "ContentNote in the Files model, linked with ContentDocumentLink."
+    },
+    {
+      "id": "F8",
+      "category": "library",
+      "front": "What is a Library here?",
+      "back": "A Content Workspace room that files link to—not Knowledge."
+    },
+    {
+      "id": "F9",
+      "category": "legacy",
+      "front": "Attachment versus Files?",
+      "back": "Attachment is Classic ParentId/Body. New Lightning work uses ContentVersion/Document/Link."
+    },
+    {
+      "id": "F10",
+      "category": "soql",
+      "front": "How do you see where a file is shared?",
+      "back": "Query ContentDocumentLink by ContentDocumentId (LinkedEntityId values)."
+    },
+    {
+      "id": "F11",
+      "category": "trigger",
+      "front": "File delete and link triggers?",
+      "back": "Cascaded ContentDocumentLink deletes do not fire ContentDocumentLink delete triggers."
+    },
+    {
+      "id": "F12",
+      "category": "pointer",
+      "front": "LatestPublishedVersionId?",
+      "back": "Lookup on ContentDocument to the latest ContentVersion."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Teammate cannot open a file that uploaded fine?",
+      "back": "Missing ContentDocumentLink (or record/library access)—not a missing binary."
+    },
+    {
+      "id": "F14",
+      "category": "boundary",
+      "front": "Library versus Knowledge?",
+      "back": "Library holds Files. Knowledge holds published articles (APP-004)."
+    },
+    {
+      "id": "F15",
+      "category": "security",
+      "front": "When ContentDistribution over a record link?",
+      "back": "When the audience has no Salesforce user and needs an external URL—handle expiry carefully."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Draw the Files objects and their jobs.",
+      "answer_30_seconds": "ContentDocument is identity. ContentVersion is this binary. ContentDocumentLink is who can see it. ContentDistribution is an external URL. Create by inserting ContentVersion, not ContentDocument.",
+      "answer_2_minutes": "I mention Files versus CRM Content API versions only at a high level. FirstPublishLocationId can attach the first share. Notes are ContentNote. Libraries are link targets. I query links to debug visibility. I will not design on Attachment. Cascade delete skips link triggers.",
+      "example": "LAB_SOW.pdf: one document, two versions, links to Opportunity and LAB_Legal, optional distribution.",
+      "tradeoffs": [
+        "Record link vs library vs public URL",
+        "Files vs Knowledge"
+      ],
+      "follow_ups": [
+        "ShareType values?",
+        "Files Connect?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Files a single object"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you upload a file in Apex?",
+      "answer_30_seconds": "Insert ContentVersion with VersionData and PathOnClient, no ContentDocumentId. Set FirstPublishLocationId if you want the first share in the same transaction.",
+      "answer_2_minutes": "For version 2 I pass ContentDocumentId. I add extra ContentDocumentLink rows for more records or a library. I do not insert ContentDocument. I consider trigger recursion on ContentDocument insert when a file is added to a library, as the object page notes.",
+      "example": "ContentVersion FirstPublishLocationId = LAB_Northwind Q3 Id.",
+      "tradeoffs": [
+        "One-transaction share vs extra links",
+        "Synchronous binary vs async"
+      ],
+      "follow_ups": [
+        "Heap size?",
+        "Guest user upload?"
+      ],
+      "weak_answer_warnings": [
+        "Insert ContentDocument first"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Legal wants SOWs in a team room and on each Opportunity, plus a customer preview link.",
+      "answer_30_seconds": "One file: Version on the Opportunity, extra ContentDocumentLink to the Library, ContentDistribution for the customer. Do not upload three copies.",
+      "answer_2_minutes": "I warn that a public URL is a different trust boundary than a Salesforce user link. I prefer expiry. I keep Knowledge out. Notes can capture negotiation recap as ContentNote. I verify library membership separately from Opportunity sharing.",
+      "example": "LAB_SOW one ContentDocument, two links, one distribution.",
+      "tradeoffs": [
+        "Public URL vs Experience Cloud login",
+        "Library permissions vs record sharing"
+      ],
+      "follow_ups": [
+        "Password on distribution?",
+        "Watermarking?"
+      ],
+      "weak_answer_warnings": [
+        "Three uploads"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A team stores SOPs as PDFs in a Library and calls it Knowledge.",
+      "answer_30_seconds": "I redirect them. Libraries are Files rooms. Knowledge is published articles with channels and categories (APP-004). PDFs can attach to articles, but the corpus is Knowledge.",
+      "answer_2_minutes": "Search, translation, data categories, and portal channels are why Knowledge exists. A Library is the right place for working SOWs, not for the service SOP corpus. I will not fight storing a PDF, but I will not let it replace article publication.",
+      "example": "LAB_Reset_VPN as a Knowledge article; LAB_SOW.pdf in LAB_Legal library.",
+      "tradeoffs": [
+        "PDF convenience vs article features",
+        "Internal library vs public Knowledge"
+      ],
+      "follow_ups": [
+        "Can articles attach Files?",
+        "Data categories vs library folders?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing that Library equals Knowledge"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "User can upload to an Opportunity but a teammate cannot see the file.",
+      "answer_30_seconds": "Query ContentDocumentLink. They need a link—or access to the linked record or library. Upload success is not visibility.",
+      "answer_2_minutes": "I distinguish file share from Opportunity OWD. A private file on a shared Opportunity can still hide. I check whether FirstPublishLocationId was only the uploader's personal files. I add a link to the record or library. I do not re-upload.",
+      "example": "Link ShareType/Visibility leaves it owner-only; teammate has Opportunity Read but no file link.",
+      "tradeoffs": [
+        "Record-level file visibility vs explicit user links",
+        "Library for the team"
+      ],
+      "follow_ups": [
+        "What does ShareType V/I/C mean? (open field help)",
+        "Guest users?"
+      ],
+      "weak_answer_warnings": [
+        "Telling them to upload again"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A trigger on ContentDocumentLink delete never fires when users delete Files from the UI.",
+      "answer_30_seconds": "If they deleted the ContentDocument, cascaded link deletes do not fire ContentDocumentLink triggers. Put the logic on ContentDocument delete.",
+      "answer_2_minutes": "I reproduce: delete the file versus remove one share. Removing one link should fire the link trigger; deleting the document may not. I cite the Object Reference. I do not 'fix' it by converting to Attachment.",
+      "example": "Delete LAB_SOW from Files related list; document delete cascade skips link trigger.",
+      "tradeoffs": [
+        "Document-level vs link-level automation",
+        "Platform event alternatives"
+      ],
+      "follow_ups": [
+        "ContentDocumentChangeEvent?",
+        "Undelete?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming the trigger is not deployed"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When do you refuse ContentDistribution?",
+      "answer_30_seconds": "When the audience has Salesforce access (use a link), when the file is confidential without expiry/password controls, or when a portal login is the real requirement.",
+      "answer_2_minutes": "External sharing information is powerful and easy to forward. I prefer Experience Cloud or a record the customer can log into. If we must distribute, I set expiry and review who can create distributions. I still version via ContentVersion internally.",
+      "example": "Internal SOW: Opportunity plus LAB_Legal links only. No distribution.",
+      "tradeoffs": [
+        "Friction vs leak risk",
+        "Password links vs authenticated portal"
+      ],
+      "follow_ups": [
+        "Download tracking?",
+        "Watermarks?"
+      ],
+      "weak_answer_warnings": [
+        "Public links as the default share"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach Files with the film-production analogy and where it breaks.",
+      "answer_30_seconds": "Title is ContentDocument, this cut is ContentVersion, screening pass is ContentDocumentLink, public trailer is ContentDistribution, sticky script is Note, studio room is Library.",
+      "answer_2_minutes": "It breaks on owner-change link rewrite, cascade trigger skip, and the fact that Knowledge is not a studio room. I then quote the create path: Version without Document Id. I mention FirstPublishLocationId. I refuse Attachment for new Lightning work. I keep Chatter and Knowledge in their own topics.",
+      "example": "Whiteboard mermaid: File → ContentDocument → ContentVersion → Link and Distribution.",
+      "tradeoffs": [
+        "Analogy vs API names",
+        "Internal pass vs trailer URL"
+      ],
+      "follow_ups": [
+        "Where do AppExchange apps store files? (APP-007)",
+        "Where do Case emails attach? (still Files or email attachments—verify)"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphor as filler"
+      ]
+    }
+  ]
+}

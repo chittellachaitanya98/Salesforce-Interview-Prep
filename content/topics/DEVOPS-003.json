@@ -1,0 +1,247 @@
+{
+  "topic_id": "DEVOPS-003",
+  "slug": "git-working-tree-staging-commits-branches-merging-pull-",
+  "title": "Git working tree, staging, commits, branches, merging, pull requests, and conflict resolution",
+  "track": "Development lifecycle and DevOps",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": ["DEVOPS-002"],
+  "objectives": [
+    "Map working tree, staging area, and commit to how Salesforce metadata source actually gets recorded.",
+    "Choose branches, pull requests, and merges for a metadata change rather than committing straight to the default branch.",
+    "Separate Git merge conflicts from Salesforce CLI source-tracking conflicts with the org.",
+    "Name files that must never be committed (org auth, secrets) while still treating the repository as the metadata source of truth."
+  ],
+  "diagnostic_question": "Two teammates retrieve the same Flow, one commits on main, the other has uncommitted XML. A third has a source-tracking conflict with a sandbox. Which problem is Git, which is org sync, and what would you verify first?",
+  "definition": "Git records snapshots of the DX project's metadata source. The working tree is the files you edit, the staging area (index) is what the next commit will include, and a commit is a recorded snapshot. Branches isolate work; merging and pull requests integrate it; conflicts appear when two snapshots both changed the same lines. Salesforce DX still treats that repository as the metadata source of truth, which is a different question from CLI source tracking against an org. ([Salesforce DX tooling](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm); [Track Changes Between Your Project and Org](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_source_tracking.htm); [Git Basics](https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository))",
+  "why_it_matters": "A clean CLI deploy of a dirty Git history still ships the wrong XML. Interviewers listen for working tree versus staging versus commit, for pull requests as review of metadata, and for not confusing a Git conflict with an org source-tracking conflict.",
+  "sixty_second_explanation": "Picture a rail switching yard. The working tree is cars sitting on the yard tracks (your files). Staging is coupling a consist for the next departure (git add). A commit is sealing that consist with a waybill. A branch is a parallel track. A pull request is the dispatcher reviewing before the consist joins the main line. A merge conflict is two trains claiming the same switch. Org source tracking is a different radio: local project versus sandbox, not Git versus Git.",
+  "deeper_explanation": [
+    "Salesforce DX states that source code and metadata exist outside the org and that the version control system is the source of truth. Git is the usual VCS. Recording changes uses three trees: working directory (working tree), staging area, and commit history. You edit metadata source, git add to stage, git commit to snapshot. Unstaged retrieve output is not yet history. ([Salesforce DX tooling](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm); [Git Basics](https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository))",
+    "Branches isolate a LAB_ feature. Pull requests (host-specific: GitHub/GitLab/Azure Repos) are the review gate before merging into the integration branch. Merging combines histories. Metadata XML, especially large profile files, conflicts often; permission-set-sized diffs are easier (DEVOPS-008). Never force-push shared branches as a conflict 'fix' unless the team explicitly owns that danger.",
+    "Source tracking conflicts are not Git conflicts. CLI source tracking compares local project files with a scratch org or sandbox. Production never allows source tracking. Resolve org conflicts before deploy/retrieve when both sides changed the same component, or overwrite only when you are sure. Then commit the result so Git remains truth. ([Track Changes](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_source_tracking.htm))",
+    "Do not commit secrets, session files, or production data extracts. A DX project may include sample data; that is not a license to commit PII. .forceignore and .gitignore both matter: ignore local noise without hiding real metadata. Interview precision: merging a PR does not deploy; CI or a human still runs project deploy (DEVOPS-002/007)."
+  ],
+  "mental_model": {
+    "analogy": "A rail switching yard: working tree = cars in the yard, staging = coupled consist, commit = sealed waybill, branch = parallel track, pull request = dispatcher review, merge conflict = two trains on one switch. Org source tracking is a different radio to the sandbox, not the yardmaster's ledger.",
+    "useful_mapping": [
+      "working tree → files on disk including uncommitted retrieve output",
+      "staging / index → git add selection for the next snapshot",
+      "commit → immutable snapshot of staged metadata source",
+      "branch → movable pointer for a line of work",
+      "pull request → review before merge to the shared track",
+      "Git conflict → overlapping commits on the same lines",
+      "source-tracking conflict → local project versus org, not Git versus Git",
+      "merge ≠ deploy → history changed; the org still needs a metadata deploy"
+    ],
+    "where_it_breaks": [
+      "Git does not understand Salesforce metadata types; it diffs text.",
+      "Source tracking can be clean while Git is dirty, and the reverse.",
+      "Pull request tools are host products, not Git core.",
+      "The analogy does not encode package versioning or Apex tests."
+    ]
+  },
+  "teach_back_prompt": "Explain working tree, staging, and commit using the rail yard, then give one Salesforce metadata example where a Git conflict is not an org source-tracking conflict.",
+  "review_schedule": [
+    {"interval": "1 day", "prompt": "Draw working tree → staging → commit and name git add versus git commit."},
+    {"interval": "3 days", "prompt": "Given two Flow XML edits, decide branch, PR, or emergency commit to main."},
+    {"interval": "7 days", "prompt": "Contrast a Git merge conflict with a CLI source-tracking conflict."},
+    {"interval": "14 days", "prompt": "List three paths that must never be committed from a DX project."},
+    {"interval": "30 days", "prompt": "Two-minute interview: Git as metadata source of truth, PR as review, merge is not deploy."}
+  ],
+  "sources": [
+    {
+      "source_id": "SF-DX-INTRO",
+      "title": "How Salesforce Developer Experience (DX) Tooling Changes the Way You Work",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm",
+      "supports": "Version control system is the source of truth; metadata exists outside the org.",
+      "release_or_version": "Salesforce DX Developer Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not teach Git porcelain commands."
+    },
+    {
+      "source_id": "SF-DX-TRACK",
+      "title": "Track Changes Between Your Project and Org",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_source_tracking.htm",
+      "supports": "Source tracking compares local project and scratch/sandbox; resolve conflicts before deploy/retrieve; production is not this mechanism.",
+      "release_or_version": "Salesforce DX Developer Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Source tracking is not Git merge."
+    },
+    {
+      "source_id": "GIT-BASICS",
+      "title": "Git Basics — Recording Changes to the Repository",
+      "type": "Official product documentation",
+      "url": "https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository",
+      "supports": "Working tree, staging area, and commit as the three states of Git files.",
+      "release_or_version": "Pro Git book (Git project)",
+      "last_verified": "2026-08-16",
+      "limits": "Generic Git; Salesforce metadata merge pain is extra."
+    },
+    {
+      "source_id": "SF-DX-PROJECT",
+      "title": "Project Setup",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_workspace_setup.htm",
+      "supports": "Store the DX project in a source control system; sample data and tests live with metadata source.",
+      "release_or_version": "Salesforce DX Developer Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define pull-request product features."
+    }
+  ],
+  "videos": [{"status": "not_verified", "title": "No verified official exact-topic video claimed in this pack", "channel": "Prefer DX Developer Guide and Git documentation", "url": "", "language": "English", "duration": "", "level": "Intermediate", "teaches_well": "", "gaps": "Needs verification before recommending a specific recording.", "free_or_paid": "Unknown", "last_verified": "2026-08-16"}],
+  "visuals": {
+    "infographic": {"format": "4:5 SVG", "size": "1600x2000", "zones": ["Working tree staging commit", "Branches and pull requests", "Git conflict vs org tracking", "Merge is not deploy", "Do not commit secrets", "Metadata XML merge pain"], "accessible_description": "Portrait map of Git three-tree model, branches and PRs, versus Salesforce source-tracking conflicts, with a reminder that merge does not deploy metadata."},
+    "cheat_sheet": {"format": "A4 HTML", "source_footer": ["SF-DX-INTRO", "SF-DX-TRACK", "GIT-BASICS", "SF-DX-PROJECT"]},
+    "system_map": {"format": "zoomable SVG", "title": "Git history versus org source tracking"},
+    "mermaid": {
+      "structure": "flowchart TD\n  WT[Working tree: retrieved or edited metadata] -->|git add| ST[Staging area]\n  ST -->|git commit| C[Commit snapshot]\n  C --> BR[Branch pointer]\n  BR --> PR[Pull request review]\n  PR --> MG[Merge to integration branch]\n  MG --> Deploy[Still needs metadata deploy: DEVOPS-002]\n  Org[Scratch or sandbox] -.->|source tracking| WT",
+      "decision": "flowchart TD\n  Prob[Something disagrees] --> Q1{Which two copies?}\n  Q1 -->|Two Git commits or branches| GitC[Resolve Git merge/rebase conflict in XML]\n  Q1 -->|Local project vs scratch/sandbox| OrgC[Resolve source-tracking conflict; then commit]\n  Q1 -->|Git clean but org stale| Dep[Deploy from the branch]\n  Q1 -->|Org has Setup clicks not committed| Retr[Retrieve then git add and commit]\n  Q1 -->|Secrets in the diff| Stop[Unstage and gitignore; rotate credentials]"
+    }
+  },
+  "claims": [
+    {"claim_id": "C-001", "claim": "In Salesforce DX, the version control system is the source of truth for source code and metadata outside the org.", "source_ids": ["SF-DX-INTRO", "SF-DX-PROJECT"], "scope": "Source of truth", "validation": "Salesforce DX introduction and Project Setup.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-002", "claim": "Git records file states as working tree, staging area, and committed snapshot. git add stages; git commit records.", "source_ids": ["GIT-BASICS"], "scope": "Git three-tree model", "validation": "Pro Git recording-changes chapter.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-003", "claim": "Source tracking compares the local project with a scratch org or sandbox and is used to identify and resolve conflicts before deploy/retrieve. It is not Git merge.", "source_ids": ["SF-DX-TRACK"], "scope": "Org vs Git conflicts", "validation": "Track Changes Between Your Project and Org.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-004", "claim": "Merging Git history does not by itself deploy metadata to an org; a retrieve/deploy command or pipeline is still required.", "source_ids": ["SF-DX-INTRO", "SF-DX-TRACK"], "scope": "Merge vs deploy", "validation": "DX treats VCS as truth and CLI as the org sync mechanism.", "last_verified": "2026-08-16"}
+  ],
+  "changed_in_release": "Git itself is not Salesforce-versioned. Reverify Salesforce CLI source-tracking commands for Summer '26.",
+  "unresolved_uncertainty": ["Host-specific pull-request required-review counts and merge-queue products vary; cite the team's SCM, not Salesforce, for those buttons."],
+  "telugu_glossary": [{"english": "Staging area", "telugu": "తదుపరి commit లో చేరే ఫైళ్ల జాబితా."}, {"english": "Pull request", "telugu": "మెయిన్ ట్రాక్‌లో కలిపే ముందు సమీక్ష."}],
+  "interview_explanation": {
+    "thirty_seconds": "Git snapshots DX metadata: working tree, staging, commit. Branches and pull requests review XML before it becomes shared history. A Git conflict is not a CLI source-tracking conflict. Merge does not deploy.",
+    "two_minutes": "I treat the repo as Salesforce's source of truth. I retrieve, then add and commit—not 'the org remembers.' I open a branch and PR for Flow/Apex XML. If two people edited the same layout, I merge as text and validate in a scratch org. If CLI reports conflicts with a sandbox, I resolve that org sync first, then commit. I never commit auth files. I never claim a merged PR updated production."
+  },
+  "terminology": [
+    {"term": "working tree", "plain": "The project files on disk, including edits not yet committed.", "precise": "Git's working directory copy of the repository files you edit. Retrieved metadata lands here before git add.", "example": "LAB_GateService.cls just retrieved, still unstaged.", "non_example": "The org's Apex class with no local file.", "confusable_neighbor": "Staging area: selected files for the next commit.", "boundary": "CLI retrieve writes the working tree, not a commit."},
+    {"term": "staging area", "plain": "The list of files the next commit will include.", "precise": "Also called the index. git add copies working-tree content into this snapshot-to-be.", "example": "git add force-app/main/default/classes/LAB_GateService.cls", "non_example": "sf project deploy start, which talks to an org.", "confusable_neighbor": "Working tree: may still have unstaged edits.", "boundary": "Partial staging of XML is possible but easy to get wrong."},
+    {"term": "commit", "plain": "A saved snapshot of staged files with a message.", "precise": "An immutable Git object recording a tree. History of metadata source lives here.", "example": "commit message: Add LAB_GateService retrieve from sandbox A.", "non_example": "A successful metadata deploy log.", "confusable_neighbor": "Push: sending commits to a remote, still not a Salesforce deploy.", "boundary": "Amend rules are team policy; do not invent Salesforce behavior."},
+    {"term": "branch", "plain": "A named line of commits for isolated work.", "precise": "A movable pointer to a commit. Feature branches keep LAB_ work off the integration branch until review.", "example": "feature/lab-gate-service from main.", "non_example": "A Salesforce sandbox name, which is an org, not a Git pointer.", "confusable_neighbor": "Environment: sandbox versus branch naming.", "boundary": "Scratch org per branch is DEVOPS-004."},
+    {"term": "pull request", "plain": "A review of a branch before it merges into the shared history.", "precise": "A hosting-product workflow around Git branches. Used to review metadata diffs. Merging the PR is not a metadata deploy.", "example": "PR showing Flow XML plus Apex test, required reviewer, then merge.", "non_example": "Salesforce change-set upload.", "confusable_neighbor": "git pull: fetching and integrating a remote branch locally.", "boundary": "Required checks belong to DEVOPS-006/007."},
+    {"term": "merge", "plain": "Combining another branch's commits into this one.", "precise": "Creates a merge commit or fast-forward so histories join. Conflicts halt the merge until the working tree is resolved and committed.", "example": "Merging feature/lab-gate-service into main after PR approval.", "non_example": "sf project deploy start to UAT.", "confusable_neighbor": "rebase: alternative history rewrite; team policy.", "boundary": "Do not treat merge as production release."},
+    {"term": "conflict resolution", "plain": "Editing the file so Git (or source tracking) no longer has two winners.", "precise": "Git conflicts are overlapping line changes in history. Source-tracking conflicts are local versus org. Resolve the right pair, then commit.", "example": "Two Flow XML <status> lines; keep the reviewed version, deploy to a scratch org, commit.", "non_example": "--ignore-conflicts on production (no source tracking).", "confusable_neighbor": "Deployment errors from Apex tests.", "boundary": "Profile XML conflicts are a reason to prefer permission sets (DEVOPS-008)."},
+    {"term": "source-tracking conflict", "plain": "The project file and the scratch/sandbox component both changed.", "precise": "CLI source tracking identifies conflicts between local project and org. Best practice: resolve before deploy/retrieve. Not a Git merge.", "example": "Layout edited in VS Code and in Setup; CLI reports a conflict.", "non_example": "Two Git branches both edited the layout and Git stops a merge.", "confusable_neighbor": "Git conflict.", "boundary": "Production never allows source tracking."}
+  ],
+  "mechanics": [
+    {"step": 1, "transition": "Get metadata into the working tree", "actor": "Developer", "trigger": "Org or local edit", "before": "Change exists only in Setup or only in the editor", "after": "Files on disk in the DX project", "observe": "git status shows unstaged or untracked files", "failure": "Deploying without ever committing"},
+    {"step": 2, "transition": "Stage and commit on a branch", "actor": "Developer", "trigger": "git status is dirty", "before": "Working tree only", "after": "A commit on a feature branch, secrets excluded", "observe": "git log shows the snapshot; git show has no .sfdx secrets", "failure": "Committing auth.json"},
+    {"step": 3, "transition": "Review via pull request", "actor": "Reviewer", "trigger": "Branch pushed", "before": "Unreviewed XML", "after": "Approved merge to the integration branch", "observe": "PR diff of metadata source", "failure": "Pushing directly to main in a team that requires PRs"},
+    {"step": 4, "transition": "Deploy after merge, not instead of merge", "actor": "Developer or CI", "trigger": "History updated", "before": "Git has the change; org may not", "after": "Metadata deploy to the target org", "observe": "CLI deploy report", "failure": "Calling the merge 'released to production'"}
+  ],
+  "when_to_use": [
+    "When retrieved metadata sits in the working tree and must become a commit on a branch.",
+    "When two developers' commits conflict in Flow or layout XML and you must merge or rebase.",
+    "When a pull request is the review gate before metadata becomes shared history.",
+    "When CLI source tracking reports a conflict and you must not treat it as a Git merge conflict.",
+    "When deciding that merging the branch still requires a metadata deploy."
+  ],
+  "when_not_to_use": [
+    "Do not use Git commits as a substitute for Salesforce CLI retrieve/deploy (DEVOPS-002).",
+    "Do not use a pull request as a change set; PRs do not move metadata into production by themselves.",
+    "Do not resolve org source-tracking conflicts with git merge tools aimed at the wrong copy pair.",
+    "Do not commit production data, session files, or secrets because the working tree happened to contain them.",
+    "Do not treat this topic as unlocked-package versioning (DEVOPS-005)."
+  ],
+  "configuration_or_code_location": [
+    "DX project root: .git directory, .gitignore, working tree under force-app.",
+    "git status / git add / git commit / git switch on a feature branch.",
+    "Hosted pull-request UI for the remote.",
+    "sf project deploy/retrieve preview for org-side conflicts (scratch/sandbox)."
+  ],
+  "worked_example": {
+    "scenario": "Two developers retrieve LAB_BoardingFlow. One committed on a feature branch. The other still has unstaged XML and also changed the same Flow in a scratch org. Need a PR, not a silent main commit. No production.",
+    "inputs": ["DX project as Git repo", "feature/lab-boarding branch with one commit", "Dirty working tree on another clone", "Source-tracking conflict on the scratch org"],
+    "decisions": [
+      {"decision": "Resolve the org source-tracking conflict first on the clone that talks to the scratch org.", "because": "That conflict is local versus org, not Git history.", "rejected": "git merge to 'fix' the sandbox"},
+      {"decision": "Stage only Flow metadata, commit on a branch, open a pull request.", "because": "Working tree is not history until commit; PRs review XML.", "rejected": "Commit secrets and force-push main"},
+      {"decision": "After merge, deploy; do not call the merge the release.", "because": "VCS is truth but orgs still need metadata deploy.", "rejected": "Assuming GitHub merge updates the sandbox"}
+    ],
+    "configuration_or_code": [
+      "sf project retrieve preview / resolve org conflict, then retrieve.",
+      "git switch -c feature/lab-boarding-status && git add force-app/main/default/flows/LAB_BoardingFlow.flow-meta.xml && git commit",
+      "Open PR; after merge, sf project deploy start --source-dir force-app --target-org lab-scratch"
+    ],
+    "output": "One reviewed commit path. Scratch org matches Git. Main does not contain auth files.",
+    "verification": ["git log on main after merge shows the Flow commit.", "git status clean.", "Org Flow matches the committed XML after deploy."],
+    "self_explanation": "I split Git conflicts from org tracking, committed via a branch and PR, then deployed."
+  },
+  "hands_on_lab": {
+    "environment": "Local DX project as a Git repo; disposable scratch or sandbox. LAB_ files only.",
+    "starting_state_checks": ["git status works.", "sfdx-project.json is tracked or planned to be tracked.", "No production remotes required."],
+    "steps": [
+      "Create a feature branch and edit or retrieve one LAB_ metadata file.",
+      "git add that file only; confirm git status shows it staged.",
+      "Commit, push if a remote exists, and open or describe a pull request diff.",
+      "Intentionally edit the same line two ways in a second branch, merge, and resolve the conflict without committing secrets."
+    ],
+    "guided_completion": ["If the whole force-app staged, unstage unrelated XML.", "If a source-tracking conflict appears, resolve it with CLI, not as a Git merge of remotes."],
+    "independent_challenge": "Write four bullets: working tree, staging, commit, and why merge is not deploy.",
+    "evidence": ["git log -1 and git show with LAB_ paths.", "A note distinguishing Git conflict vs source tracking."],
+    "stop_recovery_cleanup": ["Delete the feature branch if desired.", "Do not force-push shared main. Do not deploy to production."],
+    "limitations": "Does not configure GitHub required reviewers."
+  },
+  "decision_table": [
+    {"signal": "Retrieved XML is only on disk and must enter history.", "choose": "git add then git commit on a feature branch.", "not": "Leaving it unstaged and calling Git the source of truth.", "why": "Working tree is not a commit. DX truth is the VCS snapshot."},
+    {"signal": "Two Git branches edited the same Flow lines.", "choose": "Merge or rebase, resolve the XML conflict, test in a scratch org, commit.", "not": "sf project deploy --ignore-conflicts as a Git fix.", "why": "That flag is org source tracking, and it does nothing on production."},
+    {"signal": "Local file and sandbox component both changed.", "choose": "Resolve the source-tracking conflict, then commit the chosen source.", "not": "git merge origin/main to overwrite the org blindly.", "why": "Org sync and Git history are different radios."},
+    {"signal": "A teammate asks if the merged pull request is in UAT.", "choose": "Run or check the metadata deploy to that org.", "not": "Pointing at the green merge on the host.", "why": "Merge updates Git; deploy updates the org."},
+    {"signal": "git status shows auth or secret files.", "choose": "Unstage, gitignore, rotate if committed.", "not": "Including them so 'the project is complete.'", "why": "The repo is metadata source of truth, not a credential store."}
+  ],
+  "limitations": ["Does not teach every Git command.", "Does not replace CLI retrieve/deploy.", "Does not set org default branch protections.", "No production deploy."],
+  "security_notes": ["Never commit secrets or org auth.", "Metadata XML can contain PII in names.", "Force-push on shared branches is a team-safety issue."],
+  "common_mistakes": ["Calling a merged PR a production deploy.", "Confusing source-tracking conflicts with Git conflicts.", "Committing everything in the working tree including .sfdx.", "Using the sandbox name as if it were a Git branch.", "Force-pushing to 'resolve' conflicts."],
+  "troubleshooting": [
+    {"symptom": "git status dirty after a successful deploy.", "check": ["Deploy does not commit.", "Retrieve may have rewritten files; review the diff."], "do_not_assume": "Git is broken."},
+    {"symptom": "Merge conflict in a huge profile XML.", "check": ["Prefer permission-set sized changes (DEVOPS-008).", "Resolve carefully; validate in a scratch org."], "do_not_assume": "The other branch is automatically wrong."},
+    {"symptom": "CLI conflict but git status clean.", "check": ["Source tracking vs org, not Git.", "Retrieve/deploy preview."], "do_not_assume": "You need git merge."}
+  ],
+  "production_notes": ["Protect the default branch with reviews.", "Merge is not release.", "This lesson does not authorize production deploys."],
+  "mcqs": [
+    {"id": "Q1", "category": "recall", "difficulty": "Foundation", "prompt": "In Salesforce DX, what is the source of truth for metadata?", "options": {"A": "The version control system, not the live org", "B": "Only the production Setup menu", "C": "The newest scratch org", "D": "Data Loader success files"}, "answer": "A", "rationale": "DX: instead of the org, the version control system is the source of truth.", "distractor_explanations": {"B": "Org-as-truth is what DX replaces.", "C": "Scratch orgs expire.", "D": "Data evidence, not metadata truth."}, "concept": "VCS truth", "citation_ids": ["SF-DX-INTRO"]},
+    {"id": "Q2", "category": "recall", "difficulty": "Foundation", "prompt": "What are the three Git file states when recording changes?", "options": {"A": "Working tree, staging area, committed", "B": "Retrieve, deploy, validate only", "C": "Sandbox, production, Trailhead", "D": "Private, public, global"}, "answer": "A", "rationale": "Pro Git describes working directory, staging area, and committed states.", "distractor_explanations": {"B": "CLI verbs, not Git states.", "C": "Org types.", "D": "Apex modifiers."}, "concept": "Three trees", "citation_ids": ["GIT-BASICS"]},
+    {"id": "Q3", "category": "application", "difficulty": "Intermediate", "prompt": "A Flow XML is retrieved but git status shows it unstaged. Is it in Git history?", "options": {"A": "No. It is in the working tree until git add and git commit", "B": "Yes, retrieve auto-commits", "C": "Yes, deploy auto-commits", "D": "Only if the sandbox is named main"}, "answer": "A", "rationale": "Retrieve writes files. History requires staging and commit.", "distractor_explanations": {"B": "Retrieve is not git commit.", "C": "Deploy talks to an org.", "D": "Sandbox names are not branches."}, "concept": "Working tree vs commit", "citation_ids": ["GIT-BASICS", "SF-DX-PROJECT"]},
+    {"id": "Q4", "category": "application", "difficulty": "Intermediate", "prompt": "What is a source-tracking conflict?", "options": {"A": "Local project and scratch/sandbox both changed the same component", "B": "Two Git remotes with different names only", "C": "A Data Loader row mismatch", "D": "An Apex governor limit"}, "answer": "A", "rationale": "Source tracking compares local project and org and identifies conflicts to resolve before deploy/retrieve.", "distractor_explanations": {"B": "That may be Git, not source tracking.", "C": "Data, not metadata tracking.", "D": "Runtime limits."}, "concept": "Org tracking", "citation_ids": ["SF-DX-TRACK"]},
+    {"id": "Q5", "category": "recall", "difficulty": "Foundation", "prompt": "Does merging a pull request deploy metadata to Salesforce?", "options": {"A": "No. You still retrieve/deploy with CLI or a pipeline", "B": "Yes, GitHub merge always calls Metadata API", "C": "Yes, if the branch name contains sandbox", "D": "Only for custom objects"}, "answer": "A", "rationale": "VCS is truth; org sync is a separate CLI/pipeline step.", "distractor_explanations": {"B": "Not an automatic Salesforce behavior.", "C": "Naming is not deploy.", "D": "No type exception."}, "concept": "Merge vs deploy", "citation_ids": ["SF-DX-INTRO", "SF-DX-TRACK"]},
+    {"id": "Q6", "category": "application", "difficulty": "Intermediate", "prompt": "Which is the better first move when CLI reports conflicts with a sandbox and git status is clean?", "options": {"A": "Resolve the source-tracking conflict; do not start with git merge", "B": "git merge origin/main immediately", "C": "--ignore-errors on production", "D": "Delete the .git folder"}, "answer": "A", "rationale": "Clean Git plus CLI conflict means local versus org, not two commits.", "distractor_explanations": {"B": "Wrong copy pair.", "C": "Unrelated dangerous flag.", "D": "Destroys history."}, "concept": "Right conflict type", "citation_ids": ["SF-DX-TRACK"]},
+    {"id": "Q7", "category": "recall", "difficulty": "Foundation", "prompt": "What does git add do?", "options": {"A": "Copy working-tree content into the staging area for the next commit", "B": "Deploy metadata", "C": "Create a scratch org", "D": "Open a change set"}, "answer": "A", "rationale": "Staging selects what the next commit records.", "distractor_explanations": {"B": "CLI deploy.", "C": "Org create.", "D": "Org metadata channel."}, "concept": "Staging", "citation_ids": ["GIT-BASICS"]},
+    {"id": "Q8", "category": "scenario", "difficulty": "Intermediate", "prompt": "Why are huge profile XML files painful in pull requests?", "options": {"A": "Git diffs text; noisy metadata produces unreadable conflicts", "B": "Git cannot store XML", "C": "Profiles are business data", "D": "Pull requests deploy profiles automatically"}, "answer": "A", "rationale": "Git is line-based. Large profile metadata is a known merge-pain signal toward permission sets in source (DEVOPS-008).", "distractor_explanations": {"B": "Git stores XML fine.", "C": "Profiles are authorization metadata.", "D": "PRs do not deploy."}, "concept": "XML merge pain", "citation_ids": ["GIT-BASICS", "SF-DX-PROJECT"]},
+    {"id": "Q9", "category": "scenario", "difficulty": "Intermediate", "prompt": "A teammate commits sfdx auth files 'so CI works.' What is the interview answer?", "options": {"A": "Do not commit secrets; use the CI secret store and rotate anything already pushed", "B": "Always commit auth so retrieve works", "C": "Auth files are metadata types in package.xml", "D": "Git encrypts them automatically for Salesforce"}, "answer": "A", "rationale": "The repo is metadata source of truth, not a credential vault. CI secrets are DEVOPS-007.", "distractor_explanations": {"B": "Leaks sessions.", "C": "They are not metadata types.", "D": "Not a Salesforce Git feature."}, "concept": "Secrets", "citation_ids": ["SF-DX-PROJECT"]},
+    {"id": "Q10", "category": "recall", "difficulty": "Foundation", "prompt": "What is a branch in this lesson?", "options": {"A": "A movable pointer to a commit isolating a line of metadata work", "B": "A sandbox type", "C": "A change-set connection", "D": "A permission set group"}, "answer": "A", "rationale": "Git branches isolate commits. Sandboxes are orgs (DEVOPS-004).", "distractor_explanations": {"B": "Environment, not Git.", "C": "Change sets are DEVOPS-005.", "D": "Security metadata."}, "concept": "Branch", "citation_ids": ["GIT-BASICS"]},
+    {"id": "Q11", "category": "application", "difficulty": "Intermediate", "prompt": "Best practice from source-tracking docs if conflicts exist?", "options": {"A": "Resolve them before deploying or retrieving, unless you are sure you should overwrite", "B": "Always overwrite the org", "C": "Always overwrite Git without looking", "D": "Delete the component from production"}, "answer": "A", "rationale": "Resolve conflicts before moving forward; overwrite only when certain.", "distractor_explanations": {"B": "May destroy org work.", "C": "May destroy source of truth.", "D": "Unrelated and unsafe."}, "concept": "Resolve first", "citation_ids": ["SF-DX-TRACK"]},
+    {"id": "Q12", "category": "scenario", "difficulty": "Intermediate", "prompt": "Which statement keeps Git vocabulary precise on a Salesforce team?", "options": {"A": "The sandbox is an environment; the branch is Git history; they are not the same object", "B": "Refreshing a sandbox merges Git", "C": "Scratch org expiration commits XML", "D": "Change sets are pull requests"}, "answer": "A", "rationale": "Environments and branches are often named alike but are different systems.", "distractor_explanations": {"B": "Refresh copies org metadata/data, not Git merge.", "C": "Expiration deletes the org.", "D": "Different channels."}, "concept": "Branch vs org", "citation_ids": ["SF-DX-INTRO", "GIT-BASICS"]}
+  ],
+  "flashcards": [
+    {"id": "F1", "category": "git", "front": "Working tree vs staging vs commit?", "back": "Disk files you edit; index for the next snapshot; recorded snapshot after git commit."},
+    {"id": "F2", "category": "dx", "front": "DX source of truth?", "back": "The version control system. Metadata lives outside the org."},
+    {"id": "F3", "category": "git", "front": "What does git add do?", "back": "Stages working-tree content for the next commit."},
+    {"id": "F4", "category": "git", "front": "What is a branch?", "back": "A movable pointer to a commit isolating a line of work."},
+    {"id": "F5", "category": "pr", "front": "What is a pull request here?", "back": "Hosted review of a branch before merge. Merge is not a Salesforce deploy."},
+    {"id": "F6", "category": "conflict", "front": "Git conflict vs source-tracking conflict?", "back": "Git: two commits/branches. Source tracking: local project versus scratch/sandbox."},
+    {"id": "F7", "category": "deploy", "front": "Does merge deploy?", "back": "No. Still run metadata retrieve/deploy or a pipeline."},
+    {"id": "F8", "category": "tracking", "front": "If conflicts exist in source tracking?", "back": "Resolve before deploy/retrieve unless you are sure you should overwrite one side."},
+    {"id": "F9", "category": "security", "front": "Commit org auth files?", "back": "No. Keep secrets out of Git; rotate if leaked."},
+    {"id": "F10", "category": "retrieve", "front": "Does retrieve create a commit?", "back": "No. It writes the working tree. You still git add and commit."},
+    {"id": "F11", "category": "naming", "front": "Is a sandbox a Git branch?", "back": "No. A sandbox is an org/environment. A branch is Git history."},
+    {"id": "F12", "category": "xml", "front": "Why do profile XML pull requests hurt?", "back": "Git diffs text; large authorization XML creates noisy conflicts."},
+    {"id": "F13", "category": "status", "front": "git status dirty after deploy — broken Git?", "back": "Usually no. Deploy does not commit. Retrieve may have rewritten files."},
+    {"id": "F14", "category": "production", "front": "Source tracking on production?", "back": "Never. Production orgs do not allow source tracking."},
+    {"id": "F15", "category": "sample", "front": "May sample data live in the repo?", "back": "Yes, DX projects may include sample data and tests. Still no personal data."}
+  ],
+  "interview_questions": [
+    {"id": "I1", "category": "foundational", "question": "Explain working tree, staging, and commit for Salesforce metadata.", "answer_30_seconds": "Retrieve or edit files in the working tree. git add stages them. git commit snapshots staged metadata. Until commit, Git is not actually truth.", "answer_2_minutes": "DX says VCS is truth, so I show git status after retrieve. Unstaged Flow XML is only disk. I stage the intended files, not auth. I commit on a branch. I do not claim Salesforce invented Git; I map it onto metadata source.", "example": "LAB_BoardingFlow.flow-meta.xml unstaged after retrieve, then staged and committed on feature/lab-boarding.", "tradeoffs": ["Partial add precision versus adding all of force-app", "Small commits versus one giant retrieve"], "follow_ups": ["What does git status tell you?", "When do you git stash?"], "weak_answer_warnings": ["Retrieve auto-commits"]},
+    {"id": "I2", "category": "foundational", "question": "How do branches and pull requests fit source-driven Salesforce work?", "answer_30_seconds": "A branch isolates metadata commits. A pull request reviews the XML before merge. Merge still does not deploy to any org.", "answer_2_minutes": "I keep feature work off main. Reviewers read Flow and Apex diffs. Required checks may run CLI tests (later topics). After merge, CI or a human deploys. I do not treat the PR as a change set.", "example": "PR for LAB_GateService plus test class, one reviewer, then deploy to a staging sandbox.", "tradeoffs": ["PR latency versus unreviewed main", "Monorepo force-app versus package directories"], "follow_ups": ["Who may merge?", "Squash versus merge commits?"], "weak_answer_warnings": ["PR deploys metadata"]},
+    {"id": "I3", "category": "scenario", "question": "Two people edited the same layout. Git conflicts. What do you do?", "answer_30_seconds": "Finish the merge in Git by choosing the correct XML, validate in a scratch org, commit the resolution. Do not use org ignore-conflicts as a Git tool.", "answer_2_minutes": "I look at both sides as text. I may retrieve a known-good org copy if both are wrong. I run a deploy to a disposable org. I mention profile XML as a reason to stop storing broad profiles in the same way. I never force-push main to hide the conflict.", "example": "Conflict markers in LAB_Gate layout; keep the reviewed field order; deploy to scratch; commit.", "tradeoffs": ["Accept theirs versus rewrite", "Layout in source versus rebuild in Setup"], "follow_ups": ["Would you rebase?", "Who tests Lightning page XML?"], "weak_answer_warnings": ["--ignore-conflicts on production"]},
+    {"id": "I4", "category": "scenario", "question": "CLI says conflict, git status is clean. Diagnose.", "answer_30_seconds": "That is source tracking versus the scratch or sandbox, not a Git merge. Resolve the org pair, then commit if the local file changed.", "answer_2_minutes": "I run preview commands. I decide whether Setup or the project should win. Production would not even offer this tracking. After resolution I verify git status because retrieve may dirty the working tree.", "example": "Layout changed in Setup while Git already had the last commit; retrieve after choosing org or local.", "tradeoffs": ["Overwrite org versus overwrite local", "Disable source tracking in CI"], "follow_ups": ["Does production source-track?", "When is ignore-conflicts acceptable?"], "weak_answer_warnings": ["git merge to fix the sandbox"]},
+    {"id": "I5", "category": "design", "question": "What must never go in the Salesforce metadata repo?", "answer_30_seconds": "Secrets, org auth, session files, and production PII extracts. Sample LAB_ data may live with the DX project; personal data must not.", "answer_2_minutes": "I review .gitignore and .forceignore. I fail a PR that adds sfdx auth. If it already landed, rotate. Metadata names can still be PII. CI gets secrets from a secret store, not from Git (DEVOPS-007).", "example": "Rejecting a commit of .sfdx/sfdx-config plus a production Contact.csv.", "tradeoffs": ["Convenient local auth versus leak risk", "Sample fixtures versus privacy"], "follow_ups": ["JWT flow vs auth files?", "Who owns rotation?"], "weak_answer_warnings": ["Commit auth so CI works"]},
+    {"id": "I6", "category": "foundational", "question": "A stakeholder says the pull request merged so UAT is updated. Your reply?", "answer_30_seconds": "Merge updated Git, the source of truth. UAT updates only after a metadata deploy to that org. I will check the deploy job.", "answer_2_minutes": "I keep DEVOPS-001 in play: we deployed metadata source, not records. I show the pipeline or the CLI report. If deploy failed tests, UAT is not updated despite a green GitHub merge.", "example": "main includes LAB_GateService; UAT Apex list still lacks it until sf project deploy start succeeds.", "tradeoffs": ["Auto-deploy on merge versus gated deploy", "UAT schedule versus Git velocity"], "follow_ups": ["Who watches the deploy?", "What is a blocked pipeline?"], "weak_answer_warnings": ["Merge equals release"]},
+    {"id": "I7", "category": "troubleshooting", "question": "git status is huge after a retrieve of profiles. How do you recover?", "answer_30_seconds": "Do not commit the noise by default. Stage only intended components. Consider whether profiles belong in this repo shape at all.", "answer_2_minutes": "Broad retrieves dirty unrelated XML. I use a tighter --metadata list next time. I unstage. I mention permission sets as a source-control-friendly authorization unit. I still commit real needed changes on a branch with a PR.", "example": "Retrieve of Profile:Admin rewrote thousands of lines; only LAB_ custom field permissions were intended.", "tradeoffs": ["Narrow retrieve versus full org snapshot", "Profiles versus permission sets"], "follow_ups": ["What is .forceignore?", "How do unlocked packages treat profiles?"], "weak_answer_warnings": ["Commit all diffs to 'stay in sync'"]},
+    {"id": "I8", "category": "challenge", "question": "Teach Git to an admin who only knows change sets, using the rail-yard analogy.", "answer_30_seconds": "Change sets are a pallet between two docks. Git is the yard ledger of every car. Working tree, staging, commit, branch, PR, then a separate train (deploy) to an org.", "answer_2_minutes": "I do not insult change sets; they still move metadata between related orgs. Source-driven work versions XML in Git so two sandboxes and production can share history. I warn that Git conflicts are text and that org tracking is another radio. I never say a PR replaces a change set deploy.", "example": "Admin retrieves a validation rule, commits on a branch, PR, merge, then CLI deploy to UAT instead of an outbound change set only.", "tradeoffs": ["Change-set familiarity versus Git review", "Related-org only versus any org you can auth"], "follow_ups": ["When are change sets still reasonable?", "What is Metadata Coverage?"], "weak_answer_warnings": ["A pull request deploys to the org", "PR is a change set"]}
+  ]
+}

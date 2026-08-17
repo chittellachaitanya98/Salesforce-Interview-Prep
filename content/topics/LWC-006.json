@@ -1,0 +1,996 @@
+{
+  "topic_id": "LWC-006",
+  "slug": "lwc-data-access-choices",
+  "title": "LWC Data Access Choices",
+  "track": "Lightning Web Components",
+  "level": "Intermediate",
+  "type": "Decision",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-001",
+    "LWC-002",
+    "PROG-006"
+  ],
+  "objectives": [
+    "Start LWC data access with Lightning Data Service base forms, then wire adapters, then Apex only when those are not enough.",
+    "Explain that LDS caches and shares records across components, while Apex data is not managed and must be refreshed.",
+    "Choose @wire for reactive reads versus imperative Apex or ui*Api functions for user-driven mutations.",
+    "Name official Apex reasons: unsupported objects such as Task and Event, transactional multi-record work, criteria lists, and imperative calls."
+  ],
+  "diagnostic_question": "A record page needs a form, another component must show the same Account, a button must create Account plus Opportunity together, and Task is in scope. Which LWC data access choice do you defend for each, and what would make you move from a base form to wire to Apex?",
+  "definition": "Always start with the simplest Salesforce data access and add flexibility only as needed: Lightning Data Service base forms, then LDS wire adapters (including GraphQL), then Apex. LDS caches and shares records and does not incur API usage calls. Apex data is not managed; you must refresh it. ([Data Guidelines](https://developer.salesforce.com/docs/platform/lwc/guide/data-guidelines.html); [Lightning Data Service](https://developer.salesforce.com/docs/platform/lwc/guide/data-ui-api.html); [Call Apex Methods](https://developer.salesforce.com/docs/platform/lwc/guide/apex.html))",
+  "why_it_matters": "Interviewers listen for 'forms first, then wire, then Apex'—not Apex by habit. Wrong choices skip the LDS cache, ignore FLS that UI API already honors, or use unmanaged Apex data next to LDS and get inconsistent UI.",
+  "sixty_second_explanation": "Treat data access like a hospital formulary. Give the standard blister pack first: lightning-record-form, edit-form, view-form. If you need a custom tray, pull from the pharmacy cabinet—LDS wire adapters on UI API, cached and shared. One cart for several meds is the GraphQL wire. Compound in the Apex lab only when the cabinet does not stock the object (Task/Event), you need one transaction, a criteria list, or an imperative click. Do not mix cabinet bottles and compounded bottles and expect them to stay in sync.",
+  "deeper_explanation": [
+    "Work with Salesforce Data: always start with the simplest solution. Data Guidelines: easiest is base components built on LDS (lightning-record-form, lightning-record-edit-form, lightning-record-view-form). They provide metadata-driven view/create/edit UI, labels, help text, and client-side plus validation-rule enforcement. Prefer specifying fields over a whole layout for performance. ([Data Guidelines](https://developer.salesforce.com/docs/platform/lwc/guide/data-guidelines.html))",
+    "If you need a custom UI, use an LDS wire adapter. @wire provisions an immutable stream. Adapters live on lightning/ui*Api (and GraphQL). Use the adapter that returns the least data you need. Imperative createRecord/updateRecord/deleteRecord run when you call them, not as reactive provisioning. Multiple ui*Api calls are independent transactions; multi-record one-transaction work needs Apex. ([Wire Service](https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service.html); [Data Guidelines](https://developer.salesforce.com/docs/platform/lwc/guide/data-guidelines.html))",
+    "LDS caches and shares records across components on the page. It is built on User Interface API, returns data plus metadata, and respects CRUD, FLS, and sharing. It does not incur API usage calls but is subject to general limits such as records returned. Custom metadata types are not supported. LDS does not support every standard object—only those UI API supports. ([Lightning Data Service](https://developer.salesforce.com/docs/platform/lwc/guide/data-ui-api.html))",
+    "Use Apex when you cannot use base components or LDS adapters/functions: objects UI API does not support (the guidelines name Task and Event), operations UI API does not support (for example first 200 Accounts with Amount > $1M), a transactional operation (create Account and Opportunity together), or an imperative call on a click. Apex data is not managed; refresh wired Apex with refreshApex, and after imperative Apex call notifyRecordUpdateAvailable when LDS cache should update. Apex and LDS do not share a cache. ([Call Apex](https://developer.salesforce.com/docs/platform/lwc/guide/apex.html); [Data Guidelines](https://developer.salesforce.com/docs/platform/lwc/guide/data-guidelines.html))"
+  ],
+  "mental_model": {
+    "analogy": "A hospital formulary: base record forms are unit-dose blister packs; LDS wire is the shared pharmacy cabinet; GraphQL is one cart for several meds; Apex is the compounding lab when the cabinet does not stock the drug or you need one sterile transaction.",
+    "useful_mapping": [
+      "lightning-record-form family → blister pack on the counter",
+      "LDS wire adapter → pharmacy cabinet bottle, cached and shared",
+      "GraphQL wire → one cart, several queries",
+      "imperative ui*Api function → nurse gives a one-time dose on click",
+      "Apex → compounding when Task/Event, criteria lists, or multi-object rollback",
+      "LDS cache → one cabinet all wards read",
+      "unmanaged Apex data → compounded bottle that does not restock the cabinet unless you notify"
+    ],
+    "where_it_breaks": [
+      "FLS is authorization, not a pharmacy license number.",
+      "GraphQL mutations exist; do not overclaim they replace every Apex transaction without reading GraphQL docs.",
+      "notifyRecordUpdateAvailable is a cache signal, not a DML API.",
+      "The analogy does not encode governor limits (APEX-007)."
+    ]
+  },
+  "teach_back_prompt": "A teammate wants Apex for every LWC data access. Walk forms, then LDS wire, then Apex, and name one case (Task, transaction, criteria list, or imperative click) that truly needs Apex.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Order of LWC data access choices: forms, wire, Apex."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Why is Apex data unmanaged compared with LDS?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "When is Task/Event an Apex reason?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "refreshApex versus notifyRecordUpdateAvailable."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: LWC data access decision tree."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-DATA",
+      "title": "Work with Salesforce Data",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data.html",
+      "supports": "Always start with the simplest data solution and add customization as needed.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Index page; details live in guidelines and LDS topics."
+    },
+    {
+      "source_id": "SF-LWC-DATAGUIDE",
+      "title": "Data Guidelines",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-guidelines.html",
+      "supports": "Forms first, then wire, GraphQL, then Apex; Task/Event; transactions; criteria lists; imperative; Apex vs LDS cache mismatch; data flows down.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "GraphQL mutation capability should be re-read on the GraphQL topic before an interview deep-dive."
+    },
+    {
+      "source_id": "SF-LWC-LDS",
+      "title": "Lightning Data Service",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-ui-api.html",
+      "supports": "Shared cache, UI API, CRUD/FLS/sharing, no API usage calls, custom metadata types unsupported, cache lifetime subject to change.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Do not quote a numeric cache TTL; the Guide says it is subject to change."
+    },
+    {
+      "source_id": "SF-LWC-WIRE",
+      "title": "Use the Wire Service to Get Data",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service.html",
+      "supports": "@wire to an LDS adapter; immutable stream; prefer forms before adapters; least-data adapter.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Individual adapter return shapes are in the ui*Api reference."
+    },
+    {
+      "source_id": "SF-LWC-APEXCALL",
+      "title": "Call Apex Methods",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/apex.html",
+      "supports": "Import Apex; @wire or imperative; treat data as immutable; check Data Guidelines before Apex; limits per invocation; batching 413 note.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Do not invent governor numbers; Apex limits apply per invocation."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Start with record forms",
+        "Then LDS wire",
+        "GraphQL for many queries",
+        "Apex last",
+        "LDS cache vs unmanaged Apex",
+        "Task Event transaction criteria"
+      ],
+      "accessible_description": "Decision portrait: LWC data access starts at lightning-record-* forms, then LDS/UI API wire, then Apex for unsupported objects, transactions, criteria lists, and imperative calls."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-DATAGUIDE",
+        "SF-LWC-LDS",
+        "SF-LWC-WIRE",
+        "SF-LWC-APEXCALL"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "LWC data access decision: forms, LDS, Apex"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Comp[Lightning web component] --> Choice{Data access choice}\n  Choice --> Forms[lightning-record-form edit view]\n  Choice --> Wire[LDS @wire uiStarApi or GraphQL]\n  Choice --> Imp[Imperative createRecord updateRecord]\n  Choice --> Apex[Apex @wire or imperative]\n  Forms --> LDS[Lightning Data Service cache]\n  Wire --> LDS\n  Imp --> LDS\n  Apex --> Unmanaged[Unmanaged Apex data]\n  LDS --> FLS[CRUD FLS sharing via UI API]\n  Unmanaged --> Refresh[refreshApex or notifyRecordUpdateAvailable]",
+      "decision": "flowchart TD\n  Need[Need Salesforce data in LWC?] --> Q1{Metadata-driven form enough?}\n  Q1 -->|Yes| Form[lightning-record-form family — specify fields if you can]\n  Q1 -->|Custom UI| Q2{UI API / LDS adapter can return it?}\n  Q2 -->|Yes reactive read| Wire[@wire least-data adapter or GraphQL]\n  Q2 -->|Yes on click mutate| Fn[Imperative createRecord updateRecord deleteRecord]\n  Q2 -->|No| Q3{Why Apex?}\n  Q3 -->|Task Event or unsupported object| ApexObj[Apex]\n  Q3 -->|One transaction multi-record| ApexTxn[Apex]\n  Q3 -->|Criteria list UI API cannot do| ApexList[Apex]\n  Q3 -->|Imperative delay or button| ApexImp[Apex imperative + notify LDS if needed]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Always start with the simplest LWC data access: LDS base record forms, then LDS wire adapters (GraphQL when multiple queries fit), then Apex if those are not flexible enough.",
+      "source_ids": ["SF-LWC-DATA", "SF-LWC-DATAGUIDE", "SF-LWC-WIRE"],
+      "scope": "Decision order",
+      "validation": "Work with Salesforce Data, Data Guidelines, Wire Service intro.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Lightning Data Service caches and shares records, is built on UI API, respects CRUD/FLS/sharing, does not incur API usage calls, and does not support custom metadata types.",
+      "source_ids": ["SF-LWC-LDS"],
+      "scope": "LDS behavior",
+      "validation": "Lightning Data Service topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Apex is for objects UI API does not support (guidelines name Task and Event), unsupported list-by-criteria operations, transactional multi-record work, and imperative calls. Apex data is not managed.",
+      "source_ids": ["SF-LWC-DATAGUIDE", "SF-LWC-APEXCALL"],
+      "scope": "When Apex",
+      "validation": "Data Guidelines Apex section and Call Apex Methods.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Apex and LDS do not share a cache. Refresh wired Apex with refreshApex. After imperative Apex, notifyRecordUpdateAvailable if LDS should update. refreshApex for non-Apex wires is deprecated.",
+      "source_ids": ["SF-LWC-DATAGUIDE"],
+      "scope": "Refresh",
+      "validation": "Data Guidelines Apex/LDS combination notes.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "refreshApex for non-Apex wire adapters is deprecated in favor of notifyRecordUpdateAvailable. Reverify GraphQL mutation guidance on the current GraphQL topic.",
+  "unresolved_uncertainty": [
+    "LDS cache lifetime is explicitly subject to change; do not quote a number.",
+    "Exact GraphQL mutation versus Apex transaction boundaries Need verification on the GraphQL LWC page before a deep interview."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Lightning Data Service",
+      "telugu": "పేజీలో షేర్ అయ్యే రికార్డ్ క్యాబినెట్."
+    },
+    {
+      "english": "Unmanaged Apex data",
+      "telugu": "LDS క్యాబినెట్‌తో ఆటోమేటిగ్గా సింక్ కాని డేటా."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "LWC data access starts with lightning-record-* forms, then LDS @wire, then Apex. LDS is cached and FLS-aware. Apex is unmanaged and for Task/Event, transactions, criteria lists, or imperative clicks.",
+    "two_minutes": "I walk the guidelines ladder. I specify fields on forms when I can. I pick the least-data wire adapter. I never quote a cache TTL. I refresh Apex with refreshApex and ping LDS with notifyRecordUpdateAvailable after imperative Apex. I do not mix Apex fetch with GraphQL search on the same rows without a plan. Data flows parent to child; objects are read-only."
+  },
+  "terminology": [
+    {
+      "term": "Lightning Data Service",
+      "plain": "The client cache and service that loads and shares Salesforce records for LWC.",
+      "precise": "Records are cached and shared. Built on User Interface API. CRUD, FLS, and sharing honored. No API usage calls. Custom metadata types unsupported.",
+      "example": "Two components using getRecord on the same Account Id see the same cached record.",
+      "non_example": "A raw Apex SOQL list that other LWCs do not automatically see.",
+      "confusable_neighbor": "Salesforce Connect / external objects, a different data virtualization path.",
+      "boundary": "Cache lifetime is not a number you should memorize."
+    },
+    {
+      "term": "lightning-record-form",
+      "plain": "The easiest LWC base component to view, edit, or create a record.",
+      "precise": "Switches view/edit automatically, uses default layout or specified fields, multiple columns. Prefer fields over layout for performance.",
+      "example": "<lightning-record-form object-api-name=\"Account\" fields={fields} record-id={recordId}>",
+      "non_example": "A fully custom table of 200 Accounts by Amount.",
+      "confusable_neighbor": "lightning-record-edit-form / view-form for custom layout of the same LDS stack.",
+      "boundary": "Loading/error UX patterns are LWC-007."
+    },
+    {
+      "term": "@wire adapter",
+      "plain": "A reactive way to provision LDS or Apex data into the component.",
+      "precise": "The wire adapter defines an immutable stream. LDS adapters are on lightning/ui*Api unless noted. Use the adapter with the least data.",
+      "example": "@wire(getRecord, { recordId: '$recordId', fields: ACCOUNT_FIELDS }) wiredAccount;",
+      "non_example": "Calling getRecord only inside a click handler when you needed reactive provision—though imperative functions exist for mutations.",
+      "confusable_neighbor": "Imperative ui*Api functions createRecord/updateRecord/deleteRecord.",
+      "boundary": "Apex can also be wired; that data is still unmanaged."
+    },
+    {
+      "term": "User Interface API",
+      "plain": "The public API LDS is built on, combining data and layout metadata.",
+      "precise": "Responses match admin layout changes and honor CRUD, FLS, and sharing. LDS supports custom objects and standard objects UI API supports.",
+      "example": "Removing a field from a layout means it is not in layout metadata responses.",
+      "non_example": "Tooling API, which is a different API family.",
+      "confusable_neighbor": "REST sObject API without UI metadata.",
+      "boundary": "Task and Event are named as not supported for this LWC LDS path in the guidelines."
+    },
+    {
+      "term": "imperative Apex",
+      "plain": "Calling an imported Apex method from JavaScript when you decide, such as a click.",
+      "precise": "As opposed to @wire. Used to delay work or respond to a button. Refresh by calling again and notifyRecordUpdateAvailable if LDS should update.",
+      "example": "createLabPair() on button click that inserts Account and Opportunity in one Apex transaction.",
+      "non_example": "@wire(getRecord) for the same-record highlight.",
+      "confusable_neighbor": "Imperative createRecord from ui*Api, which is LDS, not Apex.",
+      "boundary": "Batching of Apex actions can yield HTTP 413 above 2,500 queued actions—do not treat that as a daily governor you recite without the page."
+    },
+    {
+      "term": "unmanaged Apex data",
+      "plain": "Apex results that LDS will not automatically keep in sync.",
+      "precise": "Unlike LDS, Apex data is not managed. refreshApex for wired Apex. Do not use refreshApex for non-Apex wires (deprecated).",
+      "example": "A wired Apex list that stays stale until refreshApex().",
+      "non_example": "A getRecord wire that updates when another LWC saves the record via LDS.",
+      "confusable_neighbor": "Stale browser tab versus LDS cache invalidation.",
+      "boundary": "Apex and LDS caches can disagree; the guidelines warn about mixing fetch styles."
+    },
+    {
+      "term": "notifyRecordUpdateAvailable",
+      "plain": "A signal that some record Ids in the LDS cache are stale.",
+      "precise": "Used after imperative Apex (and to refresh non-Apex wire record data instead of refreshApex). Refreshes those records that are in the LDS cache.",
+      "example": "After imperative Apex updates an Account, notifyRecordUpdateAvailable([accountId]).",
+      "non_example": "A substitute for DML itself.",
+      "confusable_neighbor": "refreshApex, which uses the Apex wire config to refetch Apex data.",
+      "boundary": "Only needed if you expect relevant LDS cache entries to update."
+    },
+    {
+      "term": "data access ladder",
+      "plain": "The official order: forms, then LDS wire, then Apex.",
+      "precise": "Simplest first. GraphQL wire when multiple queries in one operation fit. Apex last for the documented gaps.",
+      "example": "Account highlight → record-form; custom nameplate → getRecord; Task list → Apex.",
+      "non_example": "Apex @AuraEnabled for every field on a record page.",
+      "confusable_neighbor": "AUTO-001 Flow versus Apex, a server automation choice, not this LWC ladder.",
+      "boundary": "Security of Apex (CRUD/FLS in Apex) is APEX-014, not solved by choosing LDS."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Ask if a form is enough",
+      "actor": "Developer",
+      "trigger": "Need to view, edit, or create a record in an LWC",
+      "before": "Custom HTML table sketched",
+      "after": "lightning-record-* considered first",
+      "observe": "Fields specified rather than a full layout when possible",
+      "failure": "Apex @AuraEnabled for a standard Account edit form"
+    },
+    {
+      "step": 2,
+      "transition": "Use LDS wire for custom UI",
+      "actor": "Developer",
+      "trigger": "Form UI is not enough",
+      "before": "Need record fields in a custom template",
+      "after": "@wire to the least-data ui*Api or GraphQL adapter",
+      "observe": "data/error on the wired property; treat data as immutable",
+      "failure": "Mutating the wired object in place"
+    },
+    {
+      "step": 3,
+      "transition": "Mutate on click with LDS functions when single-record",
+      "actor": "Developer",
+      "trigger": "User saves one record without needing a form",
+      "before": "Reactive wire only",
+      "after": "imperative createRecord/updateRecord/deleteRecord",
+      "observe": "Each call is its own transaction",
+      "failure": "Two independent ui*Api creates when one Apex transaction was required"
+    },
+    {
+      "step": 4,
+      "transition": "Drop to Apex only with a written reason",
+      "actor": "Developer",
+      "trigger": "LDS cannot do it",
+      "before": "LDS attempted",
+      "after": "Apex wire or imperative plus refresh strategy",
+      "observe": "Comment cites Task/Event, transaction, criteria, or imperative",
+      "failure": "Apex by habit next to LDS on the same records without refresh"
+    }
+  ],
+  "when_to_use": [
+    "When you must choose LWC data access: lightning-record-* forms, then LDS @wire, then Apex.",
+    "When two components on a page should share cached record data through Lightning Data Service.",
+    "When Apex is justified because UI API does not support the object, the transaction, or the criteria list.",
+    "When an LWC template needs reactive record fields from a wire adapter rather than a full form.",
+    "When you must refresh unmanaged Apex data without pretending it is the LDS cache."
+  ],
+  "when_not_to_use": [
+    "Do not use this LWC data access lesson as a substitute for loading-empty-error UI states (LWC-007).",
+    "Do not treat Lightning Data Service as a replacement for Apex security design (APEX-014) or governor catalogs (APEX-007).",
+    "Do not call Apex from an LWC component when a record form or getRecord already meets the template need.",
+    "Do not mix Apex fetch and GraphQL search on the same records without a consistency plan for data access choices.",
+    "Do not run these data access experiments on production customer records."
+  ],
+  "configuration_or_code_location": [
+    "lwc/labAccountPanel using lightning-record-form.",
+    "labNameplate.js @wire(getRecord) with imported field references.",
+    "labPairCreate.js imperative Apex for Account+Opportunity.",
+    "notifyRecordUpdateAvailable after that Apex returns."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox Account page needs a standard edit form, a custom nameplate using Name and Industry, a utility that creates a LAB_ Account and Opportunity together, and a Task list. A teammate proposes one Apex class for all four. No production data.",
+    "inputs": [
+      "Account form",
+      "Two fields for a custom template",
+      "Transactional pair create",
+      "Task list"
+    ],
+    "decisions": [
+      {
+        "decision": "Use lightning-record-form with specified Account fields for the form.",
+        "because": "Data Guidelines: easiest path is LDS base forms.",
+        "rejected": "Apex DTO for a standard edit form"
+      },
+      {
+        "decision": "@wire(getRecord) with those two fields for the nameplate, not getObjectInfo.",
+        "because": "Use the wire adapter that returns the least data.",
+        "rejected": "Apex SOQL for Name and Industry on Account"
+      },
+      {
+        "decision": "Apex for the pair create (one transaction) and for Tasks (UI API unsupported).",
+        "because": "Guidelines list transactional operations and Task/Event as Apex reasons.",
+        "rejected": "Two independent createRecord calls that can partial-commit"
+      }
+    ],
+    "configuration_or_code": [
+      "lightning-record-form object-api-name=\"Account\" record-id={recordId} fields={FIELDS}",
+      "@wire(getRecord, { recordId: '$recordId', fields: [NAME, INDUSTRY] })",
+      "imperative Apex createPair(); then notifyRecordUpdateAvailable([accountId])"
+    ],
+    "output": "Form and nameplate stay on LDS. Pair create rolls back together. Tasks come from Apex and are refreshed explicitly.",
+    "verification": [
+      "No Apex for the two-field nameplate.",
+      "Pair create is one Apex transaction, not two ui*Api creates.",
+      "Task list does not use getRecord as if Task were a supported LDS object."
+    ],
+    "self_explanation": "Four requirements, three rungs of the ladder. Apex only where the guidelines say LDS cannot."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable scratch org; LAB_ Account records only; no production data.",
+    "starting_state_checks": [
+      "You can deploy LWC and Apex in this org.",
+      "Synthetic Account exists."
+    ],
+    "steps": [
+      "Create labAccountForm that uses lightning-record-form (or view/edit-form) with a specified field list, not a full layout.",
+      "Create labAccountNameplate that @wire(getRecord)s Name only and displays it in the HTML template. Confirm a second component on the same page sees LDS cache sharing after a form save.",
+      "Write LAB_PairService Apex that inserts Account and Opportunity in one transaction; call it imperatively from an LWC button; then notifyRecordUpdateAvailable for the Account Id.",
+      "Document in a class comment why Task would use Apex per Data Guidelines, without querying production Tasks."
+    ],
+    "guided_completion": [
+      "If the nameplate does not update after the form save, you may have used Apex for the nameplate instead of LDS.",
+      "If pair create can leave an Account without Opportunity, it was not one transaction."
+    ],
+    "independent_challenge": "Add a GraphQL-or-getRecord comparison note: which adapter returns less data for a single Name field? Prefer the least-data option.",
+    "evidence": [
+      "Form LWC source using lightning-record-* and a wire LWC using getRecord.",
+      "Apex service showing two sObjects in one method plus the LWC notifyRecordUpdateAvailable call."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ LWCs, Apex, and synthetic records.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not load real Tasks. GraphQL mutations Need verification."
+  },
+  "decision_table": [
+    {
+      "signal": "Need a metadata-driven view/edit/create form on a supported object.",
+      "choose": "lightning-record-form, edit-form, or view-form on LDS.",
+      "not": "Custom Apex plus lightning-input for every field.",
+      "why": "Data Guidelines: easiest path is LDS base forms."
+    },
+    {
+      "signal": "Need a custom LWC template with a few Account fields.",
+      "choose": "@wire getRecord (or GraphQL) requesting those fields.",
+      "not": "getObjectInfo or a full layout when you only need Name.",
+      "why": "Use the wire adapter that returns the least data."
+    },
+    {
+      "signal": "Must create Account and Opportunity together or roll back both.",
+      "choose": "Apex in one transaction.",
+      "not": "Two independent createRecord calls.",
+      "why": "ui*Api operations are independent transactions; Apex is the documented transactional tool."
+    },
+    {
+      "signal": "Need Task or Event records, or a filtered list UI API cannot express.",
+      "choose": "Apex (wire or imperative) plus an explicit refresh plan.",
+      "not": "Assume LDS getRecord supports every standard object.",
+      "why": "Guidelines name Task/Event and criteria lists as Apex reasons. Apex data is unmanaged."
+    }
+  ],
+  "limitations": [
+    "Does not teach empty/error UI (LWC-007).",
+    "Does not list UI API object inventory; Task/Event are the cited examples.",
+    "Cache TTL is intentionally not numbered.",
+    "GraphQL mutation depth Needs verification."
+  ],
+  "security_notes": [
+    "LDS honors CRUD/FLS/sharing; Apex does not automatically. User mode and stripInaccessible are APEX-014.",
+    "Treat wired data as immutable; copy before mutate.",
+    "Never log live customer records in labs."
+  ],
+  "common_mistakes": [
+    "Apex for a standard record form.",
+    "Mutating @wire data in place.",
+    "Two ui*Api creates for one business transaction.",
+    "Assuming LDS supports Task.",
+    "refreshApex on a non-Apex wire (deprecated)."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Form save updates one LWC but an Apex-wired list stays stale.",
+      "check": [
+        "Apex data is unmanaged",
+        "Call refreshApex or notifyRecordUpdateAvailable as appropriate"
+      ],
+      "do_not_assume": "LDS automatically refreshes Apex lists."
+    },
+    {
+      "symptom": "getRecord fails for Task.",
+      "check": [
+        "UI API / LDS object support",
+        "Use Apex per Data Guidelines"
+      ],
+      "do_not_assume": "FLS is the only cause."
+    }
+  ],
+  "production_notes": [
+    "Prefer field lists on forms for performance.",
+    "Write the Apex reason in the design record.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the official first LWC data access choice?",
+      "options": {
+        "A": "Lightning Data Service base record form components",
+        "B": "Apex @AuraEnabled for every read",
+        "C": "Raw XMLHttpRequest to REST",
+        "D": "Platform Events"
+      },
+      "answer": "A",
+      "rationale": "Always start with the simplest solution; guidelines say base components built on LDS.",
+      "distractor_explanations": {
+        "B": "Apex is last on the ladder.",
+        "C": "Not the LWC data ladder.",
+        "D": "Integration, not record forms."
+      },
+      "concept": "Forms first",
+      "citation_ids": ["SF-LWC-DATA", "SF-LWC-DATAGUIDE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Does Lightning Data Service incur API usage calls?",
+      "options": {
+        "A": "No, but it is subject to general limits such as records returned",
+        "B": "Yes, one REST call per field",
+        "C": "Yes, SOAP only",
+        "D": "It never returns records"
+      },
+      "answer": "A",
+      "rationale": "LDS topic: doesn’t incur API usage calls; still subject to general limits.",
+      "distractor_explanations": {
+        "B": "Not how LDS is billed in the cited sentence.",
+        "C": "LDS is UI API based, not 'SOAP only'.",
+        "D": "It loads records."
+      },
+      "concept": "API usage",
+      "citation_ids": ["SF-LWC-LDS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why might two LWCs on the same page show the same Account version without extra Apex?",
+      "options": {
+        "A": "LDS caches and shares the record across components",
+        "B": "Apex always broadcasts SOQL",
+        "C": "Custom events copy the record",
+        "D": "js-meta.xml shares data"
+      },
+      "answer": "A",
+      "rationale": "Records loaded in LDS are cached and shared; the record is loaded once.",
+      "distractor_explanations": {
+        "B": "Apex data is not managed that way.",
+        "C": "Events should pass Ids, not live records.",
+        "D": "Configuration is not a record cache."
+      },
+      "concept": "Shared cache",
+      "citation_ids": ["SF-LWC-LDS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You only need Account.Name in a custom template. Which is the better wire idea?",
+      "options": {
+        "A": "The adapter that returns the least data, such as getRecord with that field—not getObjectInfo",
+        "B": "Always getObjectInfo plus every layout",
+        "C": "Always Apex SELECT *",
+        "D": "lightning-record-form is illegal for Name"
+      },
+      "answer": "A",
+      "rationale": "Wire Service and guidelines: use the adapter that returns the least data.",
+      "distractor_explanations": {
+        "B": "getObjectInfo is metadata-heavy relative to one field.",
+        "C": "Apex is not first and SELECT * is not a Guide pattern.",
+        "D": "A form could be enough; the question asked about a custom template."
+      },
+      "concept": "Least data",
+      "citation_ids": ["SF-LWC-WIRE", "SF-LWC-DATAGUIDE"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which objects do the Data Guidelines name as examples UI API / LDS does not support, pushing you to Apex?",
+      "options": {
+        "A": "Task and Event",
+        "B": "Account and Contact only",
+        "C": "All custom objects",
+        "D": "User only"
+      },
+      "answer": "A",
+      "rationale": "Use Apex to work with objects that aren’t supported by User Interface API, like Task and Event.",
+      "distractor_explanations": {
+        "B": "Account/Contact are typical LDS objects.",
+        "C": "LDS supports custom objects UI API supports.",
+        "D": "Not the cited pair."
+      },
+      "concept": "Unsupported objects",
+      "citation_ids": ["SF-LWC-DATAGUIDE"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Create Account and Opportunity together so both roll back on failure. Tool?",
+      "options": {
+        "A": "Apex in one transaction",
+        "B": "Two createRecord calls",
+        "C": "Two lightning-record-forms only",
+        "D": "LMS"
+      },
+      "answer": "A",
+      "rationale": "Multiple ui*Api operations are independent transactions. Use Apex for a transactional operation.",
+      "distractor_explanations": {
+        "B": "Independent transactions can partial-commit.",
+        "C": "Forms do not give you one transaction across two objects.",
+        "D": "Messaging, not DML."
+      },
+      "concept": "Transactions",
+      "citation_ids": ["SF-LWC-DATAGUIDE"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Is Apex data managed like LDS data?",
+      "options": {
+        "A": "No. Apex data is not managed; you must refresh it",
+        "B": "Yes, automatically identical",
+        "C": "Apex replaces LDS cache always",
+        "D": "Only in Classic"
+      },
+      "answer": "A",
+      "rationale": "Both LDS and Call Apex / Guidelines: Apex data is not managed.",
+      "distractor_explanations": {
+        "B": "They do not share a cache.",
+        "C": "Apex does not replace LDS sharing.",
+        "D": "This is Lightning LWC."
+      },
+      "concept": "Unmanaged Apex",
+      "citation_ids": ["SF-LWC-LDS", "SF-LWC-DATAGUIDE"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "refreshApex on a getRecord (non-Apex) wire is?",
+      "options": {
+        "A": "Deprecated; use notifyRecordUpdateAvailable for that record data",
+        "B": "Required forever",
+        "C": "The only legal refresh",
+        "D": "An Apex DML keyword"
+      },
+      "answer": "A",
+      "rationale": "The use of refreshApex to refresh data from non-Apex wire adapters is deprecated.",
+      "distractor_explanations": {
+        "B": "Deprecated for that case.",
+        "C": "refreshApex remains for Apex wires.",
+        "D": "It is an LWC refresh helper, not DML."
+      },
+      "concept": "Refresh deprecation",
+      "citation_ids": ["SF-LWC-DATAGUIDE"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Button should load a list later, not on first render. Apex shape?",
+      "options": {
+        "A": "Call the Apex method imperatively on click",
+        "B": "@wire only, which always provisions reactively",
+        "C": "lightning-record-form for 200 rows by criteria",
+        "D": "A CustomEvent to Salesforce"
+      },
+      "answer": "A",
+      "rationale": "Guidelines: imperative Apex to delay loading outside the critical path or on a button.",
+      "distractor_explanations": {
+        "B": "Wire is reactive provisioning.",
+        "C": "Forms are not that list-by-criteria operation.",
+        "D": "Events are UI communication."
+      },
+      "concept": "Imperative Apex",
+      "citation_ids": ["SF-LWC-DATAGUIDE", "SF-LWC-APEXCALL"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Are custom metadata types supported by Lightning Data Service?",
+      "options": {
+        "A": "No",
+        "B": "Yes, identically to Account",
+        "C": "Only in Apex",
+        "D": "Only via Visualforce"
+      },
+      "answer": "A",
+      "rationale": "LDS: Custom metadata types are not supported.",
+      "distractor_explanations": {
+        "B": "Explicitly unsupported.",
+        "C": "The question is LDS support, not whether Apex can query CMDT.",
+        "D": "Unrelated."
+      },
+      "concept": "CMDT",
+      "citation_ids": ["SF-LWC-LDS"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "@wire versus imperative ui*Api createRecord?",
+      "options": {
+        "A": "@wire reactively provisions; imperative functions run when you call them, for example on a user action",
+        "B": "They are the same decorator",
+        "C": "createRecord is Apex only",
+        "D": "@wire cannot read records"
+      },
+      "answer": "A",
+      "rationale": "Data Guidelines contrast reactive wire with imperative functions.",
+      "distractor_explanations": {
+        "B": "Different invocation models.",
+        "C": "createRecord is lightning/ui*Api.",
+        "D": "@wire is the reactive read path."
+      },
+      "concept": "Wire vs imperative",
+      "citation_ids": ["SF-LWC-DATAGUIDE"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You fetch with Apex then search with GraphQL on the same rows. What does the Guide warn?",
+      "options": {
+        "A": "Apex and LDS do not share a cache; results can be inconsistent",
+        "B": "This is required for FLS",
+        "C": "GraphQL always overwrites Apex governors",
+        "D": "There is no warning"
+      },
+      "answer": "A",
+      "rationale": "Guidelines: Apex doesn’t share a data cache with LDS; mixed fetch/search can surprise you. Prefer consistent GraphQL for fetch and search when using SOQL-like access that way.",
+      "distractor_explanations": {
+        "B": "Not the cited reason.",
+        "C": "Governors still apply to Apex invocations.",
+        "D": "The warning is explicit."
+      },
+      "concept": "Cache mismatch",
+      "citation_ids": ["SF-LWC-DATAGUIDE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "ladder",
+      "front": "LWC data access order?",
+      "back": "LDS base forms, then LDS wire adapters (GraphQL when it fits), then Apex."
+    },
+    {
+      "id": "F2",
+      "category": "forms",
+      "front": "Three LDS form base components?",
+      "back": "lightning-record-form, lightning-record-edit-form, lightning-record-view-form."
+    },
+    {
+      "id": "F3",
+      "category": "forms",
+      "front": "Fields versus layout on record-form?",
+      "back": "Specify fields when you can; layouts make the component handle every layout field."
+    },
+    {
+      "id": "F4",
+      "category": "lds",
+      "front": "Does LDS share records on the page?",
+      "back": "Yes. Cached and shared; loaded once for components using that record."
+    },
+    {
+      "id": "F5",
+      "category": "lds",
+      "front": "API usage calls for LDS?",
+      "back": "LDS does not incur API usage calls; general limits still apply."
+    },
+    {
+      "id": "F6",
+      "category": "wire",
+      "front": "What does @wire provision?",
+      "back": "An immutable stream of data/metadata from the adapter."
+    },
+    {
+      "id": "F7",
+      "category": "apex",
+      "front": "Name two objects the guidelines use as UI API gaps.",
+      "back": "Task and Event — use Apex."
+    },
+    {
+      "id": "F8",
+      "category": "apex",
+      "front": "Multi-record one transaction?",
+      "back": "Apex. Independent ui*Api calls are separate transactions."
+    },
+    {
+      "id": "F9",
+      "category": "refresh",
+      "front": "Wired Apex went stale. Refresh how?",
+      "back": "refreshApex() using the Apex wire configuration."
+    },
+    {
+      "id": "F10",
+      "category": "refresh",
+      "front": "After imperative Apex, update LDS how?",
+      "back": "notifyRecordUpdateAvailable(recordIds) if those records are in the LDS cache."
+    },
+    {
+      "id": "F11",
+      "category": "refresh",
+      "front": "refreshApex on getRecord?",
+      "back": "Deprecated for non-Apex wires. Use notifyRecordUpdateAvailable."
+    },
+    {
+      "id": "F12",
+      "category": "security",
+      "front": "What does UI API / LDS honor?",
+      "back": "CRUD access, field-level security, and sharing settings."
+    },
+    {
+      "id": "F13",
+      "category": "cmdt",
+      "front": "Custom metadata types in LDS?",
+      "back": "Lightning Data Service does not support custom metadata types."
+    },
+    {
+      "id": "F14",
+      "category": "immutability",
+      "front": "May you mutate wired data in place?",
+      "back": "Treat it as immutable. Make a shallow copy if you must mutate."
+    },
+    {
+      "id": "F15",
+      "category": "graphql",
+      "front": "When does the Guide push GraphQL wire?",
+      "back": "When you want multiple queries in one operation or exact fields without Apex, with LDS-managed caching."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you choose LWC data access?",
+      "answer_30_seconds": "Start with lightning-record-* forms, then LDS @wire for custom UI, then Apex only for documented gaps: Task/Event, transactions, criteria lists, imperative clicks.",
+      "answer_2_minutes": "I quote always start simplest. I specify fields on forms. I pick the least-data adapter. I treat LDS as cached, FLS-aware, no API usage calls. I treat Apex as unmanaged. I do not recite unofficial cache seconds.",
+      "example": "Account form via record-form; Nameplate via getRecord; pair create via Apex.",
+      "tradeoffs": [
+        "Form speed vs custom template",
+        "LDS cache vs Apex flexibility"
+      ],
+      "follow_ups": [
+        "Where does GraphQL sit?",
+        "What is getListUi for?"
+      ],
+      "weak_answer_warnings": [
+        "Apex for every LWC read"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What does Lightning Data Service give you that Apex lists do not?",
+      "answer_30_seconds": "A shared client cache, UI metadata with the data, CRUD/FLS/sharing, and automatic updates when LDS sees a change. Apex data is not managed.",
+      "answer_2_minutes": "I mention no API usage calls and custom metadata types unsupported. I mention cache lifetime is not a number. I explain refreshApex versus notifyRecordUpdateAvailable. I warn against mixing Apex fetch with GraphQL search.",
+      "example": "Form save updates a sibling getRecord nameplate; an Apex list stays stale until refresh.",
+      "tradeoffs": [
+        "LDS consistency vs Apex power",
+        "Layout-driven vs field-driven forms"
+      ],
+      "follow_ups": [
+        "Does LDS support every standard object?",
+        "What honors FLS?"
+      ],
+      "weak_answer_warnings": [
+        "Saying Apex is equally cached"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Product wants a custom Account header with Name and Industry. Teammate writes Apex. Your call?",
+      "answer_30_seconds": "Use @wire(getRecord) with those fields, or a form if a form is enough. Apex is not justified for two supported fields.",
+      "answer_2_minutes": "I check whether lightning-record-view-form already works. If the template is custom, I still stay on LDS. I import field references. I treat the wire result as immutable. I save Apex for Task or a transaction later in the same epic.",
+      "example": "labAccountNameplate @wire(getRecord, { recordId: '$recordId', fields: [NAME, INDUSTRY] }).",
+      "tradeoffs": [
+        "view-form vs getRecord",
+        "GraphQL vs getRecord for two fields"
+      ],
+      "follow_ups": [
+        "Why not getObjectInfo?",
+        "What if the field is not on the layout?"
+      ],
+      "weak_answer_warnings": [
+        "@AuraEnabled for Name"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A button must insert Account and Opportunity; either both exist or neither. Design it.",
+      "answer_30_seconds": "One Apex method, one transaction. Do not fire two createRecord calls. After success, notifyRecordUpdateAvailable for the Account if LDS should refresh.",
+      "answer_2_minutes": "I cite independent ui*Api transactions. I keep the LWC button imperative. I do not @wire a DML method. I still use LDS forms for later edits of the Account. I mention Apex limits apply per invocation, without inventing numbers.",
+      "example": "LAB_PairService.create() called from handleClick, then notifyRecordUpdateAvailable([accountId]).",
+      "tradeoffs": [
+        "Apex transaction vs compensating ui*Api deletes",
+        "Wire Apex vs imperative Apex"
+      ],
+      "follow_ups": [
+        "What if only Opportunity fails?",
+        "User mode in Apex?"
+      ],
+      "weak_answer_warnings": [
+        "Two createRecord awaits"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "getRecord on a Task Id fails. First explanation?",
+      "answer_30_seconds": "Task is a named example of an object UI API does not support for this LDS path. Use Apex, not another wire adapter guess.",
+      "answer_2_minutes": "I still check FLS and sharing, but I do not pretend LDS supports every standard object. I wire or call Apex, treat data as unmanaged, and refresh explicitly. I do not use custom metadata types in LDS either.",
+      "example": "labTaskList imports an Apex method instead of getRecord on Task.",
+      "tradeoffs": [
+        "Apex list vs redesigning to a supported object",
+        "Wire Apex vs imperative"
+      ],
+      "follow_ups": [
+        "What other gaps exist besides Task/Event?",
+        "Does LDS support custom objects?"
+      ],
+      "weak_answer_warnings": [
+        "Raising API version to magically add Task to LDS"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Apex-wired list did not move after an LDS form save. What did they forget?",
+      "answer_30_seconds": "Apex data is unmanaged. Refresh with refreshApex, or after imperative Apex notify the LDS cache. Do not refreshApex a getRecord wire (deprecated).",
+      "answer_2_minutes": "I explain the two caches. I look at whether the list should have been LDS in the first place. If Apex is required, I wire it and refresh. I copy before mutate. I do not mix GraphQL search with that Apex list casually.",
+      "example": "After lightning-record-form save, a sibling Apex list still shows old Industry until refreshApex.",
+      "tradeoffs": [
+        "Move the list to getListUi/GraphQL vs keep Apex",
+        "refreshApex vs notifyRecordUpdateAvailable"
+      ],
+      "follow_ups": [
+        "When is notify enough without refreshApex?",
+        "What is the 413 batching note?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the HTML template binding"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When is GraphQL the data access choice in this ladder?",
+      "answer_30_seconds": "When you want multiple queries in one operation, exact fields without Apex, pagination, or parent/child queries, still managed by LDS—after you decided a form is not enough.",
+      "answer_2_minutes": "The guidelines put GraphQL after forms and alongside other LDS adapters, before Apex. I do not claim it replaces every Apex transaction without reading the GraphQL page. I still prefer the least data. I avoid pairing it with a conflicting Apex fetch on the same rows.",
+      "example": "One GraphQL wire for Account plus related Contacts instead of several getRecord wires—Needs verification of the exact query shape on the GraphQL topic.",
+      "tradeoffs": [
+        "GraphQL vs several ui*Api wires",
+        "GraphQL vs Apex SOQL"
+      ],
+      "follow_ups": [
+        "Mutations in GraphQL?",
+        "Offline consistency?"
+      ],
+      "weak_answer_warnings": [
+        "GraphQL as the first choice before forms"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the formulary analogy and where it breaks.",
+      "answer_30_seconds": "Blister pack is record-form. Pharmacy cabinet is LDS wire. One cart is GraphQL. Compounding lab is Apex. It breaks on FLS-as-license and on unpublished cache TTL.",
+      "answer_2_minutes": "I walk the mermaid decision: form, wire, imperative LDS, Apex reasons. I say data flows down and objects are read-only. I never use a generic catalog metaphor. I mark GraphQL mutations and cache seconds as Needs verification.",
+      "example": "Four-requirement Account page: form, nameplate, pair create, Task list.",
+      "tradeoffs": [
+        "Analogy vs Guide ladder wording",
+        "Honesty about unverified GraphQL mutations"
+      ],
+      "follow_ups": [
+        "What is not in this lesson?",
+        "How is AUTO-001 different?"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphors",
+        "Invented cache TTL"
+      ]
+    }
+  ]
+}

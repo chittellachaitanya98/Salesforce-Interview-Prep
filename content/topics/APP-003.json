@@ -1,0 +1,1012 @@
+{
+  "topic_id": "APP-003",
+  "slug": "cases-queues-assignment-rules-escalation-rules-auto-res",
+  "title": "Cases, queues, assignment rules, escalation rules, auto-response, email-to-case, and web-to-case",
+  "track": "Sales, service, and productivity applications",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APP-002"
+  ],
+  "objectives": [
+    "Define Case as the support work record and Queue as shared ownership, not a user.",
+    "Distinguish assignment rules, escalation rules, and auto-response rules by when they fire and what they change.",
+    "Explain Email-to-Case and Web-to-Case as capture channels that still need an active assignment rule or Support Settings default owner.",
+    "Troubleshoot a case that landed on the default owner or never emailed the customer."
+  ],
+  "diagnostic_question": "A customer emails support@, another uses a website form, and a VIP case has sat 4 hours. Which of queue, assignment rule, escalation rule, auto-response, Email-to-Case, or Web-to-Case do you inspect first for each, and what evidence would change your choice?",
+  "definition": "Service Cloud capture and first-line routing: a Case is the work record; Queues hold cases for a team; assignment rules route new cases to a user or queue; auto-response rules email the customer at create; escalation rules reassign or notify after time; Email-to-Case and Web-to-Case create cases from inbound channels. If no active assignment rule matches, Support Settings default owner receives the case. ([Assignment Rules for IT Services](https://help.salesforce.com/s/articleView?id=service.it_srvcs_assignment_rules.htm) describes user-or-queue routing and one active rule per object in that product; classic Case assignment follows the same user-or-queue idea—reverify the Case-specific Help article in the org.)",
+  "why_it_matters": "Interviewers fail people who use a Flow for every inbound email, who confuse auto-response with escalation, or who forget the default case owner. Web-to-Case is first submission only; it is not a portal. Exceeding the daily Web-to-Case limit emails leftover details to the default owner rather than silently creating unlimited cases.",
+  "sixty_second_explanation": "Picture a hospital ER. The Case is the patient chart. A Queue is a shared waiting bay, not a doctor. Assignment rules are triage protocols that send a new chart to a bay or a named clinician. Auto-response is the 'we have your intake' text. Escalation is the timeout pager when the chart sits too long. Email-to-Case is a faxed referral becoming a chart; Web-to-Case is the kiosk form. The default owner is the charge nurse when triage rules miss.",
+  "deeper_explanation": [
+    "Assignment rules evaluate record attributes and assign to a user or a queue. You can have multiple rules defined, but only one assignment rule can be active at a time for an object in the IT Services Help. Apply the same 'active rule' discipline to Case assignment: inactive rules send web or email cases to the default owner in Support Settings. ([Assignment Rules for IT Services](https://help.salesforce.com/s/articleView?id=service.it_srvcs_assignment_rules.htm))",
+    "Web-to-Case is solely a tool for initial submission. If customers must track or update cases, use an authenticated experience (Experience Cloud / self-service), not another HTML form. Before setup: case queues, Support Settings default owner, an active assignment rule, and an email template for notification. If the org exceeds its daily Web-to-Case limit, the default case owner receives an email with the extra case information. (Needs verification of the numeric daily cap in current Case Help—do not invent a number.)",
+    "Email-to-Case turns inbound messages into Cases (On-Demand Email-to-Case versus Email-to-Case with an agent is a setup choice—reverify current Help). Routing addresses, attachments, and threading behave differently from Web-to-Case's anonymous form post.",
+    "Auto-response rules send email when a case is created and criteria match—they do not reassign. Escalation rules are time-dependent: they notify, reassign, or otherwise act after business hours elapse. Entitlement milestones (APP-004) are a different SLA clock.",
+    "Queues are metadata (members, supported objects). Case rows are data. Do not treat a Queue as a User in reports without using the queue OwnerId."
+  ],
+  "mental_model": {
+    "analogy": "A hospital ER: Case = patient chart; Queue = shared waiting bay; assignment rule = triage protocol; auto-response = intake confirmation text; escalation = timeout pager; Email-to-Case = faxed referral; Web-to-Case = kiosk form; default owner = charge nurse when protocols miss.",
+    "useful_mapping": [
+      "Case → the work chart",
+      "Queue → shared bay, many clinicians can take work",
+      "Assignment rule → first-touch owner/queue",
+      "Auto-response → customer email at create",
+      "Escalation rule → late chart pager",
+      "Email-to-Case → inbound mailbox becomes a chart",
+      "Web-to-Case → public form creates a chart once",
+      "Support Settings default owner → charge nurse fallback"
+    ],
+    "where_it_breaks": [
+      "Manual Case create may skip assignment unless the user checks the assignment checkbox (Classic/LEX behavior—reverify UI).",
+      "Omni-Channel (APP-004) can take work from queues using capacity, which a static assignment rule does not.",
+      "Milestones are entitlement SLAs, not escalation rules.",
+      "The ER does not encode Experience Cloud login or Knowledge."
+    ]
+  },
+  "teach_back_prompt": "Explain assignment versus auto-response versus escalation to a developer who wants one Flow for all three, then say when Email-to-Case beats Web-to-Case.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Name the six tools in this title and one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "For five inbound symptoms, pick queue, assignment, escalation, auto-response, Email-to-Case, or Web-to-Case."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why did a web case hit the default owner?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Draw capture → assign → confirm → escalate."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: Case routing without naming Omni-Channel as the only answer."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-ASSIGN-RULES",
+      "title": "Assignment Rules for IT Services",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=service.it_srvcs_assignment_rules.htm",
+      "supports": "Assignment rules route to a user or queue from record attributes; multiple rules can exist but only one can be active per object in this product.",
+      "release_or_version": "Summer '26 help (IT Services article)",
+      "last_verified": "2026-08-16",
+      "limits": "Written for IT Services objects; Case assignment Help should be rechecked for checkbox-on-create behavior."
+    },
+    {
+      "source_id": "SF-HELP-WEB-TO-CASE",
+      "title": "Web-to-Case setup guidance (Salesforce Help / training extract)",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.setting_up_web-to-case.htm",
+      "supports": "Web-to-Case is initial submission; queues, Support Settings default owner, active assignment rule, and email template are prerequisites. Over daily limit, default owner is emailed leftover details.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Do not invent the numeric daily cap; current Help/org limit is Needs verification."
+    },
+    {
+      "source_id": "SF-HELP-MILESTONES-BOUND",
+      "title": "Milestones",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=service.entitlements_milestones_parent.htm",
+      "supports": "Milestones are time-dependent steps on entitlement processes (first response, resolution)—a neighboring SLA clock, not an assignment rule.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "APP-004 owns milestone setup; cited here only as a boundary."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Case and queue",
+        "Assignment vs default owner",
+        "Auto-response vs escalation",
+        "Email-to-Case vs Web-to-Case",
+        "Daily limit fallback",
+        "Not Omni-Channel yet"
+      ],
+      "accessible_description": "Portrait map: inbound channels create Cases; assignment or default owner; auto-response emails; escalation waits; queues share work."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-ASSIGN-RULES",
+        "SF-HELP-WEB-TO-CASE",
+        "SF-HELP-MILESTONES-BOUND"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Case capture and first-line routing"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Email[Inbound email] --> E2C[Email-to-Case]\n  Web[Website form] --> W2C[Web-to-Case]\n  Manual[Agent create] --> Case[Case work record]\n  E2C --> Case\n  W2C --> Case\n  Case --> AR{Active assignment rule match?}\n  AR -->|Yes| QUser[User or Queue]\n  AR -->|No| Def[Support Settings default owner]\n  Case --> Auto[Auto-response email if criteria match]\n  Case --> Esc[Escalation rule after elapsed time]\n  QUser --> Agent[Agent takes from queue]",
+      "decision": "flowchart TD\n  Need[Inbound support need] --> Q1{How does work arrive?}\n  Q1 -->|Customer email thread| E2C[Email-to-Case routing address]\n  Q1 -->|Anonymous web form once| W2C[Web-to-Case plus assignment or default owner]\n  Q1 -->|Customer must update later| Portal[Authenticated Experience not another form]\n  Need --> Q2{What must happen at create?}\n  Q2 -->|Owner or shared bay| Asg[Assignment rule to user or Queue]\n  Q2 -->|Thank-you email| Auto[Auto-response rule]\n  Q2 -->|Still sitting after SLA time| Esc[Escalation rule not a new assignment rule]\n  Q2 -->|Capacity-based routing| Omni[Omni-Channel APP-004 not this lesson]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Assignment rules use record attributes to assign a record to a user or a queue. Multiple rules may exist; only one assignment rule can be active at a time for an object in the cited IT Services Help.",
+      "source_ids": [
+        "SF-HELP-ASSIGN-RULES"
+      ],
+      "scope": "Assignment rules",
+      "validation": "Assignment Rules for IT Services.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Web-to-Case is for initial case submission. Prerequisites include queues (if used), Support Settings default owner, and an active assignment rule. Over the daily limit, the default case owner is emailed the extra information.",
+      "source_ids": [
+        "SF-HELP-WEB-TO-CASE"
+      ],
+      "scope": "Web-to-Case",
+      "validation": "Web-to-Case Help / official setup guidance.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Milestones on entitlement processes are time-dependent support steps such as first response or resolution. They are not assignment rules and are owned by APP-004.",
+      "source_ids": [
+        "SF-HELP-MILESTONES-BOUND"
+      ],
+      "scope": "Boundary vs entitlements",
+      "validation": "Milestones Help overview.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify Email-to-Case On-Demand vs agent, Web-to-Case daily cap, and Case assignment checkbox behavior against Summer '26 Help.",
+  "unresolved_uncertainty": [
+    "Numeric Web-to-Case daily limit should be read from current Help or org limits—do not quote an unofficial number.",
+    "Whether Lightning Case create applies assignment rules by default varies by UI; confirm in the target org."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Assignment rule",
+      "telugu": "కొత్త Caseని యూజర్ లేదా Queueకి పంపే ట్రయాజ్ నియమం."
+    },
+    {
+      "english": "Escalation rule",
+      "telugu": "Time-passed pager rule; not the create-time auto-response."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "A Case is the work. Queues share it. Assignment rules pick user or queue at create. Auto-response emails the customer. Escalation waits, then notifies or reassigns. Email-to-Case and Web-to-Case are capture. Missed rules go to the default owner.",
+    "two_minutes": "I start from the channel. Email thread: Email-to-Case. One-shot form: Web-to-Case plus active assignment or Support Settings owner. Customer must come back: portal, not another form. I never use escalation as a thank-you email or auto-response as a late pager. Omni-Channel is APP-004 capacity routing sitting on queues. Milestones are entitlement clocks, not this rule type."
+  },
+  "terminology": [
+    {
+      "term": "Case",
+      "plain": "A support work record: something the customer needs resolved.",
+      "precise": "Standard Service object created manually, via Email-to-Case, Web-to-Case, or APIs. Owner may be a user or a queue.",
+      "example": "LAB_Case 00001012 Origin Web, Status New, owned by LAB_Tier1 queue.",
+      "non_example": "An Opportunity used as a 'support deal.'",
+      "confusable_neighbor": "Work Order / Incident in other clouds: neighboring objects, not this lesson's Case.",
+      "boundary": "Omni-Channel work items can include cases; routing design is APP-004."
+    },
+    {
+      "term": "Queue",
+      "plain": "A shared inbox that can own Cases (and some other objects).",
+      "precise": "Metadata: members and supported objects. Assignment rules often target queues. Not a User, though OwnerId points at the queue.",
+      "example": "LAB_Tier1 queue with three agents as members.",
+      "non_example": "A public Chatter group used as the only 'queue.'",
+      "confusable_neighbor": "Omni-Channel queue: can be backed by the same queue with capacity (APP-004).",
+      "boundary": "Lead queues exist too (APP-001); this lesson focuses on Case."
+    },
+    {
+      "term": "Assignment rule",
+      "plain": "Triage: put this new Case on that person or that shared bay.",
+      "precise": "Criteria-based routing to a user or queue. Only one assignment rule should be active for the object (IT Services Help). Web cases without an active rule go to the default owner.",
+      "example": "Origin = Email and Subject contains VIP → user LAB_Aarav.",
+      "non_example": "An escalation that fires four hours later.",
+      "confusable_neighbor": "Auto-response: emails the customer, does not set owner.",
+      "boundary": "Flow can also assign; AUTO-001 decides when Flow is justified."
+    },
+    {
+      "term": "Escalation rule",
+      "plain": "The timeout pager if the Case sits too long.",
+      "precise": "Time-based actions (notify, reassign) using business hours. Not the create-time thank-you. Not an entitlement milestone.",
+      "example": "Priority High still New after 2 business hours → notify LAB_supervisor.",
+      "non_example": "The Web-to-Case confirmation email.",
+      "confusable_neighbor": "Milestone: entitlement process clock (APP-004), up to 10 per process.",
+      "boundary": "Do not invent exact default timers; they are configured."
+    },
+    {
+      "term": "Auto-response",
+      "plain": "The 'we got your request' email when the Case is created.",
+      "precise": "Criteria-based email at create. Requires email templates. Does not replace assignment.",
+      "example": "Origin Web → template LAB_WebThanks.",
+      "non_example": "A four-hour late notification (that is escalation).",
+      "confusable_neighbor": "Email-to-Case threading replies from agents.",
+      "boundary": "Deliverability and org-wide email addresses are neighboring admin work."
+    },
+    {
+      "term": "Email-to-Case",
+      "plain": "A mailbox that becomes Cases, usually keeping the email thread.",
+      "precise": "Inbound email capture. Setup includes routing addresses. Different from a one-shot web form. On-Demand versus on-premises agent: reverify current Help.",
+      "example": "support@lab.example creates Case LAB_00001020 with the message body.",
+      "non_example": "Web-to-Case HTML posted from a marketing page.",
+      "confusable_neighbor": "Email-to-Lead: a different object path (APP-001).",
+      "boundary": "Attachment size and threading limits: Needs verification per org."
+    },
+    {
+      "term": "Web-to-Case",
+      "plain": "A public form that creates a Case once.",
+      "precise": "Initial submission only. Needs default owner, preferably an active assignment rule, optional queues, and a response template. Over daily limit, extra submissions email the default owner instead of unlimited inserts.",
+      "example": "LAB_ website 'Contact Support' form creates Origin=Web cases.",
+      "non_example": "A logged-in Experience Cloud case publisher for follow-ups.",
+      "confusable_neighbor": "Web-to-Lead: creates Leads, 500/day documented in APP-001.",
+      "boundary": "Numeric Case daily cap: Needs verification; do not quote an unofficial figure."
+    },
+    {
+      "term": "Default case owner",
+      "plain": "The charge nurse: who gets work when rules miss or limits hit.",
+      "precise": "Set in Support Settings. Used when assignment is inactive or does not match, and when Web-to-Case exceeds its daily limit (email of leftover details).",
+      "example": "LAB_Support_Admin user as default owner.",
+      "non_example": "Assuming the form 'failed' because the default owner has the case.",
+      "confusable_neighbor": "Default lead owner in Lead Settings (APP-001).",
+      "boundary": "Who monitors that mailbox/user is an operating-model choice."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose capture channel",
+      "actor": "Admin + service lead",
+      "trigger": "Customers will email, post a form, or both",
+      "before": "No inbound Case path",
+      "after": "Email-to-Case and/or Web-to-Case designed",
+      "observe": "A LAB_ test message or form creates a Case",
+      "failure": "Using Web-to-Case as a customer portal"
+    },
+    {
+      "step": 2,
+      "transition": "Create queues and default owner",
+      "actor": "Admin",
+      "trigger": "Teams share work",
+      "before": "Only individual owners",
+      "after": "Queues plus Support Settings default owner",
+      "observe": "Queue appears as Owner on a test Case",
+      "failure": "No fallback owner"
+    },
+    {
+      "step": 3,
+      "transition": "Activate one assignment rule",
+      "actor": "Admin",
+      "trigger": "Need automatic first owner",
+      "before": "All cases on the creator or default owner",
+      "after": "Active rule entries ordered; first match wins (classic behavior—reverify)",
+      "observe": "VIP vs standard LAB_ cases land on different owners",
+      "failure": "Two 'active' mental rules; only one is actually active"
+    },
+    {
+      "step": 4,
+      "transition": "Confirm and escalate",
+      "actor": "Admin",
+      "trigger": "Customer expects an email; VIP cannot sit",
+      "before": "Silent create; no timeout",
+      "after": "Auto-response templates; escalation with business hours",
+      "observe": "LAB_ email received; escalation history after a short test timer",
+      "failure": "Using escalation as the thank-you email"
+    }
+  ],
+  "when_to_use": [
+    "When inbound work must become a Case owned by a user or a Queue via an assignment rule.",
+    "When customers should get an auto-response at create, and late Cases should hit an escalation rule—not the other way around.",
+    "When email threads should become Cases through Email-to-Case rather than a one-shot Web-to-Case form.",
+    "When a website form is only first submission, with Support Settings default owner as the safety net."
+  ],
+  "when_not_to_use": [
+    "Do not use Web-to-Case as the place customers return to update Cases; that needs an authenticated experience.",
+    "Do not use an escalation rule as a create-time auto-response, or auto-response as a four-hour pager.",
+    "Do not skip the default case owner because 'the assignment rule will always match.'",
+    "Do not treat Omni-Channel capacity routing or entitlement Milestones as this lesson's assignment rules."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Support Settings (default case owner).",
+    "Setup → Queues; Assignment Rules; Auto-Response Rules; Escalation Rules.",
+    "Setup → Email-to-Case routing addresses; Web-to-Case HTML generation.",
+    "Case page layout: assignment checkbox behavior—reverify in LEX."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox LAB_ support: website form plus support@ mailbox. Tier1 queue for standard, Aarav for VIP subject line, thank-you email on web origin, pager if High priority sits. No production addresses.",
+    "inputs": [
+      "Queue LAB_Tier1",
+      "Default owner LAB_Support_Admin",
+      "Assignment rule with VIP entry then default-to-queue entry",
+      "Auto-response for Origin = Web",
+      "Escalation for Priority = High after a short sandbox timer"
+    ],
+    "decisions": [
+      {
+        "decision": "Use Email-to-Case for support@ and Web-to-Case for the form, not one channel for both.",
+        "because": "Threads versus one-shot form are different capture products.",
+        "rejected": "Paste the web HTML into an email signature as the only path"
+      },
+      {
+        "decision": "One active assignment rule to user or queue; keep default owner for misses and daily-limit overflow.",
+        "because": "Help: user or queue; inactive/missed rules fall back.",
+        "rejected": "Three 'active' assignment rules"
+      },
+      {
+        "decision": "Auto-response for thanks; escalation for lateness; do not use milestones yet.",
+        "because": "Milestones belong to entitlement processes (APP-004).",
+        "rejected": "One Flow that pretends to be all three rule types without a reason"
+      }
+    ],
+    "configuration_or_code": [
+      "Create LAB_Tier1 queue on Case.",
+      "Set Support Settings default owner.",
+      "Activate a single Case assignment rule with ordered entries.",
+      "Generate Web-to-Case HTML in sandbox; send a LAB_ test email to the routing address if Email-to-Case is enabled."
+    ],
+    "output": "Web VIP-looking subject still follows assignment criteria; standard web case hits LAB_Tier1; customer gets thanks; High case can escalate.",
+    "verification": [
+      "A form submit with no matching entry lands on default owner—not 'lost.'",
+      "Auto-response email logged on the Case.",
+      "Escalation actions appear only after the configured time, not at create."
+    ],
+    "self_explanation": "I separated capture, first owner, customer email, and timeout. I left Omni-Channel and milestones for APP-004."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox with Cases enabled; synthetic LAB_ contacts only.",
+    "starting_state_checks": [
+      "You can create Cases and queues.",
+      "Do not point Email-to-Case at a real customer mailbox."
+    ],
+    "steps": [
+      "Create queue LAB_Tier1 that supports Case and add yourself as a member.",
+      "Note Support Settings default case owner (do not change a shared org without approval).",
+      "Create two LAB_ cases: one you assign to the queue, one left on a user.",
+      "Read Assignment Rules, Auto-Response Rules, and Escalation Rules list views and write which one would fire at create versus after time."
+    ],
+    "guided_completion": [
+      "If you cannot generate Web-to-Case HTML, write the prerequisite list from Help instead of forcing Setup in production.",
+      "If Email-to-Case is off, do not enable it on a shared mailbox."
+    ],
+    "independent_challenge": "Explain what happens when Web-to-Case exceeds its daily limit, without inventing the numeric cap.",
+    "evidence": [
+      "Screenshot or notes of LAB_Tier1 as Case owner.",
+      "A three-row table: assignment / auto-response / escalation with trigger time."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ cases and the lab queue if you created it.",
+      "Revert any Support Settings change you were allowed to make."
+    ],
+    "limitations": "May not prove live email routing or the daily web cap."
+  },
+  "decision_table": [
+    {
+      "signal": "Customers will email a support address and expect a thread on the Case.",
+      "choose": "Email-to-Case with a routing address, plus assignment to user or Queue.",
+      "not": "Web-to-Case HTML as the only capture for mailbox traffic.",
+      "why": "Email-to-Case is inbound mail capture; Web-to-Case is a one-shot form."
+    },
+    {
+      "signal": "Anonymous website form should open a Case once and thank the submitter.",
+      "choose": "Web-to-Case plus auto-response and an active assignment rule or default owner.",
+      "not": "An Experience Cloud portal build for a single thank-you form.",
+      "why": "Help: Web-to-Case is initial submission; default owner is the safety net."
+    },
+    {
+      "signal": "New Cases must land on Tier1 shared work, except VIP to a named agent.",
+      "choose": "One active assignment rule with ordered entries to Queue or user.",
+      "not": "Several assignment rules all thought to be active at once.",
+      "why": "Cited Help: only one assignment rule active per object; target is user or queue."
+    },
+    {
+      "signal": "High-priority Cases still New after business hours should page a supervisor.",
+      "choose": "An escalation rule on elapsed time, not a second auto-response.",
+      "not": "A create-time auto-response pretending to be a timeout.",
+      "why": "Auto-response is at create; escalation is time-dependent; milestones are APP-004."
+    },
+    {
+      "signal": "Customers must update the Case after the first submit.",
+      "choose": "An authenticated self-service experience, not another Web-to-Case page.",
+      "not": "A second public HTML form as the 'portal.'",
+      "why": "Official Web-to-Case guidance: it is not for follow-up tracking."
+    }
+  ],
+  "limitations": [
+    "Does not configure Omni-Channel, Knowledge, or entitlements (APP-004).",
+    "Does not quote an unofficial Web-to-Case daily number.",
+    "IT Services assignment article is adjacent; Case UI details need a Case-specific reread.",
+    "On-Demand Email-to-Case limits are org-specific."
+  ],
+  "security_notes": [
+    "Web-to-Case is unauthenticated; do not expose internal fields on the public form.",
+    "Email-to-Case can attach malware-like files; follow org attachment policy.",
+    "Use LAB_ addresses only."
+  ],
+  "common_mistakes": [
+    "No default case owner.",
+    "Confusing auto-response with escalation.",
+    "Using Web-to-Case as a portal.",
+    "Multiple assignment rules assumed active.",
+    "Calling a queue a user in every report."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Every web case sits on one admin user.",
+      "check": [
+        "Is any assignment rule active?",
+        "Do entries match Origin/other fields?",
+        "Support Settings default owner"
+      ],
+      "do_not_assume": "The HTML form failed."
+    },
+    {
+      "symptom": "Customer got no email.",
+      "check": [
+        "Auto-response rule active and criteria",
+        "Email template and deliverability",
+        "Whether they used Email-to-Case (thread) vs Web-to-Case (form)"
+      ],
+      "do_not_assume": "Escalation should have emailed at create."
+    },
+    {
+      "symptom": "VIP case never reassigned after hours.",
+      "check": [
+        "Escalation rule, business hours, and criteria",
+        "Whether you expected a milestone instead (APP-004)"
+      ],
+      "do_not_assume": "Assignment rules re-run on a timer."
+    }
+  ],
+  "production_notes": [
+    "Test Web-to-Case and Email-to-Case in sandbox with LAB_ inboxes.",
+    "Monitor the default owner; overflow and misses land there.",
+    "Change assignment entries with change control; first-match order matters."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What can an assignment rule assign a record to, per Help?",
+      "options": {
+        "A": "A user or a queue",
+        "B": "Only a Campaign",
+        "C": "Only a Price Book",
+        "D": "Only a Person Account"
+      },
+      "answer": "A",
+      "rationale": "Assignment rules route to the right user or queue from record attributes.",
+      "distractor_explanations": {
+        "B": "Campaigns are marketing (APP-001).",
+        "C": "Price books price products.",
+        "D": "Person Accounts are a sales model."
+      },
+      "concept": "Assignment target",
+      "citation_ids": [
+        "SF-HELP-ASSIGN-RULES"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In the cited IT Services Help, how many assignment rules can be active per object?",
+      "options": {
+        "A": "Only one active assignment rule at a time for an object",
+        "B": "Unlimited active rules all firing together",
+        "C": "Exactly five",
+        "D": "None; assignment rules are illegal"
+      },
+      "answer": "A",
+      "rationale": "You can create multiple assignment rules for an object, but only one can be active at a time.",
+      "distractor_explanations": {
+        "B": "Help contradicts that.",
+        "C": "Not a documented count of active rules.",
+        "D": "They are a standard tool."
+      },
+      "concept": "One active rule",
+      "citation_ids": [
+        "SF-HELP-ASSIGN-RULES"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Web-to-Case has no active assignment rule. Where do new web cases go?",
+      "options": {
+        "A": "The default owner in Support Settings",
+        "B": "They are discarded",
+        "C": "They become Leads",
+        "D": "They become Opportunities"
+      },
+      "answer": "A",
+      "rationale": "Official Web-to-Case guidance: without an active assignment rule, web-generated cases go to the default owner in Support Settings.",
+      "distractor_explanations": {
+        "B": "Cases are still created.",
+        "C": "That is Web-to-Lead.",
+        "D": "Wrong object."
+      },
+      "concept": "Default owner fallback",
+      "citation_ids": [
+        "SF-HELP-WEB-TO-CASE"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "The org exceeds its daily Web-to-Case limit. What happens to additional submissions?",
+      "options": {
+        "A": "The default case owner receives an email with the additional case information",
+        "B": "Salesforce creates unlimited Cases silently",
+        "C": "Assignment rules start creating Leads",
+        "D": "Escalation rules fire immediately"
+      },
+      "answer": "A",
+      "rationale": "If the organization exceeds its daily Web-to-Case limit, the default case owner receives an email containing the additional case information.",
+      "distractor_explanations": {
+        "B": "There is a daily limit with a fallback.",
+        "C": "Wrong object.",
+        "D": "Escalation is time-based on existing cases."
+      },
+      "concept": "Daily limit fallback",
+      "citation_ids": [
+        "SF-HELP-WEB-TO-CASE"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Why is Web-to-Case the wrong tool for customers who must update Cases later?",
+      "options": {
+        "A": "It is solely for initial submission; follow-up needs an authenticated experience",
+        "B": "It can only create Opportunities",
+        "C": "It cannot create a Case Origin",
+        "D": "It replaces Email-to-Case automatically"
+      },
+      "answer": "A",
+      "rationale": "Official guidance: Web-to-Case is solely a tool for the initial submission of cases.",
+      "distractor_explanations": {
+        "B": "It creates Cases.",
+        "C": "Origin is typically Web.",
+        "D": "They are different channels."
+      },
+      "concept": "Not a portal",
+      "citation_ids": [
+        "SF-HELP-WEB-TO-CASE"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Auto-response versus escalation?",
+      "options": {
+        "A": "Auto-response emails at create; escalation acts after elapsed time",
+        "B": "They are the same Setup node",
+        "C": "Escalation only creates Web-to-Case HTML",
+        "D": "Auto-response assigns queues"
+      },
+      "answer": "A",
+      "rationale": "This lesson's official split: thank-you at create versus timeout pager. Milestones are a third clock.",
+      "distractor_explanations": {
+        "B": "Different rule types.",
+        "C": "Escalation does not generate HTML.",
+        "D": "Assignment rules assign."
+      },
+      "concept": "Two emails, two times",
+      "citation_ids": [
+        "SF-HELP-WEB-TO-CASE"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Milestones on entitlement processes represent what?",
+      "options": {
+        "A": "Required time-dependent steps such as first response or resolution",
+        "B": "Web-to-Case HTML tags",
+        "C": "Price Book entries",
+        "D": "Lead conversion field maps"
+      },
+      "answer": "A",
+      "rationale": "Milestones Help: required, time-dependent steps in the support process, added to entitlement processes.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "APP-001.",
+        "D": "APP-001."
+      },
+      "concept": "Milestone boundary",
+      "citation_ids": [
+        "SF-HELP-MILESTONES-BOUND"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Customers email attachments and expect replies on the same thread. Which capture fits?",
+      "options": {
+        "A": "Email-to-Case",
+        "B": "Web-to-Case only",
+        "C": "A Sales Process",
+        "D": "A custom Price Book"
+      },
+      "answer": "A",
+      "rationale": "Email-to-Case is inbound mailbox capture for threaded support email.",
+      "distractor_explanations": {
+        "B": "Form, not mailbox.",
+        "C": "APP-002.",
+        "D": "APP-001."
+      },
+      "concept": "Email-to-Case",
+      "citation_ids": [
+        "SF-HELP-WEB-TO-CASE"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You need shared ownership so any Tier1 agent can take the Case. What object?",
+      "options": {
+        "A": "A Queue that supports Case",
+        "B": "A Person Account",
+        "C": "A Quote",
+        "D": "A Forecast Category"
+      },
+      "answer": "A",
+      "rationale": "Assignment rules target a user or queue; queues are the shared bay.",
+      "distractor_explanations": {
+        "B": "Sales B2C model.",
+        "C": "Sales offer.",
+        "D": "Forecasting (APP-002)."
+      },
+      "concept": "Queue",
+      "citation_ids": [
+        "SF-HELP-ASSIGN-RULES"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A developer wants one after-save Flow instead of assignment, auto-response, and escalation. First interview answer?",
+      "options": {
+        "A": "Use the standard rule types unless AUTO-001 proves they cannot meet the need",
+        "B": "Always write the Flow first",
+        "C": "Disable Cases",
+        "D": "Convert Cases to Leads"
+      },
+      "answer": "A",
+      "rationale": "Declarative service rules exist for these jobs; Flow is complementary, not the default.",
+      "distractor_explanations": {
+        "B": "Over-automation.",
+        "C": "Nonsense.",
+        "D": "Wrong object."
+      },
+      "concept": "Rules before Flow",
+      "citation_ids": [
+        "SF-HELP-ASSIGN-RULES"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which prerequisites does Web-to-Case guidance list before go-live?",
+      "options": {
+        "A": "Queues if needed, Support Settings default owner, active assignment rule, response template",
+        "B": "Collaborative Forecasts",
+        "C": "A managed package license",
+        "D": "ContentDistribution public links"
+      },
+      "answer": "A",
+      "rationale": "Official setup list: queues, default owner, active assignment rule, email template.",
+      "distractor_explanations": {
+        "B": "APP-002.",
+        "C": "APP-007.",
+        "D": "APP-006."
+      },
+      "concept": "Web-to-Case prerequisites",
+      "citation_ids": [
+        "SF-HELP-WEB-TO-CASE"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Escalation rule versus entitlement milestone?",
+      "options": {
+        "A": "Both can be time-based; milestones live on entitlement processes and are APP-004",
+        "B": "They are identical Setup items",
+        "C": "Milestones assign queues at create",
+        "D": "Escalation rules publish Knowledge"
+      },
+      "answer": "A",
+      "rationale": "Milestones Help places them on entitlement processes. Escalation rules are a separate Case rule type.",
+      "distractor_explanations": {
+        "B": "Different objects/features.",
+        "C": "Assignment rules assign at create.",
+        "D": "Knowledge is APP-004."
+      },
+      "concept": "Two clocks",
+      "citation_ids": [
+        "SF-HELP-MILESTONES-BOUND"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is a Case?",
+      "back": "The support work record. Owner can be a user or a queue."
+    },
+    {
+      "id": "F2",
+      "category": "queue",
+      "front": "What is a Queue here?",
+      "back": "Shared ownership metadata. Assignment rules can target it. It is not a User."
+    },
+    {
+      "id": "F3",
+      "category": "assignment",
+      "front": "Assignment rule target?",
+      "back": "A user or a queue, based on record attributes."
+    },
+    {
+      "id": "F4",
+      "category": "assignment",
+      "front": "How many assignment rules active per object (cited Help)?",
+      "back": "Only one can be active at a time, even if several are defined."
+    },
+    {
+      "id": "F5",
+      "category": "web-to-case",
+      "front": "No active assignment rule for Web-to-Case?",
+      "back": "Cases go to the Support Settings default owner."
+    },
+    {
+      "id": "F6",
+      "category": "web-to-case",
+      "front": "Over daily Web-to-Case limit?",
+      "back": "Default case owner is emailed the extra case information. Do not invent the numeric cap."
+    },
+    {
+      "id": "F7",
+      "category": "web-to-case",
+      "front": "Can Web-to-Case be the customer portal?",
+      "back": "No. It is initial submission only. Follow-up needs an authenticated experience."
+    },
+    {
+      "id": "F8",
+      "category": "email-to-case",
+      "front": "When do you pick Email-to-Case?",
+      "back": "When inbound mailbox threads and attachments should become Cases."
+    },
+    {
+      "id": "F9",
+      "category": "auto-response",
+      "front": "When does auto-response fire?",
+      "back": "At Case create when criteria match—it emails the customer, it does not assign."
+    },
+    {
+      "id": "F10",
+      "category": "escalation",
+      "front": "When does an escalation rule fire?",
+      "back": "After configured time/business hours—notify or reassign. Not the thank-you email."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Escalation vs milestone?",
+      "back": "Escalation is a Case rule. Milestones sit on entitlement processes (APP-004)."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "Is Omni-Channel this lesson?",
+      "back": "No. Capacity-based routing from queues is APP-004."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Every web case on one admin?",
+      "back": "Check active assignment rule, entry criteria, then default owner—not the HTML first."
+    },
+    {
+      "id": "F14",
+      "category": "prereq",
+      "front": "Web-to-Case go-live checklist?",
+      "back": "Queues if used, default owner, active assignment rule, response email template."
+    },
+    {
+      "id": "F15",
+      "category": "metadata",
+      "front": "Queue vs Case row?",
+      "back": "Queue definition is metadata. Each Case is business data."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do Cases, queues, and assignment rules work together?",
+      "answer_30_seconds": "A Case is the work. A Queue is shared ownership. An assignment rule uses criteria to send a new Case to a user or queue. Only one assignment rule should be active. Misses go to the default owner.",
+      "answer_2_minutes": "I set Support Settings first so overflow has a human. I create queues for teams. I activate one assignment rule with ordered entries. I do not confuse that with auto-response or escalation. Web-to-Case and Email-to-Case still depend on this routing. Omni-Channel can later pull from the same queues using capacity.",
+      "example": "LAB_ web case Origin=Web → LAB_Tier1 queue; Subject VIP → Aarav.",
+      "tradeoffs": [
+        "Queue load-balancing vs named owner",
+        "Standard rules vs Flow"
+      ],
+      "follow_ups": [
+        "First match or best match?",
+        "Does manual create run the rule?"
+      ],
+      "weak_answer_warnings": [
+        "Calling a queue a user"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Email-to-Case versus Web-to-Case?",
+      "answer_30_seconds": "Email-to-Case turns mailbox threads into Cases. Web-to-Case is a public form for the first submit only. Both still need assignment or a default owner.",
+      "answer_2_minutes": "I pick Email-to-Case when customers already write email and need replies on the thread. I pick Web-to-Case for anonymous marketing-site forms. I refuse Web-to-Case as a portal. I mention daily-limit overflow emails the default owner, without inventing the number. Attachments and spam controls differ; I reverify current Help.",
+      "example": "support@lab.example versus the LAB_ Contact Support form.",
+      "tradeoffs": [
+        "Thread fidelity vs form structure",
+        "Spam on email vs bot on forms"
+      ],
+      "follow_ups": [
+        "On-Demand vs agent?",
+        "CAPTCHA on Web-to-Case?"
+      ],
+      "weak_answer_warnings": [
+        "Treating them as the same feature"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Customer never got a thank-you but the Case exists. Walk it.",
+      "answer_30_seconds": "Check auto-response rule, criteria, template, and deliverability. Do not look at escalation first; that is a later clock.",
+      "answer_2_minutes": "I confirm Origin and whether Email-to-Case already sent a different path. I check the rule is active. I look at bounce reports. I do not build a Flow until the standard auto-response is proven wrong. If they wanted a late warning, that is escalation or a milestone, not auto-response.",
+      "example": "Origin Phone case, auto-response only for Origin Web.",
+      "tradeoffs": [
+        "Standard auto-response vs Flow email",
+        "Org-wide address vs user send"
+      ],
+      "follow_ups": [
+        "Compliance footer?",
+        "Multiple languages?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming assignment for missing email"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "VIP High cases sit four hours. Design the clock.",
+      "answer_30_seconds": "Use an escalation rule with business hours to notify or reassign. If they need contractual first-response SLAs, that is entitlements and milestones in APP-004.",
+      "answer_2_minutes": "I do not add a Stage-like Status for 'waiting.' I set criteria Priority High and Status New. I pick actions. I warn that assignment rules do not re-run on a timer. If they already bought Entitlement Management, I do not duplicate clocks blindly.",
+      "example": "LAB_ High case escalates to LAB_supervisor after 2 business hours.",
+      "tradeoffs": [
+        "Escalation vs milestone",
+        "Notify vs reassign"
+      ],
+      "follow_ups": [
+        "24x7 versus business hours?",
+        "Holiday calendar?"
+      ],
+      "weak_answer_warnings": [
+        "Using auto-response as the pager"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "All web cases hit the admin. Diagnose.",
+      "answer_30_seconds": "Assignment rule inactive or entries do not match. Then the default owner is working as designed. Check the form hidden fields too.",
+      "answer_2_minutes": "I compare a LAB_ submit's field values to rule entries. I confirm only one rule is active. I look at Support Settings. I check daily-limit overflow emails versus created cases. I do not regenerate HTML first unless the org ID on the form is wrong.",
+      "example": "Rule requires Origin = Email but Web-to-Case sets Origin Web.",
+      "tradeoffs": [
+        "Fix criteria vs change default owner",
+        "Queue vs named admin"
+      ],
+      "follow_ups": [
+        "Who watches the default owner?",
+        "Is the form pointing at the right org?"
+      ],
+      "weak_answer_warnings": [
+        "Regenerating HTML as the only step"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Web form users ask where to 'log in to their case.'",
+      "answer_30_seconds": "Web-to-Case cannot do that. Offer an authenticated Experience Cloud or similar portal. Keep the form for first submit only.",
+      "answer_2_minutes": "I quote the official 'initial submission' limit. I separate capture from self-service. I do not promise case status on a second public form. Knowledge and console come later (APP-004). I still keep assignment and auto-response on the first Case.",
+      "example": "LAB_ form creates the Case; customers later use LAB_ community login.",
+      "tradeoffs": [
+        "Portal cost vs email-only updates",
+        "Anonymous form vs authenticated publisher"
+      ],
+      "follow_ups": [
+        "Guest user security?",
+        "Email-to-Case as the interim?"
+      ],
+      "weak_answer_warnings": [
+        "Building a second public form as a portal"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you still write a Flow for Case assignment?",
+      "answer_30_seconds": "When assignment-rule criteria cannot express the logic (complex related records, callouts, or updates after create). I still keep default owner and queues.",
+      "answer_2_minutes": "AUTO-001 owns the tool choice. I do not replace a working first-match rule with Flow for sport. Escalation and auto-response remain standard unless we need richer branching. Omni-Channel may remove the need for clever assignment if the real problem is agent capacity.",
+      "example": "Assign using related Account SLA field that assignment-rule entry cannot see—Needs verification; then Flow or entitlement.",
+      "tradeoffs": [
+        "Standard rules vs Flow maintainability",
+        "Assignment vs Omni-Channel"
+      ],
+      "follow_ups": [
+        "Recursion on Case update?",
+        "Who debugs the Flow at 2 a.m.?"
+      ],
+      "weak_answer_warnings": [
+        "Flow for every thank-you email"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this ER analogy and where it breaks.",
+      "answer_30_seconds": "Case is the chart, queue the bay, assignment the triage, auto-response the intake text, escalation the timeout pager, email the fax, web the kiosk, default owner the charge nurse.",
+      "answer_2_minutes": "It breaks when manual create skips the triage checkbox, when Omni-Channel becomes the dispatcher, and when milestones are the contractual clocks. I cite one-active-rule, default owner, daily-limit email, and 'not a portal.' I keep LAB_ data in the story.",
+      "example": "Whiteboard: two channels, one active rule, one default owner, two clocks.",
+      "tradeoffs": [
+        "Story vs Setup names",
+        "Standard rules vs later Omni-Channel"
+      ],
+      "follow_ups": [
+        "Where does Knowledge attach?",
+        "Where do Files attach? (APP-006)"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphors instead of the hospital-desk mapping"
+      ]
+    }
+  ]
+}

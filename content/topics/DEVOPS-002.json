@@ -1,0 +1,993 @@
+{
+  "topic_id": "DEVOPS-002",
+  "slug": "salesforce-cli-vs-code-project-structure-manifests-retr",
+  "title": "Salesforce CLI, VS Code, project structure, manifests, retrieve, deploy, and validate",
+  "track": "Development lifecycle and DevOps",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DEVOPS-001"
+  ],
+  "objectives": [
+    "Describe a Salesforce DX project: sfdx-project.json, package directories, source format versus metadata format, and .forceignore.",
+    "Choose retrieve versus deploy versus validate and name the matching Salesforce CLI project commands.",
+    "Explain manifests (package.xml), --metadata, and --source-dir as mutually exclusive ways to name a payload.",
+    "State that project commands must run inside a project, that production never allows source tracking, and that validate is intended for production rather than sandbox dry-runs."
+  ],
+  "diagnostic_question": "You have a DX project, a sandbox with a new LAB_ Apex class, and a production window tonight. Which CLI command retrieves the class, which deploys it, which validates without saving, and what would you refuse to pass on production?",
+  "definition": "Salesforce CLI project commands synchronize metadata between a local DX project and an org. Retrieve copies metadata from the org into the project (source format by default). Deploy pushes local metadata to the org. Validate checks a metadata deployment without executing it, returning a job ID that can later drive a quick deploy. A DX project is identified by sfdx-project.json, which names package directories and related configuration. ([Project Setup](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_workspace_setup.htm); [project retrieve start](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_retrieve_start.html); [project deploy validate](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_validate.html))",
+  "why_it_matters": "Wrong command direction overwrites the only good copy. Validate-on-sandbox cargo-cult skips the documented sandbox dry-run path. --ignore-errors on production can leave an inconsistent org. Interviewers want the verbs retrieve, deploy, and validate, plus manifest versus metadata versus source-dir.",
+  "sixty_second_explanation": "Think of an air-traffic control desk. VS Code is the radar screen. Salesforce CLI is the radio. The DX project is the controlled airspace map (sfdx-project.json says where the map folders live). Retrieve is inbound traffic from the org. Deploy is clearance to land local files on the org. Validate is a dry-run clearance that does not land the flight. package.xml is the flight strip that lists which aircraft move. Never issue a production landing with ignore-errors. Production towers do not offer source tracking.",
+  "deeper_explanation": [
+    "A Salesforce DX project provides structure for the org's metadata (code and configuration), org templates, sample data, and tests, stored in source control. sfdx-project.json marks the directory as a DX project, lists package directories, and supports second-generation packaging configuration and API version. Source format uses a different set of files than Metadata API format; retrieve stores source format, and deploy converts to the format Metadata API requires. ([Project Setup](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_workspace_setup.htm))",
+    "You must run project retrieve/deploy/validate from within a project. Retrieve pulls metadata from an org to the local project. Components retrieve in source format by default; --target-metadata-dir retrieves metadata format into a ZIP. Name the payload with --manifest (package.xml), --metadata, or --source-dir—do not mix manifest with the other two. Production orgs never allow source tracking; scratch and sandbox orgs enable it by default. ([project retrieve start](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_retrieve_start.html); [project deploy start](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html))",
+    "project deploy validate verifies whether a deployment will succeed without deploying. It is similar to deploy start except Apex tests are required and the command returns a job ID rather than executing the deployment. If validation succeeds, pass that job ID to project deploy quick. The job ID is valid for 10 days. Do not use this command on sandboxes; sandboxes do not run tests during a deploy by default. To validate with tests on a sandbox, use project deploy start --dry-run --test-level RunLocalTests. ([project deploy validate](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_validate.html))",
+    "Deploy flags that interviews catch: never use --ignore-errors when deploying to production (partial success can leave an inconsistent org). --ignore-conflicts applies only to source-tracked orgs and has no effect on production. --dry-run validates and can run tests without saving. --pre-destructive-changes and --post-destructive-changes point at delete manifests (DEVOPS-009). Salesforce Extensions for VS Code wrap the same CLI/project model; the commands remain the contract. Convert between metadata format and source format with project convert when a repo started as a Metadata API retrieve."
+  ],
+  "mental_model": {
+    "analogy": "An air-traffic control desk: CLI radio, VS Code radar, DX project airspace map, package.xml flight strip, retrieve inbound, deploy landing clearance, validate dry-run clearance that does not land.",
+    "useful_mapping": [
+      "sfdx-project.json → which folders are controlled airspace (package directories)",
+      "source format → how the local map is filed",
+      "metadata format / ZIP → the bag Metadata API actually loads",
+      "package.xml manifest → the flight strip listing components",
+      "retrieve → inbound copy from the org",
+      "deploy → land local metadata on the org",
+      "validate → dry-run for production, job ID later used with quick deploy",
+      "VS Code extensions → radar UI over the same radio commands"
+    ],
+    "where_it_breaks": [
+      "Production never offers source tracking; a tower with no conflict radar still accepts deploy/retrieve if you name the payload.",
+      "Validate is not the sandbox dry-run path; use deploy start --dry-run there.",
+      "The analogy does not encode Apex test levels or 75% coverage.",
+      "--ignore-errors is a dangerous partial landing, not a weather workaround."
+    ]
+  },
+  "teach_back_prompt": "Explain retrieve, deploy, and validate as three different radio calls, then name one flag you must not use on production and one reason validate is the wrong sandbox command.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Write the three CLI commands for retrieve, deploy, and validate, and one sentence on running them inside a project."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given a package.xml, a metadata name, and a folder, pick one flag family and say what you must not combine."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Contrast validate plus quick deploy with sandbox --dry-run, including the 10-day job ID."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a production deploy review: ignore-errors, ignore-conflicts, source tracking, test level."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: project structure, source vs metadata format, retrieve vs deploy vs validate."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-DX-PROJECT",
+      "title": "Project Setup",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_workspace_setup.htm",
+      "supports": "DX project contents, sfdx-project.json, source format versus Metadata API format, retrieve stores source format, deploy converts for Metadata API.",
+      "release_or_version": "Salesforce DX Developer Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Package-directory options for 2GP have additional fields in packaging guides."
+    },
+    {
+      "source_id": "SF-CLI-RETRIEVE",
+      "title": "project retrieve start",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_retrieve_start.html",
+      "supports": "Retrieve from org to project; must run in a project; source format default; manifest vs metadata vs source-dir; production never allows source tracking.",
+      "release_or_version": "Salesforce CLI Command Reference",
+      "last_verified": "2026-08-16",
+      "limits": "Flag sets evolve; reverify --help on the installed CLI."
+    },
+    {
+      "source_id": "SF-CLI-DEPLOY",
+      "title": "project deploy start",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html",
+      "supports": "Deploy metadata from a local project; dry-run; ignore-errors never on production; ignore-conflicts only for source-tracked orgs; destructive-change manifests.",
+      "release_or_version": "Salesforce CLI Command Reference",
+      "last_verified": "2026-08-16",
+      "limits": "Test-level defaults depend on org and payload; see Running Tests in a Deployment."
+    },
+    {
+      "source_id": "SF-CLI-VALIDATE",
+      "title": "project deploy validate",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_validate.html",
+      "supports": "Validate without executing; required tests; job ID for quick deploy valid 10 days; do not use on sandboxes; sandbox path is deploy start --dry-run --test-level RunLocalTests.",
+      "release_or_version": "Salesforce CLI Command Reference",
+      "last_verified": "2026-08-16",
+      "limits": "Quick deploy behavior overwrites corresponding metadata; no source tracking on that path."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce CLI Command Reference and DX Project Setup",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "DX project and sfdx-project.json",
+        "Source format vs metadata format",
+        "Retrieve vs deploy vs validate",
+        "Manifest metadata source-dir",
+        "Production vs sandbox dry-run",
+        "Dangerous flags"
+      ],
+      "accessible_description": "Portrait map of a DX project, CLI retrieve/deploy/validate, manifest selection, and flags that must not be used on production."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": ["SF-DX-PROJECT", "SF-CLI-RETRIEVE", "SF-CLI-DEPLOY", "SF-CLI-VALIDATE"]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Retrieve, deploy, and validate against a DX project"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Json[sfdx-project.json] --> Dirs[Package directories source format]\n  Dirs --> Ignore[.forceignore]\n  Org[Target org] -->|project retrieve start| Dirs\n  Dirs -->|project deploy start| Org\n  Dirs -->|project deploy validate| Job[Validation job ID 10 days]\n  Job -->|project deploy quick| Org\n  Manifest[package.xml --manifest] --> Payload[Named metadata payload]\n  MetaFlag[--metadata] --> Payload\n  SrcDir[--source-dir] --> Payload",
+      "decision": "flowchart TD\n  Need[Need CLI?] --> Q1{Direction?}\n  Q1 -->|Org has the truth to copy locally| Retr[sf project retrieve start]\n  Q1 -->|Git has the truth to put in an org| Q2{Execute or check only?}\n  Q2 -->|Save to org| Dep[sf project deploy start]\n  Q2 -->|Production check then later quick deploy| Val[sf project deploy validate]\n  Q2 -->|Sandbox tests without save| Dry[deploy start --dry-run --test-level RunLocalTests]\n  Q1 -->|How to name files?| Q3{One selector}\n  Q3 -->|package.xml| Man[--manifest]\n  Q3 -->|Type:Member| Md[--metadata]\n  Q3 -->|Folder or file| Dir[--source-dir]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A Salesforce DX project is marked by sfdx-project.json and holds org metadata in source format. Retrieve stores source format locally; deploy converts to the format Metadata API requires.",
+      "source_ids": ["SF-DX-PROJECT"],
+      "scope": "Project structure",
+      "validation": "Project Setup in the Salesforce DX Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "project retrieve start and project deploy start must run from within a project. Name components with --manifest or --metadata or --source-dir, not a mixed manifest plus metadata/source-dir pair. Production orgs never allow source tracking.",
+      "source_ids": ["SF-CLI-RETRIEVE", "SF-CLI-DEPLOY"],
+      "scope": "Retrieve and deploy",
+      "validation": "Salesforce CLI Command Reference for retrieve start and deploy start.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "project deploy validate verifies a metadata deployment without executing it, requires Apex tests, and returns a job ID valid for 10 days for project deploy quick. Do not use validate on sandboxes; use deploy start --dry-run --test-level RunLocalTests instead.",
+      "source_ids": ["SF-CLI-VALIDATE"],
+      "scope": "Validate vs dry-run",
+      "validation": "project deploy validate command reference notes.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Never use --ignore-errors when deploying to a production org. --ignore-conflicts applies only to orgs that allow source tracking and has no effect on production.",
+      "source_ids": ["SF-CLI-DEPLOY"],
+      "scope": "Dangerous flags",
+      "validation": "project deploy start flag descriptions.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "CLI flag names in this pack match the current project retrieve/deploy/validate references as of 2026-08-16. Reverify sf --help on the team's installed CLI.",
+  "unresolved_uncertainty": [
+    "Exact VS Code UI click paths change with the Salesforce Extensions pack; treat CLI commands as the stable contract.",
+    "Default test level when flags are omitted depends on payload and target org; confirm Running Tests in a Deployment for the API version in use."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Retrieve",
+      "telugu": "ఆర్గ్ నుంచి మెటాడేటాను లోకల్ ప్రాజెక్ట్ లోకి తీసుకురావడం."
+    },
+    {
+      "english": "Deploy",
+      "telugu": "లోకల్ మెటాడేటాను ఆర్గ్ మీద ల్యాండ్ చేయడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "A DX project is sfdx-project.json plus package directories. Retrieve copies metadata down; deploy pushes it up; validate checks a production-style deploy without saving and yields a 10-day job ID. Name the payload with one of manifest, metadata, or source-dir. Never ignore-errors on production.",
+    "two_minutes": "I start from the project, not from random folders. I pick retrieve when the org has the change, deploy when Git has it. For production I prefer validate then quick deploy when the window is long. For sandboxes I use dry-run with RunLocalTests, not validate. I do not mix --manifest with --metadata. I treat VS Code as a UI over the same commands."
+  },
+  "terminology": [
+    {
+      "term": "Salesforce CLI",
+      "plain": "The command-line radio that talks to orgs and the local project.",
+      "precise": "The documented way to retrieve, deploy, validate, and convert metadata for a DX project. Project commands must run from within a project.",
+      "example": "sf project retrieve start --metadata ApexClass:LAB_GateService --target-org lab-sandbox",
+      "non_example": "Editing production Setup and never retrieving.",
+      "confusable_neighbor": "Metadata API Ant Migration Tool: older file-based client, not the sf project commands.",
+      "boundary": "Auth and Dev Hub setup are neighboring; this lesson owns project retrieve/deploy/validate."
+    },
+    {
+      "term": "Salesforce DX project",
+      "plain": "The folder with sfdx-project.json that holds your metadata source.",
+      "precise": "A project structure for org metadata, org templates, sample data, and tests. sfdx-project.json defines package directories and related configuration.",
+      "example": "force-app/main/default as the default package directory.",
+      "non_example": "A random zip of Setup screenshots.",
+      "confusable_neighbor": "Metadata-format retrieve tree without sfdx-project.json: convert before using project commands as a DX project.",
+      "boundary": "Unlocked package directory mapping is DEVOPS-005."
+    },
+    {
+      "term": "source format",
+      "plain": "How CLI stores metadata in the DX project folders.",
+      "precise": "Source format uses a different set of files and extensions than Metadata API format. Retrieve stores source format. Deploy converts to Metadata API format.",
+      "example": "Decomposed custom object folders under force-app rather than a single object XML zip entry.",
+      "non_example": "The mdapi ZIP produced by --target-metadata-dir, which is metadata format.",
+      "confusable_neighbor": "Metadata format: the zip/folder layout deploy() historically used.",
+      "boundary": "Optional decomposition flags are versioned; do not invent them."
+    },
+    {
+      "term": "manifest",
+      "plain": "package.xml listing which metadata components to retrieve or deploy.",
+      "precise": "Passed as --manifest. If you specify this flag, do not specify --metadata or --source-dir. Child components are included on deploy.",
+      "example": "sf project deploy start --manifest manifest/package.xml --target-org uat",
+      "non_example": "A CSV of Account Ids.",
+      "confusable_neighbor": "sfdx-project.json: project config, not the component list for one job.",
+      "boundary": "project generate manifest can build one from an org; verify current flags."
+    },
+    {
+      "term": "retrieve",
+      "plain": "Copy metadata from the org into the local project.",
+      "precise": "sf project retrieve start. Source format by default. Production never allows source tracking, so you must name what to retrieve.",
+      "example": "Retrieving LAB_GateService.cls after an admin built a helper in a sandbox.",
+      "non_example": "Data Loader export of LAB_Gate__c rows.",
+      "confusable_neighbor": "deploy: opposite direction.",
+      "boundary": "DEVOPS-001 owns why rows are not in the retrieve."
+    },
+    {
+      "term": "deploy",
+      "plain": "Push local metadata to the org and save it (unless dry-run).",
+      "precise": "sf project deploy start. Supports --dry-run, test levels, destructive manifests. Never --ignore-errors on production.",
+      "example": "sf project deploy start --source-dir force-app --target-org lab-sandbox",
+      "non_example": "project deploy validate, which does not execute the deployment.",
+      "confusable_neighbor": "package install: installing a versioned package, not a source deploy (DEVOPS-005).",
+      "boundary": "CI wrapping these commands is DEVOPS-007."
+    },
+    {
+      "term": "validate",
+      "plain": "Run a production-style check of a metadata deploy without saving it.",
+      "precise": "sf project deploy validate. Requires Apex tests, returns a job ID valid 10 days for project deploy quick. Do not use on sandboxes.",
+      "example": "Validating force-app against production on Monday, quick-deploying the job ID in the Friday window.",
+      "non_example": "Using validate against a developer sandbox because it 'sounds safer.'",
+      "confusable_neighbor": "--dry-run on deploy start: the documented sandbox validation-with-tests path.",
+      "boundary": "Test strategy details are DEVOPS-006."
+    },
+    {
+      "term": "Salesforce Extensions for VS Code",
+      "plain": "The IDE panel that runs the same project retrieve and deploy model.",
+      "precise": "Optional DX tooling. The CLI command reference remains the interview contract for retrieve, deploy, and validate.",
+      "example": "Org browser retrieve of one Apex class into force-app.",
+      "non_example": "A personal theme pack that is not the Salesforce extensions.",
+      "confusable_neighbor": "DevOps Center: a different official collaboration UI (see DX intro optional tools).",
+      "boundary": "Click paths are Needs verification; commands are cited."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Stand in a DX project",
+      "actor": "Developer",
+      "trigger": "Need to retrieve or deploy",
+      "before": "Random folder with XML",
+      "after": "Working directory contains sfdx-project.json",
+      "observe": "sf project commands accept the folder",
+      "failure": "Running retrieve outside a project"
+    },
+    {
+      "step": 2,
+      "transition": "Name the payload",
+      "actor": "Developer",
+      "trigger": "You know which components move",
+      "before": "Ambiguous 'everything'",
+      "after": "Exactly one of --manifest, --metadata, or --source-dir (unless source tracking applies)",
+      "observe": "Command help does not error on mixed selectors",
+      "failure": "Passing --manifest and --metadata together"
+    },
+    {
+      "step": 3,
+      "transition": "Choose retrieve or deploy",
+      "actor": "Developer",
+      "trigger": "Direction of truth is known",
+      "before": "Guessing",
+      "after": "Retrieve if the org changed; deploy if Git changed",
+      "observe": "Preview commands if available; no surprise overwrite",
+      "failure": "Deploying stale local files over a teammate's org work"
+    },
+    {
+      "step": 4,
+      "transition": "Choose validate or dry-run",
+      "actor": "Release owner",
+      "trigger": "You need a check without saving",
+      "before": "One command for every org",
+      "after": "Validate on production path; dry-run with tests on sandbox",
+      "observe": "Job ID only from validate; sandbox uses dry-run output",
+      "failure": "project deploy validate against a sandbox"
+    }
+  ],
+  "when_to_use": [
+    "When you must retrieve metadata from an org into a DX project or deploy local source to an org with Salesforce CLI.",
+    "When choosing a manifest (package.xml), --metadata names, or --source-dir to structure the payload.",
+    "When a production window needs project deploy validate and a later quick deploy rather than a long test run in the freeze.",
+    "When a sandbox needs a dry-run deploy with tests, which is not the validate command.",
+    "When reviewing flags such as --ignore-errors before a production metadata deploy."
+  ],
+  "when_not_to_use": [
+    "Do not use retrieve/deploy as a Data Loader substitute for business records (DEVOPS-001).",
+    "Do not treat this CLI lesson as Git branching, pull requests, or merge conflict resolution (DEVOPS-003).",
+    "Do not choose unlocked versus managed packages here; packaging is DEVOPS-005 even if sfdx-project.json lists package directories.",
+    "Do not use project deploy validate on sandboxes when the documented path is deploy start --dry-run --test-level RunLocalTests.",
+    "Do not pass --ignore-errors on a production deploy to 'make it finish.'"
+  ],
+  "configuration_or_code_location": [
+    "Project root: sfdx-project.json and package directories such as force-app.",
+    "Terminal inside that root: sf project retrieve start | deploy start | deploy validate.",
+    "Optional Salesforce Extensions for VS Code org browser and deploy UI over the same project.",
+    "manifest/package.xml when the team uses manifests instead of source-dir."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox has LAB_GateService Apex the admin created in Setup. Git should become truth, then a second sandbox should receive the class. Later, production needs a validate-then-quick path. Synthetic names only.",
+    "inputs": [
+      "DX project with sfdx-project.json",
+      "Sandbox A with the class, sandbox B empty of the class",
+      "No production deploy in the lab"
+    ],
+    "decisions": [
+      {
+        "decision": "Retrieve with --metadata ApexClass:LAB_GateService from sandbox A.",
+        "because": "The org currently holds the customization. Retrieve stores source format in the project.",
+        "rejected": "Deploy first, which would overwrite the org with nothing"
+      },
+      {
+        "decision": "Deploy to sandbox B with --source-dir pointing at the class folder or force-app.",
+        "because": "Git/project now holds truth. Deploy converts to Metadata API format.",
+        "rejected": "project deploy validate against the sandbox"
+      },
+      {
+        "decision": "Document production as validate then quick deploy; sandbox checks as --dry-run --test-level RunLocalTests.",
+        "because": "The validate command reference forbids using it as the sandbox path.",
+        "rejected": "Copy-pasting validate into every environment job"
+      }
+    ],
+    "configuration_or_code": [
+      "sf project retrieve start --metadata ApexClass:LAB_GateService --target-org sandbox-a",
+      "sf project deploy start --source-dir force-app --target-org sandbox-b",
+      "Sandbox check: sf project deploy start --dry-run --test-level RunLocalTests --source-dir force-app --target-org sandbox-b"
+    ],
+    "output": "Class source exists locally. Sandbox B has the class after deploy. Dry-run did not persist a second copy of a failed payload.",
+    "verification": [
+      "Local force-app contains LAB_GateService.cls.",
+      "Sandbox B Setup shows the class after deploy, not after retrieve-only.",
+      "A dry-run log shows tests or skip behavior without claiming a production validate job ID."
+    ],
+    "self_explanation": "I retrieved because the org had the change, deployed because the project had it, and I did not use validate on a sandbox."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox or scratch org plus a local DX project. LAB_ metadata only.",
+    "starting_state_checks": [
+      "sf version works and the folder has sfdx-project.json.",
+      "You can authorize a non-production org."
+    ],
+    "steps": [
+      "Create or retrieve one LAB_ Apex class so it exists in the project.",
+      "Run project retrieve start for that class from the org and confirm source format files.",
+      "Run project deploy start --dry-run against the same org and read whether changes would save.",
+      "Generate or open a small package.xml and deploy or retrieve using --manifest only (no --metadata on that command)."
+    ],
+    "guided_completion": [
+      "If the command says to run from a project, cd to the sfdx-project.json directory.",
+      "If you mixed --manifest and --metadata, drop one selector."
+    ],
+    "independent_challenge": "Write the production versus sandbox check commands for the same source-dir without executing production.",
+    "evidence": [
+      "CLI output of retrieve and dry-run with LAB_ names.",
+      "A one-line note: validate is not the sandbox command."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Apex from the disposable org if required.",
+      "Do not deploy to production. Do not use --ignore-errors."
+    ],
+    "limitations": "This lab does not prove 10-day quick deploy against production."
+  },
+  "decision_table": [
+    {
+      "signal": "The org has a Setup change that must enter Git.",
+      "choose": "sf project retrieve start with a named payload.",
+      "not": "Deploy first, which would push stale local files.",
+      "why": "Retrieve copies metadata from the org into the project in source format."
+    },
+    {
+      "signal": "Git has reviewed metadata that must land in a sandbox.",
+      "choose": "sf project deploy start --source-dir or --manifest.",
+      "not": "project deploy validate as the sandbox tool.",
+      "why": "Validate is documented for production-style checks, not sandbox defaults."
+    },
+    {
+      "signal": "Production needs a long test run before a short go-live window.",
+      "choose": "project deploy validate, keep the job ID up to 10 days, then project deploy quick.",
+      "not": "Starting a full test deploy only after the freeze starts with no validation job.",
+      "why": "Validate returns a job ID for a quicker later deploy that skips rerunning those tests."
+    },
+    {
+      "signal": "You want tests without saving on a sandbox.",
+      "choose": "project deploy start --dry-run --test-level RunLocalTests.",
+      "not": "project deploy validate on that sandbox.",
+      "why": "The validate command reference says not to use it on sandboxes."
+    },
+    {
+      "signal": "A production deploy fails some components and someone suggests ignoring errors.",
+      "choose": "Fix the payload and redeploy as an all-or-nothing production deploy.",
+      "not": "--ignore-errors on production.",
+      "why": "The flag can deploy some components and skip others, leaving an inconsistent production org."
+    }
+  ],
+  "limitations": [
+    "Does not teach Git commits or pull requests (DEVOPS-003).",
+    "Does not choose package type (DEVOPS-005) or CI secret storage (DEVOPS-007).",
+    "Does not list every CLI flag.",
+    "No production deploy is authorized."
+  ],
+  "security_notes": [
+    "Never --ignore-errors on production.",
+    "Do not commit org auth files or secrets next to metadata.",
+    "Validate/quick-deploy still overwrites corresponding metadata; treat it as a real release."
+  ],
+  "common_mistakes": [
+    "Running project commands outside a DX project.",
+    "Mixing --manifest with --metadata or --source-dir.",
+    "Using validate on sandboxes.",
+    "Using --ignore-errors on production.",
+    "Expecting source tracking conflict checks on production.",
+    "Retrieving when you meant to deploy, or the reverse."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Command fails unless run from a project.",
+      "check": [
+        "cd to the directory with sfdx-project.json.",
+        "Confirm package directories exist."
+      ],
+      "do_not_assume": "The CLI is uninstalled."
+    },
+    {
+      "symptom": "Validate against a sandbox does not behave like production tests.",
+      "check": [
+        "Use deploy start --dry-run --test-level RunLocalTests on sandboxes.",
+        "Reserve validate for the production-style job ID path."
+      ],
+      "do_not_assume": "Validate is universal."
+    },
+    {
+      "symptom": "Conflicts flag seems to do nothing against production.",
+      "check": [
+        "Production never allows source tracking.",
+        "--ignore-conflicts has no effect there; name the payload explicitly."
+      ],
+      "do_not_assume": "The flag is broken."
+    }
+  ],
+  "production_notes": [
+    "Prefer validate then quick deploy when tests are the long pole.",
+    "Never ignore-errors. Review dry-run or validate logs before the window.",
+    "This lesson does not authorize a production run."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What file indicates a directory is a Salesforce DX project?",
+      "options": {
+        "A": "sfdx-project.json",
+        "B": "package.json from npm only",
+        "C": "destructiveChanges.xml alone",
+        "D": "A production Change Set name"
+      },
+      "answer": "A",
+      "rationale": "Project Setup states sfdx-project.json indicates the directory is a Salesforce DX project.",
+      "distractor_explanations": {
+        "B": "npm package.json is not the DX marker.",
+        "C": "Destructive manifests are deploy inputs, not the project marker.",
+        "D": "Change sets are an org-to-org metadata channel."
+      },
+      "concept": "DX project marker",
+      "citation_ids": ["SF-DX-PROJECT"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In which format does project retrieve start store components by default?",
+      "options": {
+        "A": "Source format in the project",
+        "B": "Only SOAP sObjects",
+        "C": "Excel workbooks",
+        "D": "ContentVersion binaries only"
+      },
+      "answer": "A",
+      "rationale": "Retrieve stores metadata in source format by default; metadata format requires --target-metadata-dir.",
+      "distractor_explanations": {
+        "B": "SOAP is a data API.",
+        "C": "Not a metadata format.",
+        "D": "Files are data, not the retrieve default."
+      },
+      "concept": "Source format",
+      "citation_ids": ["SF-CLI-RETRIEVE", "SF-DX-PROJECT"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "If you pass --manifest, which flags must you not pass on that retrieve/deploy?",
+      "options": {
+        "A": "--metadata or --source-dir",
+        "B": "--target-org",
+        "C": "--wait",
+        "D": "--json"
+      },
+      "answer": "A",
+      "rationale": "CLI reference: if you specify --manifest, do not specify --metadata or --source-dir.",
+      "distractor_explanations": {
+        "B": "Target org is still required in practice for the job.",
+        "C": "Wait is independent.",
+        "D": "JSON output is independent."
+      },
+      "concept": "Selector exclusivity",
+      "citation_ids": ["SF-CLI-RETRIEVE", "SF-CLI-DEPLOY"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which org type never allows source tracking?",
+      "options": {
+        "A": "Production orgs",
+        "B": "Scratch orgs by default",
+        "C": "Sandboxes by default",
+        "D": "Every Developer Edition"
+      },
+      "answer": "A",
+      "rationale": "Retrieve and deploy references state production orgs never allow source tracking. Scratch and sandbox enable it by default.",
+      "distractor_explanations": {
+        "B": "Scratch orgs enable source tracking by default.",
+        "C": "Sandboxes enable it by default.",
+        "D": "Not stated as 'never' for all DE orgs in these command pages."
+      },
+      "concept": "Source tracking",
+      "citation_ids": ["SF-CLI-RETRIEVE"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does project deploy validate do?",
+      "options": {
+        "A": "Verify a metadata deployment without executing it and return a job ID",
+        "B": "Always save components to the org",
+        "C": "Export Account rows",
+        "D": "Create a scratch org"
+      },
+      "answer": "A",
+      "rationale": "Validate verifies whether a deployment will succeed without deploying and returns a job ID for quick deploy.",
+      "distractor_explanations": {
+        "B": "It does not execute the deployment.",
+        "C": "Not a data tool.",
+        "D": "Org create is a different command family."
+      },
+      "concept": "Validate",
+      "citation_ids": ["SF-CLI-VALIDATE"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How long is the validate job ID valid for project deploy quick?",
+      "options": {
+        "A": "10 days from when you started the validation",
+        "B": "10 minutes",
+        "C": "One Salesforce release only",
+        "D": "Until the scratch org expires"
+      },
+      "answer": "A",
+      "rationale": "The validate command reference states the job ID is valid for 10 days.",
+      "distractor_explanations": {
+        "B": "Too short versus the documented window.",
+        "C": "Not how the job ID is documented.",
+        "D": "Validate is not a scratch-org lifetime rule."
+      },
+      "concept": "Quick deploy window",
+      "citation_ids": ["SF-CLI-VALIDATE"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need to validate a deployment with tests on a sandbox. What does the validate command reference recommend?",
+      "options": {
+        "A": "sf project deploy start --dry-run --test-level RunLocalTests",
+        "B": "sf project deploy validate against that sandbox",
+        "C": "Data Loader insert",
+        "D": "--ignore-errors --ignore-warnings together on production"
+      },
+      "answer": "A",
+      "rationale": "Do not use validate on sandboxes. Use deploy start --dry-run --test-level RunLocalTests.",
+      "distractor_explanations": {
+        "B": "Explicitly not for sandboxes.",
+        "C": "Data tool.",
+        "D": "Dangerous production flags."
+      },
+      "concept": "Sandbox dry-run",
+      "citation_ids": ["SF-CLI-VALIDATE"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which flag must you never use when deploying to production?",
+      "options": {
+        "A": "--ignore-errors",
+        "B": "--target-org",
+        "C": "--manifest",
+        "D": "--wait"
+      },
+      "answer": "A",
+      "rationale": "project deploy start: never use --ignore-errors when deploying to a production org because partial success can leave an inconsistent org.",
+      "distractor_explanations": {
+        "B": "Target org is how you aim the deploy.",
+        "C": "Manifest is a valid selector.",
+        "D": "Wait is a timeout control."
+      },
+      "concept": "ignore-errors",
+      "citation_ids": ["SF-CLI-DEPLOY"]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where must you run project retrieve start and project deploy start?",
+      "options": {
+        "A": "From within a Salesforce DX project",
+        "B": "Only from Setup in Classic",
+        "C": "Only on the Metadata Coverage website",
+        "D": "From a CSV folder with no sfdx-project.json"
+      },
+      "answer": "A",
+      "rationale": "Both command references require running from within a project.",
+      "distractor_explanations": {
+        "B": "CLI is not Classic Setup.",
+        "C": "Coverage is a report, not a cwd.",
+        "D": "That is not a DX project."
+      },
+      "concept": "Must run in project",
+      "citation_ids": ["SF-CLI-RETRIEVE", "SF-CLI-DEPLOY"]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What does --ignore-conflicts do on production?",
+      "options": {
+        "A": "Nothing useful: it applies only to orgs that allow source tracking, which production never does",
+        "B": "Deletes all Apex",
+        "C": "Converts source format to CSV",
+        "D": "Installs an unlocked package"
+      },
+      "answer": "A",
+      "rationale": "The flag applies only to source-tracked orgs and has no effect on orgs that do not allow it, such as production.",
+      "distractor_explanations": {
+        "B": "Not its meaning.",
+        "C": "Not a format converter.",
+        "D": "Package install is separate."
+      },
+      "concept": "ignore-conflicts",
+      "citation_ids": ["SF-CLI-DEPLOY"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "When you deploy, what happens to source-format files relative to Metadata API?",
+      "options": {
+        "A": "Salesforce CLI converts them into the format Metadata API requires",
+        "B": "They remain source format on the server as folders",
+        "C": "They become Account records",
+        "D": "They skip Metadata API entirely"
+      },
+      "answer": "A",
+      "rationale": "Project Setup: when you deploy metadata, Salesforce CLI converts it into the format Metadata API requires.",
+      "distractor_explanations": {
+        "B": "The org stores metadata components, not the DX folder tree.",
+        "C": "Metadata vs data split.",
+        "D": "CLI deploy is a Metadata API client path."
+      },
+      "concept": "Format conversion",
+      "citation_ids": ["SF-DX-PROJECT"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A teammate used VS Code Org Browser to retrieve a class. What is the interview-safe contract?",
+      "options": {
+        "A": "The same retrieve/deploy project model as the CLI; cite CLI commands even if the IDE issued them",
+        "B": "VS Code uses a private API that never writes source format",
+        "C": "Org Browser deploys business data",
+        "D": "IDE retrieve ignores sfdx-project.json"
+      },
+      "answer": "A",
+      "rationale": "DX intro presents CLI plus optional VS Code extensions. The project and command semantics remain the contract.",
+      "distractor_explanations": {
+        "B": "Retrieve still stores source in the project.",
+        "C": "Org Browser is metadata.",
+        "D": "The project file still defines package directories."
+      },
+      "concept": "VS Code vs CLI",
+      "citation_ids": ["SF-DX-PROJECT", "SF-CLI-RETRIEVE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "project",
+      "front": "What file marks a DX project?",
+      "back": "sfdx-project.json. It lists package directories and related configuration."
+    },
+    {
+      "id": "F2",
+      "category": "commands",
+      "front": "CLI command to copy metadata from org to project?",
+      "back": "sf project retrieve start. Must run inside a project."
+    },
+    {
+      "id": "F3",
+      "category": "commands",
+      "front": "CLI command to push local metadata to an org?",
+      "back": "sf project deploy start."
+    },
+    {
+      "id": "F4",
+      "category": "commands",
+      "front": "CLI command to check a deploy without executing it?",
+      "back": "sf project deploy validate. Returns a job ID for quick deploy."
+    },
+    {
+      "id": "F5",
+      "category": "format",
+      "front": "Retrieve default format vs Metadata API zip?",
+      "back": "Retrieve stores source format. --target-metadata-dir retrieves metadata format. Deploy converts source to Metadata API format."
+    },
+    {
+      "id": "F6",
+      "category": "selectors",
+      "front": "Can you combine --manifest with --metadata?",
+      "back": "No. If you specify --manifest, do not specify --metadata or --source-dir."
+    },
+    {
+      "id": "F7",
+      "category": "tracking",
+      "front": "Does production allow source tracking?",
+      "back": "No. Production orgs never allow source tracking. Name the payload explicitly."
+    },
+    {
+      "id": "F8",
+      "category": "validate",
+      "front": "How long is a validate job ID valid?",
+      "back": "10 days from when you started the validation, for project deploy quick."
+    },
+    {
+      "id": "F9",
+      "category": "sandbox",
+      "front": "Validate on sandboxes?",
+      "back": "Do not. Use sf project deploy start --dry-run --test-level RunLocalTests."
+    },
+    {
+      "id": "F10",
+      "category": "flags",
+      "front": "--ignore-errors on production?",
+      "back": "Never. Partial success can leave an inconsistent production org."
+    },
+    {
+      "id": "F11",
+      "category": "flags",
+      "front": "--ignore-conflicts on production?",
+      "back": "No effect. The flag applies only to orgs that allow source tracking."
+    },
+    {
+      "id": "F12",
+      "category": "dry-run",
+      "front": "What does --dry-run do on deploy start?",
+      "back": "Validate the deploy and run Apex tests but do not save to the org."
+    },
+    {
+      "id": "F13",
+      "category": "destructive",
+      "front": "Which flags point at delete manifests on deploy start?",
+      "back": "--pre-destructive-changes and --post-destructive-changes (destructiveChangesPre.xml / Post)."
+    },
+    {
+      "id": "F14",
+      "category": "vscode",
+      "front": "How should you talk about VS Code in an interview?",
+      "back": "Optional UI over the same DX project retrieve/deploy model. CLI remains the cited contract."
+    },
+    {
+      "id": "F15",
+      "category": "cwd",
+      "front": "Command fails 'must run from a project'?",
+      "back": "Change directory to the folder that contains sfdx-project.json."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is a Salesforce DX project, and which CLI verbs move metadata?",
+      "answer_30_seconds": "A folder with sfdx-project.json and package directories of source-format metadata. Retrieve copies from the org, deploy pushes to the org, validate checks without saving.",
+      "answer_2_minutes": "I mention source format versus Metadata API format and that deploy converts. I name three selectors: manifest, metadata, source-dir, exclusive with manifest. I say commands must run inside the project. VS Code is optional UI. I do not mix this with Git branching.",
+      "example": "sf project retrieve start --metadata ApexClass:LAB_GateService from a sandbox into force-app.",
+      "tradeoffs": [
+        "source-dir convenience versus manifest reviewability",
+        "IDE versus CLI in CI"
+      ],
+      "follow_ups": [
+        "What is .forceignore?",
+        "What is packageDirectories default?"
+      ],
+      "weak_answer_warnings": [
+        "Calling retrieve a data export"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "When do you retrieve versus deploy?",
+      "answer_30_seconds": "Retrieve when the org has the metadata you want in Git. Deploy when the project has the metadata you want in the org. Name the payload; production has no source tracking.",
+      "answer_2_minutes": "I ask which side is truth after DEVOPS-001. Admin built a field in sandbox: retrieve. Reviewed PR: deploy. I preview when possible. I never deploy empty local files over org work. I never retrieve hoping Account rows appear.",
+      "example": "Layout built in Setup → retrieve. Apex written in VS Code → deploy to the scratch org.",
+      "tradeoffs": [
+        "Org-first clicks versus source-first code",
+        "Broad source-dir versus tight --metadata"
+      ],
+      "follow_ups": [
+        "What if both sides changed?",
+        "Does ignore-conflicts help production?"
+      ],
+      "weak_answer_warnings": [
+        "Always deploy to be safe"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Production tests take hours. How do validate and quick deploy help?",
+      "answer_30_seconds": "Run project deploy validate earlier. It does not execute the deploy. Keep the job ID up to 10 days, then project deploy quick in the window.",
+      "answer_2_minutes": "Validate still requires tests. Quick deploy skips rerunning those tests but overwrites corresponding metadata and does not use source tracking. I would not treat a stale job ID after 10 days as valid. I still need a go/no-go on the validate report. Sandboxes are not this path.",
+      "example": "Monday validate of force-app against production; Friday quick deploy of that job ID during the CAB window.",
+      "tradeoffs": [
+        "Earlier test cost versus shorter freeze",
+        "Stale validation versus re-validate"
+      ],
+      "follow_ups": [
+        "What if metadata changed after validate?",
+        "Who stores the job ID?"
+      ],
+      "weak_answer_warnings": [
+        "Using validate on sandboxes as the same trick"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A pipeline runs project deploy validate against every sandbox. What do you change?",
+      "answer_30_seconds": "Stop. The command is not for sandboxes. Use deploy start --dry-run --test-level RunLocalTests there. Keep validate for production-style job IDs.",
+      "answer_2_minutes": "Sandbox default is not to run tests on deploy, which is why validate is the wrong cargo-cult. Dry-run still does not save. I separate CI jobs by environment class. I cite the validate reference rather than tribal YAML.",
+      "example": "PR checks against a scratch org use dry-run; the production job uses validate.",
+      "tradeoffs": [
+        "One YAML job versus environment-correct commands",
+        "Test time in sandbox versus production"
+      ],
+      "follow_ups": [
+        "What test level on production?",
+        "Where is RunLocalTests defined?"
+      ],
+      "weak_answer_warnings": [
+        "Leaving validate on sandboxes because it 'sounds safer'"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "Which deploy flags are interview red flags?",
+      "answer_30_seconds": "Never --ignore-errors on production. Do not expect --ignore-conflicts to work there. Prefer fixing the payload over partial deploys.",
+      "answer_2_minutes": "ignore-errors can skip failed components and save the rest, which the CLI warns can make production inconsistent. ignore-conflicts is a source-tracking escape hatch. ignore-warnings is sometimes used in CI with destructive deletes of already-gone components—Needs verification per pipeline, not a production shortcut for real errors. I mention pre/post destructive flags as a pointer to DEVOPS-009.",
+      "example": "A production deploy with three failures; we roll back the plan rather than ignore-errors.",
+      "tradeoffs": [
+        "Shipping 90% versus a consistent org",
+        "Warnings on missing deletes versus hiding compile errors"
+      ],
+      "follow_ups": [
+        "What is rollbackOnError in Metadata API?",
+        "When is ignore-warnings legitimate?"
+      ],
+      "weak_answer_warnings": [
+        "ignore-errors to beat the clock"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do you name what to retrieve or deploy?",
+      "answer_30_seconds": "One family: --manifest package.xml, or --metadata Type:Name, or --source-dir path. Do not mix manifest with the other two.",
+      "answer_2_minutes": "Manifests are reviewable in PRs. Metadata flags are quick for one class. source-dir is natural for a package directory. Wildcards need quotes. On source-tracked scratch orgs, a flagless deploy/retrieve can mean changed files—but production never has that, so I always can name a payload.",
+      "example": "sf project deploy start --manifest manifest/lab.xml --target-org uat",
+      "tradeoffs": [
+        "Reviewable package.xml versus flexible source-dir",
+        "Narrow metadata flag versus whole force-app"
+      ],
+      "follow_ups": [
+        "How do you generate a manifest from an org?",
+        "What does --package-name retrieve warn about?"
+      ],
+      "weak_answer_warnings": [
+        "Mixing all three flags"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Retrieve seems to do nothing useful from production. Walk it.",
+      "answer_30_seconds": "Production has no source tracking, so a flagless retrieve will not magically know changes. Pass --manifest, --metadata, or --source-dir. Run from the project.",
+      "answer_2_minutes": "I confirm cwd has sfdx-project.json. I confirm the org alias is production versus sandbox. I check .forceignore. I do not use --package-name as a development retrieve of packaged metadata—the retrieve reference says that output is for reference, not for SCS development. I still will not retrieve business rows.",
+      "example": "sf project retrieve start --metadata CustomObject:LAB_Gate__c --target-org prod-readonly-alias in a break-glass audit, not as daily source of truth.",
+      "tradeoffs": [
+        "Broad retrieve noise versus tight type list",
+        "Production retrieve versus sandbox as the working copy"
+      ],
+      "follow_ups": [
+        "What is .forceignore for?",
+        "Why not retrieve managed package internals into Git?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming source tracking on production"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Compare Salesforce CLI and VS Code for a DevOps interview.",
+      "answer_30_seconds": "VS Code extensions are an optional radar UI. The contract is still a DX project plus retrieve, deploy, and validate. CI will call the CLI, so I learn the commands.",
+      "answer_2_minutes": "I can demo Org Browser retrieve, but I write pipelines in sf project commands. I know validate versus dry-run regardless of IDE buttons. I do not claim compiler internals. I keep metadata versus data from DEVOPS-001: neither tool is Data Loader.",
+      "example": "Local: VS Code deploy to scratch. CI: sf project deploy start --source-dir force-app --test-level RunLocalTests.",
+      "tradeoffs": [
+        "IDE speed versus scriptable CI",
+        "Click retrieve versus reviewed manifests"
+      ],
+      "follow_ups": [
+        "Where does DevOps Center fit?",
+        "Which command converts mdapi format?"
+      ],
+      "weak_answer_warnings": [
+        "Saying VS Code replaces the CLI contract"
+      ]
+    }
+  ]
+}

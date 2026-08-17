@@ -1,0 +1,985 @@
+{
+  "topic_id": "LWC-002",
+  "slug": "component-bundle-templates-javascript-classes-css-and-m",
+  "title": "Component bundle, templates, JavaScript classes, CSS, and metadata configuration",
+  "track": "Lightning Web Components",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-001"
+  ],
+  "objectives": [
+    "Name the required files in an LWC bundle folder and why HTML, JavaScript, and js-meta.xml travel together.",
+    "Map camelCase folder names to kebab-case custom element tags and state folder naming rules.",
+    "Explain that component CSS is scoped to the component and a parent cannot restyle a child's internals.",
+    "Read isExposed, targets, and apiVersion in the configuration file as metadata that decides where the component can be placed."
+  ],
+  "diagnostic_question": "A new UI component will not appear in Lightning App Builder, CSS from the parent paints the child's heading, and a teammate named the folder my-widget. Before you debug org settings, which bundle, template, JavaScript class, CSS, and metadata configuration checks come first?",
+  "definition": "An LWC lives in a folder under lwc that bundles the HTML template, JavaScript class, CSS stylesheet, and js-meta.xml configuration with the same name. The folder cannot nest another component. CSS in the bundle is scoped to that component; the configuration file is metadata that exposes targets such as App Builder. ([Component Folder](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-folder.html); [XML Configuration File Elements](https://developer.salesforce.com/docs/platform/lwc/guide/reference-configuration-tags.html))",
+  "why_it_matters": "Wrong folder names, missing meta.xml, or parent CSS that 'should' restyle a child heading are classic interview and build failures. The bundle is metadata; confusing it with record data, or treating CSS like a global stylesheet, produces UI that works in one playground and fails in App Builder.",
+  "sixty_second_explanation": "Treat the component folder as one apartment unit on a single hallway (the lwc directory). Every room—HTML template, JavaScript class, CSS, js-meta.xml—must wear the unit's name. You cannot stash another apartment inside this one. Wallpaper (CSS) stays on these walls; the neighbor's heading is not yours to repaint, though you may outline the neighbor's door as one box. The lease (js-meta.xml) says whether the unit is listed in App Builder.",
+  "deeper_explanation": [
+    "Create the bundle folder directly under lwc. Folder and files share the same name, including capitalization. Required for a typical UI component: HTML, JavaScript, and the configuration file. CSS, SVG, extra JS utilities, and tests are additional. You cannot nest a component folder inside another component folder. ([Component Folder](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-folder.html))",
+    "Names must begin with a lowercase letter, use alphanumeric or underscore characters, stay unique in the namespace, and must not include whitespace, end with an underscore, contain two consecutive underscores, or contain a hyphen. Camel case folder myComponent maps to markup <c-my-component>. Underscores do not map to hyphens. ([Component Folder](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-folder.html))",
+    "Every component must have a JavaScript file. UI classes import LightningElement from lwc, extend it, and export default the class. Class names are PascalCase. The JS file can be at most 1 MB. Allowed named imports from lwc include LightningElement, api, track, and wire. ([Component JavaScript File](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-javascript.html))",
+    "One stylesheet in the component folder is applied automatically and is scoped to the component in shadow DOM. A parent can style a child as a single element but cannot reach into the child's internals. Use :host in the child's CSS to style its own host. ID selectors are not supported. ([CSS Stylesheets](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-css.html))",
+    "componentName.js-meta.xml holds apiVersion, isExposed, targets, description, and related design tags. If isExposed is false, the component is not exposed in builders. To use it in a builder, set isExposed to true and define at least one target. Beginning in Spring ’25, all components must specify an API version to save changes. ([XML Configuration File Elements](https://developer.salesforce.com/docs/platform/lwc/guide/reference-configuration-tags.html))"
+  ],
+  "mental_model": {
+    "analogy": "One apartment unit on a single hallway: rooms (HTML template, JavaScript class, CSS, js-meta.xml) share the unit name. You cannot nest another apartment in this unit. CSS wallpaper stays on these walls; the lease on the door is js-meta.xml.",
+    "useful_mapping": [
+      "lwc folder → hallway of units",
+      "component folder → one apartment, not nestable",
+      "HTML template → furnished rooms the visitor sees",
+      "JavaScript class → electrical panel",
+      "CSS → wallpaper scoped to this unit",
+      "js-meta.xml → lease listing whether App Builder can show the unit",
+      "camelCase to kebab-case → mailbox label c-my-component"
+    ],
+    "where_it_breaks": [
+      "Inherited CSS properties such as color can still cross the shadow boundary; not all styles are trapped wallpaper.",
+      "Utility JS files may use a different filename than the unit.",
+      "The analogy does not encode target XML enumerations or LWS.",
+      "A parent styling the child as one box is outlining the door, not entering the rooms."
+    ]
+  },
+  "teach_back_prompt": "Walk a teammate through an LWC bundle: required files, why my-widget is an illegal folder name, why parent h1 CSS misses the child heading, and which js-meta.xml flags make the component appear in App Builder.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "List required bundle files and the camelCase to kebab-case mapping."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given a parent h1 rule that does not change a nested child heading, explain CSS scoping."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Read a js-meta.xml snippet and say why App Builder would hide the component."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Fix a folder named my-widget and a missing apiVersion without notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: bundle, template, JS class, CSS scope, metadata configuration."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-FOLDER",
+      "title": "Component Folder",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-folder.html",
+      "supports": "Bundle location, required files, naming rules, no nested component folders, camelCase to kebab-case.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every optional test-file convention beyond the table."
+    },
+    {
+      "source_id": "SF-LWC-JS-FILE",
+      "title": "Component JavaScript File",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-javascript.html",
+      "supports": "Required JS file, LightningElement default export, 1 MB limit, allowed lwc named imports.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Public @api details belong to LWC-004."
+    },
+    {
+      "source_id": "SF-LWC-CSS",
+      "title": "Style Components with CSS Stylesheets",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-css.html",
+      "supports": "One stylesheet in the folder, shadow-scoped CSS, parent cannot style child internals, :host, no ID selectors.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Styling hooks and native vs synthetic shadow internals are neighboring, not fully specified here."
+    },
+    {
+      "source_id": "SF-LWC-META",
+      "title": "XML Configuration File Elements",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/reference-configuration-tags.html",
+      "supports": "js-meta.xml metadata: apiVersion, isExposed, targets, description; Spring ’25 apiVersion required to save.",
+      "release_or_version": "Lightning Web Components Developer Guide / Spring ’25 apiVersion note",
+      "last_verified": "2026-08-16",
+      "limits": "Full targetConfig property tables are larger than this lesson."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Bundle folder under lwc",
+        "HTML JS CSS meta.xml",
+        "camelCase to kebab-case",
+        "CSS scoped to component",
+        "isExposed and targets",
+        "apiVersion required"
+      ],
+      "accessible_description": "Portrait map of an LWC bundle: same-named HTML template, JavaScript class, CSS, and js-meta.xml in one folder; kebab-case tag; scoped CSS; configuration metadata for builders."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-FOLDER",
+        "SF-LWC-JS-FILE",
+        "SF-LWC-CSS",
+        "SF-LWC-META"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "LWC bundle files and configuration"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  LwcDir[lwc hallway] --> Bundle[labWidget folder]\n  Bundle --> Html[labWidget.html template]\n  Bundle --> Js[labWidget.js class extends LightningElement]\n  Bundle --> Css[labWidget.css scoped stylesheet]\n  Bundle --> Meta[labWidget.js-meta.xml configuration]\n  Html --> Tag[Markup c-lab-widget]\n  Meta --> Targets[isExposed and targets for App Builder]\n  Css --> Host[:host styles this component]\n  Css -.->|cannot restyle internals| Child[Nested child heading]",
+      "decision": "flowchart TD\n  Need[Need a UI LWC bundle?] --> Q1{Folder name legal? lowercase start, no hyphen}\n  Q1 -->|No my-widget| Rename[Rename to myWidget maps to c-my-widget]\n  Q1 -->|Yes| Q2{Missing HTML, JS, or js-meta.xml?}\n  Q2 -->|Missing HTML for UI| AddHtml[Add template file]\n  Q2 -->|Missing JS| AddJs[Add class default export]\n  Q2 -->|Not in App Builder| Q3{isExposed true and at least one target?}\n  Q3 -->|No| Expose[Set isExposed and lightning__RecordPage or AppPage]\n  Q3 -->|Parent CSS misses child h1| Scope[Style child as one element or use child :host — do not expect parent h1 to leak in]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "An LWC folder sits directly under lwc, cannot nest another component folder, and its files must share the folder name. Folder names cannot contain a hyphen; camelCase maps to kebab-case markup.",
+      "source_ids": ["SF-LWC-FOLDER"],
+      "scope": "Bundle shape and naming",
+      "validation": "Component Folder naming rules and DX project structure.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Every component has a JavaScript file. UI components export a default class that extends LightningElement. The JS file maximum size is 1 MB. Allowed lwc named imports include LightningElement, api, track, and wire.",
+      "source_ids": ["SF-LWC-JS-FILE"],
+      "scope": "JavaScript class file",
+      "validation": "Component JavaScript File topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A component folder can include one stylesheet, automatically applied and scoped to the component. A parent cannot reach into a child's internals with CSS. ID selectors are not supported.",
+      "source_ids": ["SF-LWC-CSS"],
+      "scope": "CSS scoping",
+      "validation": "Style Components with CSS Stylesheets.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "js-meta.xml is required configuration metadata. isExposed false hides the component from builders; exposing it requires isExposed true and at least one target. Spring ’25 onward, components must specify apiVersion to save changes.",
+      "source_ids": ["SF-LWC-META"],
+      "scope": "Metadata configuration",
+      "validation": "XML Configuration File Elements.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Spring ’25 requires apiVersion on components to save changes. Reverify target names and styling-hook guidance on the current LWC Developer Guide.",
+  "unresolved_uncertainty": [
+    "Exact CSS scope-token format changed around Winter ’24; do not memorize token strings.",
+    "Full enumerations of every lightning__* target belong in the configuration reference, not this lesson."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Component bundle",
+      "telugu": "ఒకే పేరుతో HTML, JS, CSS, meta.xml ఉండే ఫోల్డర్."
+    },
+    {
+      "english": "js-meta.xml",
+      "telugu": "కాంపోనెంట్‌ను App Builderలో చూపించే మెటాడేటా లీజ్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "An LWC bundle is one folder under lwc with matching HTML template, JavaScript class, optional CSS, and js-meta.xml. Names are camelCase in files and kebab-case in markup. CSS is scoped. Meta.xml decides App Builder visibility.",
+    "two_minutes": "I start from the folder: no nested component folders, no hyphens in the name. UI requires HTML plus a default-export class extending LightningElement. CSS in the bundle does not restyle a child's inner h1; I style the child as one element or use :host on the child. If App Builder hides the component, I check isExposed, targets, and apiVersion—not record data."
+  },
+  "terminology": [
+    {
+      "term": "component bundle",
+      "plain": "The folder that holds one LWC's HTML, JavaScript, CSS, and configuration.",
+      "precise": "A folder directly under lwc whose files share the component name. You cannot nest a component in another component folder.",
+      "example": "lwc/labWidget/labWidget.html, labWidget.js, labWidget.js-meta.xml.",
+      "non_example": "lwc/labWidget/inner/another component folder.",
+      "confusable_neighbor": "Aura bundle, which uses a different folder and XML shape.",
+      "boundary": "Jest tests and SVG icons are extra files, not this lesson's core."
+    },
+    {
+      "term": "HTML template file",
+      "plain": "componentName.html with the UI markup.",
+      "precise": "Required for UI components; same name as the folder. See LWC-001 for <template> root rules.",
+      "example": "labWidget.html next to labWidget.js.",
+      "non_example": "A CSS file named labWidget.html.",
+      "confusable_neighbor": "Aura .cmp markup.",
+      "boundary": "Directives are LWC-003."
+    },
+    {
+      "term": "JavaScript class file",
+      "plain": "componentName.js that defines the element.",
+      "precise": "Required. UI components: import LightningElement from lwc, export default class PascalCase extends LightningElement. Max 1 MB.",
+      "example": "export default class LabWidget extends LightningElement {}",
+      "non_example": "An Apex class with the same name.",
+      "confusable_neighbor": "Additional JS files in the folder that cannot be shared as the public UI export.",
+      "boundary": "@api methods are LWC-004."
+    },
+    {
+      "term": "component CSS",
+      "plain": "The matching .css file that styles only this component.",
+      "precise": "At most one stylesheet in the folder, auto-applied, scoped in shadow DOM. Parent CSS cannot restyle child internals. No ID selectors.",
+      "example": "labWidget.css h1 { font-size: large; } affects this template's h1 only.",
+      "non_example": "A global static resource expected to restyle a nested child's heading.",
+      "confusable_neighbor": ":host, which styles this component's host element from inside.",
+      "boundary": "SLDS styling hooks details are LWC-009."
+    },
+    {
+      "term": "js-meta.xml",
+      "plain": "The configuration file that tells Salesforce where the component may appear.",
+      "precise": "Required metadata named componentName.js-meta.xml. Controls apiVersion, isExposed, targets, description, and design properties.",
+      "example": "isExposed true with lightning__RecordPage so App Builder can host it.",
+      "non_example": "A record's Description field.",
+      "confusable_neighbor": "package.xml, which is a retrieve/deploy manifest, not component design config.",
+      "boundary": "Experience Builder target details are larger than this lesson."
+    },
+    {
+      "term": "isExposed",
+      "plain": "The switch that lists the component in builders.",
+      "precise": "If false, the component is not exposed in builders. To appear, set true and define at least one target.",
+      "example": "<isExposed>true</isExposed> plus a lightning__AppPage target.",
+      "non_example": "A profile permission named Exposed.",
+      "confusable_neighbor": "Lightning page assignment, which is still required after the component is exposable.",
+      "boundary": "FLS on fields the component shows is not isExposed."
+    },
+    {
+      "term": "kebab-case tag",
+      "plain": "How the folder name appears in HTML: c-my-component.",
+      "precise": "Camel case folder myComponent maps to <c-my-component>. Hyphens are illegal in the folder name. Underscores do not become hyphens.",
+      "example": "labAccountPanel → <c-lab-account-panel>.",
+      "non_example": "Folder my-component, which violates naming rules.",
+      "confusable_neighbor": "Aura namespace:component colon syntax.",
+      "boundary": "Namespaces other than c are packaging topics."
+    },
+    {
+      "term": "apiVersion on the component",
+      "plain": "The Salesforce API version stamped on the LWC configuration.",
+      "precise": "Must be 45.0 or higher. Spring ’25: all components must specify apiVersion to save changes. LDS and base components still use latest regardless of this value.",
+      "example": "<apiVersion>67.0</apiVersion> on labWidget.js-meta.xml.",
+      "non_example": "The org's release name alone with no tag.",
+      "confusable_neighbor": "Apex class API version, a different metadata file.",
+      "boundary": "Locker version is org-level, not this tag."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Create the bundle folder",
+      "actor": "Developer",
+      "trigger": "Need a UI Lightning web component",
+      "before": "No folder under lwc",
+      "after": "labWidget/ directly under lwc with matching file names",
+      "observe": "No hyphen in the folder; not nested inside another component",
+      "failure": "Naming the folder my-widget or nesting lwc/parent/child/"
+    },
+    {
+      "step": 2,
+      "transition": "Add template and JavaScript class",
+      "actor": "Developer",
+      "trigger": "Folder exists",
+      "before": "Empty unit",
+      "after": "HTML template plus default-export class extending LightningElement",
+      "observe": "Files compile; class is PascalCase",
+      "failure": "Omitting JS or using a non-default export for a UI component"
+    },
+    {
+      "step": 3,
+      "transition": "Scope CSS to this component",
+      "actor": "Developer",
+      "trigger": "Need styles",
+      "before": "Unstyled template",
+      "after": "One labWidget.css; child internals not targeted from the parent stylesheet",
+      "observe": "Parent h1 does not change nested child h1",
+      "failure": "ID selectors or styling the child from both parent and child in conflicting ways"
+    },
+    {
+      "step": 4,
+      "transition": "Configure metadata for builders",
+      "actor": "Developer",
+      "trigger": "Need App Builder placement",
+      "before": "Component exists in source but is invisible in the builder",
+      "after": "js-meta.xml with apiVersion, isExposed true, and a target",
+      "observe": "Component appears in the builder palette for that target",
+      "failure": "Editing records hoping the component will list itself"
+    }
+  ],
+  "when_to_use": [
+    "When you must assemble an LWC component bundle: HTML template, JavaScript class, CSS, and js-meta.xml configuration.",
+    "When a folder name with a hyphen fails, and you need camelCase that maps to a kebab-case template tag.",
+    "When parent CSS does not restyle a child component heading and you must explain scoped stylesheets.",
+    "When Lightning App Builder hides the component and the fix is metadata configuration (isExposed, targets, apiVersion), not record data.",
+    "When a teammate tries to nest one component folder inside another component folder."
+  ],
+  "when_not_to_use": [
+    "Do not use this bundle lesson as a substitute for the LWC custom-element mental model (LWC-001) or for lwc:if / for:each directives (LWC-003).",
+    "Do not treat component CSS scoping as a full SLDS or accessibility lesson (LWC-009).",
+    "Do not use js-meta.xml targets to explain Lightning Data Service or Apex data access (LWC-006).",
+    "Do not configure production org metadata or real customer pages from this component-bundle lab.",
+    "Do not invent extra compiler files that are not in the official bundle table."
+  ],
+  "configuration_or_code_location": [
+    "force-app/main/default/lwc/labWidget/ in a disposable scratch org.",
+    "labWidget.html, labWidget.js, labWidget.css, labWidget.js-meta.xml.",
+    "Lightning App Builder palette after isExposed and a page target.",
+    "Browser inspector to confirm c-lab-widget and that parent h1 CSS did not restyle the child."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab needs c-lab-widget on an App Page. A teammate created lwc/lab-widget, put CSS on the parent to enlarge a nested child h1, and left isExposed false. No production data.",
+    "inputs": [
+      "Need a legal bundle name",
+      "Need the child heading styled from the child",
+      "Need App Builder visibility"
+    ],
+    "decisions": [
+      {
+        "decision": "Rename the folder to labWidget with matching HTML, JS, CSS, and js-meta.xml.",
+        "because": "Hyphens are illegal in folder names; camelCase maps to c-lab-widget.",
+        "rejected": "Keep lab-widget because HTML likes hyphens"
+      },
+      {
+        "decision": "Put the heading size in child.css (or :host), not in parent h1.",
+        "because": "Parent CSS does not reach into child internals.",
+        "rejected": "A global h1 rule on the parent stylesheet"
+      },
+      {
+        "decision": "Set isExposed true, apiVersion 67.0, and lightning__AppPage.",
+        "because": "Builders require isExposed and at least one target; Spring ’25 requires apiVersion to save.",
+        "rejected": "Insert a LAB_ Account row to make the component appear"
+      }
+    ],
+    "configuration_or_code": [
+      "labWidget.js: import { LightningElement } from 'lwc'; export default class LabWidget extends LightningElement {}",
+      "labWidget.js-meta.xml: apiVersion 67.0, isExposed true, target lightning__AppPage",
+      "Child stylesheet uses :host or its own h1; parent styles c-lab-child as one element if a border is needed"
+    ],
+    "output": "App Builder lists the component. Markup uses <c-lab-widget></c-lab-widget>. Child heading size comes from the child CSS.",
+    "verification": [
+      "Folder has no hyphen and is not nested.",
+      "Parent h1 CSS does not change the nested child's heading.",
+      "Builder shows the component after isExposed and target are set."
+    ],
+    "self_explanation": "The bundle name, scoped CSS, and configuration metadata were the three gates—not record data."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable scratch org; synthetic labWidget names only.",
+    "starting_state_checks": [
+      "Salesforce DX project with force-app/main/default/lwc.",
+      "You can deploy Lightning web components."
+    ],
+    "steps": [
+      "Create lwc/labWidget with labWidget.html (<template>), labWidget.js (extends LightningElement, default export), and labWidget.js-meta.xml with apiVersion 67.0, isExposed true, and lightning__AppPage.",
+      "Add a nested c-lab-child (or a second simple child bundle) with its own h1 and CSS. Put an h1 { font-size } rule only in the parent CSS and confirm the child heading does not change.",
+      "Style the child from child.css using :host or its own h1.",
+      "Deploy and confirm the component appears in App Builder; then set isExposed false, redeploy, and confirm it disappears from the palette."
+    ],
+    "guided_completion": [
+      "If the folder was lab-widget, rename it.",
+      "If App Builder is empty, check isExposed and targets before blaming FLS."
+    ],
+    "independent_challenge": "Add labWidget.css that styles lightning-button as a descendant in this template only; explain why a nested child's button is not restyled.",
+    "evidence": [
+      "File listing of labWidget.html, .js, .css, .js-meta.xml with matching names.",
+      "Note or screenshot: parent h1 rule does not change child heading; builder visibility follows isExposed."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete labWidget and any lab child bundles.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not cover Experience Cloud LWR capabilities or SVG icons."
+  },
+  "decision_table": [
+    {
+      "signal": "Need a visible custom UI element in source.",
+      "choose": "One bundle folder under lwc with HTML template, JavaScript class, and js-meta.xml.",
+      "not": "A nested folder inside another component or a hyphenated folder name.",
+      "why": "Component Folder forbids nesting and hyphens; files share the folder name."
+    },
+    {
+      "signal": "Markup should read like a web component tag.",
+      "choose": "camelCase folder myWidget and <c-my-widget> in the parent template.",
+      "not": "Folder my-widget or Aura colon notation.",
+      "why": "Camel case maps to kebab-case; hyphens are illegal in the folder."
+    },
+    {
+      "signal": "Parent heading CSS does not change a nested child heading.",
+      "choose": "Scoped child CSS or :host on the child; parent may only style the child as one element.",
+      "not": "Assume CSS is global like a static resource.",
+      "why": "Shadow-scoped stylesheets do not reach into child internals."
+    },
+    {
+      "signal": "Component missing from Lightning App Builder.",
+      "choose": "Fix js-meta.xml: apiVersion, isExposed true, and a matching target.",
+      "not": "Create business records hoping the palette updates.",
+      "why": "Configuration metadata, not data, exposes the component to builders."
+    }
+  ],
+  "limitations": [
+    "Does not teach reactivity or directives.",
+    "Does not enumerate every targetConfig property.",
+    "Inherited CSS properties can still cross shadow; the wallpaper analogy is incomplete.",
+    "Locker versus Lightning Web Security is org-level, not apiVersion."
+  ],
+  "security_notes": [
+    "Exposing a component in App Builder is not FLS. Users still need object and field access.",
+    "Do not put secrets in js-meta.xml descriptions.",
+    "Avoid ID selectors; runtime may transform id values."
+  ],
+  "common_mistakes": [
+    "Hyphenated folder names.",
+    "Nesting component folders.",
+    "Expecting parent h1 CSS to restyle a child heading.",
+    "isExposed false and blaming the builder.",
+    "Omitting apiVersion after Spring ’25 save rules."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Deploy fails on the folder name.",
+      "check": [
+        "Starts with lowercase, no hyphen, no double underscore, not nested."
+      ],
+      "do_not_assume": "The HTML template syntax is the only problem."
+    },
+    {
+      "symptom": "Not listed in App Builder.",
+      "check": [
+        "isExposed true",
+        "At least one compatible target",
+        "apiVersion present"
+      ],
+      "do_not_assume": "The JavaScript class is missing LightningElement if the palette is the only symptom."
+    }
+  ],
+  "production_notes": [
+    "Treat the bundle as metadata in source control.",
+    "Bump apiVersion deliberately; do not copy random versions.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where must an LWC component folder live?",
+      "options": {
+        "A": "Directly under the lwc folder, not nested in another component folder",
+        "B": "Inside the parent component's folder",
+        "C": "Only under aura/",
+        "D": "Inside a static resource"
+      },
+      "answer": "A",
+      "rationale": "Save each Lightning web component directly under lwc. You cannot nest a component in another component folder.",
+      "distractor_explanations": {
+        "B": "Nesting is forbidden.",
+        "C": "Aura is a different directory.",
+        "D": "Static resources are not LWC bundles."
+      },
+      "concept": "Bundle location",
+      "citation_ids": ["SF-LWC-FOLDER"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Folder myComponent appears in a parent template as which tag?",
+      "options": {
+        "A": "<c-my-component>",
+        "B": "<c:myComponent>",
+        "C": "<c-myComponent>",
+        "D": "<apex:myComponent>"
+      },
+      "answer": "A",
+      "rationale": "Camel case folder names map to kebab-case in markup.",
+      "distractor_explanations": {
+        "B": "Colon syntax is Aura, not LWC.",
+        "C": "Markup uses kebab-case, not mixed camelCase tags.",
+        "D": "Visualforce is a different stack."
+      },
+      "concept": "kebab-case mapping",
+      "citation_ids": ["SF-LWC-FOLDER"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why is a folder named my-widget illegal?",
+      "options": {
+        "A": "Folder names cannot contain a hyphen",
+        "B": "LWC forbids all multi-word names",
+        "C": "Only uppercase folders are legal",
+        "D": "Widgets cannot be Lightning web components"
+      },
+      "answer": "A",
+      "rationale": "Names cannot contain a hyphen. Use camelCase myWidget instead.",
+      "distractor_explanations": {
+        "B": "Camel case multi-word names are the supported pattern.",
+        "C": "Names must begin with a lowercase letter.",
+        "D": "The name is illegal because of the hyphen, not the word widget."
+      },
+      "concept": "Naming rules",
+      "citation_ids": ["SF-LWC-FOLDER"]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What must a UI component JavaScript file do?",
+      "options": {
+        "A": "Import LightningElement from lwc and export default a class that extends it",
+        "B": "Export only named functions, never a class",
+        "C": "Import Apex as the default export",
+        "D": "Omit the file if HTML exists"
+      },
+      "answer": "A",
+      "rationale": "Every component must have a JS file; UI components extend LightningElement as the default export.",
+      "distractor_explanations": {
+        "B": "UI components use a default-exported class.",
+        "C": "Apex is not the LWC default export.",
+        "D": "JavaScript is required."
+      },
+      "concept": "JavaScript class",
+      "citation_ids": ["SF-LWC-JS-FILE"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the documented maximum size of a component JavaScript file?",
+      "options": {
+        "A": "1 MB (1,000,000 bytes)",
+        "B": "128 KB",
+        "C": "32 parameters",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "A component’s JavaScript file can have a maximum file size of 1 MB. HTML files have a separate 128 KB limit.",
+      "distractor_explanations": {
+        "B": "128 KB is the HTML file limit, not JS.",
+        "C": "An Apex method limit, not LWC JS size.",
+        "D": "A maximum is documented."
+      },
+      "concept": "JS file size",
+      "citation_ids": ["SF-LWC-JS-FILE"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Parent CSS sets h1 to xx-large. A nested child also has h1. What happens?",
+      "options": {
+        "A": "The style applies to the parent h1, not the nested child's h1",
+        "B": "Both headings always share the parent rule",
+        "C": "The child heading always becomes xx-large",
+        "D": "CSS is illegal in LWC"
+      },
+      "answer": "A",
+      "rationale": "Styles defined in a parent stylesheet do not reach into a child. A parent can style a child only as a single element.",
+      "distractor_explanations": {
+        "B": "Shadow scoping blocks that leak for cascaded selectors like h1.",
+        "C": "Not from the parent's h1 selector.",
+        "D": "Components can include CSS."
+      },
+      "concept": "CSS scoping",
+      "citation_ids": ["SF-LWC-CSS"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How should a child style its own host element?",
+      "options": {
+        "A": "Use the :host selector in the child's CSS",
+        "B": "Use an ID selector in the parent",
+        "C": "Set innerHTML from Apex",
+        "D": "Put CSS only in js-meta.xml"
+      },
+      "answer": "A",
+      "rationale": "A component’s stylesheet can style its own element with :host. ID selectors are not supported.",
+      "distractor_explanations": {
+        "B": "ID selectors are not supported.",
+        "C": "Apex does not style the host.",
+        "D": "Configuration XML is not a stylesheet."
+      },
+      "concept": ":host",
+      "citation_ids": ["SF-LWC-CSS"]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "If isExposed is false, what is true?",
+      "options": {
+        "A": "The component is not exposed in the builders",
+        "B": "The JavaScript class cannot compile",
+        "C": "CSS becomes global",
+        "D": "The HTML template is deleted"
+      },
+      "answer": "A",
+      "rationale": "If isExposed is false, the component isn’t exposed in the builders.",
+      "distractor_explanations": {
+        "B": "The class can still exist as source.",
+        "C": "isExposed does not change CSS scoping.",
+        "D": "HTML is independent of isExposed."
+      },
+      "concept": "isExposed",
+      "citation_ids": ["SF-LWC-META"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "App Builder does not list your LWC. isExposed is true. What else does the configuration guide require?",
+      "options": {
+        "A": "At least one <target> such as a Lightning page type",
+        "B": "A custom object named Target",
+        "C": "A hyphen in the folder name",
+        "D": "Removing the HTML template"
+      },
+      "answer": "A",
+      "rationale": "To use the component in a builder, set isExposed true and define at least one target.",
+      "distractor_explanations": {
+        "B": "Targets are XML configuration, not an object.",
+        "C": "Hyphens are illegal in folder names.",
+        "D": "UI components need HTML."
+      },
+      "concept": "targets",
+      "citation_ids": ["SF-LWC-META"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which named imports from the lwc module are allowed?",
+      "options": {
+        "A": "LightningElement, api, track, and wire",
+        "B": "import lwc from 'lwc' as a default",
+        "C": "registerTemplate",
+        "D": "Any namespace import"
+      },
+      "answer": "A",
+      "rationale": "You can use only those named imports for the lwc module. Default and namespace imports from lwc are invalid.",
+      "distractor_explanations": {
+        "B": "Default import of lwc is listed as invalid.",
+        "C": "registerTemplate is not an allowed import.",
+        "D": "Namespace imports from lwc are not allowed."
+      },
+      "concept": "lwc imports",
+      "citation_ids": ["SF-LWC-JS-FILE"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How do you distinguish bundle configuration from business data?",
+      "options": {
+        "A": "js-meta.xml and the HTML/JS/CSS files are metadata; Account rows are data",
+        "B": "Deploying CSS inserts Account rows",
+        "C": "isExposed stores record values",
+        "D": "There is no metadata in LWC"
+      },
+      "answer": "A",
+      "rationale": "The bundle and configuration file are metadata you deploy. Records remain business data.",
+      "distractor_explanations": {
+        "B": "Stylesheets do not create records.",
+        "C": "isExposed is a configuration flag.",
+        "D": "js-meta.xml is explicitly configuration metadata."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-LWC-META", "SF-LWC-FOLDER"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Spring ’25 onward, you cannot save component changes. Which configuration tag is the first check?",
+      "options": {
+        "A": "apiVersion must be specified on the component",
+        "B": "masterLabel must be empty",
+        "C": "CSS must be deleted",
+        "D": "The folder must contain a hyphen"
+      },
+      "answer": "A",
+      "rationale": "Beginning in Spring ’25, all components must specify an API version. Unversioned components must have an apiVersion tag set to save changes.",
+      "distractor_explanations": {
+        "B": "masterLabel is not the cited save blocker.",
+        "C": "CSS is optional, not the Spring ’25 save rule.",
+        "D": "Hyphens remain illegal."
+      },
+      "concept": "apiVersion",
+      "citation_ids": ["SF-LWC-META"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "bundle",
+      "front": "What files typically make an LWC UI bundle?",
+      "back": "Matching HTML template, JavaScript class, js-meta.xml, and optional CSS in one folder under lwc."
+    },
+    {
+      "id": "F2",
+      "category": "bundle",
+      "front": "Can you nest a component folder in another component folder?",
+      "back": "No. Each Lightning web component sits directly under lwc."
+    },
+    {
+      "id": "F3",
+      "category": "naming",
+      "front": "myComponent folder in markup?",
+      "back": "<c-my-component> — camelCase maps to kebab-case."
+    },
+    {
+      "id": "F4",
+      "category": "naming",
+      "front": "Why is my-widget an illegal folder name?",
+      "back": "Folder names cannot contain a hyphen. Use myWidget instead."
+    },
+    {
+      "id": "F5",
+      "category": "javascript",
+      "front": "Required JS shape for a UI component?",
+      "back": "Default-export a class that extends LightningElement imported from lwc."
+    },
+    {
+      "id": "F6",
+      "category": "javascript",
+      "front": "JavaScript file size limit?",
+      "back": "1 MB (1,000,000 bytes). Refactor into multiple files if larger."
+    },
+    {
+      "id": "F7",
+      "category": "css",
+      "front": "Does parent h1 CSS restyle a nested child's h1?",
+      "back": "No. Component CSS is scoped; a parent cannot reach into child internals."
+    },
+    {
+      "id": "F8",
+      "category": "css",
+      "front": "How does a component style its own host?",
+      "back": "Use the :host selector in that component's CSS."
+    },
+    {
+      "id": "F9",
+      "category": "css",
+      "front": "Are ID selectors supported in LWC CSS?",
+      "back": "No. id values can become globally unique at runtime."
+    },
+    {
+      "id": "F10",
+      "category": "meta",
+      "front": "What if isExposed is false?",
+      "back": "The component is not exposed in Lightning App Builder or other builders."
+    },
+    {
+      "id": "F11",
+      "category": "meta",
+      "front": "How do you show a component in a builder?",
+      "back": "isExposed true plus at least one target, with apiVersion set."
+    },
+    {
+      "id": "F12",
+      "category": "meta",
+      "front": "Spring ’25 save requirement?",
+      "back": "Components must specify apiVersion to save changes back to Salesforce."
+    },
+    {
+      "id": "F13",
+      "category": "javascript",
+      "front": "Allowed named imports from lwc?",
+      "back": "LightningElement, api, track, and wire."
+    },
+    {
+      "id": "F14",
+      "category": "boundary",
+      "front": "Bundle versus records?",
+      "back": "HTML/JS/CSS/js-meta.xml are metadata. Account rows are business data."
+    },
+    {
+      "id": "F15",
+      "category": "css",
+      "front": "How many stylesheets in the component folder?",
+      "back": "Only one stylesheet in the component folder; it is applied automatically."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is in an LWC component bundle?",
+      "answer_30_seconds": "One folder under lwc with matching HTML template, JavaScript class, js-meta.xml, and optional CSS. You cannot nest another component folder inside it.",
+      "answer_2_minutes": "I name required UI files and the naming rules: lowercase start, no hyphen, camelCase to kebab-case. JS must default-export a LightningElement class. CSS is one scoped file. Meta.xml is configuration metadata, not record data. Extra utility JS may use a different filename.",
+      "example": "lwc/labWidget/labWidget.html, .js, .css, .js-meta.xml mapping to <c-lab-widget>.",
+      "tradeoffs": [
+        "One CSS file vs extra CSS modules",
+        "UI bundle vs API module without HTML"
+      ],
+      "follow_ups": [
+        "What is the JS size limit?",
+        "What imports from lwc are legal?"
+      ],
+      "weak_answer_warnings": [
+        "Describing an Aura bundle",
+        "Putting components inside each other's folders"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do folder names become tags in a parent template?",
+      "answer_30_seconds": "camelCase folder myComponent becomes <c-my-component>. Hyphens are illegal in the folder. Underscores do not turn into hyphens.",
+      "answer_2_minutes": "The HTML standard wants a hyphen in custom element names; Salesforce supplies it via namespace plus kebab-case mapping. I never name the folder my-component. I always close the tag. This is markup metadata, not a record API name.",
+      "example": "labAccountPanel → <c-lab-account-panel></c-lab-account-panel>.",
+      "tradeoffs": [
+        "camelCase folders vs underscore folders",
+        "c namespace vs packaged namespace"
+      ],
+      "follow_ups": [
+        "What if the name ends with an underscore?",
+        "Can whitespace appear in the folder?"
+      ],
+      "weak_answer_warnings": [
+        "Using Aura colon tags for LWC"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Parent CSS enlarges h1 but the nested child heading stays small. Is CSS broken?",
+      "answer_30_seconds": "No. Component CSS is scoped. A parent cannot restyle a child's internals. Style the child from its own CSS or outline it as one element.",
+      "answer_2_minutes": "I explain shadow-scoped stylesheets with the official parent/child h1 example. I mention :host for the child's own host. I admit inherited properties like color can still cross, so I do not overclaim. I do not use ID selectors.",
+      "example": "parent.css h1 vs child.html <h1>; only the parent's heading becomes xx-large.",
+      "tradeoffs": [
+        "Child-owned CSS vs parent border on the host",
+        "Inherited color vs cascaded font-size"
+      ],
+      "follow_ups": [
+        "What is :host?",
+        "Why are ID selectors unsupported?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Salesforce CSS global by default"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "The component deploys but Lightning App Builder does not show it. What do you inspect?",
+      "answer_30_seconds": "js-meta.xml: isExposed must be true and there must be at least one matching target. Also confirm apiVersion is set so the component can save.",
+      "answer_2_minutes": "I do not create records to 'register' the component. Configuration metadata controls builder visibility. I match lightning__AppPage versus RecordPage to the surface we need. I still check FLS only after the palette lists it and a user cannot see fields.",
+      "example": "isExposed false → palette empty; flip true plus lightning__AppPage → it appears.",
+      "tradeoffs": [
+        "Expose widely vs keep internal-only",
+        "App page vs record page targets"
+      ],
+      "follow_ups": [
+        "What does description do?",
+        "Who sees masterLabel?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming sharing rules first"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Deploy rejects the component name. What rules do you recite?",
+      "answer_30_seconds": "Start with lowercase, alphanumeric or underscore, unique in the namespace, no whitespace, no trailing underscore, no double underscore, no hyphen, not nested.",
+      "answer_2_minutes": "I look at the folder, not just the class name. PascalCase belongs on the JS class (LabWidget), camelCase on the folder (labWidget). I check we did not drop a component inside another component folder. HTML and JS must match the folder name.",
+      "example": "Rename my-widget to myWidget; move nested folders up to lwc/.",
+      "tradeoffs": [
+        "camelCase vs underscores",
+        "Rename vs wrap in a parent that composes children in HTML"
+      ],
+      "follow_ups": [
+        "How do you compose parent and child then?",
+        "What files must match the name?"
+      ],
+      "weak_answer_warnings": [
+        "Changing only the JS class name"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "The JS file will not save because of an import from lwc. What is illegal?",
+      "answer_30_seconds": "Default or namespace imports from lwc, and imports such as registerTemplate. Use named imports: LightningElement, api, track, wire.",
+      "answer_2_minutes": "The Component JavaScript File topic lists invalid import shapes. UI components still need export default class extends LightningElement. If the file exceeds 1 MB I split it. I do not confuse this with Apex imports.",
+      "example": "import { LightningElement, api } from 'lwc'; not import lwc from 'lwc'.",
+      "tradeoffs": [
+        "One large JS file vs extra local files",
+        "UI class vs API module exports"
+      ],
+      "follow_ups": [
+        "Can extra JS in the folder be shared?",
+        "What is the HTML size limit?"
+      ],
+      "weak_answer_warnings": [
+        "Importing the whole lwc namespace"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you skip CSS in the bundle or skip exposing the component?",
+      "answer_30_seconds": "Skip CSS when base components and styling hooks are enough. Keep isExposed false for internal child components that parents compose in templates, not App Builder.",
+      "answer_2_minutes": "Not every bundle should be a builder palette item. A child used only as <c-lab-child> inside a parent template can stay unexposed. A page-level widget needs targets. I still keep js-meta.xml and apiVersion. I do not use parent CSS as a substitute for child-owned styles.",
+      "example": "labWidget exposed on App Page; labWidgetItem isExposed false, composed in the parent template.",
+      "tradeoffs": [
+        "Builder flexibility vs tight composition",
+        "Bundle CSS vs SLDS hooks"
+      ],
+      "follow_ups": [
+        "What target would you pick for a record page?",
+        "Where do design properties live?"
+      ],
+      "weak_answer_warnings": [
+        "Exposing every internal child"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the bundle using your apartment analogy, then where it breaks.",
+      "answer_30_seconds": "One unit on the lwc hallway: template, class, CSS wallpaper, js-meta.xml lease. No nested apartments. It breaks because inherited color can still cross, and utility files may not share the unit name.",
+      "answer_2_minutes": "I map required files, kebab-case mailbox labels, scoped wallpaper versus outlining the neighbor's door, and the lease flags isExposed and targets. I state Spring ’25 apiVersion. I refuse generic catalog filler. I separate metadata from records.",
+      "example": "labWidget apartment with a child unit next door on the same hallway, composed in HTML, not nested on disk.",
+      "tradeoffs": [
+        "Simple analogy vs inherited CSS exception",
+        "Teaching meta.xml vs teaching directives"
+      ],
+      "follow_ups": [
+        "What is one stylesheet rule?",
+        "What is not in this lesson?"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphors",
+        "Inventing extra required files"
+      ]
+    }
+  ]
+}

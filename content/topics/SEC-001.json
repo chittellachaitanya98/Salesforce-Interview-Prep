@@ -1,0 +1,986 @@
+{
+  "topic_id": "SEC-001",
+  "slug": "authentication-vs-authorization",
+  "title": "Authentication vs authorization",
+  "track": "Identity, access, and security",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "FOUND-003"
+  ],
+  "objectives": [
+    "Define authentication as proving identity and authorization as granting capability after identity is known.",
+    "Separate MFA, SSO/identity-provider login, and session security from user permissions, profiles, and permission sets.",
+    "Diagnose a login failure versus a permission failure without collapsing the problem into record sharing or organization-wide defaults.",
+    "Explain why an established session is not itself a permission grant."
+  ],
+  "diagnostic_question": "LAB_Rep can open Salesforce after MFA, but cannot View Setup. A teammate wants to 'raise the session timeout so they get admin rights.' What is authentication here, what is authorization, and which layer would you change first?",
+  "definition": "Authentication is the process of validating that a user is who they say they are before they log in, perform an action, or access information. Authorization is what they are allowed to do after identity is proven: user permissions, profiles, and permission sets grant tasks and features. A session is the authenticated connection that follows login; session settings limit exposure of that connection. They do not replace permission grants. ([MFA Glossary](https://help.salesforce.com/s/articleView?id=xcloud.mfa_glossary.htm); [User Permissions](https://help.salesforce.com/s/articleView?id=admin_userperms.htm); [Session Security](https://help.salesforce.com/s/articleView?id=sf.security_overview_sessions.htm))",
+  "why_it_matters": "Interviewers listen for whether you treat a login failure like a missing permission, or a missing permission like an MFA problem. Mixing those layers burns time, over-grants privileges, or leaves a user locked out. Least privilege in the MFA glossary is an authorization idea: the fewest permissions necessary to do the job. MFA is an authentication control that does not give those permissions.",
+  "sixty_second_explanation": "Think of a concert venue. Authentication is the ID check at the door, including a second factor like a wristband scanner. Authorization is the ticket type: general admission versus backstage. After you are inside, the venue stamp on your hand is the session; when it fades you prove identity again. The stamp does not upgrade you to backstage. Record sharing, which decides which seats you can walk to, is a later SEC topic.",
+  "deeper_explanation": [
+    "The MFA glossary defines authentication as validating that a user is who they say they are. Multi-factor authentication requires two or more pieces of evidence from different categories (something the user knows, has, or is). Salesforce requires MFA for user-interface logins. MFA does not grant View Setup, Modify All Data, or any other user permission. ([MFA Glossary](https://help.salesforce.com/s/articleView?id=xcloud.mfa_glossary.htm))",
+    "User permissions specify what tasks users can perform and what features they can access, for example View Setup and Configuration or API Enabled. Salesforce recommends permission sets and permission set groups as reusable authorization building blocks so you do not create dozens of profiles per job. That is authorization, not identity proof. ([User Permissions](https://help.salesforce.com/s/articleView?id=admin_userperms.htm))",
+    "In SAML single sign-on, the identity provider authenticates the user (confirms who they are). After that, it sends a SAML assertion to the service provider about who the user is. Salesforce can be the identity provider or the service provider. SSO is still an authentication path; the org still authorizes with permissions after the user lands. ([SAML SSO Flows](https://help.salesforce.com/s/articleView?id=sf.identity_provider_about.htm))",
+    "After login, the user establishes a session. Session security limits exposure when someone walks away still logged in, and it can require a High Assurance session for sensitive operations. The documented default inactivity timeout is two hours unless the org changes Session Settings. A longer session does not grant extra user permissions. ([Session Security](https://help.salesforce.com/s/articleView?id=sf.security_overview_sessions.htm))",
+    "Do not collapse this lesson into organization-wide defaults, role hierarchy, or sharing rules. Those answer which records a user can reach after they are authenticated and authorized to use the object. SEC-003 and SEC-004 own that stack."
+  ],
+  "mental_model": {
+    "analogy": "A concert venue: door ID plus a second factor is authentication; ticket type is authorization; the fading hand stamp is the session.",
+    "useful_mapping": [
+      "ID check at the door → authentication (username/password, SSO, identity provider)",
+      "second scanner or authenticator app → MFA verification method",
+      "ticket type (GA vs backstage) → user permissions, profiles, permission sets",
+      "hand stamp that expires → session, timeout, session security level",
+      "which seats you can walk to after you are inside → record sharing (later SEC topics)"
+    ],
+    "where_it_breaks": [
+      "A SAML assertion can carry attributes about what the user may do at the service provider; that does not replace Salesforce permission sets inside the org.",
+      "High-assurance session policies can gate sensitive operations, which feels like authorization but is still a session-security control on an already authenticated user.",
+      "The venue does not model organization-wide defaults or sharing rules."
+    ]
+  },
+  "teach_back_prompt": "Without using the words authentication or authorization until the last sentence, explain why MFA cannot give LAB_Rep View Setup, and why extending session timeout cannot either.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, write authentication vs authorization, then name MFA, identity provider, session, and user permission in one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify four tickets: cannot log in, MFA prompt loop, missing View Setup, cannot see a peer Opportunity."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain why a session is not a permission, using the Session Security Help idea of timeout and high assurance."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a SAML identity-provider flow and say what is proven versus what Salesforce still authorizes locally."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: authentication vs authorization, plus one sharing-boundary you refuse to mix in."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-MFA-GLOSSARY",
+      "title": "Multi-Factor Authentication Glossary",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=xcloud.mfa_glossary.htm",
+      "supports": "Authentication as validating identity; MFA as two or more factors; least privilege as fewest permissions necessary.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Glossary defines identity terms; it does not enumerate org-specific MFA enforcement dates."
+    },
+    {
+      "source_id": "SF-HELP-USER-PERMS",
+      "title": "User Permissions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=admin_userperms.htm",
+      "supports": "User permissions specify tasks and features; enable them in permission sets and custom profiles; prefer permission sets and permission set groups.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Dependent permissions are evaluated on save; do not invent a complete permission catalog here."
+    },
+    {
+      "source_id": "SF-HELP-IDP",
+      "title": "SAML Single Sign-On Flows",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.identity_provider_about.htm",
+      "supports": "The identity provider authenticates the user; Salesforce can be identity provider or service provider in SAML SSO.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Signing behavior and SP validation vary by identity provider; confirm the target SSO design."
+    },
+    {
+      "source_id": "SF-HELP-SESSIONS",
+      "title": "Session Security",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_overview_sessions.htm",
+      "supports": "After login a session is established; timeout and high-assurance session levels control that connection, not object permissions.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "The documented default inactivity timeout is two hours; orgs can change Session Settings. Reverify the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Authentication proves identity",
+        "MFA is a second factor, not a permission",
+        "SSO/IdP still authenticates",
+        "Session follows login",
+        "Authorization is user permissions",
+        "Sharing is a later topic"
+      ],
+      "accessible_description": "Portrait map: identity proof at login, MFA and identity provider on the authentication path, session as the authenticated connection, user permissions as authorization, record sharing deferred."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-MFA-GLOSSARY",
+        "SF-HELP-USER-PERMS",
+        "SF-HELP-IDP",
+        "SF-HELP-SESSIONS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Identity proof, then capability, then later record sharing"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  User[User] --> AuthN[Authentication proves identity]\n  AuthN --> MFA[MFA verification methods]\n  AuthN --> IdP[SSO identity provider or Salesforce as IdP]\n  AuthN --> Session[Session established after login]\n  Session --> AuthZ[Authorization: tasks and features]\n  AuthZ --> Perms[User permissions in permission sets or profiles]\n  AuthZ --> Later[Record sharing OWD: later SEC topics]",
+      "decision": "flowchart TD\n  Symptom[User cannot do X] --> Q1{Can they complete login?}\n  Q1 -->|No| AuthN[Authentication: MFA, IdP, credentials, login hours later]\n  Q1 -->|Yes but kicked out| Session[Session timeout or session security level]\n  Q1 -->|Logged in| Q2{Missing a task or feature?}\n  Q2 -->|Yes| AuthZ[Authorization: user permission, permission set, profile]\n  Q2 -->|Missing one record| Share[Do not fix sharing here: SEC-003 and SEC-004]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Authentication is the process of validating that a user is who they say they are before they log in, perform an action, or access information. MFA requires two or more factors from different categories.",
+      "source_ids": ["SF-HELP-MFA-GLOSSARY"],
+      "scope": "Identity terminology",
+      "validation": "MFA Glossary definitions of Authentication and Multi-Factor Authentication.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "User permissions specify what tasks users can perform and what features they can access. Salesforce recommends permission sets and permission set groups to manage those permissions.",
+      "source_ids": ["SF-HELP-USER-PERMS"],
+      "scope": "Authorization",
+      "validation": "User Permissions Help article.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "In SAML SSO, the identity provider authenticates the user. Salesforce can act as identity provider or service provider.",
+      "source_ids": ["SF-HELP-IDP"],
+      "scope": "SSO identity",
+      "validation": "SAML Single Sign-On Flows Help article.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "After logging in, a user establishes a session. Session security controls timeout and session security level; it does not replace user permissions.",
+      "source_ids": ["SF-HELP-SESSIONS"],
+      "scope": "Sessions",
+      "validation": "Session Security Help article, including the documented default two-hour inactivity timeout.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "MFA remains a Salesforce login requirement for the user interface. Reverify Session Settings and SSO MFA configuration in the target org; do not invent enforcement dates.",
+  "unresolved_uncertainty": [
+    "Exact MFA enforcement state and available verification methods can differ by product and org; confirm in the target org rather than assuming a universal date.",
+    "High-assurance session policies that gate reports or Setup are org-configured; verify Session Settings before claiming a specific resource is blocked."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Authentication",
+      "telugu": "వినియోగదారు తాను చెప్పుకున్న వ్యక్తేనని నిరూపించడం."
+    },
+    {
+      "english": "Authorization",
+      "telugu": "గుర్తింపు తర్వాత ఏ పనులు, ఫీచర్లు చేయవచ్చో ఇవ్వడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Authentication proves identity: password, MFA, SSO identity provider. Authorization grants capability: user permissions via permission sets or profiles. A session is the authenticated connection after login. I do not treat sharing or OWD as this lesson.",
+    "two_minutes": "I split a ticket before I touch Setup. If the user cannot log in, I stay on authentication: credentials, MFA verification method, identity provider, then session timeout if they were in and got dropped. If they are in and cannot perform a task, I look at user permissions, not MFA. Least privilege is an authorization design. Record sharing answers which records they reach and belongs to later SEC topics."
+  },
+  "terminology": [
+    {
+      "term": "Authentication",
+      "plain": "Proving the person is who they claim to be.",
+      "precise": "The process of validating that a user is who they say they are before they log into an account, perform an action, or access information.",
+      "example": "LAB_Rep completes username, password, and an authenticator-app challenge, then reaches the Lightning home page.",
+      "non_example": "Assigning the View Setup and Configuration user permission is authorization, not authentication.",
+      "confusable_neighbor": "Authorization: what the proven user may do.",
+      "boundary": "This lesson stops before record sharing and OWD."
+    },
+    {
+      "term": "Authorization",
+      "plain": "What a proven user is allowed to do.",
+      "precise": "Capability granted after identity is known, expressed as user permissions, profiles, and permission sets for tasks and features.",
+      "example": "LAB_Admin has View Setup and Configuration in a permission set so they can open Setup.",
+      "non_example": "Completing MFA does not, by itself, grant View Setup.",
+      "confusable_neighbor": "Record-level sharing: which records, not which tasks.",
+      "boundary": "Object, field, and record layers are SEC-002 through SEC-004."
+    },
+    {
+      "term": "Multi-factor authentication",
+      "plain": "Login that needs more than one kind of proof.",
+      "precise": "A security measure that requires two or more pieces of evidence from different categories during login. Salesforce also calls this a verification-method requirement; 2FA is a deprecated term at Salesforce.",
+      "example": "Password (something you know) plus Salesforce Authenticator (something you have).",
+      "non_example": "Two passwords of the same category are not MFA as defined in the glossary.",
+      "confusable_neighbor": "High-assurance session: a session security level after login, not the MFA definition itself.",
+      "boundary": "MFA configuration details continue in SEC-007."
+    },
+    {
+      "term": "Identity provider",
+      "plain": "The system that confirms who you are in an SSO flow.",
+      "precise": "In SAML SSO, the identity provider authenticates the user and sends a signed SAML response. Salesforce can be the identity provider or the service provider.",
+      "example": "Users authenticate at a corporate IdP, then land in Salesforce as the service provider.",
+      "non_example": "A permission set is not an identity provider.",
+      "confusable_neighbor": "Service provider: the app that consumes the assertion after authentication.",
+      "boundary": "Connected-app OAuth details belong with later identity and integration topics."
+    },
+    {
+      "term": "Session",
+      "plain": "The authenticated connection that exists after a successful login.",
+      "precise": "After logging in, a user establishes a session with the platform. Session security settings control timeout, connection behavior, and session security levels such as Standard or High Assurance.",
+      "example": "An inactive session hits the org timeout and the user is prompted to continue or log out.",
+      "non_example": "Lengthening session timeout does not grant API Enabled or View Setup.",
+      "confusable_neighbor": "User permission: a durable authorization grant, not a timed connection.",
+      "boundary": "Login hours and IP ranges are SEC-007; this lesson only needs session ≠ permission."
+    },
+    {
+      "term": "User permission",
+      "plain": "A named task or feature the user may use.",
+      "precise": "User permissions specify what tasks users can perform and what features they can access. They are enabled in permission sets and custom profiles.",
+      "example": "API Enabled on a permission set so an integration user can call APIs.",
+      "non_example": "An MFA verification method is not a user permission.",
+      "confusable_neighbor": "Object permission: CRUD on an object, taught in SEC-003.",
+      "boundary": "Least privilege in the MFA glossary is the design rule for these grants."
+    },
+    {
+      "term": "Least privilege",
+      "plain": "Give only the access the job needs.",
+      "precise": "The idea that a user should have the fewest number of permissions necessary to do their job, and nothing more.",
+      "example": "LAB_Rep gets sales permissions, not Customize Application.",
+      "non_example": "Cloning System Administrator because login failed.",
+      "confusable_neighbor": "MFA: reduces account-takeover risk; it is not a substitute for least-privilege permissions.",
+      "boundary": "Sharing least privilege is later; here it means permission grants."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Prove identity",
+      "actor": "User + identity controls",
+      "trigger": "Login attempt",
+      "before": "No session",
+      "after": "Authenticated user or failed login",
+      "observe": "MFA challenge, SSO redirect, or login error",
+      "failure": "Treating a password/MFA failure as a missing permission set"
+    },
+    {
+      "step": 2,
+      "transition": "Establish a session",
+      "actor": "Platform",
+      "trigger": "Successful authentication",
+      "before": "Identity proven",
+      "after": "Session with a security level",
+      "observe": "User is in the app; Session Management shows an active session",
+      "failure": "Assuming the session itself grants Setup or API rights"
+    },
+    {
+      "step": 3,
+      "transition": "Apply authorization",
+      "actor": "Admin policy",
+      "trigger": "User attempts a task or feature",
+      "before": "Authenticated session exists",
+      "after": "Allowed or denied by user permissions",
+      "observe": "Permission set or profile includes or lacks the permission",
+      "failure": "Raising session timeout to 'give admin access'"
+    },
+    {
+      "step": 4,
+      "transition": "Leave record sharing for later",
+      "actor": "Admin + interviewer",
+      "trigger": "User can use the object but not this record",
+      "before": "Identity and user permissions look correct",
+      "after": "Hand off to SEC-003/SEC-004",
+      "observe": "The user is logged in and has object Read, but one record is missing",
+      "failure": "Redesigning OWD inside this authentication lesson"
+    }
+  ],
+  "when_to_use": [
+    "When an interview asks you to separate authentication from authorization in Salesforce identity work.",
+    "When a user cannot log in, loops on MFA, or fails an identity-provider SSO redirect.",
+    "When a logged-in user lacks a task or feature such as View Setup, and you must inspect user permissions rather than MFA.",
+    "When someone proposes session timeout, session security level, or a longer session as a substitute for a permission set."
+  ],
+  "when_not_to_use": [
+    "Do not use this authentication vs authorization lesson to design organization-wide defaults, role hierarchy, or sharing rules (SEC-004).",
+    "Do not treat MFA or an identity provider as a way to grant object, field, or record access.",
+    "Do not use session settings to authorize privileged users; session security limits an authenticated connection.",
+    "Do not collapse user-permission troubleshooting into page-layout or sharing checks before you have named the authorization grant."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Identity, MFA, and Single Sign-On related pages for authentication paths.",
+    "Setup → Session Settings and Session Management for the authenticated connection.",
+    "Setup → Permission Sets / Profiles for user permissions (authorization).",
+    "Setup → Identity Provider when Salesforce is the SAML identity provider."
+  ],
+  "worked_example": {
+    "scenario": "In a disposable LAB_ org, LAB_Rep completes MFA and reaches Lightning but cannot open Setup. A manager asks to extend session timeout and to 'turn off MFA for admins so they get more access.' No production users.",
+    "inputs": [
+      "LAB_Rep can authenticate with MFA",
+      "LAB_Rep lacks View Setup and Configuration",
+      "A request to lengthen session timeout",
+      "A request to disable MFA as an access grant"
+    ],
+    "decisions": [
+      {
+        "decision": "Treat the Setup gap as authorization, not authentication.",
+        "because": "The user already proved identity; User Permissions Help is the layer for tasks and features.",
+        "rejected": "Disable MFA or raise session timeout to 'give admin rights'"
+      },
+      {
+        "decision": "Grant the minimum user permission via a permission set if policy allows Setup access at all.",
+        "because": "Help recommends permission sets and permission set groups over proliferating profiles, and least privilege forbids cloning System Administrator.",
+        "rejected": "Clone System Administrator because login succeeded"
+      },
+      {
+        "decision": "Leave Opportunity sharing and OWD unchanged.",
+        "because": "The symptom is a feature (Setup), not a missing record.",
+        "rejected": "Open OWD Public Read/Write as a side effect"
+      }
+    ],
+    "configuration_or_code": [
+      "Confirm LAB_Rep has an active session after MFA (authentication succeeded).",
+      "Inspect LAB_Rep's permission sets for View Setup and Configuration.",
+      "If the lab policy allows it, assign a narrow LAB_Setup_Read permission set; do not disable MFA.",
+      "Leave Session Settings at the documented org value unless you are testing timeout as a separate hypothesis."
+    ],
+    "output": "LAB_Rep remains MFA-authenticated. Setup appears only after the user permission is present. Session timeout is unchanged. OWD is untouched.",
+    "verification": [
+      "LAB_Rep can log in with MFA before and after the permission change.",
+      "Setup is visible only when View Setup and Configuration is enabled.",
+      "Session timeout was not used as the authorization fix."
+    ],
+    "self_explanation": "Identity was already proven. I authorized a task with a user permission. I refused to treat session or MFA as capability."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable Developer sandbox or Trailhead Playground; synthetic LAB_ users only.",
+    "starting_state_checks": [
+      "Non-production org.",
+      "You can create a LAB_ user and a permission set."
+    ],
+    "steps": [
+      "Create LAB_Rep with a standard sales-style profile that does not include View Setup.",
+      "Log in as LAB_Rep and confirm authentication succeeds (complete any MFA the org requires).",
+      "Attempt Setup as LAB_Rep and record the failure as an authorization miss.",
+      "Assign a permission set that includes only the lab-approved Setup permission, then retest as LAB_Rep.",
+      "Write one sentence: session timeout was not the fix; sharing was not the fix."
+    ],
+    "guided_completion": [
+      "If LAB_Rep still cannot log in, you are still on authentication.",
+      "If LAB_Rep is in but cannot open Setup, name the user permission you inspected."
+    ],
+    "independent_challenge": "A teammate wants High Assurance session settings to replace a permission set. Explain why that is the wrong layer.",
+    "evidence": [
+      "Notes showing login succeeded before the permission change.",
+      "Permission set assignment for LAB_Rep with LAB_ names only."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate LAB_Rep and remove the lab permission set.",
+      "Do not disable org MFA as part of this exercise."
+    ],
+    "limitations": "This lab does not configure a production identity provider or change org-wide Session Settings."
+  },
+  "decision_table": [
+    {
+      "signal": "User never reaches Lightning; MFA or SSO challenge fails.",
+      "choose": "Authentication path: credentials, MFA verification method, identity provider.",
+      "not": "A new permission set or profile clone.",
+      "why": "Identity is not proven yet; user permissions are not evaluated as the first fix."
+    },
+    {
+      "signal": "User was working, then an inactivity prompt logs them out.",
+      "choose": "Inspect session timeout and Session Settings as session security.",
+      "not": "Grant extra user permissions so they 'stay admin longer'.",
+      "why": "Session Security Help treats timeout as exposure control on an authenticated connection."
+    },
+    {
+      "signal": "User is logged in but cannot perform View Setup or API Enabled.",
+      "choose": "Authorization: user permission on a permission set or custom profile.",
+      "not": "Disable MFA or raise High Assurance to mimic a privilege grant.",
+      "why": "User Permissions Help is the task-and-feature layer; MFA is still authentication."
+    },
+    {
+      "signal": "User can use Opportunities generally but cannot open one peer-owned record.",
+      "choose": "Stop this lesson and move to record-level access (SEC-003/SEC-004).",
+      "not": "Change MFA, session timeout, or identity-provider settings.",
+      "why": "Authentication and user-permission authorization already succeeded; sharing is a later stack."
+    }
+  ],
+  "limitations": [
+    "Does not configure login hours, IP ranges, or connected-app OAuth (SEC-007).",
+    "Does not design OWD, roles, or sharing rules.",
+    "MFA product enforcement and available verification methods are org- and product-specific."
+  ],
+  "security_notes": [
+    "Least privilege is an authorization rule; MFA is not a substitute for it.",
+    "Never disable MFA in production to 'grant access'.",
+    "Do not log session IDs, passwords, or verification codes in lab notes."
+  ],
+  "common_mistakes": [
+    "Saying MFA is an authorization tool.",
+    "Equating a session with a permission set.",
+    "Fixing a missing record with an identity-provider change.",
+    "Cloning System Administrator because login succeeded."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "User cannot log in.",
+      "check": [
+        "Credentials, MFA registration, identity-provider redirect.",
+        "Whether a session is ever created in Session Management."
+      ],
+      "do_not_assume": "A permission set is missing."
+    },
+    {
+      "symptom": "User logs in but cannot open Setup.",
+      "check": [
+        "View Setup and Configuration on permission sets and the profile.",
+        "That MFA completed (proves you are past authentication)."
+      ],
+      "do_not_assume": "Session timeout is the blocker."
+    },
+    {
+      "symptom": "SSO users land in Salesforce but lack expected features.",
+      "check": [
+        "The identity provider authenticated; then inspect Salesforce permission assignments.",
+        "Whether the SAML user mapping landed on the intended LAB_ user."
+      ],
+      "do_not_assume": "The IdP replaced Salesforce authorization."
+    }
+  ],
+  "production_notes": [
+    "Change authentication and authorization in a disposable org first.",
+    "Document whether a ticket is identity proof or capability grant.",
+    "This lesson does not authorize production MFA or Session Settings changes."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "According to the MFA glossary, what is authentication?",
+      "options": {
+        "A": "Validating that a user is who they say they are before login, an action, or access",
+        "B": "Granting the fewest object permissions needed for a job",
+        "C": "Setting organization-wide defaults to Private",
+        "D": "Extending session timeout to two days"
+      },
+      "answer": "A",
+      "rationale": "The glossary defines authentication as validating identity before login, action, or access.",
+      "distractor_explanations": {
+        "B": "That is least privilege, an authorization idea.",
+        "C": "OWD is record sharing, not this lesson.",
+        "D": "Timeout is session security, not the definition of authentication."
+      },
+      "concept": "Authentication definition",
+      "citation_ids": ["SF-HELP-MFA-GLOSSARY"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What do user permissions specify?",
+      "options": {
+        "A": "What tasks users can perform and what features they can access",
+        "B": "Which verification method is phishing-resistant",
+        "C": "The SAML identity-provider signing algorithm",
+        "D": "Organization-wide default record access"
+      },
+      "answer": "A",
+      "rationale": "User Permissions Help states they specify tasks and features, such as View Setup or API Enabled.",
+      "distractor_explanations": {
+        "B": "Verification methods are authentication.",
+        "C": "IdP signing is an SSO implementation detail.",
+        "D": "OWD is later SEC."
+      },
+      "concept": "User permissions",
+      "citation_ids": ["SF-HELP-USER-PERMS"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What happens after a user logs in, according to Session Security Help?",
+      "options": {
+        "A": "The user establishes a session with the platform",
+        "B": "MFA is turned off automatically",
+        "C": "All user permissions become System Administrator",
+        "D": "Organization-wide defaults reset to Public Read/Write"
+      },
+      "answer": "A",
+      "rationale": "After logging in, a user establishes a session. Session settings then control that connection.",
+      "distractor_explanations": {
+        "B": "MFA is not disabled by creating a session.",
+        "C": "Sessions do not grant permissions.",
+        "D": "Sharing is unrelated to session creation."
+      },
+      "concept": "Session after login",
+      "citation_ids": ["SF-HELP-SESSIONS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "In a SAML flow, what does the identity provider do first?",
+      "options": {
+        "A": "Authenticate the user (confirm they are who they say they are)",
+        "B": "Assign Salesforce permission set groups",
+        "C": "Set Opportunity OWD",
+        "D": "Create a High Assurance session without login"
+      },
+      "answer": "A",
+      "rationale": "SAML SSO Flows: the identity provider authenticates the user, then sends a SAML response.",
+      "distractor_explanations": {
+        "B": "Salesforce still authorizes locally with permissions.",
+        "C": "OWD is not an IdP job.",
+        "D": "A session follows successful login, it is not a substitute for authentication."
+      },
+      "concept": "Identity provider",
+      "citation_ids": ["SF-HELP-IDP"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "LAB_Rep completed MFA and is in Lightning but cannot View Setup. What layer is this?",
+      "options": {
+        "A": "Authorization: a user permission is missing",
+        "B": "Authentication: MFA did not run",
+        "C": "Session: timeout must be increased to grant Setup",
+        "D": "Sharing: OWD must be Public Read/Write"
+      },
+      "answer": "A",
+      "rationale": "Identity is proven. View Setup is a user permission (authorization).",
+      "distractor_explanations": {
+        "B": "MFA already succeeded.",
+        "C": "Timeout does not grant permissions.",
+        "D": "Setup access is not a record-sharing problem."
+      },
+      "concept": "AuthN vs AuthZ diagnosis",
+      "citation_ids": ["SF-HELP-USER-PERMS", "SF-HELP-MFA-GLOSSARY"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What is the documented default inactivity session timeout in Session Security Help?",
+      "options": {
+        "A": "Two hours of inactivity",
+        "B": "Five minutes of inactivity",
+        "C": "Sessions never time out",
+        "D": "Timeout equals the user's profile login hours"
+      },
+      "answer": "A",
+      "rationale": "Help states the default session timeout is two hours of inactivity. Orgs can change Session Settings.",
+      "distractor_explanations": {
+        "B": "Not the documented default.",
+        "C": "Timeout is a session-security control.",
+        "D": "Login hours are a later SEC-007 control."
+      },
+      "concept": "Session timeout default",
+      "citation_ids": ["SF-HELP-SESSIONS"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How does Salesforce Help recommend managing users' permissions?",
+      "options": {
+        "A": "Use permission sets and permission set groups as reusable building blocks",
+        "B": "Create a unique profile for every user",
+        "C": "Disable MFA for privileged users",
+        "D": "Grant Modify All Data via session timeout"
+      },
+      "answer": "A",
+      "rationale": "User Permissions Help recommends permission sets and permission set groups to avoid dozens or hundreds of profiles.",
+      "distractor_explanations": {
+        "B": "That is the anti-pattern Help warns against.",
+        "C": "MFA is authentication, not a permission model.",
+        "D": "Sessions do not grant Modify All Data."
+      },
+      "concept": "Permission sets for authorization",
+      "citation_ids": ["SF-HELP-USER-PERMS"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A manager wants to turn off MFA so support agents 'get more permissions.' What do you say?",
+      "options": {
+        "A": "MFA proves identity; it does not grant user permissions",
+        "B": "Turning off MFA automatically assigns permission set groups",
+        "C": "MFA is the same as organization-wide defaults",
+        "D": "Without MFA, sessions last forever"
+      },
+      "answer": "A",
+      "rationale": "MFA is authentication. Least privilege still governs authorization separately.",
+      "distractor_explanations": {
+        "B": "MFA and permission sets are different layers.",
+        "C": "OWD is record access.",
+        "D": "Session timeout is independent."
+      },
+      "concept": "MFA is not authorization",
+      "citation_ids": ["SF-HELP-MFA-GLOSSARY"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which request should you refuse to solve inside this authentication vs authorization topic?",
+      "options": {
+        "A": "Peers cannot see each other's Opportunities; please change OWD",
+        "B": "Users fail the authenticator-app challenge",
+        "C": "Users lack the API Enabled user permission",
+        "D": "SSO identity provider is not returning a SAML assertion"
+      },
+      "answer": "A",
+      "rationale": "OWD and record sharing are later SEC topics. The other options are authentication or user-permission authorization.",
+      "distractor_explanations": {
+        "B": "MFA is authentication.",
+        "C": "API Enabled is a user permission.",
+        "D": "IdP/SAML is authentication."
+      },
+      "concept": "Boundary with sharing",
+      "citation_ids": ["SF-HELP-USER-PERMS", "SF-HELP-IDP"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How is a High Assurance session different from a user permission?",
+      "options": {
+        "A": "Session security level can gate resources for an already authenticated user; a user permission is the durable task/feature grant",
+        "B": "They are identical Salesforce metadata",
+        "C": "High Assurance replaces MFA",
+        "D": "User permissions expire every two hours by default"
+      },
+      "answer": "A",
+      "rationale": "Session Security Help describes Standard vs High Assurance session levels. User permissions remain the authorization catalog.",
+      "distractor_explanations": {
+        "B": "Different layers.",
+        "C": "MFA is a login factor; high assurance is a session level.",
+        "D": "The two-hour figure is session inactivity timeout, not permission expiry."
+      },
+      "concept": "Session vs permission",
+      "citation_ids": ["SF-HELP-SESSIONS", "SF-HELP-USER-PERMS"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Least privilege in the MFA glossary refers to what?",
+      "options": {
+        "A": "The fewest number of permissions necessary to do the job",
+        "B": "Using only one MFA verification method",
+        "C": "Public Read/Write OWD",
+        "D": "Disabling identity providers"
+      },
+      "answer": "A",
+      "rationale": "The glossary defines least privilege as fewest permissions necessary, limiting impact of errors and compromised credentials.",
+      "distractor_explanations": {
+        "B": "Users can register multiple verification methods as backups.",
+        "C": "That is the opposite of least privilege for records.",
+        "D": "SSO is an authentication design, not least privilege."
+      },
+      "concept": "Least privilege",
+      "citation_ids": ["SF-HELP-MFA-GLOSSARY"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Salesforce is configured as a SAML identity provider for a benefits app. What did Salesforce prove when the user logged in to that app?",
+      "options": {
+        "A": "Identity (authentication) to the service provider via a signed SAML response",
+        "B": "That the user has Modify All Data in every Salesforce org",
+        "C": "That Opportunity sharing rules were copied to the benefits app",
+        "D": "That session timeout in Salesforce is now infinite"
+      },
+      "answer": "A",
+      "rationale": "When Salesforce is the IdP, it authenticates the user and signs the SAML response for the service provider.",
+      "distractor_explanations": {
+        "B": "Privileges are not globally cloned.",
+        "C": "Sharing does not travel with SAML as OWD.",
+        "D": "Session timeout is unrelated."
+      },
+      "concept": "Salesforce as IdP",
+      "citation_ids": ["SF-HELP-IDP"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is authentication in the MFA glossary?",
+      "back": "Validating that a user is who they say they are before login, an action, or access."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "What is authorization in this Salesforce lesson?",
+      "back": "Capability after identity is proven: user permissions, profiles, and permission sets for tasks and features."
+    },
+    {
+      "id": "F3",
+      "category": "mfa",
+      "front": "What does MFA require?",
+      "back": "Two or more pieces of evidence from different categories (knows, has, or is)."
+    },
+    {
+      "id": "F4",
+      "category": "mfa",
+      "front": "Does MFA grant View Setup?",
+      "back": "No. MFA is authentication. View Setup is a user permission (authorization)."
+    },
+    {
+      "id": "F5",
+      "category": "permissions",
+      "front": "Where are user permissions enabled?",
+      "back": "In permission sets and custom profiles. Help recommends permission sets and permission set groups."
+    },
+    {
+      "id": "F6",
+      "category": "session",
+      "front": "What is a session?",
+      "back": "The authenticated connection established after login. Timeout and security level apply to it."
+    },
+    {
+      "id": "F7",
+      "category": "session",
+      "front": "Default inactivity session timeout in Help?",
+      "back": "Two hours of inactivity, unless the org changes Session Settings."
+    },
+    {
+      "id": "F8",
+      "category": "idp",
+      "front": "What does an identity provider do in SAML?",
+      "back": "It authenticates the user, then sends a signed SAML response to the service provider."
+    },
+    {
+      "id": "F9",
+      "category": "idp",
+      "front": "Can Salesforce be an identity provider?",
+      "back": "Yes. Salesforce can be the SAML identity provider or the service provider."
+    },
+    {
+      "id": "F10",
+      "category": "boundary",
+      "front": "Session timeout vs permission set?",
+      "back": "Timeout limits exposure of an authenticated connection. A permission set grants tasks and features."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Why not fix a missing Opportunity with MFA?",
+      "back": "If the user is already logged in, identity is proven. Record reachability is sharing, a later SEC topic."
+    },
+    {
+      "id": "F12",
+      "category": "least_privilege",
+      "front": "What is least privilege in the MFA glossary?",
+      "back": "The fewest permissions necessary to do the job, and nothing more."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Logged in, cannot API Enabled. First layer?",
+      "back": "Authorization: inspect the API Enabled user permission, not MFA."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Never reaches home page; SSO redirect fails. First layer?",
+      "back": "Authentication: identity provider and SAML assertion, not a new profile."
+    },
+    {
+      "id": "F15",
+      "category": "deprecated",
+      "front": "What does Salesforce call the older term 2FA?",
+      "back": "An older term for MFA functionality; the glossary says the term is deprecated at Salesforce."
+    },
+    {
+      "id": "F16",
+      "category": "session",
+      "front": "Standard vs High Assurance session?",
+      "back": "Login methods have a session security level. Policies can require High Assurance for sensitive operations; that still is not a user-permission grant."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain authentication vs authorization in Salesforce.",
+      "answer_30_seconds": "Authentication proves identity: password, MFA, SSO identity provider. Authorization is what the proven user may do: user permissions via permission sets or profiles. A session is the connection after login, not a permission.",
+      "answer_2_minutes": "I start with the MFA glossary: authentication validates that the user is who they say they are. MFA adds a second factor from another category. After login, Session Security Help says a session is established; timeout and high assurance protect that session. User Permissions Help is authorization: tasks and features such as View Setup or API Enabled, preferably via permission sets. I explicitly do not fold OWD or sharing into this answer.",
+      "example": "LAB_Rep completes MFA (authentication) but still cannot View Setup until a permission set grants that user permission (authorization).",
+      "tradeoffs": [
+        "Strong authentication vs least-privilege authorization",
+        "SSO convenience vs still managing Salesforce permissions"
+      ],
+      "follow_ups": [
+        "Where does a session fit?",
+        "Why is 2FA a deprecated term?"
+      ],
+      "weak_answer_warnings": [
+        "Calling MFA a permission",
+        "Jumping to OWD"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why is a Salesforce session not a permission?",
+      "answer_30_seconds": "A session is the authenticated connection after login. Session settings control timeout and security level. User permissions still decide tasks and features.",
+      "answer_2_minutes": "Session Security Help exists to limit exposure when someone walks away still logged in, and to apply Standard vs High Assurance levels. Lengthening timeout keeps the same identity online longer; it does not add View Setup. I would inspect Session Management to see that a session exists, then inspect permission sets for capability. Mixing the two is a common interview fail.",
+      "example": "A manager asks to raise timeout so LAB_Rep 'becomes admin.' I refuse and look at user permissions instead.",
+      "tradeoffs": [
+        "Usability of longer sessions vs exposure",
+        "High-assurance gates vs durable permission grants"
+      ],
+      "follow_ups": [
+        "What is the documented default timeout?",
+        "When would you require High Assurance?"
+      ],
+      "weak_answer_warnings": [
+        "Saying sessions grant Modify All Data"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A user cannot log in. Another user logs in but cannot open Setup. How do you split the tickets?",
+      "answer_30_seconds": "Cannot log in is authentication: credentials, MFA, identity provider. Logged in without Setup is authorization: View Setup and Configuration on a permission set or profile.",
+      "answer_2_minutes": "I refuse a single 'access' ticket. For login I ask whether a session is ever created. For Setup I confirm MFA already succeeded so identity is proven. Then I look at user permissions, not sharing. If they can use the object but not one record, I park that for SEC-003/004. Least privilege still applies: I will not clone System Administrator to clear either ticket.",
+      "example": "LAB_Rep MFA works; Setup fails until a narrow permission set is assigned. LAB_NewHire never passes the authenticator challenge, so no permission work yet.",
+      "tradeoffs": [
+        "Speed of cloning an admin profile vs least privilege",
+        "Treating all access tickets as sharing"
+      ],
+      "follow_ups": [
+        "What if SSO is in the path?",
+        "What evidence proves authentication succeeded?"
+      ],
+      "weak_answer_warnings": [
+        "One fix for both symptoms"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Stakeholders want MFA disabled for admins so privileged users 'have more access.' Respond.",
+      "answer_30_seconds": "I would not disable MFA to grant access. MFA is identity proof. Privileged users still need least-privilege permissions, and they are high-value authentication targets.",
+      "answer_2_minutes": "The MFA glossary defines privileged users as admins and users with high access, including people with Customize Application or Modify All Data. That is why authentication should be stronger, not weaker. Authorization is a separate permission-set design. I would also note Salesforce requires MFA for UI logins; I would not promise a production exemption. Session high-assurance can add another gate after login, still without replacing permissions.",
+      "example": "LAB_Admin keeps MFA and receives only the Setup permissions the job needs, not a blanket System Administrator clone.",
+      "tradeoffs": [
+        "Friction of MFA vs account-takeover risk",
+        "Privileged access vs least privilege"
+      ],
+      "follow_ups": [
+        "What verification methods are phishing-resistant?",
+        "How do you handle SSO MFA?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to disable MFA as an authorization shortcut"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "Where does SAML identity provider fit relative to Salesforce permission sets?",
+      "answer_30_seconds": "The identity provider authenticates. Salesforce permission sets still authorize tasks in the org after the user lands, unless a later identity topic owns Just-in-Time provisioning details.",
+      "answer_2_minutes": "SAML SSO Flows: the IdP confirms who the user is and sends a signed assertion. Salesforce may be IdP or service provider. I treat that as the authentication path. I still inspect profiles and permission sets for API Enabled or View Setup. I do not claim the assertion replaced sharing or OWD. If attributes drive provisioning, I mark mapping details as Needs verification in the target org rather than inventing JIT behavior.",
+      "example": "Corporate IdP logs LAB_Rep into Salesforce; they still need a sales permission set to work Opportunities as a feature, and sharing still decides which Opportunities.",
+      "tradeoffs": [
+        "Central IdP vs local Salesforce authorization",
+        "Assertion attributes vs explicit permission sets"
+      ],
+      "follow_ups": [
+        "When is Salesforce the IdP?",
+        "What is signed in the SAML response?"
+      ],
+      "weak_answer_warnings": [
+        "Saying SSO replaces permission sets"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A user says Salesforce 'keeps logging them out' and they want System Administrator. Diagnose.",
+      "answer_30_seconds": "I check whether this is session timeout versus missing permissions. Inactivity timeout is session security. System Administrator is an authorization nuclear option I will not use to fix timeout.",
+      "answer_2_minutes": "I reproduce: if they were in the app and got the inactivity dialog, I look at Session Settings. Help documents a default two-hour inactivity timeout; I reverify the org value. If they cannot perform a task while the session is active, I inspect user permissions. I keep MFA in place. I do not open sharing. I explain least privilege: timeout and admin rights solve different risks.",
+      "example": "LAB_Rep hits the timeout prompt after idle time; granting View Setup would not stop the prompt, and cloning System Administrator would over-authorize.",
+      "tradeoffs": [
+        "Shorter timeout vs user friction",
+        "Admin profile vs permission set"
+      ],
+      "follow_ups": [
+        "Where do you see active sessions?",
+        "What is High Assurance used for?"
+      ],
+      "weak_answer_warnings": [
+        "Granting System Administrator for timeout"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "How do you keep record sharing out of an authentication vs authorization interview answer?",
+      "answer_30_seconds": "I say sharing answers which records after identity and object capability are known. If the user cannot log in or lacks a user permission, I do not touch OWD.",
+      "answer_2_minutes": "I use a three-bucket model: prove identity, grant tasks/features, then later decide records. Interviewers often bait you into OWD during an auth question. I name the bait: peers missing an Opportunity is SEC-004. Missing View Setup is a user permission. Failed MFA is authentication. That discipline shows I will not over-share to fix a login, or over-authenticate to fix a record.",
+      "example": "Ticket: LAB_Rep cannot see LAB_Opportunity_Orion. I first confirm they can log in and have Opportunity Read. Only then do I leave this topic for sharing analysis.",
+      "tradeoffs": [
+        "Complete access-path answers vs topic boundaries",
+        "Speed vs mixing layers"
+      ],
+      "follow_ups": [
+        "What is the next topic after user permissions?",
+        "Where do object CRUD and FLS sit?"
+      ],
+      "weak_answer_warnings": [
+        "Opening with OWD on an MFA question"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach authentication vs authorization to a new admin using a concrete analogy, then break it.",
+      "answer_30_seconds": "Concert venue: ID plus a second factor is authentication; ticket type is authorization; the fading stamp is the session. The analogy breaks because a SAML assertion can carry extra attributes, and high-assurance sessions can gate operations.",
+      "answer_2_minutes": "I walk LAB_Rep through the door. MFA is the second scanner. Permission sets are the ticket type. Session timeout is the stamp fading. I then say what the venue cannot model: Salesforce user permissions live in permission sets and profiles; identity providers authenticate; sharing is which seats. I finish with least privilege: a backstage ticket is not issued because someone passed the ID check. That is the interview-ready close.",
+      "example": "LAB_Rep passes MFA, still has a general-admission permission set, and is not given System Administrator because the stamp lasted two hours.",
+      "tradeoffs": [
+        "Memorable analogy vs precise Help wording",
+        "Teaching speed vs over-extending the metaphor"
+      ],
+      "follow_ups": [
+        "Where does High Assurance sit in the analogy?",
+        "Where does record sharing sit?"
+      ],
+      "weak_answer_warnings": [
+        "Using a labeled-drawer or library filler analogy",
+        "Never stating where the analogy breaks"
+      ]
+    }
+  ]
+}

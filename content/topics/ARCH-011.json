@@ -1,0 +1,1024 @@
+{
+  "topic_id": "ARCH-011",
+  "slug": "multi-org-strategy-environment-strategy-governance-and-",
+  "title": "Multi-org strategy, environment strategy, governance, and Center of Excellence concepts",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-010"
+  ],
+  "objectives": [
+    "Choose single-org versus multi-org from business constraints (regulation, geography, M&A, package isolation)—not from habit.",
+    "Map environment strategy: scratch, Developer/Dev Pro, Partial Copy, Full sandbox, production—using Well-Architected Resilient task-to-org mapping.",
+    "Describe a Center of Excellence as the bridge between executives and delivery that sets standards and solves hard problems.",
+    "Separate governance (who decides, which path a change takes) from the org topology itself."
+  ],
+  "diagnostic_question": "EU and US sales want separate data residency, month-end needs a scale test, and three teams ship colliding Flows. Do you split orgs, which sandbox do you use for scale, and what does the Center of Excellence own versus a local scrum team?",
+  "definition": "Multi-org strategy decides how many production Salesforce orgs the enterprise runs and why. Environment strategy places work in scratch orgs and sandbox types so production is not the laboratory. Governance and a Center of Excellence (CoE) set standards, intake, and design authority so those orgs and environments stay coherent. ([Resilient](https://architect.salesforce.com/docs/architect/well-architected/guide/resilient); [Sandboxes](https://help.salesforce.com/s/articleView?id=platform.deploy_sandboxes_parent.htm); [Center of Excellence diagram](https://architect.salesforce.com/docs/architect/reference-diagrams/guide/center-of-excellence.html))",
+  "why_it_matters": "Wrong org splits create integration tax forever. Wrong sandbox choice makes 'tested' a lie. No CoE means every team invents sharing, packaging, and release paths. Interviewers want a reason for one org or many, a Full sandbox for scale tests, and a CoE that enables rather than a ticket swamp.",
+  "sixty_second_explanation": "Think of an airline network. One hub org is cheaper to fly through; multiple airports exist when customs (regulation), time zones, or a merger demand them. Simulators are sandboxes: a Full simulator for surge drills, a cheap procedure trainer for new checklists. The operations control center is the Center of Excellence: it publishes the flight manual (governance) but does not fly every sector.",
+  "deeper_explanation": [
+    "Well-Architected Resilient compares scratch orgs and sandbox types: lifespan, refresh interval, source tracking, data source, and data limits. Metadata in sandboxes comes from production copies; scratch metadata comes from source control. Performance and scale testing is mapped to Full sandbox. Prototyping maps to scratch and Developer/Dev Pro. UAT maps to Developer, Dev Pro, and Partial Copy. ([Resilient](https://architect.salesforce.com/docs/architect/well-architected/guide/resilient))",
+    "Help defines sandboxes as separate environments for development, testing, and training without compromising production. Create, clone, refresh, and manage them from Setup. Data Mask is the official path to reduce PII in copies. ([Sandboxes](https://help.salesforce.com/s/articleView?id=platform.deploy_sandboxes_parent.htm))",
+    "Environment-strategy patterns: source-driven release artifacts, not 'the sandbox is the artifact'; do not make every change use the same path; do not crowd one environment; never make risky configuration directly in production; enable source tracking on Developer and Developer Pro. Anti-pattern: scale tests in Developer sandbox; org-based ALM as the model. ([ALM tools](https://architect.salesforce.com/docs/architect/well-architected-tools/guide/adaptable-application-lifecycle-management))",
+    "The Architecture Center CoE capability map: a CoE bridges executives and IT, establishes implementation best practices, enforces corporate and industry standards, trains teams, and solves hard problems. Governance is those standards plus intake and design authority—not a second production org. Multi-org is justified by constraints (residency, acquisition isolation, incompatible packages, separate business units that cannot share an identity/data model). Default to one production org when those constraints are absent, because every extra org multiplies integration, identity, and release cost. Reference diagrams include org hierarchies and single-org strategies—use them, do not invent topology."
+  ],
+  "mental_model": {
+    "analogy": "Airline hub-and-spoke plus flight simulators plus an operations control center: hubs are production orgs, simulators are environments, the OCC is the Center of Excellence writing the flight manual (governance).",
+    "useful_mapping": [
+      "single production org → one hub you prefer when constraints allow",
+      "multi-org → extra airports for customs/residency/M&A/isolation",
+      "scratch org → short-lived procedure trainer from the blueprint (git)",
+      "Developer / Dev Pro sandbox → cheap simulator for build and many tests",
+      "Partial Copy → UAT with templated data",
+      "Full sandbox → full-motion simulator for scale and training-sized data",
+      "production → live gates; not for experiments",
+      "CoE / governance → operations control center and the flight manual"
+    ],
+    "where_it_breaks": [
+      "Salesforce orgs are not airplanes; identity, licenses, and SSO are extra tax a metaphor skips.",
+      "Refresh intervals (for example Full sandbox cadence in the Resilient table) are license- and edition-specific—reverify.",
+      "A CoE that only rejects tickets is not the diagram's training-and-hard-problems CoE.",
+      "Multi-org does not by itself solve sharing inside one org (SEC track)."
+    ]
+  },
+  "teach_back_prompt": "Without using a library metaphor, explain when you would keep one production org, which environment you would use for scale testing, and what the Center of Excellence owns versus a product squad.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Scratch vs Dev vs Partial vs Full: one task each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Name three reasons to go multi-org and one reason not to."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "CoE activities from the reference diagram."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Design a risk-based release path without making every change use the same environments."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: multi-org, environments, governance, CoE."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-WA-RESILIENT",
+      "title": "Well-Architected — Resilient",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/resilient",
+      "supports": "Scratch vs sandbox comparison; task-to-environment mapping including scale testing on Full sandbox.",
+      "release_or_version": "Well-Architected / Summer '26 review",
+      "last_verified": "2026-08-16",
+      "limits": "Refresh days and data limits in the table should be re-read; they are product facts, not this handbook's invention."
+    },
+    {
+      "source_id": "SF-HELP-SANDBOX",
+      "title": "Sandboxes: Staging Environments for Customizing and Testing",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.deploy_sandboxes_parent.htm",
+      "supports": "Sandboxes as isolated copies for dev/test/training; create/clone/refresh; Data Mask.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Available sandbox licenses vary by edition."
+    },
+    {
+      "source_id": "SF-WA-ALM",
+      "title": "Resilient — Application Lifecycle Management tools",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected-tools/guide/adaptable-application-lifecycle-management",
+      "supports": "Environment strategy patterns and anti-patterns: source-driven artifacts, no risky prod clicks, source tracking on Dev/Dev Pro.",
+      "release_or_version": "Well-Architected tools",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace a customer's ITIL process names."
+    },
+    {
+      "source_id": "SF-COE-DIAGRAM",
+      "title": "Center of Excellence reference diagram",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/reference-diagrams/guide/center-of-excellence.html",
+      "supports": "CoE bridges executives and IT; best practices, standards, training, hard problems.",
+      "release_or_version": "Reference Diagrams",
+      "last_verified": "2026-08-16",
+      "limits": "A diagram is a capability map, not a mandatory org chart."
+    },
+    {
+      "source_id": "SF-REF-DIAGRAMS",
+      "title": "Reference Diagrams overview",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/reference-diagrams/overview",
+      "supports": "System landscape and org-hierarchy diagrams exist for single- and multi-org conversations.",
+      "release_or_version": "Reference Diagrams",
+      "last_verified": "2026-08-16",
+      "limits": "Pick the current diagram set; names can refresh."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Well-Architected Resilient and CoE reference diagram",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Single vs multi-org",
+        "Scratch to Full mapping",
+        "Source-driven artifacts",
+        "No prod experiments",
+        "CoE bridge",
+        "Governance paths"
+      ],
+      "accessible_description": "Portrait map: production org count from constraints; environments by task; CoE sets standards; squads deliver inside those rails."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-WA-RESILIENT",
+        "SF-HELP-SANDBOX",
+        "SF-WA-ALM",
+        "SF-COE-DIAGRAM"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Who flies which simulator?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  CoE[Center of Excellence / governance] --> Std[Standards and intake]\n  Std --> Git[Source-driven artifacts]\n  Git --> Scratch[Scratch org]\n  Git --> Dev[Developer / Dev Pro]\n  Git --> Partial[Partial Copy UAT]\n  Git --> Full[Full sandbox scale]\n  Full --> Prod[Production org s]\n  Prod --> Multi{Multiple prod orgs?}\n  Multi -->|Constraints| Split[Residency M&A isolation]\n  Multi -->|None| One[Prefer one hub org]",
+      "decision": "flowchart TD\n  Need[New Salesforce landscape?] --> Q1{Hard split: residency, acquisition, incompatible packages?}\n  Q1 -->|Yes| Multi[Multi-org strategy with integration plan]\n  Q1 -->|No| Single[Single production org]\n  Work[A piece of work] --> Q2{What task?}\n  Q2 -->|Build/PoC| ScratchDev[Scratch or Developer / Dev Pro]\n  Q2 -->|UAT| UAT[Dev / Dev Pro / Partial Copy]\n  Q2 -->|Scale test| Full[Full sandbox]\n  Q2 -->|Risky config| NeverProd[Never first in production]\n  Gov[Who decides standards?] --> CoE[Center of Excellence]\n  Gov --> Squad[Squad delivers inside the manual]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Sandboxes are isolated copies for development, testing, and training so production data and apps are not compromised. They are created, cloned, and refreshed from Setup; Data Mask addresses PII in copies.",
+      "source_ids": ["SF-HELP-SANDBOX"],
+      "scope": "Sandboxes",
+      "validation": "Salesforce Help sandboxes parent topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Well-Architected Resilient maps prototyping to scratch/Developer/Dev Pro, UAT to Developer/Dev Pro/Partial Copy, and performance/scale testing to Full sandbox. Scratch metadata comes from source control; sandbox metadata from production.",
+      "source_ids": ["SF-WA-RESILIENT"],
+      "scope": "Environment strategy",
+      "validation": "Resilient environment comparison and task table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Environment-strategy patterns: source-driven artifacts, risk-based paths, no overcrowded environments, no risky production configuration, source tracking on Developer and Developer Pro. Anti-patterns include org-as-artifact and scale tests in Developer sandbox.",
+      "source_ids": ["SF-WA-ALM"],
+      "scope": "Governance of environments",
+      "validation": "ALM environment strategy pattern tables.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "A Center of Excellence bridges executive stakeholders and IT. It establishes implementation best practices, enforces standards, trains project teams, and solves hard problems.",
+      "source_ids": ["SF-COE-DIAGRAM"],
+      "scope": "CoE",
+      "validation": "Architecture Center CoE reference diagram description.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Reference Diagrams include system landscapes and org-hierarchy views for single- and multi-org design conversations. Extra production orgs are a constraint-driven choice because they multiply identity and integration cost.",
+      "source_ids": ["SF-REF-DIAGRAMS", "SF-WA-RESILIENT"],
+      "scope": "Multi-org strategy",
+      "validation": "Reference Diagrams overview plus Resilient's emphasis on coherent ALM; multi-org drivers are architecture judgment marked where not a single Help table.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify sandbox refresh intervals, data limits, and CoE diagram URL for Summer '26.",
+  "unresolved_uncertainty": [
+    "Salesforce does not publish a single mandatory 'always split orgs if X licenses' table; residency/M&A drivers should be confirmed with legal and the current org-strategy diagrams.",
+    "Exact sandbox entitlements are contract-specific."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Center of Excellence",
+      "telugu": "ప్రమాణాలు, శిక్షణ, కఠిన సమస్యల కోసం కేంద్ర బృందం."
+    },
+    {
+      "english": "Full sandbox",
+      "telugu": "ప్రొడక్షన్ లాంటి డేటాతో స్కేల్ టెస్ట్ చేసే కాపీ."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Prefer one production org unless residency, M&A, or isolation forces multi-org. Match tasks to scratch, Dev, Partial, or Full. CoE writes the standards; squads deliver. Never experiment in production.",
+    "two_minutes": "I start from constraints, not from 'every region gets an org.' I map scale tests to Full sandbox and PoCs to scratch/Dev. I want source-driven artifacts and source tracking on Dev/Dev Pro. The CoE trains and unblocks; it is not a queue that only says no. Governance means different risk paths, not one overcrowded SIT."
+  },
+  "terminology": [
+    {
+      "term": "multi-org strategy",
+      "plain": "How many production Salesforce orgs you run, and why.",
+      "precise": "A topology choice driven by constraints (residency, acquisition, incompatible ISV, hard business separation). Default to one hub org when constraints are absent because integration and identity multiply.",
+      "example": "EU prod org plus US prod org for data-residency legal advice.",
+      "non_example": "A sandbox per developer counted as 'multi-org strategy.'",
+      "confusable_neighbor": "Environment strategy: copies of an org, not extra productions.",
+      "boundary": "Legal requirements Need verification with counsel; this lesson is the architecture question."
+    },
+    {
+      "term": "environment strategy",
+      "plain": "Which non-production org you use for which job.",
+      "precise": "Resilient mapping: scratch and Developer/Dev Pro for build; Partial Copy for many UAT cases; Full for scale. Source-driven artifacts. No risky prod clicks.",
+      "example": "Scale Test only in Full sandbox.",
+      "non_example": "Using production as the performance lab.",
+      "confusable_neighbor": "Package environments (Dev Hub) versus subscriber sandboxes.",
+      "boundary": "Refresh intervals are product facts—reverify the table."
+    },
+    {
+      "term": "governance",
+      "plain": "Who decides standards and which path a change must take.",
+      "precise": "Design authority, intake, risk-based release paths, environment rules. Not a second CRM org.",
+      "example": "High-risk data model changes require CoE review; low-risk report tweaks do not use Full sandbox.",
+      "non_example": "Every field change waits six weeks in the same SIT org.",
+      "confusable_neighbor": "Sharing governance (OWD) is SEC, not this topic.",
+      "boundary": "CoE operating model is conceptual; job titles vary."
+    },
+    {
+      "term": "Center of Excellence",
+      "plain": "The group that holds Salesforce standards and helps teams.",
+      "precise": "Bridges executives and IT. Best practices, corporate/industry standards, training, hard-problem solving (CoE diagram).",
+      "example": "CoE publishes packaging and environment standards; a squad implements LAB_ tax in an unlocked package.",
+      "non_example": "A CAB that only rejects stories with no training mission.",
+      "confusable_neighbor": "Release management team: overlapping, not identical.",
+      "boundary": "A diagram is not a mandatory headcount."
+    },
+    {
+      "term": "scratch org",
+      "plain": "A short-lived org spun from source.",
+      "precise": "Resilient: 1–30 day lifespan, org shape, source tracking, metadata from source control, small data limit. For prototyping and package work.",
+      "example": "Create a scratch org to build lab-quote-tax 0.1.0.",
+      "non_example": "A Full sandbox.",
+      "confusable_neighbor": "Developer sandbox: longer lived, metadata from production.",
+      "boundary": "Dev Hub limits Needs verification."
+    },
+    {
+      "term": "Full sandbox",
+      "plain": "The copy closest to production data volume.",
+      "precise": "Resilient: performance and scale testing live here. Data determined by production. Long refresh interval (table value—reverify).",
+      "example": "Month-end Scale Test in Full sandbox.",
+      "non_example": "Developer sandbox scale test.",
+      "confusable_neighbor": "Partial Copy: templated subset, UAT-oriented.",
+      "boundary": "License count is contractual."
+    },
+    {
+      "term": "Partial Copy sandbox",
+      "plain": "A sandbox with a template-sized slice of data.",
+      "precise": "Resilient: sandbox template data, 5 GB class in the comparison table (reverify). Used in UAT/training rows, not the scale-test row.",
+      "example": "UAT with a sandbox template of LAB_ accounts.",
+      "non_example": "The official scale-test environment.",
+      "confusable_neighbor": "Developer Pro: larger storage, still not Full.",
+      "boundary": "Template design is an admin skill."
+    },
+    {
+      "term": "source tracking",
+      "plain": "The org and git can see metadata diffs.",
+      "precise": "Resilient: supported on scratch and Developer/Developer Pro, not on Partial/Full in that table. ALM pattern: enable it on Dev/Dev Pro.",
+      "example": "Developer sandbox with source tracking for a squad.",
+      "non_example": "Assuming Full sandbox has the same source-tracking row.",
+      "confusable_neighbor": "Change sets: no source tracking.",
+      "boundary": "Confirm current source-tracking support if the table changes."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide production org count",
+      "actor": "Enterprise architect + CoE",
+      "trigger": "New region, acquisition, or isolation request",
+      "before": "Default 'new org' reflex",
+      "after": "Written constraints or a single-org decision",
+      "observe": "System landscape diagram",
+      "failure": "Splitting orgs to avoid a sharing conversation"
+    },
+    {
+      "step": 2,
+      "transition": "Map work to environments",
+      "actor": "CoE + DevOps",
+      "trigger": "ALM design",
+      "before": "One overcrowded SIT",
+      "after": "Task-to-sandbox matrix from Resilient",
+      "observe": "Scale tests booked on Full; PoCs on scratch",
+      "failure": "Performance test in Developer sandbox"
+    },
+    {
+      "step": 3,
+      "transition": "Publish governance",
+      "actor": "CoE",
+      "trigger": "Colliding teams",
+      "before": "No intake or standards",
+      "after": "Risk-based paths, design standards, training",
+      "observe": "Squads can find the flight manual",
+      "failure": "CoE as reject-only queue"
+    },
+    {
+      "step": 4,
+      "transition": "Protect production",
+      "actor": "Release manager",
+      "trigger": "Change ready",
+      "before": "Clicks in prod",
+      "after": "Source-driven artifact; Data Mask on copies",
+      "observe": "No risky config first-in-prod",
+      "failure": "Using prod as training"
+    }
+  ],
+  "when_to_use": [
+    "When someone asks for another production org: apply multi-org strategy only if residency, M&A, or isolation constraints are real.",
+    "When choosing where to build, UAT, or scale-test: use environment strategy (scratch/Dev/Partial/Full) from Well-Architected Resilient.",
+    "When teams collide on standards: Center of Excellence governance for practices, training, and hard problems—not a second CRM.",
+    "When production is being used as a lab: stop; sandboxes exist so production is not compromised."
+  ],
+  "when_not_to_use": [
+    "Do not treat every sandbox as a multi-org strategy; sandboxes are environments of one production.",
+    "Do not run scale testing in a Developer sandbox or make every change use the same overcrowded path.",
+    "Do not staff a Center of Excellence that only rejects work and never trains or solves hard problems.",
+    "Do not click risky configuration first in production as a substitute for environment strategy."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Sandboxes (create/clone/refresh).",
+    "Dev Hub for scratch orgs (if licensed).",
+    "Data Mask for sandbox PII.",
+    "CoE operating artifacts: design standards, intake, landscape diagrams."
+  ],
+  "worked_example": {
+    "scenario": "A company has one US production org. EU legal asks for residency. Month-end needs Scale Test. Three squads overwrite each other's Flows. Disposable sandboxes only for the lab write-up; no production clicks.",
+    "inputs": [
+      "Legal residency question (Needs verification with counsel)",
+      "Peak-season scale test",
+      "Colliding automation",
+      "Git already used for some metadata"
+    ],
+    "decisions": [
+      {
+        "decision": "Treat EU as a potential second production org only if legal confirms residency cannot be met in one org; otherwise keep a single hub and document the legal outcome.",
+        "because": "Multi-org is constraint-driven; extra orgs multiply integration.",
+        "rejected": "Split orgs because two vice presidents asked"
+      },
+      {
+        "decision": "Book Scale Test on Full sandbox; keep PoCs on scratch/Dev; UAT on Partial or Dev Pro.",
+        "because": "Resilient task mapping.",
+        "rejected": "Scale test in Developer sandbox"
+      },
+      {
+        "decision": "Stand up CoE standards for packaging and Flow ownership; CoE trains and unblocks, squads still deliver.",
+        "because": "CoE diagram: standards, training, hard problems.",
+        "rejected": "A reject-only CAB with no training"
+      }
+    ],
+    "configuration_or_code": [
+      "Draw a system landscape (Reference Diagrams style) with one or two prod boxes.",
+      "Write the environment matrix (scratch/Dev/Partial/Full).",
+      "Enable source tracking on Developer sandboxes if available.",
+      "Document Data Mask for any Full refresh that contains PII."
+    ],
+    "output": "A written org+environment+CoE decision, not a surprise second prod org.",
+    "verification": [
+      "Scale-test environment is Full, not Developer.",
+      "CoE RACI lists training, not only rejection.",
+      "Production is not listed as a training org."
+    ],
+    "self_explanation": "I separated multi-org (constraint) from environments (copies) from CoE (standards)."
+  },
+  "hands_on_lab": {
+    "environment": "Any org where you can view sandbox types in Help/Setup, plus a whiteboard. No production changes.",
+    "starting_state_checks": [
+      "You will not refresh a Full sandbox without owner approval.",
+      "No customer PII in screenshots."
+    ],
+    "steps": [
+      "Copy the Resilient task-to-environment mapping into a one-page matrix for your company names.",
+      "Write three bullets: one valid multi-org driver, one invalid driver, one CoE activity from the official diagram.",
+      "Find Setup → Sandboxes (or document that the edition has none) and note which types exist—do not create extras without approval.",
+      "List one high-risk versus one low-risk change path so not every change uses Full sandbox."
+    ],
+    "guided_completion": [
+      "If you have no Full sandbox, the gap is an environment-strategy risk, not a reason to scale-test in Dev.",
+      "If legal residency is unclear, mark Needs verification; do not invent a split."
+    ],
+    "independent_challenge": "Sketch a two-prod-org landscape and the minimum integration you just accepted.",
+    "evidence": [
+      "Environment matrix.",
+      "CoE versus squad RACI line."
+    ],
+    "stop_recovery_cleanup": [
+      "Do not leave extra sandboxes running if you created any.",
+      "Delete LAB_ names from diagrams if they contain real customer names."
+    ],
+    "limitations": "You may lack sandbox licenses; the written matrix still counts."
+  },
+  "decision_table": [
+    {
+      "signal": "Legal data residency or an acquisition cannot share identity/data model.",
+      "choose": "Multi-org strategy with an explicit integration and identity plan.",
+      "not": "A second production org because two leaders want 'their own Salesforce.'",
+      "why": "Extra prod orgs are constraint-driven; they multiply cost."
+    },
+    {
+      "signal": "You must prove peak-season throughput.",
+      "choose": "Environment strategy: Scale Test in Full sandbox.",
+      "not": "Developer sandbox click-through as scale testing.",
+      "why": "Resilient maps performance/scale testing to Full sandbox."
+    },
+    {
+      "signal": "A squad needs a short-lived org from git for a package.",
+      "choose": "Scratch org (and Developer/Dev Pro for longer-lived build).",
+      "not": "Production or Full sandbox as the default build environment.",
+      "why": "Scratch metadata is source-control-driven; Full is for scale/data volume."
+    },
+    {
+      "signal": "Teams collide on Flow, packaging, and naming.",
+      "choose": "Center of Excellence governance: standards, training, hard-problem support.",
+      "not": "A reject-only queue with no enablement.",
+      "why": "The CoE diagram is a bridge that trains and sets practices."
+    },
+    {
+      "signal": "Someone wants to try a risky sharing or automation change.",
+      "choose": "Non-production environment first; source-driven promote.",
+      "not": "Click it in production because 'it is faster.'",
+      "why": "Help: sandboxes exist so production is not compromised. ALM: no risky prod config."
+    }
+  ],
+  "limitations": [
+    "Does not replace legal advice on residency.",
+    "Does not list your contract's sandbox SKUs.",
+    "CoE structure is conceptual.",
+    "SSO/identity multi-org patterns are neighboring IAM topics."
+  ],
+  "security_notes": [
+    "Mask PII in sandboxes (Data Mask).",
+    "Full sandboxes copy production data—treat them as sensitive.",
+    "CoE members still need least-privilege in production."
+  ],
+  "common_mistakes": [
+    "Calling sandboxes 'multi-org.'",
+    "Scale test in Developer sandbox.",
+    "One overcrowded SIT for every change.",
+    "CoE as reject-only.",
+    "Risky clicks in production."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "UAT data is uselessly empty or dangerously full of PII.",
+      "check": [
+        "Wrong sandbox type (Dev vs Partial vs Full).",
+        "No sandbox template.",
+        "Data Mask not applied."
+      ],
+      "do_not_assume": "Production login is the UAT plan."
+    },
+    {
+      "symptom": "Two teams overwrite the same Flow in the only SIT.",
+      "check": [
+        "Overcrowded environment anti-pattern.",
+        "Missing CoE ownership standard.",
+        "No source tracking on Dev sandboxes."
+      ],
+      "do_not_assume": "Need a new production org."
+    },
+    {
+      "symptom": "Scale test results look fine then production melts.",
+      "check": [
+        "Test ran in Developer sandbox.",
+        "Full sandbox stale versus production volume.",
+        "No CoE intake for the NFR."
+      ],
+      "do_not_assume": "Governors were lifted."
+    }
+  ],
+  "production_notes": [
+    "Refresh Full sandboxes on a calendar; they are scarce.",
+    "Document org-split owners and integration SLAs if multi-org.",
+    "This lesson authorizes no production configuration."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is a Salesforce sandbox for, according to Help?",
+      "options": {
+        "A": "Development, testing, and training without compromising production",
+        "B": "A second production org by definition",
+        "C": "Only Event Monitoring",
+        "D": "Only AppExchange reviews"
+      },
+      "answer": "A",
+      "rationale": "Help: sandboxes are separate environments so production is not compromised.",
+      "distractor_explanations": {
+        "B": "That is multi-org, not a sandbox.",
+        "C": "Unrelated product.",
+        "D": "Unrelated."
+      },
+      "concept": "Sandboxes",
+      "citation_ids": ["SF-HELP-SANDBOX"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where does Well-Architected map performance and scale testing?",
+      "options": {
+        "A": "Full sandbox",
+        "B": "Scratch org as the scale-test standard",
+        "C": "Developer sandbox",
+        "D": "Production peak hours"
+      },
+      "answer": "A",
+      "rationale": "Resilient task table: Performance and Scale Testing → Full sandbox.",
+      "distractor_explanations": {
+        "B": "Scratch is for short-lived source-driven work.",
+        "C": "ALM anti-pattern.",
+        "D": "Do not load production at peak."
+      },
+      "concept": "Full sandbox",
+      "citation_ids": ["SF-WA-RESILIENT", "SF-WA-ALM"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Scratch org metadata is determined by what, in the Resilient table?",
+      "options": {
+        "A": "Source control",
+        "B": "Production copy always",
+        "C": "AppExchange",
+        "D": "OWD"
+      },
+      "answer": "A",
+      "rationale": "Resilient comparison: scratch metadata determined by source control; sandboxes by production.",
+      "distractor_explanations": {
+        "B": "That is sandbox rows.",
+        "C": "Unrelated.",
+        "D": "Sharing."
+      },
+      "concept": "Scratch vs sandbox",
+      "citation_ids": ["SF-WA-RESILIENT"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which CoE activities does the Architecture Center diagram list?",
+      "options": {
+        "A": "Best practices, enforce standards, train teams, solve hard problems",
+        "B": "Only rejecting every user story",
+        "C": "Only running payroll",
+        "D": "Only creating sandboxes"
+      },
+      "answer": "A",
+      "rationale": "CoE reference diagram description.",
+      "distractor_explanations": {
+        "B": "Not the diagram's mission.",
+        "C": "Unrelated.",
+        "D": "Ops can create sandboxes; that is not the CoE definition."
+      },
+      "concept": "Center of Excellence",
+      "citation_ids": ["SF-COE-DIAGRAM"]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Two VPs want 'their own Salesforce' with no legal or isolation constraint. Multi-org?",
+      "options": {
+        "A": "Prefer a single production org; extra orgs multiply identity and integration cost",
+        "B": "Always create two productions",
+        "C": "Replace CoE with two productions",
+        "D": "Use Developer sandbox as a production org"
+      },
+      "answer": "A",
+      "rationale": "Multi-org is constraint-driven; sandboxes are not extra productions.",
+      "distractor_explanations": {
+        "B": "Habit, not strategy.",
+        "C": "CoE is governance, not an org.",
+        "D": "Wrong environment class."
+      },
+      "concept": "Multi-org strategy",
+      "citation_ids": ["SF-REF-DIAGRAMS", "SF-HELP-SANDBOX"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "ALM environment-strategy anti-pattern among these?",
+      "options": {
+        "A": "Risky configuration changes made directly in production",
+        "B": "Source tracking enabled on Developer sandboxes",
+        "C": "Source-driven development model",
+        "D": "Risk-based release paths"
+      },
+      "answer": "A",
+      "rationale": "ALM tools: risky prod config is an anti-pattern; the others are patterns.",
+      "distractor_explanations": {
+        "B": "Pattern.",
+        "C": "Pattern.",
+        "D": "Pattern."
+      },
+      "concept": "No prod experiments",
+      "citation_ids": ["SF-WA-ALM"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "UAT for a typical feature is mapped to which environments?",
+      "options": {
+        "A": "Developer, Developer Pro, and Partial Copy sandboxes",
+        "B": "Full sandbox only",
+        "C": "Scratch org only",
+        "D": "Production only"
+      },
+      "answer": "A",
+      "rationale": "Resilient task table: User Acceptance Testing → those sandboxes.",
+      "distractor_explanations": {
+        "B": "Full is scale/training-sized, not the only UAT row.",
+        "C": "Scratch is prototyping/package.",
+        "D": "Production is not UAT."
+      },
+      "concept": "UAT environments",
+      "citation_ids": ["SF-WA-RESILIENT"]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Help mentions which product to mask sensitive sandbox data?",
+      "options": {
+        "A": "Salesforce Data Mask",
+        "B": "FOR UPDATE",
+        "C": "Platform Cache",
+        "D": "PushTopic"
+      },
+      "answer": "A",
+      "rationale": "Sandboxes Help: Data Mask for PII in sandbox copies.",
+      "distractor_explanations": {
+        "B": "Locking.",
+        "C": "Performance cache.",
+        "D": "Legacy events."
+      },
+      "concept": "Data Mask",
+      "citation_ids": ["SF-HELP-SANDBOX"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Every change, including a report color, waits in the same overcrowded SIT. Governance fix?",
+      "options": {
+        "A": "Risk-based paths so not every change uses the same environment",
+        "B": "Create five production orgs",
+        "C": "Disable the CoE",
+        "D": "Scale-test report colors in production"
+      },
+      "answer": "A",
+      "rationale": "ALM: environments should not all correspond to one path; overcrowding is an anti-pattern.",
+      "distractor_explanations": {
+        "B": "Multi-org is not a queueing fix.",
+        "C": "Opposite.",
+        "D": "Unsafe and irrelevant."
+      },
+      "concept": "Governance paths",
+      "citation_ids": ["SF-WA-ALM"]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Source tracking is listed as available on which of these in the Resilient comparison?",
+      "options": {
+        "A": "Scratch, Developer, and Developer Pro (not Partial/Full in that table)",
+        "B": "Only Full sandbox",
+        "C": "Only production",
+        "D": "Only Partial Copy"
+      },
+      "answer": "A",
+      "rationale": "Resilient table: source tracking Yes on scratch/Dev/Dev Pro; No on Partial/Full.",
+      "distractor_explanations": {
+        "B": "Full is No in that table.",
+        "C": "Production is not in the sandbox comparison as a tracking sandbox.",
+        "D": "Partial is No."
+      },
+      "concept": "Source tracking",
+      "citation_ids": ["SF-WA-RESILIENT", "SF-WA-ALM"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates environment metadata from business data?",
+      "options": {
+        "A": "A sandbox copy's custom objects are metadata; the copied Account rows are business data (and may be PII)",
+        "B": "Sandboxes contain only metadata never data",
+        "C": "Full sandbox never copies data",
+        "D": "Scratch orgs store all production rows by default"
+      },
+      "answer": "A",
+      "rationale": "Sandboxes copy metadata from production; data volume depends on type. Full copies production-like data.",
+      "distractor_explanations": {
+        "B": "Partial/Full carry data.",
+        "C": "False.",
+        "D": "Scratch data is loaded, small limit."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-WA-RESILIENT", "SF-HELP-SANDBOX"]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "The CoE 'bridges' whom, according to the reference diagram?",
+      "options": {
+        "A": "Executive stakeholders and IT",
+        "B": "Only Experience Cloud sites",
+        "C": "Only Event Relay and AWS",
+        "D": "Only Apex and Flow"
+      },
+      "answer": "A",
+      "rationale": "Diagram description: CoE bridges executive stakeholders and IT.",
+      "distractor_explanations": {
+        "B": "Too narrow.",
+        "C": "Integration tools.",
+        "D": "Automation tools."
+      },
+      "concept": "CoE bridge",
+      "citation_ids": ["SF-COE-DIAGRAM"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "Sandbox versus extra production org?",
+      "back": "A sandbox is an environment copy for build/test/training. Multi-org means more than one production."
+    },
+    {
+      "id": "F2",
+      "category": "env",
+      "front": "Scale testing environment?",
+      "back": "Full sandbox, not Developer sandbox."
+    },
+    {
+      "id": "F3",
+      "category": "env",
+      "front": "Scratch org metadata source?",
+      "back": "Source control, not a production copy."
+    },
+    {
+      "id": "F4",
+      "category": "env",
+      "front": "Typical UAT sandboxes?",
+      "back": "Developer, Developer Pro, Partial Copy."
+    },
+    {
+      "id": "F5",
+      "category": "coe",
+      "front": "Four CoE activities from the diagram?",
+      "back": "Best practices, enforce standards, train teams, solve hard problems."
+    },
+    {
+      "id": "F6",
+      "category": "multi",
+      "front": "When to split production orgs?",
+      "back": "Hard constraints such as residency, M&A isolation, or incompatible landscapes—not VP preference alone."
+    },
+    {
+      "id": "F7",
+      "category": "gov",
+      "front": "Risky config in production first?",
+      "back": "Anti-pattern. Use sandboxes; source-driven promote."
+    },
+    {
+      "id": "F8",
+      "category": "gov",
+      "front": "One path for every change?",
+      "back": "Anti-pattern. Use risk-based paths; do not overcrowd one SIT."
+    },
+    {
+      "id": "F9",
+      "category": "pii",
+      "front": "How to reduce PII in sandbox copies?",
+      "back": "Salesforce Data Mask (Help)."
+    },
+    {
+      "id": "F10",
+      "category": "track",
+      "front": "Source tracking on Partial/Full in Resilient table?",
+      "back": "No. Yes on scratch, Developer, Developer Pro."
+    },
+    {
+      "id": "F11",
+      "category": "coe",
+      "front": "CoE bridges whom?",
+      "back": "Executive stakeholders and IT."
+    },
+    {
+      "id": "F12",
+      "category": "proto",
+      "front": "Prototyping environments?",
+      "back": "Scratch orgs, Developer and Developer Pro sandboxes."
+    },
+    {
+      "id": "F13",
+      "category": "artifact",
+      "front": "Should a sandbox be the release artifact?",
+      "back": "No. Source-driven artifacts; metadata in an environment is not the artifact."
+    },
+    {
+      "id": "F14",
+      "category": "multi",
+      "front": "Is a Developer sandbox a multi-org strategy?",
+      "back": "No. It is an environment of one production org."
+    },
+    {
+      "id": "F15",
+      "category": "full",
+      "front": "Full sandbox data determined by?",
+      "back": "Production (Resilient table). Treat copies as sensitive."
+    },
+    {
+      "id": "F16",
+      "category": "gov",
+      "front": "Reject-only CAB equals CoE?",
+      "back": "No. Official CoE includes training and solving hard problems."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Single-org versus multi-org—how do you choose?",
+      "answer_30_seconds": "Default to one production org. Split only for hard constraints like residency, acquisition isolation, or incompatible packages. Sandboxes are not extra productions.",
+      "answer_2_minutes": "I ask what cannot be solved with sharing, packages, and environments. If legal residency or M&A isolation is real, I draw two prod boxes and the integration tax. I use Reference Diagrams for landscapes. I do not split orgs to dodge a CoE conversation.",
+      "example": "EU/US residency versus two VPs wanting logos.",
+      "tradeoffs": [
+        "Integration tax versus legal isolation",
+        "One identity plane versus two"
+      ],
+      "follow_ups": [
+        "What diagrams do you draw?",
+        "Who signs the legal constraint?"
+      ],
+      "weak_answer_warnings": [
+        "Every region automatically gets a production org"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Walk the environment strategy from Well-Architected.",
+      "answer_30_seconds": "Scratch and Dev/Dev Pro for build, Partial/Dev for UAT, Full for scale tests. Git is the artifact. No risky prod clicks.",
+      "answer_2_minutes": "I recite the Resilient mapping and the ALM anti-patterns: overcrowded SIT, org-as-artifact, Developer sandbox scale tests. I enable source tracking where the table says Yes. I mention Data Mask for PII.",
+      "example": "Scale Test booked on Full; PoC on scratch.",
+      "tradeoffs": [
+        "Full sandbox scarcity versus test fidelity",
+        "Partial Copy templates versus empty Dev data"
+      ],
+      "follow_ups": [
+        "Refresh intervals?",
+        "Scratch lifespan?"
+      ],
+      "weak_answer_warnings": [
+        "Production is our SIT"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Month-end scale test and a new Flow collide in one SIT. Design the operating model.",
+      "answer_30_seconds": "Scale test on Full. Flow work on Dev with source tracking. CoE sets ownership so two squads do not edit one Flow. Risk-based paths.",
+      "answer_2_minutes": "I split environments by task, not by ego. CoE publishes Flow ownership and packaging standards and trains. I refuse a second production org as the fix for a crowded SIT. I keep production off-limits for experiments.",
+      "example": "Squad A Dev sandbox; scale rehearsal on Full this weekend.",
+      "tradeoffs": [
+        "Sandbox license cost versus incident cost",
+        "CoE review versus squad speed"
+      ],
+      "follow_ups": [
+        "Who approves Full refresh?",
+        "What is overcrowded?"
+      ],
+      "weak_answer_warnings": [
+        "Buy another production org for the Flow team"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Legal might require EU data residency. What do you do this week versus next quarter?",
+      "answer_30_seconds": "This week: mark Needs verification with counsel; do not split orgs on a rumor. Next: if confirmed, multi-org with identity and integration design.",
+      "answer_2_minutes": "I will not pretend this handbook is legal advice. I inventory where EU personal data lives. If one org with hosting options suffices, I stay single-org. If not, I budget a second production, SSO, and integration—not just another sandbox.",
+      "example": "EU prod plus US prod versus Hyperforce/region options—Needs verification.",
+      "tradeoffs": [
+        "Legal certainty versus delivery delay",
+        "Multi-org cost versus fines"
+      ],
+      "follow_ups": [
+        "Shield Event Monitoring in both orgs?",
+        "Package install topology?"
+      ],
+      "weak_answer_warnings": [
+        "A Full sandbox satisfies residency"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "UAT users see production names in a sandbox. Response?",
+      "answer_30_seconds": "Treat it as PII in an environment copy. Apply Data Mask, restrict access, and check whether Full/Partial was the wrong type for that audience.",
+      "answer_2_minutes": "Help exists because sandboxes can contain sensitive copies. I stop sharing the org widely, mask, and review who can create Full sandboxes. I do not 'fix' it by testing in production instead.",
+      "example": "Partial Copy without a template still leaking names.",
+      "tradeoffs": [
+        "Realism versus privacy",
+        "Masking versus synthetic seed data"
+      ],
+      "follow_ups": [
+        "Who owns Data Mask?",
+        "Is this a Full sandbox?"
+      ],
+      "weak_answer_warnings": [
+        "Sandboxes are never sensitive"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "The CoE is a bottleneck: every field waits six weeks. Architecture critique?",
+      "answer_30_seconds": "That is reject-only governance, not the CoE diagram. Use risk-based paths; CoE trains and solves hard problems; squads ship low-risk work.",
+      "answer_2_minutes": "I would split intake: low-risk reports versus data-model changes. CoE publishes standards and office hours. Environment strategy should not force every change through Full sandbox. I still keep production clicks off-limits.",
+      "example": "A report color change is low risk; a new financial object is not.",
+      "tradeoffs": [
+        "Control versus throughput",
+        "Central CoE versus federated domain architects"
+      ],
+      "follow_ups": [
+        "What is high risk?",
+        "How do you measure CoE cycle time?"
+      ],
+      "weak_answer_warnings": [
+        "Abolish all governance"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you not create a Full sandbox?",
+      "answer_30_seconds": "If the org has no license, if the task is a PoC (use scratch/Dev), or if you cannot protect PII. Lack of Full is a risk you name, not a reason to scale-test in Dev.",
+      "answer_2_minutes": "Full is scarce and copies production data. I use it for scale and production-like UAT/training when policy allows. I do not refresh it casually. If leadership refuses the SKU, I escalate the NFR gap rather than fake a load test.",
+      "example": "No Full SKU; Scale Test cannot be honest.",
+      "tradeoffs": [
+        "SKU cost versus incident cost",
+        "Stale Full versus refresh freeze"
+      ],
+      "follow_ups": [
+        "Partial Copy instead?",
+        "Data Mask budget?"
+      ],
+      "weak_answer_warnings": [
+        "Developer sandbox is equivalent"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach multi-org, environments, governance, and CoE with an airline picture, then break it.",
+      "answer_30_seconds": "Hubs are production orgs, simulators are sandboxes, OCC is the CoE. It breaks on licenses, SSO, and PII in Full copies.",
+      "answer_2_minutes": "I map Full sandbox to a full-motion surge drill and Developer to a procedure trainer. I say extra airports are customs/M&A, not ego. I cite Resilient and the CoE diagram so it is not only a metaphor.",
+      "example": "EU airport plus US hub; Full-motion month-end drill.",
+      "tradeoffs": [
+        "Metaphor versus table facts",
+        "One hub versus legal split"
+      ],
+      "follow_ups": [
+        "Map Data Mask",
+        "Map source tracking"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer filler"
+      ]
+    }
+  ]
+}

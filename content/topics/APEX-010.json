@@ -1,0 +1,1073 @@
+{
+  "topic_id": "APEX-010",
+  "slug": "transaction-boundaries-savepoints-rollback-locking-and-",
+  "title": "Transaction boundaries, savepoints, rollback, locking, and concurrency",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-009"
+  ],
+  "objectives": [
+    "Define an Apex transaction boundary and explain that record-save order of execution runs inside that unit until commit.",
+    "Use Database.setSavepoint and Database.rollback to undo uncommitted DML without inventing governor numbers.",
+    "Apply FOR UPDATE locking to prevent lost updates, and name the official wait and callout-release behaviors.",
+    "Separate same-transaction concurrency (locks, savepoints) from post-commit async work that starts a new transaction."
+  ],
+  "diagnostic_question": "Two users decrement LAB_ Inventory at the same time. One path also HTTP-callouts after a FOR UPDATE query. Where is the transaction boundary, what does a savepoint rollback undo, and what lock behavior would you verify first?",
+  "definition": "An Apex transaction is a set of operations executed as a single unit: all DML in that boundary must succeed or the platform rolls back the database work and does not commit. The boundary can be a trigger, a class method, an anonymous block, a Visualforce page, or a custom Web service method. Savepoints mark a moment inside that unit; Database.rollback restores uncommitted DML to that mark. FOR UPDATE locks queried rows until the transaction completes (or until a callout releases those locks). ([Apex Transactions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_transaction.htm); [Locking Statements](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_locking_statements.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+  "why_it_matters": "Interview failures here sound like 'the trigger rolled back but the Queueable still ran' or 'I locked the row then made a callout.' Record-save order of execution (APEX-009) is the pipeline inside one transaction until commit; this lesson owns the atomic unit, savepoints, locks, and what starts only after commit.",
+  "sixty_second_explanation": "Treat a save as one vault session. Everything in record-save order of execution—before-save Flow, before triggers, validation, after triggers, after-save Flow—shares one Apex transaction until commit. If any unhandled error blows the session, related DML is rolled back. A savepoint is a Polaroid of the ledger you can rewind to with Database.rollback; that rewind counts as DML against governors. FOR UPDATE is a reserved teller window: other writers wait, officially up to 10 seconds, then QueryException or DmlException. A callout releases those FOR UPDATE locks. Queueable/future work queued in a rolled-back transaction is not processed.",
+  "deeper_explanation": [
+    "The Apex Developer Guide defines a transaction as one unit of work. All DML operations in the transaction must complete successfully; if an error occurs in one operation, the entire transaction is rolled back and no data is committed. Nested Apex (a web service that fires a trigger that calls a class) still shares that boundary until the outer unit finishes. ([Apex Transactions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_transaction.htm))",
+    "Record-save order of execution is the ordered pipeline of automations for one insert/update/upsert. That pipeline runs inside the current transaction until the platform commits. Post-commit work (email sends, async Apex queued to run after commit) is a new transaction with a fresh governor pool. Do not recite the full save-order list here—that is APEX-009. Do use it to explain why an after-trigger DML still rolls back if a later step throws. ([Apex Transactions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_transaction.htm))",
+    "Database.setSavepoint and Database.rollback are transaction-control DML. The governors table lists both as counting toward the per-transaction DML statement limit (150 synchronous and asynchronous). Rollback undoes uncommitted DML to that savepoint; it does not start a new transaction, reset CPU/SOQL, or unsend committed emails. Savepoint references must not cross trigger invocations—storing a Savepoint in a static and using it in a later trigger context throws at runtime. ([Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm); [Transaction Control](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_transaction_control.htm))",
+    "FOR UPDATE locks returned sObjects so other clients cannot update them until this transaction completes. Other clients may still query. If you wait more than 10 seconds for a lock, a QueryException is thrown; an update waiting more than 10 seconds throws DmlException. You cannot use ORDER BY with locking. Related records may also lock on DML. Callouts release FOR UPDATE locks (debug: FOR_UPDATE_LOCKS_RELEASE). ([Locking Statements](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_locking_statements.htm))",
+    "Concurrency design is lock duration, not clever statics. Hold FOR UPDATE only for the shortest DML, then commit. Do not lock, then callout, then update—the lock is already gone. If two clerks need the same LAB_ Inventory row, lock first, compute on the fresh copy, then DML. Deadlocks are possible if lock order differs across code paths; pick one object order and stick to it."
+  ],
+  "mental_model": {
+    "analogy": "A night-shift bank vault: one session from door-open to door-close (commit). Savepoints are Polaroid snapshots of the ledger. FOR UPDATE is a reserved teller window. Two clerks grabbing the same cash drawer is concurrency.",
+    "useful_mapping": [
+      "vault session → Apex transaction boundary",
+      "door-close → database commit",
+      "Polaroid of the ledger → Database.setSavepoint",
+      "rewind to Polaroid → Database.rollback",
+      "reserved teller window → SOQL FOR UPDATE",
+      "10-second wait then alarm → QueryException / DmlException",
+      "courier leaving the vault → HTTP callout releasing FOR UPDATE locks",
+      "night deposit after hours → post-commit async (new transaction)",
+      "record-save pipeline → the work that happens before the door closes"
+    ],
+    "where_it_breaks": [
+      "Payment-gateway transactions are a documented exception: even if an error occurs, payment records can still commit because the money already moved at the gateway.",
+      "A savepoint rewind is not a new vault session; governors already spent stay spent.",
+      "The vault analogy does not encode the full APEX-009 save-order list or Queueable vs Batch choice (APEX-011).",
+      "Static Apex variables are not Polaroids; do not assume they rewind with Database.rollback without re-reading the Transaction Control topic for the API version under discussion."
+    ]
+  },
+  "teach_back_prompt": "Without using a library or labeled-drawer metaphor, explain to a Java developer where an Apex transaction starts and ends, what a savepoint rollback undoes, and why FOR UPDATE plus a callout is a trap.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: transaction vs savepoint vs commit, and where record-save order of execution sits."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given FOR UPDATE then callout then DML, name the lock-release rule and a safer sequence."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Walk Database.setSavepoint / rollback and which governor bucket they consume."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose UNABLE_TO_LOCK_ROW versus a logic bug using lock duration and related-record locks."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: all-or-nothing DML, savepoints, locking, and post-commit async as a new transaction."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-TXN",
+      "title": "Apex Transactions",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_transaction.htm",
+      "supports": "Apex transaction as a single unit of DML; rollback of the whole unit on error; example boundaries (trigger, class method, anonymous, Visualforce, custom Web service).",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Payment-gateway transactions are a documented exception to all-or-nothing DML."
+    },
+    {
+      "source_id": "SF-APEX-TXN-CTRL",
+      "title": "Transaction Control",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_transaction_control.htm",
+      "supports": "Savepoints, Database.rollback, and the rule that savepoint references cannot cross trigger invocations.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Reverify static-variable and email-after-rollback wording on the current Transaction Control page; do not invent extra numbers."
+    },
+    {
+      "source_id": "SF-APEX-LOCK",
+      "title": "Locking Statements",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_locking_statements.htm",
+      "supports": "FOR UPDATE locks until transaction complete; 10-second wait; no ORDER BY; callouts release FOR UPDATE locks; related records may lock on DML.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every object that parent-locks on insert; see the record-locking cheat sheet as neighboring, not this lesson's number table."
+    },
+    {
+      "source_id": "SF-APEX-GOV",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "Per-transaction DML statement limit of 150 including Database.setSavepoint and Database.rollback; other per-transaction ceilings for the same unit of work.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Numbers are Summer '26 / API 67.0 from this page; reverify before quoting in a later release."
+    },
+    {
+      "source_id": "SF-APEX-QUEUEABLE",
+      "title": "Queueable Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_queueing_jobs.htm",
+      "supports": "If an Apex transaction rolls back, queueable jobs queued by that transaction are not processed.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Job-type choice is APEX-011; this source supports the rollback-cancels-queued-async claim only."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Transaction boundary",
+        "Savepoint and rollback",
+        "FOR UPDATE lock",
+        "Callout releases lock",
+        "Commit vs new async transaction",
+        "Order of execution sits inside the unit"
+      ],
+      "accessible_description": "Transaction boundary; Savepoint and rollback; FOR UPDATE lock; Callout releases lock; Commit vs new async transaction; Order of execution sits inside the unit"
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-TXN",
+        "SF-APEX-TXN-CTRL",
+        "SF-APEX-LOCK",
+        "SF-APEX-GOV"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Where does this DML live: same transaction or after commit?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Req[Request: trigger class method anonymous VF or web service] --> Txn[Apex transaction boundary]\n  Txn --> Ooe[Record-save order of execution: APEX-009 pipeline]\n  Ooe --> Sp[Optional Database.setSavepoint]\n  Sp --> Dml[Uncommitted DML]\n  Dml --> Lock[Optional FOR UPDATE lock]\n  Lock --> Q{Callout in this transaction?}\n  Q -->|Yes| Rel[FOR UPDATE locks released]\n  Q -->|No| Hold[Lock held until commit or rollback]\n  Rel --> End{Success?}\n  Hold --> End\n  End -->|Unhandled error| Rb[Entire transaction rolled back; queued Queueable/future not processed]\n  End -->|Database.rollback to savepoint| Part[Uncommitted DML undone; governors already spent remain]\n  End -->|Success| Commit[Database commit]\n  Commit --> Async[Post-commit async and email: new transaction APEX-011]",
+      "decision": "flowchart TD\n  Need[Need data consistency?] --> Q1{Must related DML all succeed or all fail?}\n  Q1 -->|Yes, whole request| All[Rely on the Apex transaction boundary; do not swallow the exception]\n  Q1 -->|Yes, but keep earlier work| Sp[Database.setSavepoint then Database.rollback; counts as DML]\n  Q1 -->|No, later batches may keep earlier work| Batch[Batch execute chunks: APEX-011, each execute is its own transaction]\n  Need --> Q2{Two writers can touch the same LAB_ row?}\n  Q2 -->|Yes, short critical section| Foru[SOQL FOR UPDATE, then DML, then commit; no ORDER BY]\n  Q2 -->|Need an HTTP callout too| Split[Do not lock-then-callout; callout releases FOR UPDATE locks]\n  Q2 -->|Long work or callout chain| Qable[Enqueue Queueable after commit: new transaction]",
+      "sequence": "sequenceDiagram\n  participant User\n  participant Txn as Apex transaction\n  participant DB as Database\n  participant Async as Post-commit async\n  User->>Txn: DML save request\n  Txn->>Txn: Order of execution inside this boundary\n  Txn->>DB: Uncommitted DML and optional FOR UPDATE\n  alt Unhandled error\n    Txn->>DB: Rollback entire unit\n  else Success\n    Txn->>DB: Commit\n    DB->>Async: New transaction for Queueable future email\n  end"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "An Apex transaction is a single unit of work: all DML in the boundary must succeed or the platform rolls back and does not commit. Boundaries include a trigger, class method, anonymous block, Visualforce page, or custom Web service method.",
+      "source_ids": [
+        "SF-APEX-TXN"
+      ],
+      "scope": "Transaction definition",
+      "validation": "Apex Transactions opening definition.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Database.setSavepoint and Database.rollback count toward the per-transaction DML statement governor (150). Savepoint references cannot cross trigger invocations.",
+      "source_ids": [
+        "SF-APEX-GOV",
+        "SF-APEX-TXN-CTRL"
+      ],
+      "scope": "Savepoints and governors",
+      "validation": "Governors table footnote on DML methods; Transaction Control savepoint-context rule.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "FOR UPDATE locks records until the transaction completes. Other clients wait a maximum of 10 seconds or receive QueryException/DmlException. ORDER BY is illegal with locking. Callouts release FOR UPDATE locks.",
+      "source_ids": [
+        "SF-APEX-LOCK"
+      ],
+      "scope": "Locking",
+      "validation": "Locking Statements considerations.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "If an Apex transaction rolls back, queueable jobs queued by that transaction are not processed.",
+      "source_ids": [
+        "SF-APEX-QUEUEABLE"
+      ],
+      "scope": "Async after rollback",
+      "validation": "Queueable Apex important note.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify FOR UPDATE + callout lock-release logging and savepoint-across-trigger rules on the Summer '26 Apex Developer Guide pages cited. Do not copy unofficial Spring '24 blog numbers for rollback-of-locks.",
+  "unresolved_uncertainty": [
+    "Exact static-variable and Id-in-memory behavior after Database.rollback should be re-read from Transaction Control for the class API version; mark any extra claims Needs verification rather than inventing them.",
+    "Which parent/lookup objects lock on a given DML is object-specific; use the current record-locking guidance rather than a memorized unofficial list."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Transaction boundary",
+      "telugu": "ఒకే వాల్ట్ సెషన్: అన్ని DML విజయం లేదా అన్నీ rollback."
+    },
+    {
+      "english": "FOR UPDATE",
+      "telugu": "ఈ లావాదేవీ ముగిసే వరకు రికార్డును లాక్ చేసే SOQL."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "An Apex transaction is all-or-nothing DML until commit. Record-save order of execution runs inside that unit. Savepoints rewind uncommitted DML and count as DML. FOR UPDATE holds a lock until commit, unless a callout releases it. Rolled-back transactions do not process queued Queueable jobs.",
+    "two_minutes": "I start from the boundary: trigger, class method, anonymous, Visualforce, or web service. Everything in the save pipeline shares governors until commit. I use a savepoint only when I must keep earlier uncommitted work after a later failure, and I remember rollback does not reset CPU. For two writers on LAB_ Inventory I FOR UPDATE, compute on the fresh row, DML, and commit quickly. I never lock then callout. Async queued in a failed transaction is cancelled. Batch execute methods are separate transactions—that is APEX-011, not a savepoint trick."
+  },
+  "terminology": [
+    {
+      "term": "Apex transaction",
+      "plain": "One request's all-or-nothing database unit.",
+      "precise": "A set of operations executed as a single unit. All DML must succeed or the transaction rolls back and nothing commits. Also called an execution context.",
+      "example": "A LAB_ Invoice trigger that inserts a line and updates stock in one save.",
+      "non_example": "A Batch Apex execute method is its own transaction, not a continuation of start().",
+      "confusable_neighbor": "Record-save order of execution: the pipeline inside the unit, not a second database.",
+      "boundary": "This lesson owns the unit; APEX-009 owns the ordered automation list."
+    },
+    {
+      "term": "transaction boundary",
+      "plain": "Where that unit starts and ends.",
+      "precise": "The Guide lists trigger, class method, anonymous block, Visualforce page, or custom Web service method as possible boundaries.",
+      "example": "A REST Apex class method that updates two LAB_ objects before returning.",
+      "non_example": "A static variable surviving a rollback is not a new boundary.",
+      "confusable_neighbor": "Governor limit: resource ceilings for the same unit (APEX-007).",
+      "boundary": "Nested Apex still shares the outer boundary until it finishes."
+    },
+    {
+      "term": "savepoint",
+      "plain": "A Polaroid of uncommitted DML you can rewind to.",
+      "precise": "Database.setSavepoint marks a position; Database.rollback restores uncommitted DML to that mark. Both count as DML statements (150 per transaction on the governors page).",
+      "example": "Savepoint sp = Database.setSavepoint(); insert labLines; Database.rollback(sp);",
+      "non_example": "System.abortJob is not a savepoint.",
+      "confusable_neighbor": "Database.rollback vs unhandled exception: exception undoes the whole transaction; rollback undoes to the mark.",
+      "boundary": "Cannot use a Savepoint stored in a static across trigger invocations."
+    },
+    {
+      "term": "rollback",
+      "plain": "Undo uncommitted database work.",
+      "precise": "Whole-transaction rollback on error, or Database.rollback(Savepoint) to a mark. Queueable jobs queued in a rolled-back transaction are not processed.",
+      "example": "Validation-rule exception after two inserts: neither row remains.",
+      "non_example": "Deleting a record in a later Batch execute does not undo the previous execute's commits.",
+      "confusable_neighbor": "Savepoint rollback vs Batch chunk failure: later chunks do not rewind earlier committed executes.",
+      "boundary": "Rollback does not reset SOQL/CPU already consumed."
+    },
+    {
+      "term": "FOR UPDATE",
+      "plain": "Lock queried rows for this transaction.",
+      "precise": "SOQL locking clause. Lock held until the transaction completes. Max wait 10 seconds. No ORDER BY. Callouts release the locks.",
+      "example": "SELECT Id, Qty__c FROM LAB_Inventory__c WHERE Id = :id FOR UPDATE",
+      "non_example": "WITH SECURITY_ENFORCED is CRUD/FLS, not a row lock.",
+      "confusable_neighbor": "Row lock vs sharing: locking is concurrency, not who may see the row.",
+      "boundary": "Related records may lock on DML; design lock order to avoid deadlocks."
+    },
+    {
+      "term": "concurrency",
+      "plain": "Two sessions wanting the same rows at once.",
+      "precise": "Race conditions when writers do not lock; UNABLE_TO_LOCK_ROW / wait-timeout when they do and hold too long.",
+      "example": "Two agents decrementing LAB_ Inventory without FOR UPDATE.",
+      "non_example": "Two users viewing a report is not a write race.",
+      "confusable_neighbor": "Flex queue: async job scheduling, not row locks.",
+      "boundary": "Short lock sections; do not mix locks with callouts."
+    },
+    {
+      "term": "commit",
+      "plain": "When uncommitted DML becomes durable.",
+      "precise": "After the transaction succeeds, the database commit happens; post-commit async and some email work start afterward in new transactions.",
+      "example": "After-save Flow DML in the same save still rolls back if a later step throws before commit.",
+      "non_example": "A Queueable execute is not the original commit.",
+      "confusable_neighbor": "Publish Immediately platform events can fire before commit (APEX-012).",
+      "boundary": "Do not assume a trigger System.debug means the row is committed."
+    },
+    {
+      "term": "Database.setSavepoint",
+      "plain": "The Apex API that creates a savepoint token.",
+      "precise": "A DML-counted call that returns a Savepoint you later pass to Database.rollback.",
+      "example": "Savepoint sp = Database.setSavepoint(); in a LAB_ service before optional extra DML.",
+      "non_example": "Test.startTest is not a savepoint (APEX-016).",
+      "confusable_neighbor": "Limits.getDMLStatements includes setSavepoint and rollback.",
+      "boundary": "Need verification of any unpublished cap on nested savepoint count; cite governors DML 150 rather than inventing a nested cap."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Identify the transaction boundary",
+      "actor": "Developer",
+      "trigger": "A save or Apex entry runs",
+      "before": "Unclear unit of work",
+      "after": "Named boundary: trigger, method, anonymous, VF, or web service",
+      "observe": "Debug log shows one request; governors count across nested Apex",
+      "failure": "Treating each trigger as an independent commit"
+    },
+    {
+      "step": 2,
+      "transition": "Decide all-or-nothing vs savepoint",
+      "actor": "Developer",
+      "trigger": "Partial failure is possible",
+      "before": "No recovery plan",
+      "after": "Either let the exception roll back everything, or set a savepoint before the risky DML",
+      "observe": "Rollback leaves intended rows; Limits.getDMLStatements increased",
+      "failure": "Catching governor exceptions (they are not handleable)"
+    },
+    {
+      "step": 3,
+      "transition": "Lock only a short critical section",
+      "actor": "Developer",
+      "trigger": "Lost-update risk on LAB_ stock",
+      "before": "Readers-writers race",
+      "after": "SOQL FOR UPDATE, compute, DML, commit",
+      "observe": "Second session waits or times out at 10 seconds",
+      "failure": "FOR UPDATE then HTTP callout then DML"
+    },
+    {
+      "step": 4,
+      "transition": "Keep post-commit work out of the lock",
+      "actor": "Developer",
+      "trigger": "Need callout or Queueable",
+      "before": "Work jammed into the save",
+      "after": "Enqueue async after successful DML; new transaction",
+      "observe": "AsyncApexJob appears only if the parent committed",
+      "failure": "Assuming a rolled-back trigger still runs its Queueable"
+    }
+  ],
+  "when_to_use": [
+    "When related DML must share one Apex transaction boundary so a later validation failure rolls back earlier inserts.",
+    "When a later optional step should Database.rollback to a savepoint without aborting earlier uncommitted work you still need in-memory.",
+    "When two writers can update the same LAB_ row and you need FOR UPDATE locking rather than last-write-wins.",
+    "When explaining how record-save order of execution sits inside the transaction until commit, versus post-commit async concurrency.",
+    "When a callout must not run while FOR UPDATE locks are held, because callouts release those locks.",
+    "When diagnosing why a Queueable queued in a failed trigger never ran after rollback."
+  ],
+  "when_not_to_use": [
+    "Do not use savepoints as a substitute for choosing Queueable, Batch, Future, or Scheduled (APEX-011)—each async execute is already a new transaction.",
+    "Do not treat this transaction-boundary lesson as the full record-save order of execution catalog (APEX-009).",
+    "Do not hold FOR UPDATE locking across an HTTP callout or a long loop; that is a concurrency anti-pattern, not a feature.",
+    "Do not invent extra rollback or lock-timeout numbers; quote Execution Governors and Limits and Locking Statements, or mark Needs verification.",
+    "Do not use Database.rollback to 'undo' a previous Batch execute that already committed.",
+    "Do not use production customer rows to demo locking; use synthetic LAB_ records in a sandbox."
+  ],
+  "configuration_or_code_location": [
+    "Apex class or trigger in a disposable sandbox: Database.setSavepoint, Database.rollback, SOQL FOR UPDATE.",
+    "Setup → Apex Classes / Apex Triggers, or retrieve classes/*.cls and triggers/*.trigger.",
+    "Developer Console debug log: DML, FOR_UPDATE_LOCKS_RELEASE, exception stack.",
+    "Setup → Apex Jobs only after commit, to confirm queued work was not rolled back."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab decrements LAB_Inventory__c.Qty__c when a LAB_Order__c inserts. Two testers click at once. A later step may call an external allocator. No production data.",
+    "inputs": [
+      "LAB_Inventory__c row with Qty__c = 5",
+      "Two concurrent LAB_Order__c inserts for quantity 3",
+      "Optional HTTP callout after stock update",
+      "Class API 67.0"
+    ],
+    "decisions": [
+      {
+        "decision": "SOQL the inventory FOR UPDATE, then decrement, then DML in the same transaction.",
+        "because": "Locking Statements: lock, use the fresh copy, update before another client overwrites.",
+        "rejected": "Query without FOR UPDATE and hope UI clicks do not overlap."
+      },
+      {
+        "decision": "Do not callout while the lock is held; enqueue Queueable after successful DML.",
+        "because": "Callouts release FOR UPDATE locks; a rolled-back transaction would also drop the Queueable.",
+        "rejected": "Http.send in the trigger after FOR UPDATE."
+      },
+      {
+        "decision": "If optional extra line items fail, rollback to a savepoint taken after the inventory decrement only if product design requires keeping stock movement.",
+        "because": "Savepoint rollback is partial undo inside the same transaction and counts as DML.",
+        "rejected": "Empty catch that swallows DmlException and leaves partial rows committed."
+      }
+    ],
+    "configuration_or_code": [
+      "List<LAB_Inventory__c> rows = [SELECT Id, Qty__c FROM LAB_Inventory__c WHERE Id = :id FOR UPDATE];",
+      "Savepoint sp = Database.setSavepoint(); then optional extra DML; Database.rollback(sp) on a handled business error.",
+      "System.enqueueJob(new LAB_AllocQueueable(orderId)); only on the success path.",
+      "In a test, insert two LAB_ orders sequentially first; treat true parallel UI as a UAT check, not a unit-test guarantee."
+    ],
+    "output": "One order succeeds at qty 3; the second either waits and sees qty 2 or fails the business rule. No callout runs under the lock. A forced exception leaves no committed LAB_Order__c.",
+    "verification": [
+      "Debug log shows FOR UPDATE before DML and no Http.send between them.",
+      "Forced NullPointer after insert leaves zero LAB_Order__c rows.",
+      "Queueable appears in Apex Jobs only when the parent transaction committed."
+    ],
+    "self_explanation": "I treated the save as one vault session, locked only the inventory row, and moved the callout to a new transaction after commit."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable Developer sandbox or scratch org; synthetic LAB_ objects only.",
+    "starting_state_checks": [
+      "You can deploy Apex in this org.",
+      "No production aliases in class or object names."
+    ],
+    "steps": [
+      "Create LAB_Inventory__c and a trigger on LAB_Order__c that FOR UPDATE locks inventory, decrements Qty__c, and inserts the order.",
+      "Write an anonymous script that inserts an order, then throws after DML; confirm both rows are absent.",
+      "Add Database.setSavepoint before a second optional insert and Database.rollback; confirm only the optional row disappears.",
+      "Add a callout stub after FOR UPDATE, read the debug log for FOR_UPDATE_LOCKS_RELEASE, then move the callout to a Queueable."
+    ],
+    "guided_completion": [
+      "If the thrown exception still leaves an order row, you are not looking at one transaction.",
+      "If the debug log shows FOR_UPDATE_LOCKS_RELEASE before your stock update, relocate the callout."
+    ],
+    "independent_challenge": "Store a Savepoint in a static and use it from a second trigger invocation on a 200-row insert; capture the runtime error and explain the Guide's trigger-invocation rule.",
+    "evidence": [
+      "Debug log snippet showing rollback of the anonymous throw.",
+      "Written sentence: callouts release FOR UPDATE locks."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Apex and custom objects from the sandbox.",
+      "Do not deploy these classes to production."
+    ],
+    "limitations": "Unit tests do not perfectly simulate two simultaneous UI clicks; lock waits of 10 seconds are a UAT concern."
+  },
+  "decision_table": [
+    {
+      "signal": "Invoice header and lines must never exist without each other after this request.",
+      "choose": "Let an unhandled error roll back the whole Apex transaction boundary.",
+      "not": "Empty catch that inserts the header anyway.",
+      "why": "Apex Transactions: all DML in the unit succeeds or none commits."
+    },
+    {
+      "signal": "Stock decrement must stay even if an optional extra line fails.",
+      "choose": "Database.setSavepoint after stock DML, then Database.rollback on the optional failure.",
+      "not": "System.abortJob or a new Batch execute to 'undo'.",
+      "why": "Rollback is in-transaction undo; it counts as DML and does not reset governors."
+    },
+    {
+      "signal": "Two users can decrement the same LAB_ Inventory row.",
+      "choose": "SOQL FOR UPDATE, compute on the returned copy, DML, commit quickly.",
+      "not": "Query without lock plus static 'already processed' flags.",
+      "why": "Locking Statements: lock then update; other clients wait up to 10 seconds."
+    },
+    {
+      "signal": "You need an HTTP callout plus a row lock.",
+      "choose": "Finish DML and commit (or enqueue Queueable after commit); do not callout under FOR UPDATE.",
+      "not": "Http.send between FOR UPDATE and the stock update.",
+      "why": "Callouts release FOR UPDATE locks; the Guide logs FOR_UPDATE_LOCKS_RELEASE."
+    },
+    {
+      "signal": "A Queueable was System.enqueueJob'd in a trigger that later threw.",
+      "choose": "Expect the job not to process; fix the parent transaction first.",
+      "not": "Query Apex Jobs as if the enqueue always survives.",
+      "why": "Queueable Apex: rollback of the transaction drops queued jobs."
+    },
+    {
+      "signal": "You are tempted to ORDER BY inside a locking query.",
+      "choose": "Drop ORDER BY or lock by Id set without a sort.",
+      "not": "SELECT ... ORDER BY Name FOR UPDATE.",
+      "why": "Locking Statements: you cannot use ORDER BY with FOR UPDATE."
+    }
+  ],
+  "limitations": [
+    "Does not replace the APEX-009 save-order list.",
+    "Does not choose Queueable vs Batch vs Future vs Scheduled except to note new transactions and rollback-cancel.",
+    "Does not list every parent object that locks on DML.",
+    "Governor numbers are from Execution Governors and Limits for Summer '26 / API 67.0; reverify later."
+  ],
+  "security_notes": [
+    "Locks are not sharing: a user can still be blocked by FLS/CRUD (APEX-015) after you lock.",
+    "Never log session IDs or real customer quantities in examples.",
+    "FOR UPDATE in without sharing still bypasses sharing unless you also enforce user mode."
+  ],
+  "common_mistakes": [
+    "Thinking each trigger is its own committed transaction.",
+    "Catching Exception, returning a pretty message, and leaving partial DML committed.",
+    "FOR UPDATE then callout then DML.",
+    "Storing Savepoint in a static for the next 200-record trigger chunk.",
+    "Quoting unofficial lock-timeout numbers instead of the Guide's 10 seconds.",
+    "Expecting a rolled-back trigger to still run its Queueable."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "UNABLE_TO_LOCK_ROW or a 10-second QueryException on FOR UPDATE.",
+      "check": [
+        "Who else holds the row (related master, roll-up, duplicate lock order)?",
+        "Is a callout or long loop stretching the lock?"
+      ],
+      "do_not_assume": "The SOQL is wrong; it may be lock duration."
+    },
+    {
+      "symptom": "Partial rows remain after an exception you thought was 'atomic'.",
+      "check": [
+        "Was the exception caught?",
+        "Was the work split across Batch execute methods?"
+      ],
+      "do_not_assume": "Salesforce committed 'the good parts' of one transaction."
+    },
+    {
+      "symptom": "Queueable never runs after a failed save.",
+      "check": [
+        "Did the parent transaction roll back?",
+        "Was enqueueJob after the failing DML?"
+      ],
+      "do_not_assume": "Apex Jobs UI is delayed but the job exists."
+    },
+    {
+      "symptom": "TypeException that a Savepoint does not exist in this context.",
+      "check": [
+        "Was the Savepoint created in another trigger invocation?",
+        "200-row batches spawn another invocation."
+      ],
+      "do_not_assume": "Unit tests are uniquely broken; the Guide forbids crossing trigger invocations."
+    }
+  ],
+  "production_notes": [
+    "Keep FOR UPDATE sections tiny in production paths; lock contention shows up under data loads.",
+    "Never demo locking on live customer inventory.",
+    "Reverify governor footnote that setSavepoint/rollback count as DML before a release review."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "According to Apex Transactions, what happens if one DML operation in a transaction errors?",
+      "options": {
+        "A": "The entire transaction is rolled back and no data is committed",
+        "B": "Earlier DML always stays committed",
+        "C": "Only the last statement rolls back",
+        "D": "Governors reset and the request retries"
+      },
+      "answer": "A",
+      "rationale": "All DML in the transaction must complete successfully or the unit rolls back and nothing commits.",
+      "distractor_explanations": {
+        "B": "That describes separate Batch execute transactions, not one Apex transaction.",
+        "C": "There is no automatic last-statement-only undo.",
+        "D": "Governor exceptions are not a retry API."
+      },
+      "concept": "All-or-nothing DML",
+      "citation_ids": [
+        "SF-APEX-TXN"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which of these can be an Apex transaction boundary?",
+      "options": {
+        "A": "A trigger, class method, anonymous block, Visualforce page, or custom Web service method",
+        "B": "Only Batch Apex start()",
+        "C": "Only Lightning web component constructors",
+        "D": "Only Flow interviews"
+      },
+      "answer": "A",
+      "rationale": "The Guide lists those five boundary kinds.",
+      "distractor_explanations": {
+        "B": "Batch start is a boundary for that method's work, not the only kind.",
+        "C": "LWC constructors are not Apex transaction boundaries.",
+        "D": "Flow may cause Apex, but the Guide's list is the Apex entries."
+      },
+      "concept": "Transaction boundary",
+      "citation_ids": [
+        "SF-APEX-TXN"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How do Database.setSavepoint and Database.rollback interact with governors?",
+      "options": {
+        "A": "Both count toward the per-transaction DML statement limit of 150",
+        "B": "They are free and unlimited",
+        "C": "They reset CPU to zero",
+        "D": "They count only as SOQL"
+      },
+      "answer": "A",
+      "rationale": "The governors table lists setSavepoint and rollback among DML methods; the DML statement ceiling is 150.",
+      "distractor_explanations": {
+        "B": "They are not free.",
+        "C": "Rollback does not reset CPU.",
+        "D": "They are DML, not SOQL."
+      },
+      "concept": "Savepoint governors",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You query FOR UPDATE, then Http.send, then update the locked row. What official locking behavior matters most?",
+      "options": {
+        "A": "Callouts release FOR UPDATE locks",
+        "B": "Callouts extend the lock for 10 minutes",
+        "C": "Callouts convert the lock into a savepoint",
+        "D": "Callouts are illegal in every transaction"
+      },
+      "answer": "A",
+      "rationale": "Locking Statements: record locks obtained via FOR UPDATE are automatically released when making callouts.",
+      "distractor_explanations": {
+        "B": "There is no 10-minute lock extension from a callout.",
+        "C": "Locks are not savepoints.",
+        "D": "Callouts are allowed with limits; the trap is lock release."
+      },
+      "concept": "Callout releases lock",
+      "citation_ids": [
+        "SF-APEX-LOCK"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Maximum wait documented for a FOR UPDATE lock before QueryException?",
+      "options": {
+        "A": "10 seconds",
+        "B": "60 seconds",
+        "C": "10 minutes",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "If wait time exceeds 10 seconds, a QueryException is thrown (DmlException for a blocked update).",
+      "distractor_explanations": {
+        "B": "60 seconds is not the Locking Statements wait.",
+        "C": "10 minutes is maximum Apex transaction execution time, not lock wait.",
+        "D": "There is a documented maximum wait."
+      },
+      "concept": "Lock wait",
+      "citation_ids": [
+        "SF-APEX-LOCK"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which clause cannot combine with FOR UPDATE?",
+      "options": {
+        "A": "ORDER BY",
+        "B": "WHERE",
+        "C": "LIMIT",
+        "D": "FROM"
+      },
+      "answer": "A",
+      "rationale": "You cannot use ORDER BY in any SOQL query that uses locking.",
+      "distractor_explanations": {
+        "B": "WHERE is normal.",
+        "C": "LIMIT is not the documented ban.",
+        "D": "FROM is required."
+      },
+      "concept": "No ORDER BY with lock",
+      "citation_ids": [
+        "SF-APEX-LOCK"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A trigger calls System.enqueueJob then throws an unhandled exception. What happens to the Queueable?",
+      "options": {
+        "A": "It is not processed because the transaction rolled back",
+        "B": "It always runs after 5 minutes",
+        "C": "It becomes a Batch Apex job",
+        "D": "It commits the trigger DML anyway"
+      },
+      "answer": "A",
+      "rationale": "Queueable Apex: if the transaction rolls back, queued queueable jobs are not processed.",
+      "distractor_explanations": {
+        "B": "There is no 5-minute consolation prize.",
+        "C": "Enqueue does not convert the job type.",
+        "D": "The DML is rolled back too."
+      },
+      "concept": "Rollback cancels Queueable",
+      "citation_ids": [
+        "SF-APEX-QUEUEABLE"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where does record-save order of execution sit relative to the Apex transaction?",
+      "options": {
+        "A": "Inside the current transaction until commit; post-commit async is a new transaction",
+        "B": "After commit only",
+        "C": "In a separate org-wide lock manager",
+        "D": "Only in Salesforce Classic"
+      },
+      "answer": "A",
+      "rationale": "The save pipeline is work inside the unit; commit ends it; queued async starts later.",
+      "distractor_explanations": {
+        "B": "Before-save work is not after commit.",
+        "C": "There is no separate lock manager lesson here.",
+        "D": "Order of execution is not Classic-only."
+      },
+      "concept": "OOE vs transaction",
+      "citation_ids": [
+        "SF-APEX-TXN"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A Savepoint is stored in a static and used after a second trigger invocation on a 200-row insert. What does Transaction Control warn?",
+      "options": {
+        "A": "References to savepoints cannot cross trigger invocations",
+        "B": "Statics automatically create a new savepoint",
+        "C": "200-row inserts disable DML governors",
+        "D": "The savepoint becomes global"
+      },
+      "answer": "A",
+      "rationale": "Each trigger invocation is a new trigger context; a static Savepoint used across them errors at runtime.",
+      "distractor_explanations": {
+        "B": "Statics do not mint savepoints.",
+        "C": "Governors still apply.",
+        "D": "Savepoints are not access modifiers."
+      },
+      "concept": "Savepoint vs trigger invocation",
+      "citation_ids": [
+        "SF-APEX-TXN-CTRL"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Other clients querying a FOR UPDATE locked row can do what while it is locked?",
+      "options": {
+        "A": "Still query the same records; they cannot update until the lock releases",
+        "B": "Neither query nor update",
+        "C": "Update immediately if they are admins",
+        "D": "Delete only"
+      },
+      "answer": "A",
+      "rationale": "Other clients can still query; they wait to update.",
+      "distractor_explanations": {
+        "B": "Queries are allowed.",
+        "C": "Admin rights do not skip the lock.",
+        "D": "Delete is still a write."
+      },
+      "concept": "Query while locked",
+      "citation_ids": [
+        "SF-APEX-LOCK"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A Batch Apex job's first execute commits 200 rows; the second execute throws. What remains?",
+      "options": {
+        "A": "The first execute's database updates are not rolled back",
+        "B": "The whole batch job rolls back like one transaction",
+        "C": "Salesforce deletes the AsyncApexJob row",
+        "D": "FOR UPDATE across execute methods still holds"
+      },
+      "answer": "A",
+      "rationale": "Each batch execute is a discrete transaction; later failure does not undo earlier committed executes. That is why savepoints are not a Batch undo tool.",
+      "distractor_explanations": {
+        "B": "The Guide is explicit that earlier transactions stay.",
+        "C": "The job record remains for monitoring.",
+        "D": "Locks release at each execute's end."
+      },
+      "concept": "Batch vs savepoint",
+      "citation_ids": [
+        "SF-APEX-TXN"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement matches the documented payment-transaction exception?",
+      "options": {
+        "A": "Even if an error occurs, payment records can still be generated because the gateway transaction already happened",
+        "B": "Payments never commit",
+        "C": "Payments ignore FOR UPDATE only",
+        "D": "Payments reset the 150 DML limit"
+      },
+      "answer": "A",
+      "rationale": "Apex Transactions notes payment transactions as the exception to DML-error rollback.",
+      "distractor_explanations": {
+        "B": "The opposite of the note.",
+        "C": "The exception is about commit, not locking.",
+        "D": "Governors are not reset."
+      },
+      "concept": "Payment exception",
+      "citation_ids": [
+        "SF-APEX-TXN"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is an Apex transaction?",
+      "back": "A single unit of operations. All DML succeeds or the platform rolls back and does not commit."
+    },
+    {
+      "id": "F2",
+      "category": "boundary",
+      "front": "Name the Guide's transaction boundary examples.",
+      "back": "Trigger, class method, anonymous block, Visualforce page, or custom Web service method."
+    },
+    {
+      "id": "F3",
+      "category": "savepoint",
+      "front": "Do setSavepoint and rollback count as DML?",
+      "back": "Yes. Execution Governors and Limits lists both toward the 150 DML statement ceiling."
+    },
+    {
+      "id": "F4",
+      "category": "savepoint",
+      "front": "Can a Savepoint stored in a static be used in a later trigger invocation?",
+      "back": "No. References to savepoints cannot cross trigger invocations."
+    },
+    {
+      "id": "F5",
+      "category": "locking",
+      "front": "When is a FOR UPDATE lock released?",
+      "back": "When the transaction completes—or earlier if a callout runs (FOR_UPDATE_LOCKS_RELEASE)."
+    },
+    {
+      "id": "F6",
+      "category": "locking",
+      "front": "FOR UPDATE wait timeout?",
+      "back": "Maximum 10 seconds, then QueryException (or DmlException on update)."
+    },
+    {
+      "id": "F7",
+      "category": "locking",
+      "front": "FOR UPDATE plus ORDER BY?",
+      "back": "Illegal. The Locking Statements topic forbids ORDER BY with locking."
+    },
+    {
+      "id": "F8",
+      "category": "async",
+      "front": "Queueable queued then parent rolls back?",
+      "back": "The queueable job is not processed."
+    },
+    {
+      "id": "F9",
+      "category": "ooe",
+      "front": "Where does record-save order of execution run?",
+      "back": "Inside the current Apex transaction until commit; post-commit async is a new transaction."
+    },
+    {
+      "id": "F10",
+      "category": "concurrency",
+      "front": "Why lock then query-return before update?",
+      "back": "The locking SELECT returns a fresh copy so you do not overwrite another client's committed change."
+    },
+    {
+      "id": "F11",
+      "category": "batch",
+      "front": "Does a later Batch execute rollback undo an earlier execute?",
+      "back": "No. Each execute is a discrete committed transaction if it succeeded."
+    },
+    {
+      "id": "F12",
+      "category": "callout",
+      "front": "Why is FOR UPDATE then Http.send dangerous?",
+      "back": "The callout releases the locks before you finish DML."
+    },
+    {
+      "id": "F13",
+      "category": "governors",
+      "front": "Does Database.rollback reset CPU and SOQL already used?",
+      "back": "No. It undoes uncommitted DML; governors already spent remain spent."
+    },
+    {
+      "id": "F14",
+      "category": "exception",
+      "front": "Payment transactions vs normal DML errors?",
+      "back": "Documented exception: payment records may still commit because the gateway already captured the payment."
+    },
+    {
+      "id": "F15",
+      "category": "related",
+      "front": "Does DML lock only the target row?",
+      "back": "Related records may lock too; design one lock order to avoid deadlocks."
+    },
+    {
+      "id": "F16",
+      "category": "interview",
+      "front": "One-sentence concurrency design?",
+      "back": "Lock the smallest row set, do the math, DML, commit; never hold FOR UPDATE across a callout."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is an Apex transaction, and where is the boundary?",
+      "answer_30_seconds": "It is all-or-nothing DML for one unit of work. The Guide names trigger, class method, anonymous, Visualforce, or custom Web service as boundaries. Nested Apex still shares the outer unit until it finishes.",
+      "answer_2_minutes": "I quote Apex Transactions: if one operation errors, the entire transaction rolls back and nothing commits. I contrast that with Batch execute chunks, which are separate transactions. I mention payment-gateway as the documented exception. I do not dump unofficial numbers. I place record-save order of execution inside this unit until commit.",
+      "example": "LAB_ Invoice trigger inserts a line and updates stock; a validation error on stock leaves neither row.",
+      "tradeoffs": [
+        "All-or-nothing vs partial Batch commits",
+        "Catch-and-return vs letting the unit fail"
+      ],
+      "follow_ups": [
+        "What is the payment exception?",
+        "Does a trigger commit before after-save Flow?"
+      ],
+      "weak_answer_warnings": [
+        "Calling each trigger a committed transaction",
+        "Inventing a nested-transaction API Salesforce does not document"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do savepoints differ from a full transaction rollback?",
+      "answer_30_seconds": "A savepoint marks a spot inside the same transaction. Database.rollback undoes uncommitted DML to that mark and counts as DML. An unhandled error undoes the whole unit. Rollback does not reset CPU or SOQL.",
+      "answer_2_minutes": "I use a savepoint only when product design must keep earlier uncommitted work. I never store the Savepoint in a static for the next trigger chunk—the Guide forbids crossing trigger invocations. I cite the governors footnote that setSavepoint and rollback count toward 150 DML statements. I do not use savepoints to undo a prior Batch execute.",
+      "example": "Savepoint after LAB_ stock decrement; rollback of an optional extra line keeps the stock DML uncommitted-then-reapplied as designed.",
+      "tradeoffs": [
+        "Savepoint vs exception",
+        "In-transaction undo vs new async transaction"
+      ],
+      "follow_ups": [
+        "What happens to statics after rollback?",
+        "Does rollback unsend email?"
+      ],
+      "weak_answer_warnings": [
+        "Saying rollback starts a new transaction",
+        "Claiming rollback is free"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Two users update the same inventory row. How do you prevent lost updates?",
+      "answer_30_seconds": "SOQL FOR UPDATE, compute on the fresh copy, DML, commit quickly. Other writers wait up to 10 seconds. Do not ORDER BY. Do not callout while locked.",
+      "answer_2_minutes": "I walk Locking Statements: the lock is held until the transaction completes; queries from others still work; updates wait. Related records may lock, so I pick a lock order. If I need a callout, I finish DML first because callouts release FOR UPDATE locks. I would prove it with a debug log looking for FOR_UPDATE_LOCKS_RELEASE.",
+      "example": "LAB_Inventory__c FOR UPDATE in the order trigger, decrement Qty__c, update, then enqueue a Queueable for the allocator callout.",
+      "tradeoffs": [
+        "Lock duration vs throughput",
+        "Pessimistic lock vs last-write-wins"
+      ],
+      "follow_ups": [
+        "What exception fires at 10 seconds?",
+        "How do roll-up masters affect locks?"
+      ],
+      "weak_answer_warnings": [
+        "Using static booleans instead of row locks",
+        "Quoting a 60-second wait that is not in the Guide"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "You FOR UPDATE a row, then make an HTTP callout, then update. What goes wrong?",
+      "answer_30_seconds": "The callout releases the FOR UPDATE locks. Another session can change the row before your update. The debug log records FOR_UPDATE_LOCKS_RELEASE.",
+      "answer_2_minutes": "I treat this as a sequencing bug, not a 'Salesforce is flaky' bug. Official guidance: use caution making callouts where FOR UPDATE already ran. The fix is split: DML/commit (or Queueable after commit) for the callout. I also remember mixed DML and uncommitted-work callout rules belong with APEX-013, but the lock-release rule is this lesson.",
+      "example": "Trigger locks LAB_Inventory__c, Http.send to an allocator, then updates Qty__c—second user can overwrite in the gap.",
+      "tradeoffs": [
+        "Same-transaction callout vs Queueable",
+        "Lock safety vs user-facing latency"
+      ],
+      "follow_ups": [
+        "Where is the log token?",
+        "Does rollback still drop the Queueable?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming the lock survives the callout"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "A trigger enqueues a Queueable then hits a validation exception. Why is Apex Jobs empty?",
+      "answer_30_seconds": "If the Apex transaction rolls back, queueable jobs queued by that transaction are not processed. Fix the parent save first.",
+      "answer_2_minutes": "I connect APEX-010 to APEX-011 without stealing job-type choice. Enqueue is only durable if the parent commits. Future methods have the same rollback note. I would look at the debug log for the exception, not the Flex Queue. If we need the async even when DML fails, that is a different design—usually a bad one—and Publish Immediately platform events are APEX-012, not a Queueable trick.",
+      "example": "LAB_Order trigger enqueueJob then a required-field error: no AsyncApexJob for that attempt.",
+      "tradeoffs": [
+        "Fire-and-forget vs transactional enqueue",
+        "Platform event publish-immediately vs Queueable"
+      ],
+      "follow_ups": [
+        "Do future methods behave the same?",
+        "How do you test enqueue plus rollback?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the Flex Queue for a rolled-back enqueue"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "You see UNABLE_TO_LOCK_ROW in production. Walk the diagnosis.",
+      "answer_30_seconds": "Someone else holds a row lock—possibly a related master—not necessarily your SOQL. Shorten lock duration, avoid callouts under lock, and check lock order for deadlocks.",
+      "answer_2_minutes": "I start with who updates the same parent (roll-ups, lookups that lock). I look for FOR UPDATE plus callout, long loops, or conflicting lock order. I do not raise the 10-second wait; it is documented. I reproduce with LAB_ data in sandbox, not production customer rows. I mention that other clients can still query while locked, so a report is not proof the lock is gone.",
+      "example": "Account roll-up lock while a LAB_ child trigger also FOR UPDATE the account.",
+      "tradeoffs": [
+        "Throughput vs correctness",
+        "Retry vs redesign"
+      ],
+      "follow_ups": [
+        "Would Batch Apex help?",
+        "Is this sharing or locking?"
+      ],
+      "weak_answer_warnings": [
+        "Calling it a sharing bug",
+        "Inventing a Setup toggle that extends lock wait"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "How do you explain transaction boundaries versus record-save order of execution in an interview?",
+      "answer_30_seconds": "Order of execution is the pipeline of automations for one save. The transaction is the all-or-nothing database unit that pipeline runs in until commit. Post-commit async is a new transaction.",
+      "answer_2_minutes": "I refuse to recite an unofficial 21-step meme. I point at APEX-009 for the ordered list and this lesson for atomicity, savepoints, and locks. If after-save Flow DML throws, earlier trigger DML in the same save still rolls back. Workflow re-entry details stay in APEX-009. Interviewers listen for that split.",
+      "example": "Before-save Flow plus after trigger plus after-save Flow on LAB_Order__c share one transaction until commit.",
+      "tradeoffs": [
+        "Pipeline vs unit of work",
+        "Same-save DML vs post-commit Queueable"
+      ],
+      "follow_ups": [
+        "What reruns on workflow field update?",
+        "Where do emails send?"
+      ],
+      "weak_answer_warnings": [
+        "Merging OOE and async job types into one blob",
+        "Saying after-save Flow always commits trigger DML even if it fails"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "When would you refuse a savepoint and let the whole transaction fail instead?",
+      "answer_30_seconds": "When partial headers-without-lines would be corrupt. All-or-nothing is the default from Apex Transactions. Savepoints are for designed partial undo, not for hiding exceptions.",
+      "answer_2_minutes": "I ask whether the business can tolerate a header without lines. If not, I do not catch DmlException and return a toast while rows sit uncommitted-then-accidentally-committed. I also refuse savepoints as a Batch undo tool. If the work is large, I choose Batch knowing each execute commits separately—that is an explicit consistency trade-off, not a savepoint.",
+      "example": "LAB_ Invoice header plus lines: validation failure on a line should remove the header too.",
+      "tradeoffs": [
+        "Consistency vs throughput",
+        "Savepoint vs Batch chunk commits"
+      ],
+      "follow_ups": [
+        "How do Database methods with allOrNone=false fit?",
+        "Where does partial success live?"
+      ],
+      "weak_answer_warnings": [
+        "Defaulting to try/catch around every DML"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1046 @@
+{
+  "topic_id": "AUTO-004",
+  "slug": "screen-flows-and-user-experience",
+  "title": "Screen flows and user experience",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AUTO-003"
+  ],
+  "objectives": [
+    "Define a screen Flow as a user-interactive type that uses screens, choices, and supported distribution methods—and does not support Wait elements.",
+    "Design screens that collect required fields, validate user input on the screen, and show fault messages when DML fails.",
+    "Choose when a screen Flow is the UX versus a validation rule, formula field, approval process, autolaunched Flow, or Apex.",
+    "Wire record context with a Text input named recordId when a Flow action launches the screen."
+  ],
+  "diagnostic_question": "Sales wants a guided form on the Account page to create a Contact with required Last Name and Email, show a friendly error if create fails, and not use a full LWC. Before reading, which flow type, screen settings, and fault path would you choose, and why not a validation rule alone?",
+  "definition": "A screen Flow guides users through a business process launched from a supported distribution method. It requires user interaction because it includes screens, local actions, steps, choices, or dynamic choices, and it does not support Wait elements. Help tells you to use screen flows to build online forms that collect or display information for internal and external users. ([Flow Types](https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm); [Build a Flow](https://help.salesforce.com/s/articleView?id=sf.flow_build.htm); [Creating Records with Required Field Validation Example](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_required_fields.htm))",
+  "why_it_matters": "Interviewers distinguish a screen Flow (a person clicks Next) from record-triggered automation, from a validation rule that only blocks a standard save, and from Apex or LWC. Missing required screen components, skipping fault paths, or forgetting recordId on a Flow action are the usual production bugs.",
+  "sixty_second_explanation": "Think of a hotel front desk. A screen Flow is the clerk walking a guest through a registration card: required fields, a progress indicator, and a polite error if the key packet cannot be created. A validation rule is the fire-code that refuses an illegal guest card on the standard record page. A formula is the always-printed room rate on the folio. An approval is the night manager's signature. Autolaunched Flow is the back-office key encoder that needs no clerk. Apex is a custom locksmith when the desk card cannot do the job.",
+  "deeper_explanation": [
+    "Flow Types: Screen Flow guides users and is distributed via Flow actions, Lightning pages, Experience Builder, custom Aura/LWC, custom buttons or links, Flow Orchestration, web tabs, direct URLs, Visualforce, Lightning Out, and Embedded Service. It requires interaction and does not support Wait. Choice resources are a screen-flow resource type. ([Flow Types](https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm))",
+    "Build a Flow / Use Screen Flows to Interact with Users: build online forms that collect or display information. Add a Screen element, configure components, and connect in auto-layout. Help's required-field example: mark Last Name and Email required on the screen, use Create Records, add a fault path with a Message component using the running interview's Fault Message, and optionally a Decision for complex validation logic. Consider Quick Actions when you want Flow Builder to indicate required fields automatically. ([Required Field Validation Example](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_required_fields.htm); [Build a Flow](https://help.salesforce.com/s/articleView?id=sf.flow_build.htm))",
+    "Which-tool Help: a screen Flow starts when a user clicks Next on a form or a quick action that opens a form. That is different from a record-triggered start. Flow actions pass only the record Id into a Text input named recordId. Lightning App Builder does not pass collection or record variables and caps text inputs at 4,000 characters. ([Which automation tool](https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm); [Flow Variable Considerations](https://help.salesforce.com/s/articleView?id=sf.flow_considerations_feature_variable.htm))",
+    "Screen-level requiredness and input validation improve data quality before DML; they do not replace object validation rules that must refuse illegal saves from API and Data Loader too. Approvals still own human routing. Apex remains complementary for CPU-intensive or Batch volume work, not for a three-field intake form.",
+    "Reactivity, stages/progress indicators, and Lightning versus Classic runtime are neighboring Help topics. Do not invent unsupported Wait on a screen Flow. Do not claim unofficial component limits."
+  ],
+  "mental_model": {
+    "analogy": "A hotel front desk: the screen Flow is the clerk and registration card; autolaunched Flow is the back-office encoder; validation is fire-code on the legal guest record; formula is the printed rate; approval is the night manager.",
+    "useful_mapping": [
+      "Screen element → one page of the registration card",
+      "required screen component → the clerk will not take a blank last name",
+      "fault path → 'we could not encode your key' with Fault Message",
+      "recordId → the reservation number the action hands the clerk",
+      "distribution (page, action, URL, Experience) → which lobby desk you stand at",
+      "Wait element → not available at this desk (screen flows do not support Wait)"
+    ],
+    "where_it_breaks": [
+      "Object validation still fires on API saves the clerk never sees.",
+      "Experience Cloud and internal Lightning pages are different lobbies with different auth.",
+      "LWC can replace a screen Flow for dense UX; this lesson does not teach LWC.",
+      "Approval is not a screen component even if you display 'pending'."
+    ]
+  },
+  "teach_back_prompt": "Explain when you pick a screen Flow instead of a validation rule, a record-triggered Flow, or Apex, including required screen fields, fault paths, and the recordId contract.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: screen Flow needs user interaction, no Wait, recordId for actions."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Five signals: guided form, hard block on all saves, same-record stamp, manager signature, invocable Apex."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Walk required fields plus fault path from Help's Contact create example."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Debug a Flow action whose screen has a blank Id."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: hotel-desk mapping plus API vs screen validation."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-FLOW-TYPES",
+      "title": "Flow Types",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm",
+      "supports": "Screen Flow definition, no Wait, distribution methods, choices as screen resources.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Distribution list can grow; confirm in the org."
+    },
+    {
+      "source_id": "SF-HELP-FLOW-BUILD",
+      "title": "Build a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_build.htm",
+      "supports": "Use screen flows to interact with users; online forms; add Screen elements.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "UI: Automation app vs Setup New Flow."
+    },
+    {
+      "source_id": "SF-HELP-SCREEN-REQUIRED",
+      "title": "Creating Records with Required Field Validation Example",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_required_fields.htm",
+      "supports": "Required screen components, Create Records, fault path with Fault Message, Decision for complex validation, Quick Actions for required-field hints.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Example object is Contact; your object may differ."
+    },
+    {
+      "source_id": "SF-HELP-FLOW-VARS",
+      "title": "Flow Variable Considerations",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_considerations_feature_variable.htm",
+      "supports": "recordId for Flow actions; App Builder input limits.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Not a UX-layout guide."
+    },
+    {
+      "source_id": "SF-HELP-WHICH-TOOL",
+      "title": "Get Started Automating a Business Task with a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm",
+      "supports": "Screen trigger when the user clicks Next or a quick action form.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every screen component."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Screen Flow type",
+        "Distribution",
+        "Required fields",
+        "Fault path",
+        "recordId",
+        "Not validation/Apex"
+      ],
+      "accessible_description": "Portrait of screen Flow UX: type, launch methods, required screens, faults, versus validation and Apex."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-FLOW-TYPES",
+        "SF-HELP-SCREEN-REQUIRED",
+        "SF-HELP-FLOW-VARS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "How a user interview reaches Create Records"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Dist[Distribution: action, page, URL, Experience] --> Screen[Screen Flow interview]\n  Screen --> Comp[Screen components and choices]\n  Comp --> Req[Required inputs]\n  Req --> DML[Create or Update Records]\n  DML --> Ok[Success screen]\n  DML --> Fault[Fault path Message / Fault Message]",
+      "decision": "flowchart TD\n  Need[Need a form?] --> Q1{Must a person click through screens?}\n  Q1 -->|Yes| SF[Screen Flow]\n  Q1 -->|No, save-time only| Q2{Refuse illegal data on every save including API?}\n  Q2 -->|Yes| VR[Validation rule]\n  Q2 -->|Same-record stamp| BS[Before-save Flow AUTO-003]\n  Need --> Q3{Person must approve?}\n  Q3 -->|Yes| AP[Approval process]\n  Q3 -->|CPU/volume| Apex[Complementary Apex]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A screen Flow requires user interaction (screens, local actions, steps, choices, or dynamic choices) and does not support Wait elements. Type determines distribution methods such as Flow actions, Lightning pages, Experience Builder, buttons, URLs, and more.",
+      "source_ids": [
+        "SF-HELP-FLOW-TYPES"
+      ],
+      "scope": "Type",
+      "validation": "Flow Types.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Help's required-field example marks screen components required, creates the record, and uses a fault path with the running interview Fault Message. It also suggests Decision elements for complex validation logic and Quick Actions when you want required fields indicated automatically.",
+      "source_ids": [
+        "SF-HELP-SCREEN-REQUIRED"
+      ],
+      "scope": "UX and faults",
+      "validation": "Creating Records with Required Field Validation Example.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A screen Flow starts when a user clicks Next on a form or a quick action that opens a form. Flow actions pass the record Id only into Text input recordId.",
+      "source_ids": [
+        "SF-HELP-WHICH-TOOL",
+        "SF-HELP-FLOW-VARS"
+      ],
+      "scope": "Start and context",
+      "validation": "Which-tool trigger table and Variable Considerations.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Use screen flows to build online forms that collect or display information for internal and external users.",
+      "source_ids": [
+        "SF-HELP-FLOW-BUILD"
+      ],
+      "scope": "Purpose",
+      "validation": "Build a Flow / Use Screen Flows to Interact with Users.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Screen Flow debugger and reactive components continue to evolve; reverify runtime (Lightning vs Classic) and component availability in the target org.",
+  "unresolved_uncertainty": [
+    "Exact reactive-component support and stage/progress-indicator limits are release-sensitive; confirm current Help before an interview deep-dive.",
+    "Experience Cloud public vs authenticated embedding has extra distribution articles not fully specified here."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Screen Flow",
+      "telugu": "యూజర్ స్క్రీన్లపై Next నొక్కి నడిచే ఫ్లో."
+    },
+    {
+      "english": "Fault path",
+      "telugu": "రికార్డ్ సృష్టి ఫేల్ అయితే చూపించే లోపం మార్గం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "A screen Flow is a guided form that needs a person. No Wait elements. Mark required fields on the screen, add a fault path, and use recordId for Flow actions. Validation still owns API-wide illegal saves. Apex is not the default intake form.",
+    "two_minutes": "I pick Screen as the type because the user must interact. I distribute via action, Lightning page, or URL per Flow Types. I mark required components so Create Records does not hit REQUIRED_FIELD_MISSING, and I add a fault path with Fault Message. Screen validation is UX; object validation rules still block Data Loader. Approvals remain a different product. I only call Apex if Help's complementary reasons apply."
+  },
+  "terminology": [
+    {
+      "term": "screen Flow",
+      "plain": "A flow type that shows screens a person must complete.",
+      "precise": "Requires screens, local actions, steps, choices, or dynamic choices. Does not support Wait. Distributed by actions, pages, Experience, buttons, URLs, and other listed methods.",
+      "example": "LAB_CreateContact form on the Account page.",
+      "non_example": "A before-save Flow is not a screen Flow.",
+      "confusable_neighbor": "Autolaunched Flow: background, no screens.",
+      "boundary": "Wait belongs to other types (AUTO-005)."
+    },
+    {
+      "term": "Screen element",
+      "plain": "One page in the interview that hosts components.",
+      "precise": "Add a Screen, set label/API name, add components such as Text, Email, Lookup, Display Text, or Message.",
+      "example": "Collect Last Name required, First Name optional, as in Help's Contact example.",
+      "non_example": "A validation rule error banner on the standard record page is not a Screen element.",
+      "confusable_neighbor": "Lightning record page: host, not the element.",
+      "boundary": "Component catalog is version-sensitive."
+    },
+    {
+      "term": "choice resource",
+      "plain": "A screen-flow resource that offers selectable options.",
+      "precise": "Flow Types: you can add a Choice resource type only in a screen flow.",
+      "example": "Picklist-like choices on LAB_Reason.",
+      "non_example": "A formula field picklist is not a Flow choice resource.",
+      "confusable_neighbor": "Dynamic choice: neighboring screen resource.",
+      "boundary": "Autolaunched flows cannot use choices."
+    },
+    {
+      "term": "fault path",
+      "plain": "The connector used when a DML or action fails.",
+      "precise": "Help's example: Add Fault Path on Create Records, then a Screen with Message using Running Flow Interview Fault Message.",
+      "example": "Show 'We could not create the contact' plus the fault text.",
+      "non_example": "A validation rule error is not a Flow fault path.",
+      "confusable_neighbor": "Default error emails: org-level, not the canvas fault.",
+      "boundary": "AUTO-008 owns deeper rollback."
+    },
+    {
+      "term": "recordId",
+      "plain": "Text input that a Flow action fills with the current record's Id.",
+      "precise": "If missing, the flow still tries to run without that Id.",
+      "example": "Account-page action launching LAB_CreateContact with recordId.",
+      "non_example": "A formula named recordId is not this contract.",
+      "confusable_neighbor": "URL parameters can also set inputs.",
+      "boundary": "Only the Id is passed from the action."
+    },
+    {
+      "term": "screen requiredness",
+      "plain": "Marking a component required so the user cannot click Next blank.",
+      "precise": "Help: mark required fields as required on-screen components; consider Quick Actions when you want Builder to indicate required fields automatically.",
+      "example": "Last Name Require selected on the Contact form.",
+      "non_example": "Object-level validation that also blocks API saves.",
+      "confusable_neighbor": "Decision element for complex validation logic in the same example.",
+      "boundary": "Screen requiredness is not a substitute for validation rules on all channels."
+    },
+    {
+      "term": "distribution",
+      "plain": "How users launch the screen Flow.",
+      "precise": "Flow Types lists Flow actions, Lightning pages, Experience Builder, custom components, buttons/links, orchestration, web tabs, URLs, Visualforce, Lightning Out, Embedded Service.",
+      "example": "Quick action on Account versus a community URL.",
+      "non_example": "Schedule-triggered start is not screen distribution.",
+      "confusable_neighbor": "Lightning App Builder input limits still apply.",
+      "boundary": "Confirm which methods your edition supports."
+    },
+    {
+      "term": "Lightning runtime",
+      "plain": "The modern runtime for finishing and rendering flows, versus Classic runtime.",
+      "precise": "Neighboring Help compares Lightning vs Classic runtime and finish behavior. Prefer Lightning runtime unless the org is documented otherwise.",
+      "example": "Screen Flow on a Lightning record page.",
+      "non_example": "Apex page Visualforce may still use other hosts.",
+      "confusable_neighbor": "Classic Approval Processes: a different product.",
+      "boundary": "Needs verification of org default runtime."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose Screen type",
+      "actor": "Admin",
+      "trigger": "A person must enter or confirm data",
+      "before": "Someone opened a record-triggered Flow",
+      "after": "Screen Flow created",
+      "observe": "Type picker says Screen Flow",
+      "failure": "Putting screens on an autolaunched no-trigger flow"
+    },
+    {
+      "step": 2,
+      "transition": "Design required screens",
+      "actor": "Admin",
+      "trigger": "Create Records needs fields",
+      "before": "Optional components for required object fields",
+      "after": "Required components + optional Decision for complex checks",
+      "observe": "Next blocked until Last Name is filled",
+      "failure": "Relying only on a validation rule the user never sees until save"
+    },
+    {
+      "step": 3,
+      "transition": "Add fault and success",
+      "actor": "Admin",
+      "trigger": "DML can fail",
+      "before": "Happy path only",
+      "after": "Fault path Message with Fault Message; success screen",
+      "observe": "Forced error shows the fault screen",
+      "failure": "Apex try/catch as the first error UX"
+    },
+    {
+      "step": 4,
+      "transition": "Distribute with recordId",
+      "actor": "Admin",
+      "trigger": "Launch from a record",
+      "before": "Assuming context appears",
+      "after": "Flow action plus Text input recordId, or App Builder scalar inputs",
+      "observe": "Debug shows the Id",
+      "failure": "Passing collections from App Builder"
+    }
+  ],
+  "when_to_use": [
+    "Use a screen Flow when a person must walk through an online form to collect or display information, including on a record page or Experience site.",
+    "Use required screen components and a fault path when Create Records should not fail silently with REQUIRED_FIELD_MISSING.",
+    "Use a Flow action plus recordId when the form must know the current record without Apex.",
+    "Use a validation rule in addition when illegal values must also be refused from API and Data Loader, not only the screen.",
+    "Use an approval process when a manager must decide, and Apex only if the form's logic is CPU-intensive beyond Flow."
+  ],
+  "when_not_to_use": [
+    "Do not use a screen Flow when no user is present—that is autolaunched, record-triggered, or scheduled Flow.",
+    "Do not use a screen Flow as the only control if a validation rule must block every save channel.",
+    "Do not use a screen Flow to replace a formula field that should always calculate on the record.",
+    "Do not use a screen Flow as a substitute for an approval process work item.",
+    "Do not start in Apex or LWC for a three-field intake Help's screen Flow example already covers."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Flows or Automation app → New → Screen Flow.",
+    "Canvas: Screen element, Create Records, Add Fault Path.",
+    "Object → Buttons, Links, and Actions → Flow action, or Lightning App Builder Flow component.",
+    "Text input variable named recordId, Available for Input."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox service managers need LAB_CreateContact on Account: collect Last Name (required), Email (required), optional Phone, create the Contact, show success or a fault message. No production data.",
+    "inputs": [
+      "Launched from Account via Flow action",
+      "Contact.LastName and Email required",
+      "Friendly fault if DML fails"
+    ],
+    "decisions": [
+      {
+        "decision": "Screen Flow, not autolaunched or Apex.",
+        "because": "A person must complete a form; Help lists this as a screen trigger.",
+        "rejected": "Apex Visualforce page for three fields"
+      },
+      {
+        "decision": "Mark Last Name and Email required on the screen; keep object validation for API.",
+        "because": "Help: mark required on-screen; validation still owns all-channel illegal data.",
+        "rejected": "Screen-only requiredness with no object rule if API must also block"
+      },
+      {
+        "decision": "Fault path with Fault Message; Text input recordId.",
+        "because": "Help's example uses Fault Message; actions pass only recordId.",
+        "rejected": "No fault path, hoping Apex handles errors"
+      }
+    ],
+    "configuration_or_code": [
+      "Screen Flow LAB_CreateContact with recordId.",
+      "Screen components: Last Name Require, Email required, Phone optional, Account lookup from recordId.",
+      "Create Records + fault Screen with Message Critical and Fault Message."
+    ],
+    "output": "Users cannot Next without Last Name/Email; failures show the fault screen; success confirms the Contact Id.",
+    "verification": [
+      "Flow action on a LAB_ Account populates recordId in debug.",
+      "Leaving Last Name blank blocks Next.",
+      "A forced DML fault shows the Fault Message screen."
+    ],
+    "self_explanation": "I treated the screen as UX and kept validation for API. Apex stayed unused."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ screen Flow only.",
+    "starting_state_checks": [
+      "Manage Flow",
+      "You can add a Flow action on Account or a LAB_ object"
+    ],
+    "steps": [
+      "Create a Screen Flow with recordId and a Screen that requires Last Name.",
+      "Add Create Records for Contact (or LAB_ object) and a fault path Message using Fault Message.",
+      "Add a success Screen.",
+      "Launch from a Flow action and debug recordId plus a blank required field."
+    ],
+    "guided_completion": [
+      "If Next works with blank Last Name, Require is off.",
+      "If Id is empty, rename the input to recordId."
+    ],
+    "independent_challenge": "Add a Decision that routes to an extra screen when Email is blank even if not required, matching Help's 'Decision for complex validation logic'.",
+    "evidence": [
+      "Debug of recordId",
+      "Screenshot of required-field block and fault path"
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate and delete LAB_CreateContact",
+      "Do not deploy to production"
+    ],
+    "limitations": "Does not prove Experience Cloud or reactive components."
+  },
+  "decision_table": [
+    {
+      "signal": "A person must fill a form on a record page or site.",
+      "choose": "Screen Flow distributed by action, page, or URL.",
+      "not": "Autolaunched Flow, or Apex as the first UI.",
+      "why": "Help: screen type requires interaction; trigger is Next or a quick action form."
+    },
+    {
+      "signal": "Create Records must not fail on missing Last Name during the interview.",
+      "choose": "Mark the screen component required; optionally Quick Action for required hints.",
+      "not": "Only a formula field, or hoping Apex catches it.",
+      "why": "Help's required-field example starts with on-screen requiredness."
+    },
+    {
+      "signal": "DML might fail for reasons the screen did not catch.",
+      "choose": "Fault path with Message and running interview Fault Message.",
+      "not": "A validation rule as the on-screen error UX.",
+      "why": "Help adds a fault path after Create Records."
+    },
+    {
+      "signal": "Illegal values must also be blocked from Data Loader.",
+      "choose": "Object validation rule in addition to the screen.",
+      "not": "Screen Flow alone as the only gate.",
+      "why": "Validation verifies data before save on those channels too."
+    },
+    {
+      "signal": "A manager must accept the request after the form.",
+      "choose": "Approval process (Flow Approval Processes when available), not an extra Display Text.",
+      "not": "Using the screen Flow as the approval work item.",
+      "why": "Approvals route people; screens collect input."
+    }
+  ],
+  "limitations": [
+    "Does not catalog every screen component or reactive operator.",
+    "Does not teach LWC or Aura local action internals.",
+    "Wait elements are not available; do not design pauses here.",
+    "Experience Cloud public-site extra steps are neighboring Help."
+  ],
+  "security_notes": [
+    "Public Experience Cloud screen Flows need extra access design (later SEC/Experience topics).",
+    "Do not pass secrets in URL inputs.",
+    "Fault messages can leak system text; keep LAB_ data only."
+  ],
+  "common_mistakes": [
+    "Forgetting recordId on a Flow action.",
+    "No fault path on Create Records.",
+    "Using screen requiredness as the only validation for API loads.",
+    "Putting Wait on a screen Flow.",
+    "Building Apex for a simple intake form."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Screen opens without the Account Id.",
+      "check": [
+        "Text input named recordId",
+        "Available for Input",
+        "Launched from a Flow action"
+      ],
+      "do_not_assume": "App Builder passed a record variable."
+    },
+    {
+      "symptom": "REQUIRED_FIELD_MISSING on Create Records.",
+      "check": [
+        "Required screen components for those fields",
+        "Quick Action alternative in Help"
+      ],
+      "do_not_assume": "Apex is required."
+    },
+    {
+      "symptom": "User sees a generic flow error instead of your message.",
+      "check": [
+        "Fault path exists on the DML element",
+        "Message uses Fault Message"
+      ],
+      "do_not_assume": "Validation rules render inside the Screen element automatically."
+    }
+  ],
+  "production_notes": [
+    "Test the action, the Lightning page, and API/Data Loader separately.",
+    "Lightning versus Classic runtime can change finish behavior—confirm org settings.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Screen flows do not support which element type, per Flow Types?",
+      "options": {
+        "A": "Wait elements",
+        "B": "Screen elements",
+        "C": "Choice resources",
+        "D": "Create Records"
+      },
+      "answer": "A",
+      "rationale": "Screen flows don't support Wait elements.",
+      "distractor_explanations": {
+        "B": "Screens define the type.",
+        "C": "Choices are a screen resource.",
+        "D": "DML is allowed."
+      },
+      "concept": "No Wait",
+      "citation_ids": [
+        "SF-HELP-FLOW-TYPES"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Help says to use screen flows to do what?",
+      "options": {
+        "A": "Build online forms that collect or display information for internal and external users",
+        "B": "Replace all validation rules",
+        "C": "Replace formula fields",
+        "D": "Replace Batch Apex"
+      },
+      "answer": "A",
+      "rationale": "Build a Flow: Use Screen Flows to Interact with Users.",
+      "distractor_explanations": {
+        "B": "Validation is a different tool.",
+        "C": "Formulas compute on the record.",
+        "D": "Batch Apex is complementary volume."
+      },
+      "concept": "Purpose",
+      "citation_ids": [
+        "SF-HELP-FLOW-BUILD"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Flow action context into a screen Flow requires what?",
+      "options": {
+        "A": "A Text input variable named recordId",
+        "B": "A record collection from App Builder",
+        "C": "An Apex constructor",
+        "D": "A Classic approval"
+      },
+      "answer": "A",
+      "rationale": "Actions pass only the record Id into recordId.",
+      "distractor_explanations": {
+        "B": "App Builder does not support that input type.",
+        "C": "Apex is not required.",
+        "D": "Approvals are different."
+      },
+      "concept": "recordId",
+      "citation_ids": [
+        "SF-HELP-FLOW-VARS"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Help's Contact create example tells you to mark required fields where first?",
+      "options": {
+        "A": "On-screen components (Require / Required)",
+        "B": "Only in Apex",
+        "C": "Only in a formula field",
+        "D": "Only in an approval step"
+      },
+      "answer": "A",
+      "rationale": "Mark required fields as required on-screen components.",
+      "distractor_explanations": {
+        "B": "Apex is not the example.",
+        "C": "Formulas do not collect input.",
+        "D": "Approvals route people."
+      },
+      "concept": "Screen required",
+      "citation_ids": [
+        "SF-HELP-SCREEN-REQUIRED"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "On Create Records failure, Help's example adds what?",
+      "options": {
+        "A": "A fault path with a Screen Message using the running interview Fault Message",
+        "B": "A validation rule automatically",
+        "C": "A before-save Flow",
+        "D": "Batch Apex"
+      },
+      "answer": "A",
+      "rationale": "Add Fault Path, then Message with Fault Message.",
+      "distractor_explanations": {
+        "B": "Validation is separate metadata.",
+        "C": "Wrong type.",
+        "D": "Wrong tool."
+      },
+      "concept": "Fault path",
+      "citation_ids": [
+        "SF-HELP-SCREEN-REQUIRED"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "For complex validation logic in that example, Help also suggests what?",
+      "options": {
+        "A": "Decision elements",
+        "B": "Deleting formula fields",
+        "C": "Disabling all object validation",
+        "D": "Global Apex without a reason"
+      },
+      "answer": "A",
+      "rationale": "Use decision elements for complex validation logic.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Object validation still matters for API.",
+        "D": "Apex is complementary."
+      },
+      "concept": "Decision",
+      "citation_ids": [
+        "SF-HELP-SCREEN-REQUIRED"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When does which-tool Help start a screen Flow?",
+      "options": {
+        "A": "When a user clicks Next on a form, or a quick action that opens a form",
+        "B": "Every Saturday at midnight",
+        "C": "When a platform event is published",
+        "D": "When a validation rule is True"
+      },
+      "answer": "A",
+      "rationale": "Trigger table: button on a form / quick action → Screen.",
+      "distractor_explanations": {
+        "B": "That is schedule-triggered.",
+        "C": "Platform event-triggered.",
+        "D": "Validation blocks save."
+      },
+      "concept": "Screen trigger",
+      "citation_ids": [
+        "SF-HELP-WHICH-TOOL"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Choice resources are allowed in which type?",
+      "options": {
+        "A": "Screen Flow only, per Flow Types",
+        "B": "Autolaunched no-trigger only",
+        "C": "Validation rules",
+        "D": "Formula fields"
+      },
+      "answer": "A",
+      "rationale": "You can add a Choice resource type only in a screen flow.",
+      "distractor_explanations": {
+        "B": "Autolaunched does not support choices.",
+        "C": "Not a Flow resource.",
+        "D": "Not a Flow resource."
+      },
+      "concept": "Choices",
+      "citation_ids": [
+        "SF-HELP-FLOW-TYPES"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Illegal Amount must be blocked from Data Loader as well as the form. What else do you need?",
+      "options": {
+        "A": "A validation rule in addition to the screen Flow",
+        "B": "Only screen requiredness",
+        "C": "Only a formula field",
+        "D": "Only Apex"
+      },
+      "answer": "A",
+      "rationale": "Validation verifies before save on those channels; screens are UX.",
+      "distractor_explanations": {
+        "B": "Screens do not run for Data Loader.",
+        "C": "Formula computes.",
+        "D": "Apex is not the default gate."
+      },
+      "concept": "Validation plus screen",
+      "citation_ids": [
+        "SF-HELP-SCREEN-REQUIRED"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Help says consider Quick Actions when you want what?",
+      "options": {
+        "A": "Flow Builder to indicate required fields automatically",
+        "B": "To replace Flow Approval Processes",
+        "C": "To disable fault paths",
+        "D": "To run Wait on a screen Flow"
+      },
+      "answer": "A",
+      "rationale": "Consider Quick Actions when you want Flow Builder to indicate required fields automatically.",
+      "distractor_explanations": {
+        "B": "Approvals are separate.",
+        "C": "Faults are still needed.",
+        "D": "Wait is unsupported."
+      },
+      "concept": "Quick Actions",
+      "citation_ids": [
+        "SF-HELP-SCREEN-REQUIRED"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Lightning App Builder Flow component does not support which inputs?",
+      "options": {
+        "A": "Collection, record, and record collection variables",
+        "B": "Manually entered text values",
+        "C": "A Text recordId you type",
+        "D": "The Flow component itself"
+      },
+      "answer": "A",
+      "rationale": "Variable Considerations: those types are not supported in App Builder.",
+      "distractor_explanations": {
+        "B": "Manual values are supported.",
+        "C": "Scalars can be entered.",
+        "D": "The component exists."
+      },
+      "concept": "App Builder",
+      "citation_ids": [
+        "SF-HELP-FLOW-VARS"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Three-field Contact intake. First tool?",
+      "options": {
+        "A": "Screen Flow as in Help's example",
+        "B": "Batch Apex",
+        "C": "A formula field that creates Contacts",
+        "D": "Classic Approval Processes"
+      },
+      "answer": "A",
+      "rationale": "Help's example is a screen Flow that collects fields and creates a Contact.",
+      "distractor_explanations": {
+        "B": "Volume tool.",
+        "C": "Formulas do not create rows.",
+        "D": "Approvals route people."
+      },
+      "concept": "Default to screen Flow",
+      "citation_ids": [
+        "SF-HELP-SCREEN-REQUIRED",
+        "SF-HELP-WHICH-TOOL"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "type",
+      "front": "What makes a Flow a screen Flow?",
+      "back": "It requires user interaction via screens, local actions, steps, choices, or dynamic choices."
+    },
+    {
+      "id": "F2",
+      "category": "type",
+      "front": "Wait on screen Flow?",
+      "back": "Not supported. Screen flows do not support Wait elements."
+    },
+    {
+      "id": "F3",
+      "category": "ux",
+      "front": "Help's purpose for screen flows?",
+      "back": "Online forms that collect or display information for internal and external users."
+    },
+    {
+      "id": "F4",
+      "category": "start",
+      "front": "When does a screen Flow start?",
+      "back": "When the user clicks Next on a form or a quick action that opens a form."
+    },
+    {
+      "id": "F5",
+      "category": "recordId",
+      "front": "Flow action context?",
+      "back": "Text input variable named recordId."
+    },
+    {
+      "id": "F6",
+      "category": "required",
+      "front": "Stop REQUIRED_FIELD_MISSING on the form?",
+      "back": "Mark required fields required on-screen components."
+    },
+    {
+      "id": "F7",
+      "category": "fault",
+      "front": "Create Records fails. What does Help add?",
+      "back": "A fault path Screen with Message using running interview Fault Message."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Complex validation in the example?",
+      "back": "Use Decision elements for complex validation logic."
+    },
+    {
+      "id": "F9",
+      "category": "choices",
+      "front": "Where are Choice resources allowed?",
+      "back": "Only in a screen Flow, per Flow Types."
+    },
+    {
+      "id": "F10",
+      "category": "boundary",
+      "front": "Screen vs validation rule?",
+      "back": "Screen is UX for the interview. Validation still blocks API/Data Loader saves."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Screen vs approval?",
+      "back": "Screens collect input. Approvals route a person's decision."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "Screen vs Apex for intake?",
+      "back": "Start with screen Flow; Apex is complementary CPU/volume, not a three-field form."
+    },
+    {
+      "id": "F13",
+      "category": "dist",
+      "front": "Name three distribution methods.",
+      "back": "Flow actions, Lightning pages, Experience Builder (also buttons, URLs, and more in Flow Types)."
+    },
+    {
+      "id": "F14",
+      "category": "quick",
+      "front": "Why mention Quick Actions?",
+      "back": "Help: they can make Flow Builder indicate required fields automatically."
+    },
+    {
+      "id": "F15",
+      "category": "appb",
+      "front": "App Builder collection inputs?",
+      "back": "Not supported. No record or record collection inputs either."
+    },
+    {
+      "id": "F16",
+      "category": "analogy",
+      "front": "Hotel-desk one-liner?",
+      "back": "Screen Flow is the clerk and card; validation is fire-code; autolaunched is back office."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is a screen Flow, and when do you choose it?",
+      "answer_30_seconds": "It is the Flow type that requires a person to complete screens. You choose it for an online form, not for background automation, not as a validation rule, and not as the default Apex UI.",
+      "answer_2_minutes": "I cite Flow Types: screens, choices, no Wait, and the distribution list. I start it from Next or a quick action per which-tool Help. I still keep object validation for API channels and approvals for human routing. AUTO-003 record-triggered paths are the wrong type if a clerk must click.",
+      "example": "LAB_CreateContact screen Flow on the Account page versus an after-save Task Flow with no form.",
+      "tradeoffs": [
+        "Screen vs autolaunched",
+        "UX vs validation"
+      ],
+      "follow_ups": [
+        "Can it run in Experience Cloud?",
+        "Why no Wait?"
+      ],
+      "weak_answer_warnings": [
+        "Calling every Flow a screen Flow"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you prevent REQUIRED_FIELD_MISSING in a create form?",
+      "answer_30_seconds": "Mark those fields required on the Screen components, then Create Records. Help also mentions Quick Actions to indicate required fields and Decision elements for complex logic.",
+      "answer_2_minutes": "I identify required fields first. I do not start in Apex. I add a fault path because other errors still happen. I add object validation if Data Loader must also block. A formula field cannot collect the input.",
+      "example": "Last Name and Email required on LAB_CreateContact.",
+      "tradeoffs": [
+        "Screen required vs object validation",
+        "Quick Action vs Screen"
+      ],
+      "follow_ups": [
+        "What goes on the fault screen?",
+        "Should Phone be required?"
+      ],
+      "weak_answer_warnings": [
+        "Only testing the happy path"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "The Flow action opens but AccountId is blank. Diagnose.",
+      "answer_30_seconds": "Check for a Text input named recordId that is available for input. Flow actions pass only that Id. App Builder will not pass a record variable.",
+      "answer_2_minutes": "I debug. I do not write Apex to 'fix' the Id. I Get Records after recordId if I need more fields. I do not confuse this with a validation rule.",
+      "example": "Account quick action launching LAB_CreateContact.",
+      "tradeoffs": [
+        "Action vs App Builder",
+        "Id vs whole record"
+      ],
+      "follow_ups": [
+        "URL parameters?",
+        "Lookup component instead?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming all Account fields are passed"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Users see a generic error when create fails. What is missing?",
+      "answer_30_seconds": "A fault path on Create Records with a Screen Message bound to the running interview Fault Message, as in Help's example.",
+      "answer_2_minutes": "I add the fault path and optionally loop back to the first screen if the user can fix inputs. I do not replace this with a validation rule error on a page they are not using. Apex try/catch is not the first UX.",
+      "example": "Duplicate-rule failure showing Fault Message on LAB_CreateContact.",
+      "tradeoffs": [
+        "Fault vs validation",
+        "Message vs Display Text"
+      ],
+      "follow_ups": [
+        "Can they retry?",
+        "Should you log to a custom object?"
+      ],
+      "weak_answer_warnings": [
+        "Catch-all Apex first"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When is a screen Flow the wrong tool?",
+      "answer_30_seconds": "When no user is present, when a formula should always calculate, when a validation rule must block every channel, when a person must approve, or when Help's complementary Apex cases apply.",
+      "answer_2_minutes": "Background work is autolaunched or record-triggered (AUTO-003/005). Approvals are Flow Approval Processes or Classic. I will not hide a hard data rule only on a screen the API never hits.",
+      "example": "Data Loader inserting Contacts must still hit validation.",
+      "tradeoffs": [
+        "UX vs platform rule",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "Could a screen launch an approval?",
+        "When LWC instead?"
+      ],
+      "weak_answer_warnings": [
+        "Screen Flow for nightly batch"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do you distribute a screen Flow?",
+      "answer_30_seconds": "Flow Types lists actions, Lightning pages, Experience Builder, custom components, buttons, orchestration, tabs, URLs, Visualforce, Lightning Out, Embedded Service. Pick the lobby that matches the user.",
+      "answer_2_minutes": "I match internal vs external. I respect App Builder input limits. I do not distribute an autolaunched flow as if it had screens. recordId is for actions; URLs can set other inputs carefully (no currency merge fields).",
+      "example": "Experience site form vs internal Account action.",
+      "tradeoffs": [
+        "Internal vs Experience",
+        "Action vs URL"
+      ],
+      "follow_ups": [
+        "Lightning vs Classic runtime?",
+        "Need Run Flows permission?"
+      ],
+      "weak_answer_warnings": [
+        "One URL for every audience without a plan"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Choice resource will not save on your autolaunched child. Why?",
+      "answer_30_seconds": "Choices are a screen-flow resource type. Autolaunched no-trigger flows do not support choices. Keep choices on the parent screen Flow and pass a Text or Id into the child.",
+      "answer_2_minutes": "I do not convert the child to Apex to store a picklist. I do not use a validation rule as a choice list. Subflow input names stay at or under 40 characters (AUTO-002).",
+      "example": "Parent LAB_ScreenFlow passing LAB_Reason text into an autolaunched subflow.",
+      "tradeoffs": [
+        "Type vs resource",
+        "Subflow vs screen"
+      ],
+      "follow_ups": [
+        "Dynamic choices?",
+        "Picklist field instead?"
+      ],
+      "weak_answer_warnings": [
+        "Forcing choices onto autolaunched"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Hotel-desk analogy, then break it.",
+      "answer_30_seconds": "The screen Flow is the clerk and card; autolaunched is back office; validation is fire-code; formula is the printed rate; approval is the night manager. It breaks because API guests never visit the desk, so screen requiredness is not enough.",
+      "answer_2_minutes": "I add recordId as the reservation number the action hands over, and Fault Message as the 'key encoder failed' script. Apex is a locksmith for CPU/volume, not for three fields. No labeled-drawer story.",
+      "example": "Data Loader bypassing LAB_CreateContact screens.",
+      "tradeoffs": [
+        "UX vs all-channel rules",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "Where do reactive components fit?",
+        "Where does Orchestration fit?"
+      ],
+      "weak_answer_warnings": [
+        "Stopping at the analogy"
+      ]
+    }
+  ]
+}

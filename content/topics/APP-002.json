@@ -1,0 +1,989 @@
+{
+  "topic_id": "APP-002",
+  "slug": "sales-processes-forecasting-territories-activities-and-",
+  "title": "Sales processes, forecasting, territories, activities, and pipeline reporting",
+  "track": "Sales, service, and productivity applications",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APP-001"
+  ],
+  "objectives": [
+    "Explain a Sales Process as the Stage picklist subset tied to Opportunity record types, not as a Flow.",
+    "Map Opportunity Stage to Forecast Category and Probability, and say when a user override is allowed.",
+    "Contrast role-hierarchy Collaborative Forecasts with Enterprise Territory Management territory rollups.",
+    "Place Activities (tasks/events) and pipeline reports on the Opportunity without treating a report as the forecast engine."
+  ],
+  "diagnostic_question": "Leadership wants next-quarter revenue, West-region ownership, and a weekly call plan. Which of sales process, forecast category, territory model, activities, or a pipeline report do you configure first, and what evidence would change that?",
+  "definition": "After APP-001's objects exist, this lesson is how deals move and how leadership sees them: a Sales Process controls which Opportunity Stages a record type may use; those Stages map to Forecast Category and Probability for Collaborative Forecasts; Enterprise Territory Management can roll forecasts by territory instead of the user role hierarchy; Activities are the work on the deal; pipeline reporting inspects Opportunity data rather than replacing forecasts. ([Stage to Forecast Category](https://help.salesforce.com/s/articleView?id=sf.faq_forecasts_category_mapping.htm); [ETM with Collaborative Forecasts](https://help.salesforce.com/s/articleView?id=000387713); [Territory assignments for splits](https://help.salesforce.com/s/articleView?id=sf.teamselling_set_up_territory_for_oppty_splits_product_splits.htm))",
+  "why_it_matters": "Interviewers listen for whether you know Stage is not Forecast Category, whether Closed Lost is Omitted, and whether territories are not the role hierarchy. A pretty pipeline report that ignores forecast mappings and overlays will not match the Forecasts tab.",
+  "sixty_second_explanation": "Think of a sports league season. The Sales Process is the rulebook of legal game phases (Stages) for that division's record type. Forecasting is the scoreboard projection: each phase maps to Pipeline, Best Case, Commit, Closed, or Omitted. Territories are home regions, not the coaching org chart. Activities are practices and games on the calendar. Pipeline reporting is the standings page—it reads the games; it is not the scoreboard engine.",
+  "deeper_explanation": [
+    "Forecasts rely on how Opportunity Stage picklist values map to Forecast Category. If Negotiation/Review maps to Commit, those amounts sit in Commit. If Stage changes, probability and forecast category also change. Closed Lost maps to Omitted and is not included in forecasts. ([Stage to Forecast Category](https://help.salesforce.com/s/articleView?id=sf.faq_forecasts_category_mapping.htm))",
+    "Users who own the Opportunity can edit Forecast Category and override the default stage-to-category mapping. In Lightning Experience, all forecast categories are available for all stages; Classic is more restrictive. Update mappings on Opportunity Stage in Object Manager. ([Stage to Forecast Category](https://help.salesforce.com/s/articleView?id=sf.faq_forecasts_category_mapping.htm))",
+    "Enterprise Territory Management and Collaborative Forecasts can be combined so forecast managers see rollups by territory hierarchy rather than the standard user role hierarchy. Enable ETM, then enable Territory Forecasts in Forecast Settings, and assign a forecast manager per territory. ([ETM with Collaborative Forecasts](https://help.salesforce.com/s/articleView?id=000387713))",
+    "Territory models, types, and the Manage Territories permission are metadata. Opportunity rows and activities are data. Opportunity Splits can be assigned to territories so matrixed teams forecast split amounts. ([Territory assignments for splits](https://help.salesforce.com/s/articleView?id=sf.teamselling_set_up_territory_for_oppty_splits_product_splits.htm))",
+    "Activities (tasks and events) record work against the Opportunity; they do not change Forecast Category by themselves. Pipeline reports and dashboards inspect Opportunity Stage, Amount, Close Date, and owner/territory—useful, but they are not Collaborative Forecasts submissions or manager judgment."
+  ],
+  "mental_model": {
+    "analogy": "A sports league season: Sales Process = division rulebook of legal phases; Stage = which phase this game is in; Forecast Category = how that phase counts on the projected scoreboard; Territory = home region; Role hierarchy = coaching org chart; Activities = practices and fixtures; Pipeline report = published standings.",
+    "useful_mapping": [
+      "Sales Process + record type → which Stage values the rep may pick",
+      "Stage → default Probability and Forecast Category",
+      "Forecast Category override → rep judgment on this Opportunity",
+      "Collaborative Forecasts on roles → rollup up the coaching chart",
+      "Territory Forecasts → rollup up home regions instead",
+      "Activity → a scheduled practice or game, not the score",
+      "Pipeline report → standings query, not the official forecast submission"
+    ],
+    "where_it_breaks": [
+      "A user can override Forecast Category so Stage and scoreboard disagree.",
+      "Territories do not replace sharing or role hierarchy unless you design them to.",
+      "Reports can filter differently from the Forecasts tab (date, product family, splits).",
+      "The analogy does not encode Einstein Forecasting or quota upload mechanics."
+    ]
+  },
+  "teach_back_prompt": "Explain why two Opportunities in the same Stage can appear in different forecast categories, then name one reason a pipeline report still disagrees with the Forecasts tab.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Recite Stage versus Forecast Category and what Omitted means."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Choose sales process, territory model, forecast type, activity, or report for five stakeholder asks."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Draw role-hierarchy forecasts versus territory forecasts."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose Commit that does not match the Stage mapping."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: process, forecast, territory, activity, report."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-FORECAST-MAP",
+      "title": "Manage Opportunity Stage to Forecast Category Mappings for Pipeline Forecasts",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.faq_forecasts_category_mapping.htm",
+      "supports": "Stage maps to Forecast Category and Probability; Closed Lost is Omitted; owners can override Forecast Category; LEX vs Classic availability of categories.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Example percentages in Help are illustrations, not org defaults you should invent."
+    },
+    {
+      "source_id": "SF-HELP-ETM-FORECASTS",
+      "title": "Enterprise Territory Management with Collaborative Forecasts",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=000387713",
+      "supports": "ETM plus Collaborative Forecasts can roll up by territory hierarchy instead of user role hierarchy; enable Territory Forecasts in Forecast Settings.",
+      "release_or_version": "Knowledge article; published date on Help may differ from Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Setup path labels (Territory Management vs Sales Territories) can differ by org vintage; reverify."
+    },
+    {
+      "source_id": "SF-HELP-TERRITORY-SPLITS",
+      "title": "Set Up Territory Assignments for Opportunity Splits and Opportunity Product Splits",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.teamselling_set_up_territory_for_oppty_splits_product_splits.htm",
+      "supports": "Enable sales territories, configure types/models/territories, turn on splits, add Split Territory on layouts. Permissions: Customize Application, Manage Territories.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Enterprise, Performance, Unlimited, Developer editions as cited; do not assume Group Edition."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Sales process and stages",
+        "Forecast category map",
+        "Role vs territory rollup",
+        "Activities vs forecast",
+        "Pipeline report vs Forecasts tab",
+        "Metadata vs opportunity data"
+      ],
+      "accessible_description": "Portrait map: record type plus sales process pick stages; stages map to forecast categories; forecasts roll up by role or territory; activities log work; reports inspect pipeline."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-FORECAST-MAP",
+        "SF-HELP-ETM-FORECASTS",
+        "SF-HELP-TERRITORY-SPLITS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "How a deal becomes a forecast number"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  RT[Opportunity record type] --> SP[Sales Process allowed Stages]\n  SP --> Stg[Opportunity Stage]\n  Stg --> Prob[Probability]\n  Stg --> FC[Forecast Category default]\n  FC --> CF[Collaborative Forecasts]\n  Own[Opportunity owner override] --> FC\n  CF --> Role[Rollup: user role hierarchy]\n  CF --> Terr[Rollup: territory hierarchy if Territory Forecasts on]\n  TM[Territory model metadata] --> Terr\n  Opp[Opportunity data] --> Act[Activities tasks and events]\n  Opp --> Rpt[Pipeline report or dashboard]",
+      "decision": "flowchart TD\n  Need[Stakeholder ask] --> Q1{What must change?}\n  Q1 -->|Which Stages this team may use| SP[Sales Process on the record type]\n  Q1 -->|How Stage counts in the forecast| Map[Edit Stage to Forecast Category mapping]\n  Q1 -->|Rep judgment differs from Stage| Ov[Owner edits Forecast Category]\n  Q1 -->|Rollup by geography not manager chart| ETM[ETM plus Territory Forecasts]\n  Q1 -->|Who gets credit on a team deal| Splits[Opportunity Splits plus Split Territory]\n  Q1 -->|Did we call the customer?| Act[Log Activities not a new Stage]\n  Q1 -->|Inspect deals without changing forecasts| Rpt[Pipeline report]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Forecasts use Opportunity Stage to Forecast Category mappings. Changing Stage changes probability and forecast category. Closed Lost is Omitted and is not included in forecasts.",
+      "source_ids": ["SF-HELP-FORECAST-MAP"],
+      "scope": "Stage-forecast mapping",
+      "validation": "Manage Opportunity Stage to Forecast Category Mappings.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Opportunity owners can edit Forecast Category and override the default mapping. Lightning Experience offers all forecast categories for all stages; Classic restricts available categories by stage.",
+      "source_ids": ["SF-HELP-FORECAST-MAP"],
+      "scope": "Forecast Category override",
+      "validation": "Same Help article note on user edits and LEX vs Classic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Enterprise Territory Management can be integrated with Collaborative Forecasts so rollups follow the territory hierarchy instead of the user role hierarchy when Territory Forecasts are enabled.",
+      "source_ids": ["SF-HELP-ETM-FORECASTS"],
+      "scope": "Territory forecasts",
+      "validation": "Enterprise Territory Management with Collaborative Forecasts.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Setting up territory assignments on opportunity splits requires enabling sales territories, configuring types/models/territories, enabling splits, and adding Split Territory on the relevant layouts. Manage Territories permission is required to configure territories.",
+      "source_ids": ["SF-HELP-TERRITORY-SPLITS"],
+      "scope": "Territories and splits",
+      "validation": "Set Up Territory Assignments for Opportunity Splits.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Forecast submissions, manager judgment rollups, and split-by-territory forecasting have been enhanced in recent releases; reverify Forecast Settings in the target org for Summer '26.",
+  "unresolved_uncertainty": [
+    "Customizable Forecasts (legacy) versus Collaborative Forecasts availability in a given org should be checked in Setup rather than assumed.",
+    "Exact quota upload and forecast type (revenue vs quantity vs product family) labels vary; do not invent type lists."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Forecast Category",
+      "telugu": "ఒక Opportunity స్టేజ్ స్కోర్‌బోర్డులో ఎలా లెక్కవుతుందో చెప్పే బకెట్."
+    },
+    {
+      "english": "Sales Process",
+      "telugu": "ఆ రికార్డ్ టైప్‌కు అనుమతించిన Opportunity స్టేజ్‌ల నియమ పుస్తకం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "A Sales Process limits Stages for a record type. Stages map to Forecast Category. Owners can override category. Forecasts roll up by role hierarchy unless Territory Forecasts use ETM. Activities log work. Pipeline reports inspect deals; they are not the Forecasts tab.",
+    "two_minutes": "I start from the question. Wrong Stages? Sales Process and record type. Wrong bucket? Stage mapping, then owner override, then LEX vs Classic. Geography vs manager chart? ETM plus Territory Forecasts and a forecast manager per territory. Team credit? Splits and Split Territory. 'Did we call them?' is an Activity, not a new Stage. I never promise a report will match Collaborative Forecasts without checking date, splits, and overlays."
+  },
+  "terminology": [
+    {
+      "term": "Sales Process",
+      "plain": "The allowed Opportunity Stages for a given record type.",
+      "precise": "Metadata that subsets the Stage picklist. Different teams (new business vs renewal) get different processes. It is not a Flow and not a forecast type.",
+      "example": "LAB_NewBusiness process omits Renewal Negotiation stages.",
+      "non_example": "A record-triggered Flow that stamps Stage.",
+      "confusable_neighbor": "Path: the Lightning coaching UI on those stages, not the process itself.",
+      "boundary": "Path and Kanban settings are neighboring UI, not the process definition."
+    },
+    {
+      "term": "Forecast Category",
+      "plain": "The bucket that decides how this Opportunity counts in Collaborative Forecasts.",
+      "precise": "Mapped from Stage (Pipeline, Best Case, Commit, Closed, Omitted). Closed Lost is Omitted. Owners may override. LEX allows all categories on all stages.",
+      "example": "Stage Negotiation/Review mapped to Commit unless the owner moves it to Best Case.",
+      "non_example": "A report folder named Forecasts.",
+      "confusable_neighbor": "Probability: a related percentage on Stage, not the forecast bucket.",
+      "boundary": "Einstein win scoring is a different feature."
+    },
+    {
+      "term": "Collaborative Forecasts",
+      "plain": "The official forecast rollup product on the Forecasts tab.",
+      "precise": "Rolls opportunity amounts (or quantities/splits) up a hierarchy—user roles by default, or territories when Territory Forecasts are enabled. Includes manager judgment and optional submissions in current Help.",
+      "example": "West VP sees rolled Commit for the quarter from direct reports or territories.",
+      "non_example": "A joined report of Open Opportunities labeled 'the forecast.'",
+      "confusable_neighbor": "Pipeline report: inspection tool, not the forecast engine.",
+      "boundary": "Quota and forecast type configuration: reverify in Forecast Settings."
+    },
+    {
+      "term": "Enterprise Territory Management",
+      "plain": "A model of sales regions and who covers them, separate from the role hierarchy.",
+      "precise": "Territory types, models, and territories. Can drive sharing and, with Collaborative Forecasts, territory-based forecast rollups. Configuring territories requires Manage Territories.",
+      "example": "LAB_West-Coast territory on an active model assigned to Account LAB_Northwind.",
+      "non_example": "Renaming a User Role 'West Coast' and calling it a territory.",
+      "confusable_neighbor": "Role hierarchy: manager chain used by default forecasts and some sharing.",
+      "boundary": "Original Territory Management (legacy) is not this product; do not mix names."
+    },
+    {
+      "term": "Activity",
+      "plain": "A task or event logged against people and deals.",
+      "precise": "Work records. They do not by themselves change Forecast Category. Deeper email/calendar/mobile behavior is APP-005.",
+      "example": "Event LAB_Discovery Call related to Opportunity LAB_Northwind Q3.",
+      "non_example": "Changing Stage to Qualification because 'we called them' without logging work.",
+      "confusable_neighbor": "Chatter post: collaboration, not a due-dated task (APP-005).",
+      "boundary": "This lesson only needs activities as pipeline hygiene, not Inbox setup."
+    },
+    {
+      "term": "Pipeline reporting",
+      "plain": "Reports and dashboards that inspect open and closed Opportunities.",
+      "precise": "Queries on Opportunity fields (Stage, Amount, Close Date, owner, territory). Useful for inspection. Not a substitute for Collaborative Forecasts mappings, overlays, or submissions.",
+      "example": "LAB_Open Pipeline by Stage report filtered this fiscal quarter.",
+      "non_example": "The Forecasts tab Commit column copied into Excel and called a report definition.",
+      "confusable_neighbor": "Forecasts tab: hierarchy rollup product.",
+      "boundary": "Report types and row-level security are DATA/SEC topics."
+    },
+    {
+      "term": "Opportunity Split",
+      "plain": "A way to share credit (and sometimes forecast) across a selling team.",
+      "precise": "Splits can be assigned to territories so matrixed teams forecast appropriate amounts. Requires enabling splits and adding Split Territory on layouts when using territories.",
+      "example": "AE 60% / SE 40% revenue split on LAB_Northwind Q3, each with a Split Territory.",
+      "non_example": "Two duplicate Opportunities for the same deal.",
+      "confusable_neighbor": "Account Team: coverage on the Account, not opportunity credit.",
+      "boundary": "Overlay vs revenue split types: confirm labels in the org."
+    },
+    {
+      "term": "Omitted",
+      "plain": "The forecast bucket that means 'do not count this deal.'",
+      "precise": "Closed Lost maps to Omitted and is not included in forecasts. Other stages can be mapped to Omitted if the business truly wants them out.",
+      "example": "Closed Lost LAB_deal disappears from Commit/Pipeline totals.",
+      "non_example": "Deleting the Opportunity so it 'will not forecast.'",
+      "confusable_neighbor": "Closed: won revenue in the forecast, not omitted.",
+      "boundary": "Custom mappings belong on the Stage picklist, not a formula field."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Define legal stages",
+      "actor": "Admin + sales ops",
+      "trigger": "Different teams need different Stage lists",
+      "before": "One global Stage picklist for everyone",
+      "after": "Sales Processes assigned to Opportunity record types",
+      "observe": "Renewal record type cannot pick New Business stages",
+      "failure": "Hiding stages only with a validation rule maze"
+    },
+    {
+      "step": 2,
+      "transition": "Map stages to forecasts",
+      "actor": "Admin",
+      "trigger": "Forecasts tab must match intended buckets",
+      "before": "Default mappings unreviewed",
+      "after": "Stage → Probability and Forecast Category documented",
+      "observe": "Closed Lost is Omitted; Commit stages agreed with VP Sales",
+      "failure": "Building only a dashboard and skipping mappings"
+    },
+    {
+      "step": 3,
+      "transition": "Choose rollup hierarchy",
+      "actor": "Admin + architect",
+      "trigger": "Leadership is geographic or matrixed",
+      "before": "Role hierarchy only",
+      "after": "Role-based forecasts or ETM Territory Forecasts plus forecast managers",
+      "observe": "Sandbox Forecasts tab rollup matches the intended tree",
+      "failure": "Renaming roles and calling them territories"
+    },
+    {
+      "step": 4,
+      "transition": "Inspect with activities and reports",
+      "actor": "Managers",
+      "trigger": "Need call plans and deal lists",
+      "before": "Forecast number with no evidence",
+      "after": "Activities on deals; pipeline reports for inspection",
+      "observe": "Last activity date and a LAB_ pipeline report",
+      "failure": "Using a report as the system of record for Commit"
+    }
+  ],
+  "when_to_use": [
+    "When different selling teams need different Opportunity Stages via a Sales Process and record type.",
+    "When Collaborative Forecasts must bucket deals using Stage to Forecast Category mappings, including Omitted for Closed Lost.",
+    "When forecast rollups should follow Enterprise Territory Management regions rather than the user role hierarchy.",
+    "When managers need Activities on the deal and pipeline reporting to inspect Opportunities without replacing the Forecasts tab."
+  ],
+  "when_not_to_use": [
+    "Do not use a pipeline report as a substitute for Collaborative Forecasts mappings, overlays, or submissions.",
+    "Do not treat User Roles as territories, or skip Manage Territories when you actually need ETM.",
+    "Do not add extra Stages to 'track a phone call' when the need is an Activity.",
+    "Do not assume Lightning Forecast Category overrides behave like Salesforce Classic restrictions."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Sales Processes; Object Manager → Opportunity → Record Types.",
+    "Object Manager → Opportunity → Stage picklist (forecast category mapping).",
+    "Setup → Forecasts Settings (including Enable Territory Forecasts).",
+    "Setup → Territory Models / Sales Territories; Opportunity Splits layouts."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox: LAB_NewBusiness vs LAB_Renewal teams. VP wants Commit that matches Stage mappings, West-region rollups rather than the AE manager chain, and proof that discovery calls happened. No production data.",
+    "inputs": [
+      "Two Opportunity record types and two Sales Processes",
+      "Stage mappings including Closed Lost → Omitted",
+      "An active territory model with LAB_West",
+      "Opportunity Splits optional for a team deal"
+    ],
+    "decisions": [
+      {
+        "decision": "Give each record type its own Sales Process instead of one validation-rule Stage filter.",
+        "because": "Sales Process is the supported Stage subset per record type.",
+        "rejected": "One process plus hidden stages only on page layout"
+      },
+      {
+        "decision": "Map Negotiation/Review to Commit; keep Closed Lost as Omitted; teach owners they may override Forecast Category in Lightning.",
+        "because": "Help documents mapping, Omitted, and LEX overrides.",
+        "rejected": "A formula field pretending to be Forecast Category"
+      },
+      {
+        "decision": "Enable Territory Forecasts after ETM rather than renaming roles to city names.",
+        "because": "Official article integrates ETM with Collaborative Forecasts for territory rollups.",
+        "rejected": "Role hierarchy renamed 'West' as a fake territory"
+      }
+    ],
+    "configuration_or_code": [
+      "Create LAB_ processes and assign to record types in sandbox.",
+      "Edit Opportunity Stage mappings; convert a LAB_ deal to Closed Lost and confirm it is omitted from forecasts.",
+      "If the org can enable ETM, add LAB_West and a forecast manager; otherwise document the gap.",
+      "Log a LAB_ discovery Event; build a pipeline report filtered to LAB_ record types."
+    ],
+    "output": "Renewal cannot pick new-business stages. Closed Lost drops out of forecasts. Inspection uses activities and a report; Commit still lives on Forecasts.",
+    "verification": [
+      "Closed Lost LAB_ opportunity Forecast Category is Omitted.",
+      "Owner can change Forecast Category on an open LAB_ deal in Lightning.",
+      "Pipeline report total can differ from Forecasts tab if filters exclude overlays—note the difference."
+    ],
+    "self_explanation": "I treated Sales Process, forecast mapping, and territory rollup as three different levers. Activities and reports inspect; they do not replace mappings."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox with Opportunities enabled; synthetic LAB_ deals only.",
+    "starting_state_checks": [
+      "You can edit Opportunity Stage picklist values.",
+      "Note whether Collaborative Forecasts and ETM are already on; do not enable irreversible features in a shared org without approval."
+    ],
+    "steps": [
+      "Create two LAB_ Opportunity record types or use existing ones and document which Sales Process each uses.",
+      "Open Stage picklist mappings and write down Forecast Category for Prospecting, Negotiation/Review, Closed Won, and Closed Lost.",
+      "Create a LAB_ open Opportunity and a Closed Lost one; compare Forecast Category.",
+      "Log one Task and one Event on the open deal; run or describe a pipeline report grouped by Stage."
+    ],
+    "guided_completion": [
+      "If Closed Lost is not Omitted, do not 'fix' production mappings from this lab.",
+      "If Forecasts tab is unavailable, record that Collaborative Forecasts is off—do not invent numbers."
+    ],
+    "independent_challenge": "Explain in one paragraph when you would enable Territory Forecasts instead of adding more User Roles.",
+    "evidence": [
+      "Written Stage-to-category table from the sandbox.",
+      "Notes on whether Forecast Category override worked in Lightning."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ opportunities and activities.",
+      "Do not leave experimental Sales Processes assigned in a shared sandbox if others rely on them."
+    ],
+    "limitations": "This lab may not be able to enable ETM; treat that path as read-only if gated."
+  },
+  "decision_table": [
+    {
+      "signal": "New-business reps must not pick renewal-only Stages.",
+      "choose": "A Sales Process assigned to the new-business Opportunity record type.",
+      "not": "A single global Stage list plus a validation-rule maze as the first design.",
+      "why": "Sales Process is the supported way to subset Stages per record type."
+    },
+    {
+      "signal": "Negotiation deals should count as Commit on the Forecasts tab.",
+      "choose": "Map that Stage to Forecast Category Commit on the Opportunity Stage picklist.",
+      "not": "A dashboard filter named Commit with no mapping change.",
+      "why": "Collaborative Forecasts uses the Stage-to-category map, not the report label."
+    },
+    {
+      "signal": "Leadership is organized by geography, not by AE manager chain.",
+      "choose": "Enterprise Territory Management plus Territory Forecasts and forecast managers.",
+      "not": "Renaming User Roles to city names and calling them territories.",
+      "why": "Help integrates ETM with Collaborative Forecasts for territory rollups."
+    },
+    {
+      "signal": "A team deal needs split credit inside a territory.",
+      "choose": "Opportunity Splits with Split Territory on the layout after territories and splits are enabled.",
+      "not": "Two duplicate Opportunities, one per rep.",
+      "why": "Official split-plus-territory setup exists so matrixed teams forecast the right amounts."
+    },
+    {
+      "signal": "Manager asks whether anyone called the customer this week.",
+      "choose": "Activities (Task/Event) on the Opportunity, then a pipeline report for inspection.",
+      "not": "A new Stage called 'Called Customer' that wrecks forecast mappings.",
+      "why": "Activities record work; Stages drive probability and forecast category."
+    }
+  ],
+  "limitations": [
+    "Does not configure Einstein Forecasting, quota files, or every forecast type.",
+    "Does not replace sharing design (SEC) even when territories grant access.",
+    "Legacy Customizable Forecasts are out of scope.",
+    "Edition gates for ETM and splits must be rechecked."
+  ],
+  "security_notes": [
+    "Forecast numbers are sensitive; restrict Forecasts tab and report folders.",
+    "Territory rules can grant Account access—review with sharing owners.",
+    "Use only LAB_ amounts in examples."
+  ],
+  "common_mistakes": [
+    "Equating Stage with Forecast Category.",
+    "Using a pipeline report as the forecast of record.",
+    "Confusing role hierarchy with territories.",
+    "Creating Stages to track calls instead of Activities.",
+    "Ignoring owner Forecast Category overrides in Lightning."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Deal is in Negotiation but not in Commit.",
+      "check": [
+        "Stage to Forecast Category mapping",
+        "Owner override on Forecast Category",
+        "Forecast type (revenue vs quantity vs family) and date"
+      ],
+      "do_not_assume": "The Forecasts tab is 'broken.'"
+    },
+    {
+      "symptom": "West VP cannot see regional rollup.",
+      "check": [
+        "Territory Forecasts enabled",
+        "Forecast manager on the territory",
+        "Whether rollup is still role-based"
+      ],
+      "do_not_assume": "A User Role named West is a territory."
+    },
+    {
+      "symptom": "Pipeline dashboard does not match Forecasts.",
+      "check": [
+        "Filters (won/lost, close date, owner)",
+        "Splits and overlays",
+        "Omitted categories"
+      ],
+      "do_not_assume": "One of them is always wrong; they are different products."
+    }
+  ],
+  "production_notes": [
+    "Change Stage mappings in sandbox first; they move forecast numbers immediately.",
+    "Coordinate ETM enablement with sharing and account assignment owners.",
+    "Document whether Lightning overrides are allowed culturally, not only technically."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "If Opportunity Stage changes, what else does Help say changes?",
+      "options": {
+        "A": "Probability and Forecast Category",
+        "B": "The Sales Process record type",
+        "C": "The User Role hierarchy",
+        "D": "Campaign member status"
+      },
+      "answer": "A",
+      "rationale": "If the stage of an opportunity changes, the probability and forecast category also change.",
+      "distractor_explanations": {
+        "B": "Record type is not auto-changed by Stage.",
+        "C": "Roles do not move with Stage.",
+        "D": "Campaigns are APP-001."
+      },
+      "concept": "Stage side effects",
+      "citation_ids": ["SF-HELP-FORECAST-MAP"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What Forecast Category does Help use for Closed Lost in the example mapping?",
+      "options": {
+        "A": "Omitted (not included in forecasts)",
+        "B": "Commit",
+        "C": "Closed",
+        "D": "Best Case"
+      },
+      "answer": "A",
+      "rationale": "Closed Lost is Omitted and not included in forecasts.",
+      "distractor_explanations": {
+        "B": "Commit is for late-stage open deals in the example.",
+        "C": "Closed is for Closed Won in the example.",
+        "D": "Best Case is a different open bucket."
+      },
+      "concept": "Omitted",
+      "citation_ids": ["SF-HELP-FORECAST-MAP"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "In Lightning Experience, which Forecast Categories can an owner pick?",
+      "options": {
+        "A": "All forecast categories are available for all stages",
+        "B": "Only the single mapped category",
+        "C": "Only Omitted",
+        "D": "None; overrides are illegal"
+      },
+      "answer": "A",
+      "rationale": "In Lightning Experience, all forecast categories are available for all stages. Owners can override the default mapping.",
+      "distractor_explanations": {
+        "B": "That is closer to a locked mapping, not LEX.",
+        "C": "Omitted is not the only option.",
+        "D": "Overrides are documented."
+      },
+      "concept": "LEX override",
+      "citation_ids": ["SF-HELP-FORECAST-MAP"]
+    },
+    {
+      "id": "Q4",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How does Classic differ from Lightning on Forecast Category?",
+      "options": {
+        "A": "In Classic, the stage determines the available forecast categories",
+        "B": "Classic has no Forecast Category field",
+        "C": "Classic always uses territories",
+        "D": "Classic maps Closed Won to Omitted only"
+      },
+      "answer": "A",
+      "rationale": "Help: In Salesforce Classic, the stage determines the available forecast categories.",
+      "distractor_explanations": {
+        "B": "The field exists in Classic.",
+        "C": "Territories are optional ETM.",
+        "D": "Closed Won is Closed in the example, not Omitted."
+      },
+      "concept": "Classic vs LEX",
+      "citation_ids": ["SF-HELP-FORECAST-MAP"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Leadership wants forecast rollups by region, not by AE manager. What pairing does Help describe?",
+      "options": {
+        "A": "Enterprise Territory Management with Collaborative Forecasts Territory Forecasts",
+        "B": "Campaigns with Price Books",
+        "C": "Web-to-Lead with queues",
+        "D": "Person Accounts with Quotes"
+      },
+      "answer": "A",
+      "rationale": "ETM and Collaborative Forecasts can generate territory-based forecast rollups instead of the user role hierarchy.",
+      "distractor_explanations": {
+        "B": "APP-001 objects.",
+        "C": "APP-003.",
+        "D": "APP-001."
+      },
+      "concept": "Territory forecasts",
+      "citation_ids": ["SF-HELP-ETM-FORECASTS"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do you enable Territory Forecasts according to the ETM article?",
+      "options": {
+        "A": "Forecast Settings: Enable Territory Forecasts",
+        "B": "Lead Settings",
+        "C": "Web-to-Case",
+        "D": "Price Book entries"
+      },
+      "answer": "A",
+      "rationale": "In Setup, under Forecasts Settings, select Enable Territory Forecasts to link territory hierarchy to forecast rollups.",
+      "distractor_explanations": {
+        "B": "Lead Settings are APP-001.",
+        "C": "Service capture is APP-003.",
+        "D": "Price books price products."
+      },
+      "concept": "Enable Territory Forecasts",
+      "citation_ids": ["SF-HELP-ETM-FORECASTS"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which permission is cited to configure territory types, models, and territories?",
+      "options": {
+        "A": "View Setup and Configuration AND Manage Territories",
+        "B": "Download AppExchange Packages",
+        "C": "Modify All Data only, with no territory permission",
+        "D": "Send Email"
+      },
+      "answer": "A",
+      "rationale": "Help lists View Setup and Configuration AND Manage Territories to configure territory types, models, and territories.",
+      "distractor_explanations": {
+        "B": "AppExchange is APP-007.",
+        "C": "Modify All Data is listed for enabling splits, not as the sole territory perm.",
+        "D": "Unrelated."
+      },
+      "concept": "Manage Territories",
+      "citation_ids": ["SF-HELP-TERRITORY-SPLITS"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Matrixed AE and SE need forecast credit by territory. What setup sequence does Help outline?",
+      "options": {
+        "A": "Enable territories, configure model, enable splits, add Split Territory on split layouts",
+        "B": "Create two Opportunities and two Campaigns",
+        "C": "Disable Collaborative Forecasts",
+        "D": "Convert the Opportunity back to a Lead"
+      },
+      "answer": "A",
+      "rationale": "The splits-and-territories article lists enable territories, configure types/models/territories, turn on splits, then add Split Territory on layouts.",
+      "distractor_explanations": {
+        "B": "Duplicates wreck pipeline.",
+        "C": "You still need forecasts.",
+        "D": "Conversion is APP-001 and wrong here."
+      },
+      "concept": "Splits plus territories",
+      "citation_ids": ["SF-HELP-TERRITORY-SPLITS"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A manager wants proof of a discovery call, not a new forecast bucket. What do you use?",
+      "options": {
+        "A": "An Activity (Event or Task) on the Opportunity",
+        "B": "A new Stage named Called",
+        "C": "Omitted forecast category",
+        "D": "A custom Price Book"
+      },
+      "answer": "A",
+      "rationale": "Activities record work. New Stages change probability and forecast category mappings.",
+      "distractor_explanations": {
+        "B": "Pollutes sales process and forecasts.",
+        "C": "Omitted removes the deal from forecasts.",
+        "D": "Price books are APP-001."
+      },
+      "concept": "Activities vs stages",
+      "citation_ids": ["SF-HELP-FORECAST-MAP"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Pipeline reporting versus Collaborative Forecasts?",
+      "options": {
+        "A": "Reports inspect Opportunity rows; Forecasts tab rolls mapped categories up a hierarchy",
+        "B": "They are the same object",
+        "C": "Reports replace Stage mappings",
+        "D": "Forecasts cannot use Amount"
+      },
+      "answer": "A",
+      "rationale": "This lesson treats reports as inspection and Collaborative Forecasts as the mapped rollup product.",
+      "distractor_explanations": {
+        "B": "Different products.",
+        "C": "Mappings live on Stage.",
+        "D": "Revenue forecasts use amounts."
+      },
+      "concept": "Report vs forecast",
+      "citation_ids": ["SF-HELP-FORECAST-MAP"]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do you edit Stage to Forecast Category mappings?",
+      "options": {
+        "A": "Object Manager → Opportunity → Fields & Relationships → Stage",
+        "B": "Lead Map Lead Fields",
+        "C": "Price Book entries",
+        "D": "Web-to-Lead HTML"
+      },
+      "answer": "A",
+      "rationale": "Update mappings in the Stage field on the Opportunity object; each row shows forecast category.",
+      "distractor_explanations": {
+        "B": "Lead mapping is APP-001.",
+        "C": "Price books price products.",
+        "D": "Web-to-Lead is capture."
+      },
+      "concept": "Where to map",
+      "citation_ids": ["SF-HELP-FORECAST-MAP"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You add User Roles named after cities. Will that create territory forecasts?",
+      "options": {
+        "A": "No. Territory Forecasts require ETM and Enable Territory Forecasts, not renamed roles",
+        "B": "Yes; roles are territories",
+        "C": "Yes if the role name contains 'West'",
+        "D": "Only if Quotes are enabled"
+      },
+      "answer": "A",
+      "rationale": "Help distinguishes user role hierarchy from territory hierarchy. Renaming roles is not ETM.",
+      "distractor_explanations": {
+        "B": "False equivalence.",
+        "C": "Naming is not enablement.",
+        "D": "Quotes are unrelated."
+      },
+      "concept": "Roles are not territories",
+      "citation_ids": ["SF-HELP-ETM-FORECASTS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What does a Sales Process control?",
+      "back": "Which Opportunity Stage values a record type may use—not the Forecasts tab itself."
+    },
+    {
+      "id": "F2",
+      "category": "forecast",
+      "front": "Stage versus Forecast Category?",
+      "back": "Stage is the sales phase. Forecast Category is the Collaborative Forecasts bucket mapped from Stage."
+    },
+    {
+      "id": "F3",
+      "category": "forecast",
+      "front": "Closed Lost forecast bucket in Help's example?",
+      "back": "Omitted — not included in forecasts."
+    },
+    {
+      "id": "F4",
+      "category": "forecast",
+      "front": "Can owners override Forecast Category?",
+      "back": "Yes. Lightning allows all categories on all stages; Classic limits categories by stage."
+    },
+    {
+      "id": "F5",
+      "category": "territory",
+      "front": "Role hierarchy vs territory forecasts?",
+      "back": "Default Collaborative Forecasts roll up roles. Territory Forecasts roll up ETM territories instead."
+    },
+    {
+      "id": "F6",
+      "category": "territory",
+      "front": "Where is Enable Territory Forecasts?",
+      "back": "Forecast Settings in Setup, after Enterprise Territory Management is in play."
+    },
+    {
+      "id": "F7",
+      "category": "territory",
+      "front": "Permission to configure territories?",
+      "back": "Manage Territories (with View Setup and Configuration) per the splits article."
+    },
+    {
+      "id": "F8",
+      "category": "splits",
+      "front": "Why Split Territory on layouts?",
+      "back": "So users can assign opportunity or product splits to territories for matrixed forecasting."
+    },
+    {
+      "id": "F9",
+      "category": "activities",
+      "front": "Do Activities change Forecast Category?",
+      "back": "No. They log work. Stage/category mappings and overrides change the forecast bucket."
+    },
+    {
+      "id": "F10",
+      "category": "reporting",
+      "front": "Pipeline report vs Forecasts tab?",
+      "back": "A report inspects Opportunity rows. Collaborative Forecasts is the hierarchy rollup product."
+    },
+    {
+      "id": "F11",
+      "category": "mapping",
+      "front": "Where are Stage-category mappings edited?",
+      "back": "Opportunity Stage picklist in Object Manager; each value shows a forecast category."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "Need a call logged, not a new Stage?",
+      "back": "Create a Task or Event on the Opportunity instead of inventing a Stage."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "City-named User Roles equal territories?",
+      "back": "No. Territories are ETM metadata. Roles are the manager chain."
+    },
+    {
+      "id": "F14",
+      "category": "probability",
+      "front": "What happens to Probability when Stage changes?",
+      "back": "It changes with the Stage mapping, along with the default Forecast Category."
+    },
+    {
+      "id": "F15",
+      "category": "metadata",
+      "front": "Sales Process metadata vs Opportunity data?",
+      "back": "The process and mappings are metadata. Each deal's Stage, Amount, and activities are data."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do Sales Processes, Stages, and Forecast Categories fit together?",
+      "answer_30_seconds": "A Sales Process subsets Stages for a record type. Each Stage maps to Probability and Forecast Category. Collaborative Forecasts buckets deals from that category, unless the owner overrides it.",
+      "answer_2_minutes": "I do not treat Stage and Forecast Category as synonyms. Closed Lost is Omitted in Help's example. Lightning lets owners pick any category; Classic restricts by stage. A pipeline report that groups by Stage can still disagree with the Forecasts tab because of overrides, dates, and splits. Sales Process is metadata; the Opportunity row is data.",
+      "example": "LAB_Renewal process hides Prospecting; Negotiation maps to Commit unless the AE marks Best Case.",
+      "tradeoffs": [
+        "Locked mappings vs rep judgment",
+        "One process vs many record types"
+      ],
+      "follow_ups": [
+        "Who is allowed to override?",
+        "How do you audit overrides?"
+      ],
+      "weak_answer_warnings": [
+        "Saying Stage is the forecast"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "When do you use territories instead of the role hierarchy for forecasts?",
+      "answer_30_seconds": "When leadership needs geographic or overlay rollups. Enable ETM, then Territory Forecasts, and put a forecast manager on each territory. Do not rename roles and call them territories.",
+      "answer_2_minutes": "Default Collaborative Forecasts follow user roles. Help describes integrating Enterprise Territory Management so rollups follow the territory tree. Splits can carry Split Territory for matrixed credit. I check Manage Territories permission and edition. Sharing impact is a security conversation, not a free gift of ETM.",
+      "example": "LAB_West territory forecast manager sees West Commit; the AE's manager chain is ignored for that forecast type.",
+      "tradeoffs": [
+        "Role simplicity vs territorial accuracy",
+        "Forecast design vs sharing design"
+      ],
+      "follow_ups": [
+        "Can both hierarchies exist?",
+        "What is a territory model?"
+      ],
+      "weak_answer_warnings": [
+        "Equating roles and territories"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "VP says the dashboard Commit is the forecast. How do you respond?",
+      "answer_30_seconds": "A pipeline dashboard inspects Opportunities. Collaborative Forecasts uses Stage mappings, overlays, and hierarchy. I reconcile filters before changing mappings.",
+      "answer_2_minutes": "I compare close-date windows, won/lost, product families, splits, and Omitted. I check owner Forecast Category overrides. I offer to align the report to forecast categories if they want inspection, but I will not silently replace the Forecasts tab. Activities explain hygiene, not the number.",
+      "example": "Dashboard includes Closed Lost; Forecasts omits it—totals differ on purpose.",
+      "tradeoffs": [
+        "Inspection flexibility vs official rollup",
+        "Rep overrides vs locked buckets"
+      ],
+      "follow_ups": [
+        "Should we ban overrides?",
+        "Which forecast type is on?"
+      ],
+      "weak_answer_warnings": [
+        "Deleting the Forecasts tab"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Sales wants a Stage called 'Left Voicemail' for forecasting.",
+      "answer_30_seconds": "I push back. That is an Activity. Extra Stages change probability and Forecast Category mappings for every deal that uses them.",
+      "answer_2_minutes": "I show the Stage mapping table. I propose a Task type or a field plus Path guidance. If they truly need a process phase, we add it to the right Sales Process only and map it deliberately (usually Pipeline). I do not pollute renewal and new-business alike.",
+      "example": "LAB_Discovery Event logged; Stage stays Qualification mapped to Pipeline.",
+      "tradeoffs": [
+        "Process purity vs manager visibility",
+        "Activity reports vs Stage reports"
+      ],
+      "follow_ups": [
+        "Can Path show activity coaching?",
+        "What about Einstein Activity Capture? (later)"
+      ],
+      "weak_answer_warnings": [
+        "Adding Stages for every gesture"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Negotiation is mapped to Commit but the deal is Best Case. Diagnose.",
+      "answer_30_seconds": "Check the owner's Forecast Category override. In Lightning they can pick any category. Then check forecast type and date.",
+      "answer_2_minutes": "I open the Opportunity. If Forecast Category was edited, that is working as documented, not a mapping bug. I look at Classic vs LEX. I check whether we are on quantity or product-family forecasts. I do not remap Stage globally to chase one deal.",
+      "example": "AE moved LAB_Northwind Q3 from Commit to Best Case before a legal review.",
+      "tradeoffs": [
+        "Rep judgment vs ops control",
+        "Training vs removing FLS on the field"
+      ],
+      "follow_ups": [
+        "Should FLS hide Forecast Category?",
+        "How do submissions freeze a snapshot?"
+      ],
+      "weak_answer_warnings": [
+        "Immediately changing the global map"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "West forecast is empty after 'setting up territories.'",
+      "answer_30_seconds": "Confirm ETM is actually enabled, Territory Forecasts is on, a forecast manager exists, and opportunities are assigned to those territories.",
+      "answer_2_minutes": "City-named roles are not territories. I verify the model is active, account/opp assignment rules ran, and the user has Forecasts access. Splits without Split Territory still forecast on the wrong slice. I treat sharing symptoms separately from forecast rollup.",
+      "example": "Roles renamed West; Enable Territory Forecasts never clicked.",
+      "tradeoffs": [
+        "Assignment-rule complexity vs manual assignment",
+        "Forecast manager vs territory user"
+      ],
+      "follow_ups": [
+        "Opportunity assignment vs account assignment?",
+        "Need a sandbox proof?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming names create ETM"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you avoid Enterprise Territory Management for this forecast problem?",
+      "answer_30_seconds": "When the org really forecasts by manager chain, edition cannot support ETM, or the pain is only a report filter. ETM is a data-model change, not a dashboard widget.",
+      "answer_2_minutes": "I weigh sharing impact, assignment-rule maintenance, and Manage Territories ownership. If they need overlay splits, I may still use splits on roles without full territory forecasts. I will not enable ETM to color a report. I also will not fake territories with Account picklists if they asked for Collaborative Forecasts rollups.",
+      "example": "Five-person startup with one VP: keep role-based Collaborative Forecasts.",
+      "tradeoffs": [
+        "Capability vs operating cost",
+        "Sharing redesign vs forecast-only need"
+      ],
+      "follow_ups": [
+        "Original Territory Management still on?",
+        "Who owns account assignment?"
+      ],
+      "weak_answer_warnings": [
+        "Enabling ETM as a report trick"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this topic with a concrete analogy and where it breaks.",
+      "answer_30_seconds": "League season: Sales Process is the division rulebook, Stage is the game phase, Forecast Category is the scoreboard bucket, territories are home regions, roles are the coaching chart, activities are fixtures, reports are standings.",
+      "answer_2_minutes": "It breaks when a captain overrides the bucket, when standings filters disagree with the official scoreboard, and when painting 'West' on a coach's badge does not create a home region. I then cite Help: Closed Lost omitted, LEX overrides, ETM plus Territory Forecasts. I keep APP-001 objects out of the way except as the deal being scored.",
+      "example": "Whiteboard: one deal, mapped Commit, owner flips Best Case, report still shows Stage Negotiation.",
+      "tradeoffs": [
+        "Analogy speed vs official names",
+        "Inspection vs official forecast"
+      ],
+      "follow_ups": [
+        "Where do quotas hang?",
+        "Where do activities hang for mobile? (APP-005)"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphors instead of the league-season mapping"
+      ]
+    }
+  ]
+}

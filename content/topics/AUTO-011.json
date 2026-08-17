@@ -1,0 +1,999 @@
+{
+  "topic_id": "AUTO-011",
+  "slug": "approval-processes-and-flow-based-approval-patterns",
+  "title": "Approval processes and Flow-based approval patterns",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AUTO-010"
+  ],
+  "objectives": [
+    "Explain a classic approval process: entry, steps, initial submission (record lock), and final approval actions.",
+    "Contrast Flow Approval Processes as the modern Flow-based alternative Salesforce Help tells you to try.",
+    "Choose Submit for Approval from a Flow versus a record-triggered or autolaunched Flow Approval Process.",
+    "State that both classic and Flow Approval Processes do not consume automation credits or orchestration runs, per Help."
+  ],
+  "diagnostic_question": "Discount over 20% needs manager then finance, the record must lock while pending, and routing should depend on region. Do you start with a classic approval process or a Flow Approval Process, and why?",
+  "definition": "A classic approval process automates how records are approved: steps, who must approve, and actions at submit, approval, rejection, and recall. By default the record locks on initial submission. Flow Approval Processes are a Flow-based alternative that can trigger on record changes, support dynamic routing, Apex extensibility, and detailed logging. Help says both do not consume automation credits or orchestration runs. ([Classic terminology](https://help.salesforce.com/s/articleView?id=platform.approvals_terminology.htm); [Prepare classic approvals](https://help.salesforce.com/s/articleView?id=platform.approvals_prep_org.htm))",
+  "why_it_matters": "Interviewers still ask lock, submitter, and step actions. They also ask why Salesforce now pushes Flow Approval Processes for dynamic routing. ‘I would just email the manager’ is a weak answer.",
+  "sixty_second_explanation": "Think of a building-permit office. The applicant submits plans (submit). The file is locked in the clerk’s cage so nobody quietly redraws them (record lock). Inspectors stamp in order (steps). Final approval actions are the permit sticker. Classic approvals are a fixed counter with object-tied steps. A Flow Approval Process is a routed inspection that can change streets from data—still a permit, not a random after-save Flow that emails someone.",
+  "deeper_explanation": [
+    "Help: a classic approval process specifies each step, from whom to request approval, and what to do at each point. Initial submission actions run when a user first submits; by default the record is locked. Final approval actions run when all required approvals are obtained. Record locking prevents users from editing regardless of FLS or sharing; only admins can edit locked records by default. ([Terminology](https://help.salesforce.com/s/articleView?id=platform.approvals_terminology.htm))",
+    "Help repeatedly: try Flow Approval Processes, a modern alternative with a Flow-based interface, record-change triggers, Apex extensibility, detailed logging, dynamic routing based on data and business rules, and visibility into bottlenecks. Classic processes are tied to specific objects with limited condition support. Like classic, Flow Approval Processes do not consume automation credits or orchestration runs. ([Prepare classic](https://help.salesforce.com/s/articleView?id=platform.approvals_prep_org.htm))",
+    "Flow Types: Record-Triggered After Save Flow Approval Process launches when a record is created or updated. Autolaunched Flow Approval Process launches from Apex, REST, custom buttons, or links and includes recordId, submitter, and submissionComments inputs. ([Flow Types](https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm))",
+    "A regular Flow can still call Submit for Approval (classic) or, in later releases, an Action that calls an autolaunched Flow Approval Process after gathering data. That is a pattern, not a replacement for understanding lock and steps. ([Call from a Flow](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_call_flow_approval_process_from_a_flow_dynamic_action.htm))",
+    "Classic approvals remain available in Enterprise, Performance, Unlimited, and Developer editions (Help). Do not announce a retirement date that Salesforce has not published; Help’s message is to try the Flow-based alternative."
+  ],
+  "mental_model": {
+    "analogy": "A building-permit office: submit plans, lock the file, inspectors in sequence, final sticker. Classic = fixed counter; Flow Approval Process = routed inspection that can change streets from the data.",
+    "useful_mapping": [
+      "submit → applicant hands in plans",
+      "record lock → file locked in the clerk’s cage",
+      "approval steps → inspectors in order",
+      "final approval actions → permit sticker / field updates",
+      "classic process → object-tied counter with limited conditions",
+      "Flow Approval Process → Flow-based routing, logging, record-triggered start",
+      "Submit for Approval action → sending an existing classic process from a Flow",
+      "process definition → permit rules (metadata); the Opportunity → the building file (data)"
+    ],
+    "where_it_breaks": [
+      "Admins can edit locked records; a city clerk cage is stricter.",
+      "Flow Approval Processes are not the same as a random email-in-Flow.",
+      "Help has not published a classic-approval end-of-support date in the pages cited here.",
+      "Unanimous group behavior and recall features are release-sensitive—Needs verification."
+    ]
+  },
+  "teach_back_prompt": "Using the permit office, explain record lock on initial submission, then say one capability Help attributes to Flow Approval Processes that classic processes lack.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Name initial submission default lock and final approval actions."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classic versus Flow Approval Process: three Help contrasts."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "When do you Submit for Approval from a Flow versus start a Flow Approval Process?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "User cannot edit a pending record. What do you check before sharing?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: lock, steps, Flow-based approvals, credits."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-APPR-TERMS",
+      "title": "Classic Approval Processes Terminology",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.approvals_terminology.htm",
+      "supports": "Classic process, steps, initial submission, lock, final approval actions, process instance.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Classic vocabulary; Flow Approval Process terms differ."
+    },
+    {
+      "source_id": "SF-HELP-APPR-PREP",
+      "title": "Prepare Your Org for Classic Approval Processes",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.approvals_prep_org.htm",
+      "supports": "Try Flow Approval Processes; dynamic routing; no automation credits/orchestration runs; classic still supported in listed editions.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not give a classic retirement date."
+    },
+    {
+      "source_id": "SF-HELP-FLOW-TYPES",
+      "title": "Flow Types",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm",
+      "supports": "Record-triggered after-save Flow Approval Process and autolaunched Flow Approval Process input variables.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Edition/add-on gates for some approval types can change; reverify."
+    },
+    {
+      "source_id": "SF-HELP-APPR-ACTION",
+      "title": "Use an Action to Call a Flow Approval Process from a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_call_flow_approval_process_from_a_flow_dynamic_action.htm",
+      "supports": "Autolaunched Flow can collect data then Action-call an active autolaunched Flow Approval Process.",
+      "release_or_version": "Summer '25 release note, still cited Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Release-note page; confirm the Action is in your org’s Flow Builder."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help approvals topics over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "submit",
+        "record lock",
+        "steps",
+        "final actions",
+        "classic vs Flow Approval Process",
+        "credits"
+      ],
+      "accessible_description": "Portrait map: submit locks the record; steps request approvers; final actions run; Flow Approval Processes add dynamic routing and record-triggered starts; neither consumes automation credits per Help."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-APPR-TERMS",
+        "SF-HELP-APPR-PREP",
+        "SF-HELP-FLOW-TYPES"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Classic approval versus Flow Approval Process"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Rec[Record data] --> Submit[Submit for approval]\n  Submit --> Lock[Record locked by default]\n  Submit --> Steps[Approval steps and approvers]\n  Steps -->|approved| Final[Final approval actions]\n  Steps -->|rejected| Rej[Rejection actions]\n  Steps -->|recalled| Recall[Recall actions if enabled]\n  Final --> Unlock[Later unlock / field updates]\n  Def[Process definition metadata] --> Submit",
+      "decision": "flowchart TD\n  Need[Need formal approval] --> Q1{Linear object-tied steps and existing classic process?}\n  Q1 -->|Yes maintain| Classic[Classic approval process; lock and step actions]\n  Q1 -->|New dynamic routing or record-triggered start| FlowAP[Flow Approval Process]\n  Need --> Q2{Already in a screen Flow gathering comments?}\n  Q2 -->|Call existing classic| Submit[Submit for Approval action]\n  Q2 -->|Call Flow-based| Action[Action to autolaunched Flow Approval Process]\n  Need --> Q3{Just notify someone?}\n  Q3 -->|No lock or audit needed| NotAppr[Email or Task in a regular Flow - not an approval process]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A classic approval process defines steps, approvers, and actions. Initial submission locks the record by default. Final approval actions run when required approvals are obtained.",
+      "source_ids": ["SF-HELP-APPR-TERMS"],
+      "scope": "Classic approvals",
+      "validation": "Classic Approval Processes Terminology.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Record locking prevents users from editing a pending record regardless of FLS or sharing; only admins can edit locked records by default.",
+      "source_ids": ["SF-HELP-APPR-TERMS"],
+      "scope": "Record lock",
+      "validation": "Terminology: record locking paragraph.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Salesforce Help presents Flow Approval Processes as a modern alternative with Flow UI, record-change triggers, dynamic routing, Apex extensibility, and logging. Like classic, they do not consume automation credits or orchestration runs.",
+      "source_ids": ["SF-HELP-APPR-PREP"],
+      "scope": "Flow Approval Processes",
+      "validation": "Important note on Prepare Your Org for Classic Approval Processes.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Flow Types include record-triggered after-save Flow Approval Processes and autolaunched Flow Approval Processes with recordId, submitter, and submissionComments inputs.",
+      "source_ids": ["SF-HELP-FLOW-TYPES"],
+      "scope": "Flow types",
+      "validation": "Flow Types table.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify Flow Approval Process capabilities (recall, unanimous groups, debug) for Summer '26; do not invent a classic retirement date.",
+  "unresolved_uncertainty": [
+    "Whether classic approval processes have a published end-of-support date: not stated on the cited Help pages—Needs verification before saying they are retired.",
+    "Exact lock override options and who besides admins can edit locked records in a given org: Needs verification on current lock Help."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "record lock",
+      "telugu": "అప్రూవల్ పెండింగ్‌లో రికార్డును సవరించకుండా లాక్ చేయడం."
+    },
+    {
+      "english": "Flow Approval Process",
+      "telugu": "ఫ్లో బిల్డర్‌లో నిర్మించే ఆధునిక అప్రూవల్ ప్రక్రియ."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Classic approvals are object-tied steps with lock on submit and final actions. Flow Approval Processes are the Help-endorsed Flow-based alternative for dynamic routing and record-triggered start. Neither consumes automation credits per Help. A regular email Flow is not an approval process.",
+    "two_minutes": "I start from the business need: lock, audit, multi-step approvers. Classic: initial submission locks, steps request approvers, final actions run. If routing must change from data or we want a record-triggered Flow Approval Process, I follow Help’s ‘try Flow Approval Processes’ note. I can still Submit for Approval from a screen Flow when a classic process already exists. I do not announce retirement. I keep the process as metadata and the Opportunity as data."
+  },
+  "terminology": [
+    {
+      "term": "classic approval process",
+      "plain": "The Setup wizard process that defines how a record is submitted, locked, and approved in steps.",
+      "precise": "Specifies steps, approvers, and actions at submit, approval, rejection, and recall. Tied to an object.",
+      "example": "Opportunity discount process: manager then finance.",
+      "non_example": "An after-save Flow that only emails the manager.",
+      "confusable_neighbor": "Flow Approval Process: Flow-based alternative Help tells you to try.",
+      "boundary": "Available in Enterprise, Performance, Unlimited, and Developer per Help."
+    },
+    {
+      "term": "initial submission action",
+      "plain": "What happens when the record is first submitted, including the default lock.",
+      "precise": "Occurs when a user first submits. By default the record is locked.",
+      "example": "Lock plus a field update ‘Pending Approval’.",
+      "non_example": "Final approval field update to Closed Won.",
+      "confusable_neighbor": "Entry criteria of the process: whether the record may be submitted at all.",
+      "boundary": "Page layout Submit button setup is a related admin task."
+    },
+    {
+      "term": "record lock",
+      "plain": "Users cannot edit the record while it is pending, even if FLS and sharing would allow it.",
+      "precise": "Help: locking prevents edits regardless of FLS or sharing; only admins can edit locked records (default).",
+      "example": "Sales user cannot change Amount while the discount is pending.",
+      "non_example": "Validation rule that blocks one field but leaves others editable.",
+      "confusable_neighbor": "Restriction rules (SEC): different feature.",
+      "boundary": "Unlock behavior and approver-edit options: verify current lock Help."
+    },
+    {
+      "term": "final approval actions",
+      "plain": "Actions that run when all required approvals are obtained.",
+      "precise": "Classic terminology: occur when all required approvals were obtained.",
+      "example": "Field update Discount_Approved__c = true and unlock.",
+      "non_example": "The first step’s approval action only.",
+      "confusable_neighbor": "Final rejection actions.",
+      "boundary": "Field updates here can retrigger Flows (AUTO-010)."
+    },
+    {
+      "term": "Flow Approval Process",
+      "plain": "An approval designed in Flow Builder instead of the classic wizard.",
+      "precise": "Help: Flow-based interface, can trigger on record changes, dynamic routing, Apex extensibility, logging, bottleneck visibility. Does not consume automation credits or orchestration runs.",
+      "example": "Record-triggered after-save Flow Approval Process when Discount_Percent__c > 20.",
+      "non_example": "Any screen Flow with an email.",
+      "confusable_neighbor": "Flow Orchestration that is not an approval process type.",
+      "boundary": "Feature set is release-sensitive; reverify Summer '26 capabilities."
+    },
+    {
+      "term": "autolaunched Flow Approval Process",
+      "plain": "A Flow Approval Process started by Apex, REST, button, or another Flow Action—not by the record save itself.",
+      "precise": "Flow Types: includes recordId, submitter, and submissionComments input variables.",
+      "example": "Screen Flow collects comments, then Action calls the autolaunched approval.",
+      "non_example": "Record-triggered after-save Flow Approval Process.",
+      "confusable_neighbor": "Submit for Approval core action that starts a classic process.",
+      "boundary": "Confirm Action availability in the org."
+    },
+    {
+      "term": "Submit for Approval",
+      "plain": "The action or UI that starts a classic approval process on a record.",
+      "precise": "Can be a related-list/button behavior or a Flow core action. Help lists it as an element that can fail (AUTO-008).",
+      "example": "Screen Flow Action: Submit for Approval on the Opportunity Id.",
+      "non_example": "Creating a Task ‘Please approve’.",
+      "confusable_neighbor": "Action that calls a Flow Approval Process.",
+      "boundary": "Which process is selected when multiple exist: verify current action fields."
+    },
+    {
+      "term": "process instance",
+      "plain": "One running submission of an approval process on a record.",
+      "precise": "Help: a new process instance is created each time a record is submitted. Nodes represent steps that were entered.",
+      "example": "Opportunity 006… submitted Tuesday is one instance.",
+      "non_example": "The process definition in Setup.",
+      "confusable_neighbor": "Flow interview: similar ‘one run’ idea for Flows.",
+      "boundary": "Reporting on instances is a neighboring admin skill."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide classic versus Flow Approval Process",
+      "actor": "Admin / architect",
+      "trigger": "Formal multi-step approval with lock/audit",
+      "before": "Email-in-Flow proposal",
+      "after": "Written choice: maintain classic, or new Flow Approval Process for dynamic routing",
+      "observe": "Decision cites Help contrasts, not a blog retirement date",
+      "failure": "Skipping lock because ‘we will watch Chatter’"
+    },
+    {
+      "step": 2,
+      "transition": "Define entry and steps",
+      "actor": "Admin",
+      "trigger": "Tool chosen",
+      "before": "No criteria or approvers",
+      "after": "Who may submit, who approves, what lock/actions run",
+      "observe": "Sandbox submit locks the LAB_ record",
+      "failure": "No page-layout submit path for classic"
+    },
+    {
+      "step": 3,
+      "transition": "Connect from other automation if needed",
+      "actor": "Admin",
+      "trigger": "Users should not hunt a hidden button",
+      "before": "Orphan process",
+      "after": "Record-triggered Flow Approval Process, or Action from a screen Flow",
+      "observe": "Happy-path submit from the intended UI",
+      "failure": "After-save Submit on every edit (AUTO-010)"
+    },
+    {
+      "step": 4,
+      "transition": "Test reject, recall, and lock",
+      "actor": "Admin + business",
+      "trigger": "Happy path works",
+      "before": "Only approve tested",
+      "after": "Reject and recall (if enabled) plus a non-admin edit attempt while locked",
+      "observe": "Non-admin cannot edit pending LAB_ record",
+      "failure": "Testing only as System Administrator"
+    }
+  ],
+  "when_to_use": [
+    "When a record needs formal approval steps, a lock, and an audit trail rather than a casual email.",
+    "When you must explain classic initial submission lock and final approval actions in an interview.",
+    "When new dynamic routing or a record-triggered start points to a Flow Approval Process per Help.",
+    "When a screen Flow should Submit for Approval or Action-call an autolaunched Flow Approval Process.",
+    "When someone claims approvals consume orchestration runs—Help says they do not."
+  ],
+  "when_not_to_use": [
+    "Do not use an approval process for a simple same-record field stamp (before-save Flow, AUTO-010).",
+    "Do not call every email-in-Flow a Flow Approval Process.",
+    "Do not invent a classic-approval retirement date that cited Help does not state.",
+    "Do not Submit for Approval from an unfiltered after-save Flow on every edit.",
+    "Do not test lock only as an administrator."
+  ],
+  "configuration_or_code_location": [
+    "Setup: Approval Processes (classic) for the object; page layouts for Submit.",
+    "Flow Builder: Flow Approval Process types; Action to call an autolaunched approval.",
+    "Approvals app / Automation app for monitoring (labels: Needs verification in-org).",
+    "Record related lists: approval history."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox: LAB_ Opportunity discount over 20% needs manager then finance. Sales must not edit Amount while pending. Region should change the finance queue. No production data.",
+    "inputs": [
+      "Discount_Percent__c and Region__c on Opportunity",
+      "Need lock and two steps",
+      "Dynamic finance approver by region"
+    ],
+    "decisions": [
+      {
+        "decision": "Use a Flow Approval Process for new work because routing depends on Region__c.",
+        "because": "Help contrasts dynamic routing with classic object-tied limited conditions.",
+        "rejected": "Classic-only process if the org is ready for Flow approvals—or classic if Flow approvals are not licensed; Needs verification of org capability"
+      },
+      {
+        "decision": "Keep a lock-on-submit behavior so Amount cannot change mid-review.",
+        "because": "Classic terminology’s default lock is the business requirement; confirm the Flow approval lock behavior in current Help.",
+        "rejected": "Email-only after-save Flow with no lock"
+      },
+      {
+        "decision": "Start from record-triggered after-save only when Discount_Percent__c is updated to meet > 20 (AUTO-010).",
+        "because": "Avoid submitting on every Amount-unrelated edit.",
+        "rejected": "Submit on every Opportunity update"
+      }
+    ],
+    "configuration_or_code": [
+      "Confirm Flow Approval Processes are available in the sandbox (Help editions / org features).",
+      "Build record-triggered after-save Flow Approval Process with entry on discount threshold.",
+      "Define two stages: manager, then region-based finance.",
+      "UAT: submit, attempt non-admin edit (expect lock), approve, reject."
+    ],
+    "output": "Pending LAB_ Opportunity is locked; region selects finance; history shows the instance.",
+    "verification": [
+      "Non-admin cannot edit Amount while pending.",
+      "Region A and Region B route to different finance approvers.",
+      "Reject path does not run final approval actions."
+    ],
+    "self_explanation": "I treated this as a permit file, not an email. I used Help’s Flow Approval Process contrast for dynamic routing and I gated start with entry criteria."
+  },
+  "hands_on_lab": {
+    "environment": "Developer sandbox with a second non-admin user; LAB_ Opportunity only.",
+    "starting_state_checks": [
+      "Enterprise-or-higher style org that shows Approval Processes in Setup.",
+      "You can create a classic process and/or a Flow Approval Process."
+    ],
+    "steps": [
+      "Create a simple classic approval process on a LAB_ object or Opportunity with one step and default lock.",
+      "Submit as a non-admin and attempt an edit; record whether the lock blocked it.",
+      "Approve and confirm a final approval field update.",
+      "If Flow Approval Processes are available, open Flow Types Help and sketch where a record-triggered approval would replace this classic process."
+    ],
+    "guided_completion": [
+      "If you could edit as the submitter while pending, lock is not configured as Help’s default.",
+      "If you only emailed a user, you did not build an approval process."
+    ],
+    "independent_challenge": "Add a Screen Flow that Submit for Approval or calls an autolaunched Flow Approval Process with submissionComments.",
+    "evidence": [
+      "Notes: lock behavior as non-admin.",
+      "Approval history on the LAB_ record."
+    ],
+    "stop_recovery_cleanup": [
+      "Recall or reject leftover requests.",
+      "Deactivate the lab process."
+    ],
+    "limitations": "Some orgs will not have Flow Approval Processes enabled; document that instead of inventing clicks."
+  },
+  "decision_table": [
+    {
+      "signal": "Need lock, steps, and an approval history on an Opportunity discount.",
+      "choose": "A classic approval process or a Flow Approval Process, not a lone email.",
+      "not": "After-save Send Email ‘please approve’ with the record still editable.",
+      "why": "Terminology: submit, lock, steps, and actions are the approval contract."
+    },
+    {
+      "signal": "Routing must change from Region__c and you are building new automation.",
+      "choose": "Flow Approval Process (Help: dynamic routing from data and business rules).",
+      "not": "A brittle classic step list you cannot express, if Flow approvals are available.",
+      "why": "Prepare-your-org Help contrasts dynamic Flow routing with classic object-tied limits."
+    },
+    {
+      "signal": "A screen Flow already collects comments and a classic process exists.",
+      "choose": "Submit for Approval action, with a fault path (AUTO-008).",
+      "not": "Recreating lock and steps with Assignments.",
+      "why": "Reuse the process instance model; the action can fail and needs handling."
+    },
+    {
+      "signal": "A screen Flow should start a Flow-based approval after gathering inputs.",
+      "choose": "Action that calls an active autolaunched Flow Approval Process (recordId, submitter, comments).",
+      "not": "A record-triggered approval that fires on every unrelated edit.",
+      "why": "Flow Types and the call-from-a-Flow release note describe that pattern."
+    },
+    {
+      "signal": "Stakeholder asks whether approvals burn orchestration or automation credits.",
+      "choose": "Cite Help: classic and Flow Approval Processes do not consume those credits.",
+      "not": "Guess a credit cost from a blog.",
+      "why": "The Important note on the classic prep page states it explicitly."
+    }
+  ],
+  "limitations": [
+    "Does not replace entry-criteria design (AUTO-010) for record-triggered starts.",
+    "Classic versus Flow feature parity is release-sensitive.",
+    "No retirement date is claimed from the cited pages.",
+    "Edition gates must be checked in the org."
+  ],
+  "security_notes": [
+    "Lock is not FLS; admins can still edit by default.",
+    "Approver assignment is an access decision; do not route to a public group that is too wide without review.",
+    "Submission comments can contain sensitive data."
+  ],
+  "common_mistakes": [
+    "Email-only ‘approvals’ with no lock.",
+    "Testing lock as System Administrator only.",
+    "Submitting from an unfiltered after-save Flow.",
+    "Calling every Flow an approval process.",
+    "Inventing a classic retirement date."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Submit button missing on the record.",
+      "check": [
+        "Page layout / Lightning page actions for classic",
+        "Whether a Flow or button is the intended submit path"
+      ],
+      "do_not_assume": "The process is not active before you check the layout."
+    },
+    {
+      "symptom": "User can edit Amount while pending.",
+      "check": [
+        "Whether the record is actually locked",
+        "Whether the user is an admin",
+        "Unlock actions already ran"
+      ],
+      "do_not_assume": "Sharing is broken."
+    },
+    {
+      "symptom": "Approval submits on every Opportunity save.",
+      "check": [
+        "Record-triggered entry criteria and updated-to-meet (AUTO-010)",
+        "Submit for Approval sitting on an unfiltered after-save Flow"
+      ],
+      "do_not_assume": "Approvals always submit once."
+    }
+  ],
+  "production_notes": [
+    "Name process owners and SLA for pending requests.",
+    "UAT reject and recall, not only approve.",
+    "Watch final-action field updates for Flow retriggers (AUTO-010)."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What happens by default on classic initial submission?",
+      "options": {
+        "A": "The record is locked",
+        "B": "The record is deleted",
+        "C": "The Flow becomes metadata",
+        "D": "OWD becomes Public Read/Write"
+      },
+      "answer": "A",
+      "rationale": "Terminology: initial submission actions occur when a user first submits; by default the record is locked.",
+      "distractor_explanations": {
+        "B": "Submit does not delete.",
+        "C": "The process is already metadata.",
+        "D": "Sharing is unchanged."
+      },
+      "concept": "Default lock",
+      "citation_ids": ["SF-HELP-APPR-TERMS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Record locking prevents edits regardless of which two access layers, per Help?",
+      "options": {
+        "A": "Field-level security and sharing settings",
+        "B": "Only report folders",
+        "C": "Only Apex access modifiers",
+        "D": "Only login hours"
+      },
+      "answer": "A",
+      "rationale": "Help: locking prevents users from editing regardless of FLS or sharing.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "APEX-001.",
+        "D": "Login hours are SEC."
+      },
+      "concept": "Lock vs FLS/sharing",
+      "citation_ids": ["SF-HELP-APPR-TERMS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Help’s Important note says to try Flow Approval Processes because they support which contrast with classic?",
+      "options": {
+        "A": "Dynamic routing from data and business rules, plus record-change triggers",
+        "B": "Only Classic email templates",
+        "C": "Mandatory automation-credit consumption",
+        "D": "No logging"
+      },
+      "answer": "A",
+      "rationale": "Prep page: Flow-based, record-change triggers, dynamic routing; classic is object-tied with limited conditions.",
+      "distractor_explanations": {
+        "B": "Opposite of the modern-alternative pitch.",
+        "C": "Help says they do not consume those credits.",
+        "D": "Help mentions detailed logging."
+      },
+      "concept": "Why Flow approvals",
+      "citation_ids": ["SF-HELP-APPR-PREP"]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Do Flow Approval Processes consume automation credits or orchestration runs, per Help?",
+      "options": {
+        "A": "No; Help says they do not, like classic",
+        "B": "Yes, always one credit per step",
+        "C": "Only in Professional Edition",
+        "D": "Only if you use Get Records"
+      },
+      "answer": "A",
+      "rationale": "The Important note states they do not consume automation credits or orchestration runs.",
+      "distractor_explanations": {
+        "B": "Contradicts Help.",
+        "C": "Not the cited rule.",
+        "D": "Unrelated."
+      },
+      "concept": "Credits",
+      "citation_ids": ["SF-HELP-APPR-PREP"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "An autolaunched Flow Approval Process includes which input variables in Flow Types?",
+      "options": {
+        "A": "recordId, submitter, and submissionComments",
+        "B": "Only CreatedDate",
+        "C": "Only a report Id",
+        "D": "No inputs are allowed"
+      },
+      "answer": "A",
+      "rationale": "Flow Types table lists those three inputs.",
+      "distractor_explanations": {
+        "B": "Too narrow.",
+        "C": "Wrong object.",
+        "D": "False."
+      },
+      "concept": "Autolaunched inputs",
+      "citation_ids": ["SF-HELP-FLOW-TYPES"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "When do final approval actions run in a classic process?",
+      "options": {
+        "A": "When all required approvals were obtained",
+        "B": "When the record is first created",
+        "C": "Only if a report fails",
+        "D": "When the Flow is deactivated"
+      },
+      "answer": "A",
+      "rationale": "Terminology: final approval actions occur when all required approvals were obtained.",
+      "distractor_explanations": {
+        "B": "That is not final approval.",
+        "C": "Unrelated.",
+        "D": "Metadata change, not an instance action."
+      },
+      "concept": "Final actions",
+      "citation_ids": ["SF-HELP-APPR-TERMS"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A screen Flow already collected comments. A classic process exists. What do you add?",
+      "options": {
+        "A": "Submit for Approval action plus a fault path",
+        "B": "Get Records inside a Loop of all users",
+        "C": "A before-save Create of a new Opportunity",
+        "D": "System context without sharing to unlock"
+      },
+      "answer": "A",
+      "rationale": "Reuse classic submit; Help also says that action can fail.",
+      "distractor_explanations": {
+        "B": "AUTO-007 anti-pattern.",
+        "C": "Wrong tool.",
+        "D": "Lock is not fixed by context (AUTO-009)."
+      },
+      "concept": "Submit from Flow",
+      "citation_ids": ["SF-HELP-APPR-TERMS"]
+    },
+    {
+      "id": "Q8",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Classic approval process versus Flow Approval Process in Help’s contrast?",
+      "options": {
+        "A": "Classic is object-tied with limited conditions; Flow-based approvals support dynamic routing and record-triggered start",
+        "B": "Classic is the only type that can lock",
+        "C": "Flow approvals always consume orchestration runs",
+        "D": "They are the same metadata type"
+      },
+      "answer": "A",
+      "rationale": "Prep page Important note.",
+      "distractor_explanations": {
+        "B": "Lock behavior for Flow approvals must be verified; Help does not say classic is the only lock.",
+        "C": "Help says they do not.",
+        "D": "Different tools."
+      },
+      "concept": "Classic vs Flow",
+      "citation_ids": ["SF-HELP-APPR-PREP"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Submitter can still edit Amount. They are not an admin. What is the first approval question?",
+      "options": {
+        "A": "Is the record actually locked, or did unlock/final actions already run?",
+        "B": "Did they forget a report?",
+        "C": "Is Apex public the same as Java public?",
+        "D": "Is the Flow in a Loop?"
+      },
+      "answer": "A",
+      "rationale": "Default lock should block non-admin edits; if not, lock state is the first check.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "APEX-001.",
+        "D": "Wrong topic."
+      },
+      "concept": "Lock troubleshooting",
+      "citation_ids": ["SF-HELP-APPR-TERMS"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Process definition versus process instance?",
+      "options": {
+        "A": "Definition is metadata; an instance is one submission of a record",
+        "B": "They are the same row on Opportunity",
+        "C": "Instances are deployed in change sets as data loads",
+        "D": "Definitions are business data only"
+      },
+      "answer": "A",
+      "rationale": "Help: a new process instance is created each time a record is submitted.",
+      "distractor_explanations": {
+        "B": "Opportunity is the file, not the definition.",
+        "C": "Instances are runtime data.",
+        "D": "Reversed."
+      },
+      "concept": "Metadata vs instance",
+      "citation_ids": ["SF-HELP-APPR-TERMS"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Record-triggered Flow Approval Process should start when discount crosses 20%, not on every edit. What else do you apply?",
+      "options": {
+        "A": "Entry criteria and updated-to-meet (AUTO-010)",
+        "B": "DML inside a Loop of all Opportunities",
+        "C": "Skip Start conditions because approvals ignore them",
+        "D": "Disable lock forever"
+      },
+      "answer": "A",
+      "rationale": "Record-triggered starts still need Start conditions.",
+      "distractor_explanations": {
+        "B": "AUTO-007 anti-pattern.",
+        "C": "Approvals still need Start conditions so they do not fire on every edit.",
+        "D": "Lock is often the point."
+      },
+      "concept": "Gated start",
+      "citation_ids": ["SF-HELP-FLOW-TYPES"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "An interviewer says classic approvals are already retired like Workflow Rules. Best response from cited Help?",
+      "options": {
+        "A": "Cited Help still documents classic processes and says try Flow Approval Processes; it does not state a retirement date on those pages",
+        "B": "Classic approvals ended on 31 December 2025 for sure",
+        "C": "Classic approvals never existed",
+        "D": "Only reports remain"
+      },
+      "answer": "A",
+      "rationale": "Do not invent dates. Workflow/PB end of support is AUTO-012, not copied onto approvals without a citation.",
+      "distractor_explanations": {
+        "B": "Not on the cited approval pages.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "No invented retirement",
+      "citation_ids": ["SF-HELP-APPR-PREP"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is a classic approval process?",
+      "back": "Object-tied automation of submit, steps, approvers, and actions, with lock on initial submission by default."
+    },
+    {
+      "id": "F2",
+      "category": "lock",
+      "front": "What does record lock ignore?",
+      "back": "Users cannot edit regardless of FLS or sharing. Admins can edit locked records by default."
+    },
+    {
+      "id": "F3",
+      "category": "actions",
+      "front": "When do final approval actions run?",
+      "back": "When all required approvals have been obtained."
+    },
+    {
+      "id": "F4",
+      "category": "flow",
+      "front": "What is a Flow Approval Process in Help’s pitch?",
+      "back": "A Flow-based alternative with dynamic routing, record-change triggers, logging, and no automation-credit consumption."
+    },
+    {
+      "id": "F5",
+      "category": "types",
+      "front": "Two Flow Approval Process launch types in Flow Types?",
+      "back": "Record-triggered after-save, and autolaunched (Apex, REST, button, or Action)."
+    },
+    {
+      "id": "F6",
+      "category": "inputs",
+      "front": "Autolaunched Flow Approval Process inputs?",
+      "back": "recordId, submitter, and submissionComments."
+    },
+    {
+      "id": "F7",
+      "category": "credits",
+      "front": "Do these approvals consume orchestration runs per Help?",
+      "back": "No. Help says classic and Flow Approval Processes do not consume automation credits or orchestration runs."
+    },
+    {
+      "id": "F8",
+      "category": "pattern",
+      "front": "Screen Flow plus existing classic process?",
+      "back": "Submit for Approval action, with a fault path."
+    },
+    {
+      "id": "F9",
+      "category": "instance",
+      "front": "Process definition versus instance?",
+      "back": "Definition is metadata. Instance is one submission of a record."
+    },
+    {
+      "id": "F10",
+      "category": "anti-pattern",
+      "front": "Is an email Task an approval process?",
+      "back": "No. It has no lock, steps, or process instance."
+    },
+    {
+      "id": "F11",
+      "category": "troubleshoot",
+      "front": "Submitter can edit while pending. First checks?",
+      "back": "Lock state, admin user, and whether unlock/final actions already ran."
+    },
+    {
+      "id": "F12",
+      "category": "start",
+      "front": "Record-triggered approval on every save. What did you forget?",
+      "back": "Entry criteria and updated-to-meet so submit is the business event, not every edit."
+    },
+    {
+      "id": "F13",
+      "category": "boundary",
+      "front": "Have the cited Help pages retired classic approvals?",
+      "back": "No. They document classic and say try Flow Approval Processes. Do not invent a date."
+    },
+    {
+      "id": "F14",
+      "category": "editions",
+      "front": "Classic approvals listed editions on the prep page?",
+      "back": "Enterprise, Performance, Unlimited, and Developer (plus Classic and Lightning Experience)."
+    },
+    {
+      "id": "F15",
+      "category": "metadata",
+      "front": "Is the Opportunity the approval process?",
+      "back": "No. The Opportunity is data. The process definition is metadata."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk a classic approval process from submit to final approval.",
+      "answer_30_seconds": "If the record meets entry criteria, submit runs initial actions and locks by default. Steps request approvers. When all required approvals are done, final approval actions run. Rejection and recall have their own actions.",
+      "answer_2_minutes": "I use Help terminology: process, steps, initial submission, lock, final actions, process instance. I mention page layout Submit for classic. I say lock ignores FLS and sharing for normal users. I do not skip reject testing. I keep the definition as metadata and the record as data.",
+      "example": "LAB_ Opportunity discount: lock on submit, manager step, finance step, final field update.",
+      "tradeoffs": [
+        "Lock vs allowing approver edits",
+        "Classic vs Flow Approval Process"
+      ],
+      "follow_ups": [
+        "Who can edit a locked record?",
+        "What is a process instance?"
+      ],
+      "weak_answer_warnings": [
+        "Describing only an email"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why does Salesforce Help tell you to try Flow Approval Processes?",
+      "answer_30_seconds": "They are Flow-based, can start on record changes, support dynamic routing and logging, and do not consume automation credits or orchestration runs. Classic is object-tied with limited conditions.",
+      "answer_2_minutes": "I quote the Important note rather than a blog. I do not declare classic dead. I map dynamic Region__c routing to that contrast. I mention Flow Types: record-triggered after-save versus autolaunched with recordId, submitter, comments. Feature details are release-sensitive so I say I would re-read current Help.",
+      "example": "New discount process with region-based finance routing built as a Flow Approval Process.",
+      "tradeoffs": [
+        "Existing classic estate vs new Flow approvals",
+        "Record-triggered start vs button submit"
+      ],
+      "follow_ups": [
+        "Do they cost orchestration runs?",
+        "Can a Flow call one?"
+      ],
+      "weak_answer_warnings": [
+        "Classic is retired as of a made-up date"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Sales can change Amount while a discount is pending. They are not admins. What do you check?",
+      "answer_30_seconds": "Whether the record is locked, whether unlock already ran, and whether they are actually an admin. Lock should block edits regardless of FLS and sharing.",
+      "answer_2_minutes": "I open the record’s approval history. If there is no instance, they never submitted. If pending and unlocked, I inspect initial submission actions. I test as that user, not as myself. I do not start by changing OWD. If this is a Flow Approval Process, I verify current lock behavior in Help instead of assuming classic defaults.",
+      "example": "Initial submission lock was unchecked in the classic wizard.",
+      "tradeoffs": [
+        "Strict lock vs approver-needed edits",
+        "Admin unlock vs process redesign"
+      ],
+      "follow_ups": [
+        "Can approvers edit?",
+        "What if a Flow updated Amount?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming sharing first"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A screen Flow gathers comments. You already have a classic process. How do you connect them?",
+      "answer_30_seconds": "Submit for Approval action using the record Id, plus a fault path. I do not rebuild lock with Assignments.",
+      "answer_2_minutes": "If the org instead wants Flow-based approvals, I use an Action to an autolaunched Flow Approval Process and pass recordId, submitter, and submissionComments. I still gate any record-triggered start with entry criteria. I test fail paths because Help lists Submit for Approval as an element that can fail.",
+      "example": "LAB_ DiscountRequest screen Flow → Submit for Approval on the Opportunity.",
+      "tradeoffs": [
+        "Classic submit vs Flow Approval Process Action",
+        "Button on the layout vs screen Flow"
+      ],
+      "follow_ups": [
+        "What if two classic processes exist?",
+        "How do you show Fault Message?"
+      ],
+      "weak_answer_warnings": [
+        "Creating a Task named Approve"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When is an email-in-Flow the wrong approval design?",
+      "answer_30_seconds": "When you need lock, formal steps, and an instance history. Email does not lock the file or create a process instance.",
+      "answer_2_minutes": "I use the permit-office analogy and say where it breaks. If the business only wants a heads-up, email or a Task may be enough—and I say so. If they say ‘approval’ and still want Amount frozen, I insist on an approval process. I mention credits only to correct a rumor: Help says these approval types do not consume orchestration runs.",
+      "example": "CFO requires an audit trail of who approved a 30% discount.",
+      "tradeoffs": [
+        "Lightweight notify vs formal approval",
+        "Classic vs Flow-based"
+      ],
+      "follow_ups": [
+        "What if they need external approvers?",
+        "What about Experience Cloud?"
+      ],
+      "weak_answer_warnings": [
+        "Email equals approval"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Opportunities keep submitting for approval on every save. Diagnose.",
+      "answer_30_seconds": "A record-triggered Flow or Flow Approval Process is starting without tight entry criteria, or Submit for Approval sits on an unfiltered after-save Flow.",
+      "answer_2_minutes": "I open Explorer (AUTO-010) and look for Submit actions. I add updated-to-meet on the discount threshold. I check whether final approval field updates retrigger another submit. I do not deactivate all approvals as step one in production.",
+      "example": "After-save Flow Submit for Approval with no Start conditions.",
+      "tradeoffs": [
+        "Button-only submit vs record-triggered",
+        "Guard field vs updated-to-meet"
+      ],
+      "follow_ups": [
+        "How do you find the submitting Flow?",
+        "Could a classic process auto-submit?"
+      ],
+      "weak_answer_warnings": [
+        "Users are submitting over and over"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How do you explain metadata versus data for approvals?",
+      "answer_30_seconds": "The process or Flow Approval Process is metadata you deploy. The Opportunity and each process instance are data. Deploying a process does not submit records.",
+      "answer_2_minutes": "Change sets move the definition. History rows stay in the org. Tests use LAB_ Opportunities. I do not copy production pending instances into a sandbox as a substitute for UAT. Lock state is runtime data.",
+      "example": "Retrieving the approval process XML does not include Tuesday’s pending discount.",
+      "tradeoffs": [
+        "Metadata deploy vs data migrate",
+        "Sandbox vs production pending work"
+      ],
+      "follow_ups": [
+        "What happens to in-flight instances if you deactivate?",
+        "Needs verification: say you would read current Help."
+      ],
+      "weak_answer_warnings": [
+        "Calling the Opportunity the process"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "A Java developer asks for a state machine. Map it to Salesforce approvals.",
+      "answer_30_seconds": "Classic or Flow Approval Processes are the platform state machine: submitted, locked, steps, approved/rejected. I would not hand-roll statuses in a Flow unless the business is not actually an approval.",
+      "answer_2_minutes": "I map states to instance status and steps to nodes. I map transitions to approve/reject/recall. I warn that Flow Approval Processes are the extensible path Help is investing in. I do not invent a retirement date. I mention fault paths if Submit is called from a Flow. I keep routing data-driven when using Flow approvals.",
+      "example": "They start coding a custom Status__c driver; you show lock plus approval history instead.",
+      "tradeoffs": [
+        "Platform approvals vs custom status Flow",
+        "Classic wizard vs Flow Builder"
+      ],
+      "follow_ups": [
+        "When is a custom status model justified?",
+        "How do you report on instances?"
+      ],
+      "weak_answer_warnings": [
+        "Building a custom lock with validation only"
+      ]
+    }
+  ]
+}

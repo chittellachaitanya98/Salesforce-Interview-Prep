@@ -1,0 +1,1012 @@
+{
+  "topic_id": "INT-006",
+  "slug": "rest-callout-using-a-named-credential",
+  "title": "REST Callout Using a Named Credential",
+  "track": "Integration and APIs",
+  "level": "Advanced",
+  "type": "Procedure",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "INT-001",
+    "INT-002",
+    "INT-004",
+    "APEX-013"
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer official Help and Developer Guides over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "objectives": [
+    "Write an Apex REST callout whose endpoint uses the callout:NamedCredential/path form so Salesforce supplies authentication.",
+    "Explain that named credentials can skip remote site settings for that host and keep secrets out of Apex.",
+    "Mock the callout in a test with HttpCalloutMock; never send production tokens.",
+    "Place the callout on a request/response path only when INT-001/INT-003 say the caller should wait."
+  ],
+  "diagnostic_question": "You must GET a JSON resource from a sandbox-safe HTTP API in Apex. Where does the URL live, what does req.setEndpoint look like, and how do you test without a live token?",
+  "definition": "A named credential specifies the callout endpoint URL and authentication parameters in one definition. In Apex, set the HTTP endpoint to a named credential URL: scheme callout:, credential name, optional path and query. Salesforce manages authentication so the class does not store tokens. Remote site settings can be skipped for that named host. ([Named Credentials as Callout Endpoints](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts_named_credentials.htm); [Use the Named Credential in a Callout](https://developer.salesforce.com/docs/platform/named-credentials/guide/nc-use-oauth-cred-in-callout.html))",
+  "why_it_matters": "Hard-coded URLs and Bearer headers fail security review and break when the host changes. Interviewers want callout: plus a test mock, not a live password in the class.",
+  "sixty_second_explanation": "Think of a prepaid courier envelope with the destination already printed. The named credential is the printed envelope (URL plus how postage is paid). Apex only writes the letter (method, body, extra headers) and drops it in the callout: slot. Tests use a fake sorting office (HttpCalloutMock) so you never spend a real badge.",
+  "deeper_explanation": [
+    "Apex pattern: HttpRequest setEndpoint('callout:My_Named_Credential/some_path'), setMethod('GET' or 'POST'), Http.send. Optional query string after ?. Salesforce generates a standard authorization header unless disabled. Merge fields can build headers/bodies—use the current merge-field table, do not invent names. ([Apex named credential callouts](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts_named_credentials.htm))",
+    "Preferred credential model (INT-004): named credential = URL + HTTP; external credential = protocol + principals; encrypted tokens. This procedure assumes that pair already exists in the sandbox.",
+    "Callouts are request/response HTTP. They belong on INT-003 request/response paths. After DML in the same transaction, uncommitted work can block callouts—Needs verification of the current 'uncommitted work pending' rule in the Apex callouts guide before quoting edge cases. Async (@future/Queueable) is a common split; job choice is APEX-011.",
+    "Tests: implement HttpCalloutMock, Test.setMock, assert status and parsed JSON. Never assert on production secrets. Timeout defaults are versioned—Needs verification; setTimeout explicitly in labs when the guide shows it."
+  ],
+  "mental_model": {
+    "analogy": "A prepaid courier envelope: named credential prints the address and postage; Apex writes the letter; HttpCalloutMock is a fake sorting office for tests.",
+    "useful_mapping": [
+      "named credential → printed destination",
+      "external credential → postage account (INT-004)",
+      "callout:Name/path → drop slot on the envelope",
+      "HttpRequest method/body → the letter",
+      "generated Authorization header → postage stamp applied at the counter",
+      "HttpCalloutMock → test sorting office",
+      "raw https URL + Bearer in Apex → writing the account number on the letter"
+    ],
+    "where_it_breaks": [
+      "Envelope does not choose Bulk vs REST (INT-002).",
+      "Mocked tests do not prove the remote OAuth dance.",
+      "Merge fields and header-generation flags are real and documented—do not guess them.",
+      "Callout limits/timeouts are governors—cite current Apex guide, do not invent numbers."
+    ]
+  },
+  "teach_back_prompt": "Write setEndpoint for named credential LAB_HttpBin path /get, then explain how a test avoids a live token.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "callout: scheme from memory."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Why remote site settings can be skipped."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "HttpCalloutMock steps."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "401: Apex vs named credential."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: REST callout using a named credential."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-NC",
+      "title": "Named Credentials as Callout Endpoints",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts_named_credentials.htm",
+      "supports": "callout:Name/path; Salesforce manages auth; skip remote site settings; generated authorization header; query strings with ?.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Merge field names live on a child page."
+    },
+    {
+      "source_id": "SF-NC-USE",
+      "title": "Use the Named Credential in a Callout",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/named-credentials/guide/nc-use-oauth-cred-in-callout.html",
+      "supports": "Callouts without managing authentication details; named vs per-user examples.",
+      "release_or_version": "Named Credentials Developer Guide for OAuth",
+      "last_verified": "2026-08-16",
+      "limits": "Examples may use GitHub; do not use real customer GitHub tokens."
+    },
+    {
+      "source_id": "SF-NC-START",
+      "title": "Get Started with Named Credentials",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/named-credentials/guide/get-started.html",
+      "supports": "Named vs external credential split; Apex callouts supported.",
+      "release_or_version": "Named Credentials",
+      "last_verified": "2026-08-16",
+      "limits": "Legacy named credentials deprecated."
+    },
+    {
+      "source_id": "SF-APEX-CALLOUTS",
+      "title": "Invoking Callouts Using Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts.htm",
+      "supports": "Apex HTTP callout model (HttpRequest/Http/HttpResponse) as the surrounding mechanism.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Timeout and uncommitted-work rules: reverify current page."
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "callout: scheme",
+        "No secrets in Apex",
+        "Http send",
+        "Mock tests",
+        "Skip remote site"
+      ],
+      "accessible_description": "Apex REST callout uses callout:namedCredential/path, platform auth, and HttpCalloutMock in tests."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-NC",
+        "SF-NC-USE",
+        "SF-NC-START"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Apex REST callout through a named credential"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Apex[Apex class] --> Req[HttpRequest]\n  Req --> EP[callout:Name/path]\n  EP --> NC[Named credential URL]\n  NC --> EC[External credential INT-004]\n  EC --> HTTP[Http.send]\n  HTTP --> Res[HttpResponse JSON]\n  Test[Test class] --> Mock[HttpCalloutMock]",
+      "decision": "flowchart TD\n  Need[Need outbound REST] --> Q1{Secrets or URL in Apex?}\n  Q1 -->|Yes| Fix[Move to named credential]\n  Q1 -->|No callout: used| Q2{Must caller wait?}\n  Q2 -->|No| Async[Queueable/future APEX-011]\n  Q2 -->|Yes| Send[Http.send in this transaction]\n  Send --> Q3{Writing a test?}\n  Q3 -->|Yes| Mock[Test.setMock HttpCalloutMock]\n  Q3 -->|No sandbox| Live[Sandbox host only]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Named credential URLs use scheme callout:, the credential name, and an optional path. Example form: callout:My_Named_Credential/some_path. Query strings use ?.",
+      "source_ids": [
+        "SF-APEX-NC"
+      ],
+      "scope": "Endpoint syntax",
+      "validation": "Named Credentials as Callout Endpoints.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Salesforce manages authentication for Apex callouts that specify a named credential, so code does not have to. Remote site settings can be skipped for the named credential's site.",
+      "source_ids": [
+        "SF-APEX-NC",
+        "SF-NC-USE"
+      ],
+      "scope": "Auth and remote sites",
+      "validation": "Apex guide plus Use the Named Credential in a Callout.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Salesforce can generate a standard authorization header for named-credential callouts; the option can be disabled. Header/body merge fields are documented on the child topic.",
+      "source_ids": [
+        "SF-APEX-NC"
+      ],
+      "scope": "Headers",
+      "validation": "Custom headers subsection pointer.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "A named credential specifies endpoint URL and HTTP transport; an external credential authenticates. Apex callouts are a supported callout type for named credentials.",
+      "source_ids": [
+        "SF-NC-START"
+      ],
+      "scope": "Model",
+      "validation": "Get Started with Named Credentials.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Use Winter '23+ named/external credentials. Reverify merge fields and callout-after-DML rules for API 67.0.",
+  "unresolved_uncertainty": [
+    "Default timeout milliseconds.",
+    "Exact uncommitted-work-pending combinations.",
+    "Merge field catalog."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "callout: scheme",
+      "telugu": "నేమ్డ్ క్రెడెన్షియల్ ఎండ్‌పాయింట్ ప్రిఫిక్స్."
+    },
+    {
+      "english": "HttpCalloutMock",
+      "telugu": "టెస్టులో నకిలీ HTTP సమాధానం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I never put the URL or Bearer in Apex. Endpoint is callout:NamedCredential/path. Salesforce applies auth from the external credential. Tests use HttpCalloutMock.",
+    "two_minutes": "INT-004 already created the named and external credentials. This procedure is HttpRequest, setMethod, send, parse JSON, branch on HTTP status from INT-005. If the user must not wait, I wrap in async (APEX-011). I skip remote site settings because the named credential defines the host. I will not invent timeout numbers."
+  },
+  "terminology": [
+    {
+      "term": "REST callout",
+      "plain": "Apex making an HTTP request to a remote REST API.",
+      "precise": "HttpRequest + Http.send from Apex, typically JSON, using a named credential endpoint.",
+      "example": "GET callout:LAB_HttpBin/get in sandbox.",
+      "non_example": "Inbound REST to Salesforce (connected app).",
+      "confusable_neighbor": "Outbound Messaging SOAP (INT-008).",
+      "boundary": "Bulk jobs are not this Http.send."
+    },
+    {
+      "term": "named credential URL",
+      "plain": "callout:Name plus optional path.",
+      "precise": "Scheme callout:, credential name, optional path, optional ?query.",
+      "example": "callout:LAB_HttpBin/get?format=json",
+      "non_example": "https://example.com with a pasted token.",
+      "confusable_neighbor": "Named credential metadata vs the string in Apex.",
+      "boundary": "Name is the developer name of the credential."
+    },
+    {
+      "term": "HttpRequest / Http / HttpResponse",
+      "plain": "The three Apex types for an HTTP round trip.",
+      "precise": "Set endpoint/method/body on HttpRequest; Http.send; read status and body on HttpResponse.",
+      "example": "Integer code = res.getStatusCode();",
+      "non_example": "Database.insert as a callout.",
+      "confusable_neighbor": "Continuation for VF long-running—later topic if cited.",
+      "boundary": "Timeout: verify current guide."
+    },
+    {
+      "term": "generated authorization header",
+      "plain": "Salesforce stamps postage so Apex does not.",
+      "precise": "Platform generates a standard authorization header for named-credential endpoints unless disabled.",
+      "example": "OAuth access token attached without Apex concatenation.",
+      "non_example": "req.setHeader('Authorization','Bearer abc').",
+      "confusable_neighbor": "Custom headers via merge fields.",
+      "boundary": "Disable only with a documented reason."
+    },
+    {
+      "term": "HttpCalloutMock",
+      "plain": "A fake HTTP response for tests.",
+      "precise": "Test.setMock(HttpCalloutMock.class, mock) so tests do not need a live remote or real token.",
+      "example": "Mock returns 200 and a LAB_ JSON body.",
+      "non_example": "SeeAllData=true against production.",
+      "confusable_neighbor": "StaticResourceCalloutMock as an alternative documented pattern.",
+      "boundary": "Mocks do not prove OAuth."
+    },
+    {
+      "term": "remote site settings",
+      "plain": "Allowlist of hosts Apex may call when not using a named credential for that site.",
+      "precise": "Named credential callouts can skip remote site settings for the site defined on the credential.",
+      "example": "Only callout:LAB_HttpBin, no Remote Site for that host.",
+      "non_example": "Callout to a raw URL without remote site or named credential.",
+      "confusable_neighbor": "CSP for LWC.",
+      "boundary": "Raw URLs still need remote sites."
+    },
+    {
+      "term": "uncommitted work pending",
+      "plain": "You did DML then tried to call out in the same transaction and the platform refused.",
+      "precise": "Apex callout rules restrict callouts after uncommitted DML. Confirm the current callouts guide; a common design is callout first or async after DML.",
+      "example": "Queueable does the callout after the insert commits.",
+      "non_example": "Blaming named credentials for a DML-then-callout error.",
+      "confusable_neighbor": "Mixed DML on setup objects.",
+      "boundary": "Needs verification of exact current wording."
+    },
+    {
+      "term": "merge fields",
+      "plain": "Placeholders in headers/bodies filled from the credential.",
+      "precise": "Documented merge fields for named-credential callout headers and bodies. Do not invent field names.",
+      "example": "Look up the current merge-field table when a header must include a principal value.",
+      "non_example": "{!$Credential.Password} copied from an old blog without checking the new model.",
+      "confusable_neighbor": "Visualforce merge fields.",
+      "boundary": "Child topic owns the list."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Confirm named + external credential exist",
+      "actor": "Admin + developer",
+      "trigger": "Need Apex REST",
+      "before": "URL in code",
+      "after": "LAB_ credential in sandbox",
+      "observe": "Credential developer name known",
+      "failure": "Using production GitHub tokens"
+    },
+    {
+      "step": 2,
+      "transition": "Write HttpRequest",
+      "actor": "Developer",
+      "trigger": "Name known",
+      "before": "No class",
+      "after": "setEndpoint callout:Name/path",
+      "observe": "No Bearer literal",
+      "failure": "https:// hard-code"
+    },
+    {
+      "step": 3,
+      "transition": "Send and parse",
+      "actor": "Developer",
+      "trigger": "Request built",
+      "before": "Unchecked status",
+      "after": "Branch on getStatusCode (INT-005)",
+      "observe": "JSON deserialize of LAB_ shape",
+      "failure": "Ignoring 401/400"
+    },
+    {
+      "step": 4,
+      "transition": "Test with mock",
+      "actor": "Developer",
+      "trigger": "Class compiles",
+      "before": "Live call in tests",
+      "after": "HttpCalloutMock + assertions",
+      "observe": "Tests pass offline",
+      "failure": "SeeAllData live callout"
+    }
+  ],
+  "when_to_use": [
+    "When implementing a REST callout using a named credential from Apex after INT-004 credentials exist.",
+    "When replacing hardcoded URLs or Bearer tokens in Apex with callout:NamedCredential/path.",
+    "When tests must mock HTTP instead of using real OAuth tokens.",
+    "When the integration style is request/response (INT-003) and a named credential should carry auth.",
+    "When you want Salesforce to skip remote site settings for that named host."
+  ],
+  "when_not_to_use": [
+    "Do not use an Apex REST callout for a 50,000-row nightly load that belongs on Bulk API 2.0 (INT-002).",
+    "Do not put named-credential secrets in the Apex class as a shortcut.",
+    "Do not call production endpoints from this lab, or skip HttpCalloutMock in tests.",
+    "Do not invent merge-field names or timeout numbers.",
+    "Do not treat this procedure as inbound connected-app OAuth (INT-004)."
+  ],
+  "configuration_or_code_location": [
+    "Apex class using HttpRequest.setEndpoint('callout:...')",
+    "Sandbox Named Credential + External Credential",
+    "Test class with Test.setMock",
+    "No production"
+  ],
+  "worked_example": {
+    "scenario": "Sandbox class LAB_HttpBinClient GETs JSON from named credential LAB_HttpBin path /get. Tests must pass without a live network token. No production data.",
+    "inputs": [
+      "Named credential LAB_HttpBin",
+      "GET /get",
+      "Mock 200 JSON"
+    ],
+    "decisions": [
+      {
+        "decision": "Endpoint callout:LAB_HttpBin/get with no Bearer in source.",
+        "because": "Official named credential URL form; Salesforce manages auth.",
+        "rejected": "https://httpbin.org plus a header token"
+      },
+      {
+        "decision": "Test.setMock with a 200 body asserting a LAB_ field.",
+        "because": "Tests must not depend on live OAuth.",
+        "rejected": "SeeAllData live call"
+      }
+    ],
+    "configuration_or_code": [
+      "HttpRequest req = new HttpRequest(); req.setEndpoint('callout:LAB_HttpBin/get'); req.setMethod('GET'); HttpResponse res = new Http().send(req);",
+      "Test class implements HttpCalloutMock returning 200 and '{\"lab\":true}'."
+    ],
+    "output": "Class plus passing mock test; optional live sandbox send if policy allows.",
+    "verification": [
+      "Source scan finds no Bearer.",
+      "Test passes with mock.",
+      "Endpoint prefix is callout:"
+    ],
+    "self_explanation": "The envelope held the URL and postage; the test used a fake sorting office."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox or scratch org; synthetic LAB_ classes; optional non-production HTTP test host.",
+    "starting_state_checks": [
+      "Can create Apex",
+      "Named credential LAB_HttpBin exists or you stub the name in comments if blocked"
+    ],
+    "steps": [
+      "Create class LAB_HttpBinClient with a method getPing() that sets endpoint to callout:LAB_HttpBin/get and GET, then returns getStatusCode().",
+      "Create test LAB_HttpBinClientTest implementing HttpCalloutMock; Test.setMock; assert status 200 from the mock.",
+      "Run tests; confirm no network is required for the mock path.",
+      "Grep or visually confirm the class has no Authorization Bearer literal and no production host."
+    ],
+    "guided_completion": [
+      "If tests call the real internet without mock, add Test.setMock.",
+      "If setEndpoint uses https://, rewrite to callout:."
+    ],
+    "independent_challenge": "Add a POST method that sends a tiny LAB_ JSON body and a mock that returns 201; branch using INT-005 status meaning.",
+    "evidence": [
+      "Test run output showing pass.",
+      "Snippet of setEndpoint using callout:LAB_HttpBin."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ classes.",
+      "Do not deploy to production.",
+      "Revoke any sandbox secrets used."
+    ],
+    "limitations": "Live OAuth against a real vendor is out of scope; mock proves the Apex shape."
+  },
+  "decision_table": [
+    {
+      "signal": "Apex must call a remote REST URL that already has a named credential.",
+      "choose": "setEndpoint('callout:Name/path') and Http.send.",
+      "not": "Hard-coded https URL and Bearer header in the class.",
+      "why": "Apex guide: named credential URL form; platform manages auth."
+    },
+    {
+      "signal": "You are writing an Apex test for that callout.",
+      "choose": "HttpCalloutMock and Test.setMock with asserted status/body.",
+      "not": "Live callout to production or SeeAllData.",
+      "why": "Tests must not require real tokens."
+    },
+    {
+      "signal": "The user must not wait for the remote HTTP.",
+      "choose": "Keep the named-credential callout but invoke it asynchronously (APEX-011).",
+      "not": "Http.send in a trigger on a 5,000-row Data Loader job as request/response.",
+      "why": "INT-003 style plus callout transaction rules."
+    },
+    {
+      "signal": "Host allowlisting.",
+      "choose": "Rely on the named credential site (remote site can be skipped for that host).",
+      "not": "Raw URL callout without remote site or named credential.",
+      "why": "Official skip-remote-site behavior for named credential sites."
+    },
+    {
+      "signal": "Volume is tens of thousands of rows.",
+      "choose": "Do not use this REST callout procedure; use Bulk API 2.0 (INT-002).",
+      "not": "Loop Http.send per row.",
+      "why": "Callout is request/response HTTP, not the batch pattern."
+    }
+  ],
+  "limitations": [
+    "Does not create the OAuth dance (INT-004).",
+    "Does not cover Continuation.",
+    "Timeouts/governors: reverify.",
+    "Mocks are not contract tests against the vendor."
+  ],
+  "security_notes": [
+    "No tokens in source or logs.",
+    "Least-privilege principal on the external credential.",
+    "Sandbox hosts only."
+  ],
+  "common_mistakes": [
+    "https:// in Apex.",
+    "Bearer in Apex.",
+    "Tests without mock.",
+    "Callout after DML in one transaction.",
+    "Using callouts for Bulk-scale loads.",
+    "Production GitHub tokens in a lab."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Unauthorized endpoint / remote site error.",
+      "check": [
+        "Using raw URL without remote site.",
+        "Typo in named credential developer name."
+      ],
+      "do_not_assume": "OAuth grant_type is wrong before checking callout: spelling."
+    },
+    {
+      "symptom": "401 from remote.",
+      "check": [
+        "External credential principal, header generation, sandbox secret.",
+        "Do not paste token into Apex to 'see if it works'."
+      ],
+      "do_not_assume": "JSON parser caused 401."
+    }
+  ],
+  "production_notes": [
+    "Promote credential metadata separately from secrets.",
+    "No production send from this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Correct Apex named-credential endpoint form?",
+      "options": {
+        "A": "callout:My_Named_Credential/some_path",
+        "B": "https://login.salesforce.com/token in Apex",
+        "C": "metadata://My_Named_Credential",
+        "D": "soap://My_Named_Credential"
+      },
+      "answer": "A",
+      "rationale": "Apex guide example form.",
+      "distractor_explanations": {
+        "B": "Hard-coded host.",
+        "C": "Invented.",
+        "D": "Invented."
+      },
+      "concept": "callout scheme",
+      "citation_ids": [
+        "SF-APEX-NC"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Who manages auth when the endpoint is a named credential?",
+      "options": {
+        "A": "Salesforce, so Apex does not store the token",
+        "B": "The LWC browser",
+        "C": "Metadata API",
+        "D": "Bulk API 2.0 always"
+      },
+      "answer": "A",
+      "rationale": "Platform manages authentication for those callouts.",
+      "distractor_explanations": {
+        "B": "Server callout.",
+        "C": "Wrong family.",
+        "D": "Wrong family."
+      },
+      "concept": "Auth",
+      "citation_ids": [
+        "SF-APEX-NC",
+        "SF-NC-USE"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Remote site settings for a named-credential host?",
+      "options": {
+        "A": "Can be skipped for the site defined in the named credential",
+        "B": "Always required twice",
+        "C": "Replaced by GraphQL",
+        "D": "Forbidden in sandbox"
+      },
+      "answer": "A",
+      "rationale": "Apex named-credential callout topic.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Remote site",
+      "citation_ids": [
+        "SF-APEX-NC"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How should tests invoke LAB_HttpBinClient?",
+      "options": {
+        "A": "Test.setMock with HttpCalloutMock returning a fake 200 JSON",
+        "B": "SeeAllData live production",
+        "C": "Hard-code Bearer in the test",
+        "D": "Use Metadata deploy as HTTP"
+      },
+      "answer": "A",
+      "rationale": "Mock avoids live tokens.",
+      "distractor_explanations": {
+        "B": "Unsafe.",
+        "C": "Token in source.",
+        "D": "Wrong."
+      },
+      "concept": "Mock",
+      "citation_ids": [
+        "SF-APEX-CALLOUTS"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Query string on a named credential URL?",
+      "options": {
+        "A": "Append ? after the named credential URL as documented",
+        "B": "Put the token in the query always",
+        "C": "Use OFFSET",
+        "D": "Use Tooling API"
+      },
+      "answer": "A",
+      "rationale": "Guide: ? separator for query string.",
+      "distractor_explanations": {
+        "B": "Unsafe default.",
+        "C": "INT-005.",
+        "D": "Wrong family."
+      },
+      "concept": "Query string",
+      "citation_ids": [
+        "SF-APEX-NC"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "50,000-row nightly sync via this callout loop?",
+      "options": {
+        "A": "No—use Bulk API 2.0; this procedure is HTTP request/response",
+        "B": "Yes, it is required",
+        "C": "Use Metadata API rows",
+        "D": "Disable named credentials"
+      },
+      "answer": "A",
+      "rationale": "INT-002/INT-003 vs this procedure.",
+      "distractor_explanations": {
+        "B": "Limits/timeouts.",
+        "C": "Wrong.",
+        "D": "Wrong."
+      },
+      "concept": "Not bulk",
+      "citation_ids": [
+        "SF-APEX-NC"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where should the remote base URL live?",
+      "options": {
+        "A": "Named credential endpoint, not a String constant in Apex",
+        "B": "In a formula field on Account",
+        "C": "In the Apex class name",
+        "D": "In a 201 status code"
+      },
+      "answer": "A",
+      "rationale": "Separating URL from callout definition eases maintenance.",
+      "distractor_explanations": {
+        "B": "Data.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "URL location",
+      "citation_ids": [
+        "SF-APEX-NC",
+        "SF-NC-START"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Code review finds Bearer in getPing(). Fix?",
+      "options": {
+        "A": "Remove header; rely on generated authorization from the named credential",
+        "B": "Log the token",
+        "C": "Move token to System.debug",
+        "D": "Switch to SOAP WSDL of GitHub"
+      },
+      "answer": "A",
+      "rationale": "Token safety plus generated header.",
+      "distractor_explanations": {
+        "B": "Worse.",
+        "C": "Worse.",
+        "D": "Wrong."
+      },
+      "concept": "Bearer",
+      "citation_ids": [
+        "SF-APEX-NC",
+        "SF-NC-USE"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Callout fails after insert in the same trigger transaction with an uncommitted-work style error. Direction?",
+      "options": {
+        "A": "Split: commit then async callout, or callout before DML per current Apex callouts guide",
+        "B": "Put the token in Apex",
+        "C": "Use Metadata API",
+        "D": "Ignore INT-005 statuses"
+      },
+      "answer": "A",
+      "rationale": "Callout vs DML ordering is an Apex callout rule—reverify the guide.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Wrong.",
+        "D": "Still parse statuses."
+      },
+      "concept": "DML order",
+      "citation_ids": [
+        "SF-APEX-CALLOUTS"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Per-user GitHub gists vs org-wide converter. Credential identity?",
+      "options": {
+        "A": "Per-user principal vs named principal on the external credential (INT-004); Apex still uses callout:",
+        "B": "Two Apex Bearer strings",
+        "C": "Always connected app inbound",
+        "D": "Bulk 2.0 identities"
+      },
+      "answer": "A",
+      "rationale": "Named-credential callout guide examples split those identity types.",
+      "distractor_explanations": {
+        "B": "Unsafe.",
+        "C": "Direction wrong.",
+        "D": "Wrong family."
+      },
+      "concept": "Principal",
+      "citation_ids": [
+        "SF-NC-USE"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Named credential callout vs connected app?",
+      "options": {
+        "A": "Callout is Salesforce calling out; connected app is inbound OAuth client registration",
+        "B": "Identical",
+        "C": "Connected apps set HttpRequest endpoint",
+        "D": "Named credentials issue user passwords"
+      },
+      "answer": "A",
+      "rationale": "INT-004 split plus this procedure.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Direction",
+      "citation_ids": [
+        "SF-NC-START",
+        "SF-APEX-NC"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Live send vs mock in the lab?",
+      "options": {
+        "A": "Mocks prove Apex shape without tokens; live sandbox send is optional and never production",
+        "B": "Live production is required to compile",
+        "C": "Mocks replace named credentials",
+        "D": "Mocks set OAuth scopes"
+      },
+      "answer": "A",
+      "rationale": "Lab evidence is tests plus callout: syntax.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Mock vs live",
+      "citation_ids": [
+        "SF-APEX-CALLOUTS"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "ep",
+      "front": "Apex named credential endpoint scheme?",
+      "back": "callout:CredentialName/optional_path"
+    },
+    {
+      "id": "F2",
+      "category": "auth",
+      "front": "Does Apex store the access token?",
+      "back": "No. Salesforce manages auth for named-credential callouts."
+    },
+    {
+      "id": "F3",
+      "category": "rs",
+      "front": "Remote site for named credential host?",
+      "back": "Can be skipped for that named site."
+    },
+    {
+      "id": "F4",
+      "category": "http",
+      "front": "Three Apex HTTP types?",
+      "back": "HttpRequest, Http, HttpResponse."
+    },
+    {
+      "id": "F5",
+      "category": "mock",
+      "front": "Test double for callouts?",
+      "back": "HttpCalloutMock with Test.setMock."
+    },
+    {
+      "id": "F6",
+      "category": "hdr",
+      "front": "Authorization header source?",
+      "back": "Prefer platform-generated header; do not paste Bearer."
+    },
+    {
+      "id": "F7",
+      "category": "q",
+      "front": "Add query parameters?",
+      "back": "Use ? on the named credential URL as documented."
+    },
+    {
+      "id": "F8",
+      "category": "vol",
+      "front": "50k rows with Http.send loop?",
+      "back": "Wrong tool; use Bulk 2.0."
+    },
+    {
+      "id": "F9",
+      "category": "dml",
+      "front": "DML then callout same transaction?",
+      "back": "Often fails uncommitted work; split or reorder per current guide."
+    },
+    {
+      "id": "F10",
+      "category": "in",
+      "front": "Is this inbound REST?",
+      "back": "No. This is outbound Apex HTTP."
+    },
+    {
+      "id": "F11",
+      "category": "nc",
+      "front": "Who holds the base URL?",
+      "back": "The named credential definition."
+    },
+    {
+      "id": "F12",
+      "category": "ec",
+      "front": "Who holds the protocol?",
+      "back": "External credential (INT-004)."
+    },
+    {
+      "id": "F13",
+      "category": "to",
+      "front": "Invent timeout numbers?",
+      "back": "No. Read the current Apex callouts guide."
+    },
+    {
+      "id": "F14",
+      "category": "mg",
+      "front": "Invent merge field names?",
+      "back": "No. Use the official merge-field topic."
+    },
+    {
+      "id": "F15",
+      "category": "prod",
+      "front": "Production GitHub token in lab?",
+      "back": "Never store a production GitHub or vendor token in the lab class, named credential, or test."
+    },
+    {
+      "id": "F16",
+      "category": "st",
+      "front": "After send, what do you read first?",
+      "back": "HttpResponse status code (INT-005), then body."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you implement a REST callout using a named credential?",
+      "answer_30_seconds": "HttpRequest endpoint callout:Name/path, set method, send, read status. Tokens stay on the external credential. Tests mock HTTP.",
+      "answer_2_minutes": "I assume INT-004 already built named plus external credentials. Apex has no Bearer. I skip remote site for that host. I parse JSON and branch on 200/201/4xx. If the UI must not wait, Queueable. I will not invent merge fields.",
+      "example": "LAB_HttpBinClient GET /get in a sandbox with a mock test.",
+      "tradeoffs": [
+        "Simplicity vs async"
+      ],
+      "follow_ups": [
+        "Where is the path?"
+      ],
+      "weak_answer_warnings": [
+        "Hard-coded URL"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why named credentials instead of a URL constant?",
+      "answer_30_seconds": "URL and auth stay in one managed definition; Apex keeps working if the host changes; secrets are not in source; remote site can be skipped.",
+      "answer_2_minutes": "The Apex guide says Salesforce manages authentication and that updating the named credential updates all callouts. That is maintenance and token safety together.",
+      "example": "Endpoint moves from vendor-test to vendor-stage by editing the credential, not the class.",
+      "tradeoffs": [
+        "Packaging secrets vs code churn"
+      ],
+      "follow_ups": [
+        "Legacy named credentials?"
+      ],
+      "weak_answer_warnings": [
+        "Custom Label for the token"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Trigger must notify a REST API on Opportunity close. Sketch the Apex.",
+      "answer_30_seconds": "If user must wait, this callout is request/response. If not, Queueable using the same callout: endpoint. Never loop 5,000 send()s from Data Loader.",
+      "answer_2_minutes": "I check uncommitted work: insert then callout may need async after commit. I mock in tests. I log status not tokens. Style decision is INT-003; this topic is the envelope.",
+      "example": "Closed Won LAB_Opportunity in sandbox, mock 201.",
+      "tradeoffs": [
+        "UX wait vs trigger limits"
+      ],
+      "follow_ups": [
+        "Bulk close?"
+      ],
+      "weak_answer_warnings": [
+        "Bearer in trigger"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Test suite fails in CI without internet. What did you miss?",
+      "answer_30_seconds": "HttpCalloutMock / Test.setMock. Named credentials do not replace mocks.",
+      "answer_2_minutes": "CI should never hold production refresh tokens. I assert getEndpoint starts with callout: in a unit test that does not send. Optional live test is a separate manual sandbox check.",
+      "example": "GitHub Actions running Apex tests for LAB_HttpBinClient.",
+      "tradeoffs": [
+        "Isolation vs contract tests"
+      ],
+      "follow_ups": [
+        "Static resource mock?"
+      ],
+      "weak_answer_warnings": [
+        "Disable tests"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Callout error unauthorized endpoint.",
+      "answer_30_seconds": "Usually a raw URL without remote site, or a misspelled named credential developer name.",
+      "answer_2_minutes": "I print req.getEndpoint() in a sandbox debug without secrets. I confirm callout:Name matches Setup. I do not invent OAuth grant bodies. INT-004 if the name is right but 401 comes back from the vendor.",
+      "example": "Typo callout:LAB_HttpBinn/get instead of callout:LAB_HttpBin/get in sandbox Apex.",
+      "tradeoffs": [
+        "Config vs auth"
+      ],
+      "follow_ups": [
+        "Remote site still needed?"
+      ],
+      "weak_answer_warnings": [
+        "Add Bearer to 'fix' it"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Works in execute anonymous, fails in trigger with uncommitted work.",
+      "answer_30_seconds": "DML before callout in the same transaction. Split with async after commit or callout first per current guide.",
+      "answer_2_minutes": "I will not claim a named credential bug. I draw the transaction. Queueable is a typical fix; job types are APEX-011. Tests must mock both paths.",
+      "example": "Before-insert trigger that inserts a log then callouts.",
+      "tradeoffs": [
+        "Order vs async"
+      ],
+      "follow_ups": [
+        "@future vs Queueable?"
+      ],
+      "weak_answer_warnings": [
+        "SeeAllData"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Disable generated authorization header—when?",
+      "answer_30_seconds": "Only when the documented merge-field/header approach requires a custom scheme. Default is generate the header.",
+      "answer_2_minutes": "I will not disable it to paste a token. I open the custom headers child topic rather than inventing merge names. Per-user vs named principal still comes from INT-004.",
+      "example": "Vendor wants a non-Bearer custom header documented in their API and in Salesforce merge fields.",
+      "tradeoffs": [
+        "Standard OAuth vs custom header"
+      ],
+      "follow_ups": [
+        "Who owns the header spec?"
+      ],
+      "weak_answer_warnings": [
+        "Disable always"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the prepaid-envelope analogy and where it breaks.",
+      "answer_30_seconds": "Named credential prints address and postage; Apex writes the letter; mock is a fake sorting office. It breaks for Bulk trains and for invented timeouts.",
+      "answer_2_minutes": "I show callout:LAB_HttpBin/get on the envelope. Live OAuth is not proven by the mock. Apex governors are not postage rates I invent, and a named credential still needs HttpCalloutMock in tests.",
+      "example": "Whiteboard the LAB_HttpBinClient plus test mock.",
+      "tradeoffs": [
+        "Teaching vs false limits"
+      ],
+      "follow_ups": [
+        "Where is external credential?"
+      ],
+      "weak_answer_warnings": [
+        "Generic furniture metaphor"
+      ]
+    }
+  ]
+}

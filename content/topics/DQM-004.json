@@ -1,0 +1,979 @@
+{
+  "topic_id": "DQM-004",
+  "slug": "data-quality-ownership-required-fields-and-validation-s",
+  "title": "Data quality, ownership, required fields, and validation strategy",
+  "track": "Data management and quality",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 35,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DQM-003"
+  ],
+  "objectives": [
+    "Define a data-quality strategy that combines ownership, required fields, and validation rules without stuffing every rule into one formula.",
+    "Explain that a validation rule error fires when the formula is True (invalid), not when it is False.",
+    "Separate universally required custom fields from page-layout requiredness, and say which path Data Loader and APIs still honor.",
+    "Treat OwnerId and assignment rules as quality and sharing signals, not as a cosmetic lookup."
+  ],
+  "diagnostic_question": "Leads arrive from the web with no owner, reps skip Close Date on the UI, and Data Loader still saves rows that the layout marks required. Which mix of ownership, required fields, and validation rules do you apply—and what do you refuse to pile into one formula?",
+  "definition": "Data quality here is the strategy for who owns a record, which fields must be present, and which formulas reject a save. A validation rule evaluates a formula and shows an error when that formula is True because the value is invalid. Requiredness can live on the field (enforced more broadly) or only on a page layout (UI). Ownership is the OwnerId (and assignment rules on some objects) that also drives sharing. ([Define Validation Rules](https://help.salesforce.com/s/articleView?id=sf.fields_defining_field_validation_rules.htm); [Custom Field Attributes](https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm))",
+  "why_it_matters": "A layout-only required field will not stop Data Loader. A validation rule written backwards (error when False) lets bad data save. Parking every Lead on one dummy user creates ownership skew later (DQM-006). Interviewers listen for True-means-invalid and for strategy, not a single checkbox.",
+  "sixty_second_explanation": "Think of a restaurant pass. Ownership is which chef's name is on the ticket—the person accountable, and the one sharing follows. A universally required field is the health-code item that must be on every ticket, even ones phoned in (API/Data Loader). A page-layout required field is only the dining-room paper ticket. A validation rule is the pass check: if the formula is True, the ticket is invalid and it does not leave the pass.",
+  "deeper_explanation": [
+    "Salesforce Help: validation rules verify that data a user enters meets standards before save. A rule contains a formula that returns True or False, plus an error message shown when the rule returns True due to an invalid value. You need View Setup and Configuration to view rules and Customize Application to define them. Review Validation Rule Considerations before creating rules. Activity validation rules are edited from Activities setup, not always from a custom activity field detail page. ([Define Validation Rules](https://help.salesforce.com/s/articleView?id=sf.fields_defining_field_validation_rules.htm))",
+    "Custom Field Attributes include Required and the Unique/External ID attributes taught in DQM-003. Interview strategy: a field-level required custom field is the stronger 'must have a value to save' control across more channels; a page-layout required checkbox is a UI hint for that layout. Do not claim an unofficial list of every API exception—rehearse the intended load path in sandbox. Mark any edition-specific required behavior as Needs verification if Help in the org differs.",
+    "Ownership is OwnerId. Data Loader can apply an assignment rule on insert, update, and upsert for cases and leads; that rule overrides Owner values in the CSV. That is a quality decision: who should own inbound work, not a mapping leftover. Dummy-user parking lots create later skew (DQM-006) and sharing recalculation risk. ([Configure Data Loader](https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/configuring_the_data_loader.htm))",
+    "Strategy, not a pile: requiredness for 'must exist,' validation for cross-field or conditional logic, Unique/External ID and matching/duplicate rules (DQM-003) for identity, Flow/Apex (AUTO-001) when the need is automation rather than reject-on-save. One 40-line validation formula that also assigns owners is a design smell."
+  ],
+  "mental_model": {
+    "analogy": "A restaurant pass: owner = chef on the ticket, universally required = health-code item on every ticket including phone-ins, layout required = dining-room paper only, validation = pass check that fires when the formula is True (invalid).",
+    "useful_mapping": [
+      "OwnerId → chef named on the ticket",
+      "assignment rule → the host stand routing inbound tickets",
+      "universally / field-level required → health-code item, all channels",
+      "page-layout required → paper ticket in the dining room only",
+      "validation formula True → ticket fails the pass",
+      "error message → why the pass rejected it",
+      "Unique / matching (DQM-003) → two tickets for the same diner",
+      "Data Loader / API → phone-in orders that skip the dining-room paper"
+    ],
+    "where_it_breaks": [
+      "Sharing and role hierarchy are not kitchen stations; SEC topics own them.",
+      "Validation True=invalid is the opposite of many programming if-valid patterns.",
+      "Assignment rules documented in Data Loader apply to cases and leads, not every object.",
+      "The analogy does not encode order of execution versus Flow (AUTO-001 / APEX-010)."
+    ]
+  },
+  "teach_back_prompt": "Explain ownership, layout-required versus field-required, and why a validation rule errors when the formula is True. Name one place the restaurant-pass analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Write True-means-invalid and one sentence on layout-required versus field-required."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given a Loader bypass, a missing owner, and a cross-field date rule, pick the control."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain assignment-rule override of CSV Owner on Lead/Case loads."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a validation rule that never fires because it was written as if False were invalid."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: data-quality strategy without dumping everything into one formula."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-VALIDATION",
+      "title": "Define Validation Rules",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.fields_defining_field_validation_rules.htm",
+      "supports": "Validation rules verify data before save; formula returns True/False; error displays when True (invalid); permissions; considerations; activity-rule location.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every order-of-execution slot; AUTO-001 / later automation topics own tool choice."
+    },
+    {
+      "source_id": "SF-HELP-FIELD-ATTR",
+      "title": "Custom Field Attributes",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm",
+      "supports": "Field-level attributes including Required, Unique, and External ID used in a quality strategy.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Page-layout requiredness is configured on the layout, not only on this attributes page."
+    },
+    {
+      "source_id": "SF-DEV-DATALOADER-CFG",
+      "title": "Configure Data Loader",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/configuring_the_data_loader.htm",
+      "supports": "Assignment rule ID on insert/update/upsert for cases and leads overrides Owner values in the CSV.",
+      "release_or_version": "Data Loader Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Assignment rules are not a general-purpose owner engine for every object."
+    },
+    {
+      "source_id": "SF-HELP-DUP-MANAGE",
+      "title": "Manage Duplicate Records",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.managing_duplicates_overview.htm",
+      "supports": "Identity-quality belongs in matching/duplicate rules (DQM-003), not in a validation formula that tries to reinvent matching.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "This topic only points at duplicate management; it does not re-teach match keys."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Validation Rules Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Owner is accountability",
+        "Field required vs layout required",
+        "Validation True is invalid",
+        "Do not reinvent matching",
+        "Loader is a channel",
+        "Strategy not one formula"
+      ],
+      "accessible_description": "Portrait map of data quality: ownership, required fields at field versus layout, validation rules that error on True, and when to use duplicate rules instead."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-VALIDATION",
+        "SF-HELP-FIELD-ATTR",
+        "SF-DEV-DATALOADER-CFG"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Which quality control owns this defect?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Save[Save or load] --> Own[OwnerId / assignment rule]\n  Save --> Req{Requiredness}\n  Req --> FieldReq[Field-level required]\n  Req --> LayReq[Page-layout required UI]\n  Save --> VR[Validation rule formula]\n  VR -->|True invalid| Err[Error message block save]\n  VR -->|False| Ok[Save continues]\n  Save --> Dup[Matching / duplicate rules DQM-003]\n  Own --> Share[Sharing later SEC]",
+      "decision": "flowchart TD\n  Defect[Bad or missing data] --> Q1{Value must exist on every channel including API?}\n  Q1 -->|Yes| FR[Field-level required]\n  Q1 -->|Only this UI layout| LR[Page-layout required]\n  Defect --> Q2{Cross-field or conditional logic?}\n  Q2 -->|Yes reject save| VR[Validation rule True means invalid]\n  Q2 -->|Automate instead of reject| Flow[Flow or Apex AUTO-001]\n  Defect --> Q3{Identity twin?}\n  Q3 -->|Yes| Dup[Matching and duplicate rules]\n  Defect --> Q4{Wrong or missing owner?}\n  Q4 -->|Lead or Case inbound| AR[Assignment rule]\n  Q4 -->|Bulk existing| MT[Mass transfer DQM-005]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A validation rule uses a formula that returns True or False. The error message displays when the formula returns True because the value is invalid.",
+      "source_ids": ["SF-HELP-VALIDATION"],
+      "scope": "Validation semantics",
+      "validation": "Define Validation Rules opening definition.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Viewing validation rules requires View Setup and Configuration; creating or changing them requires Customize Application. Review Validation Rule Considerations before creating rules.",
+      "source_ids": ["SF-HELP-VALIDATION"],
+      "scope": "Permissions and considerations",
+      "validation": "Define Validation Rules permissions and preamble.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Custom field attributes include Required, Unique, and External ID. Unique/External ID remain the identity constraints; Required is the presence constraint on the field.",
+      "source_ids": ["SF-HELP-FIELD-ATTR"],
+      "scope": "Field-level requiredness",
+      "validation": "Custom Field Attributes topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Data Loader can specify an assignment rule ID for inserts, updates, and upserts on cases and leads; the assignment rule overrides Owner values in the CSV.",
+      "source_ids": ["SF-DEV-DATALOADER-CFG"],
+      "scope": "Ownership on load",
+      "validation": "Configure Data Loader assignment-rule setting.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "No Summer '26 behavior change claimed. Reverify Validation Rule Considerations and required-field enforcement on the target API version.",
+  "unresolved_uncertainty": [
+    "Exact differences among universally required, always-required custom fields, and page-layout required across every API and integration user must be rehearsed in the org; do not invent a bypass matrix.",
+    "Whether a given validation rule runs on a specific load (bulk, before-save Flow, etc.) depends on order of execution—Needs verification in the scenario, not a memorized unofficial chart."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Validation rule",
+      "telugu": "Formula True ayite record save kaku error chupinchhe niyamam."
+    },
+    {
+      "english": "Owner",
+      "telugu": "Record ki responsible user; sharing kooda ikkade start avuthundi."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Quality is a strategy: who owns the row, which fields must exist, and which formulas reject a save. Validation errors when the formula is True. Layout-required is UI; field-level required is the stronger presence control. Identity twins belong in DQM-003, not a giant validation formula.",
+    "two_minutes": "I start from the defect. Missing value on every channel: field-level required. Missing only on one layout: page-layout required, and I warn that Data Loader may still load. Cross-field logic: validation rule written so True means invalid. Wrong owner on Lead/Case loads: assignment rule, which can override CSV Owner. Existing owners: mass transfer later. I refuse one formula that also tries to match duplicates and assign owners. I mention dummy-user parking lots as a future skew problem."
+  },
+  "terminology": [
+    {
+      "term": "data quality strategy",
+      "plain": "A planned mix of ownership, requiredness, validation, and identity rules—not one checkbox.",
+      "precise": "Presence (required), correctness (validation), identity (Unique/matching), and accountability (owner/assignment). Each control has a channel it actually enforces.",
+      "example": "Field-required Close reason, validation that Close Date is not in the past when Stage is Closed Won, owner via assignment on web-to-lead.",
+      "non_example": "A single 80-line validation formula that also tries to detect duplicates.",
+      "confusable_neighbor": "Flow field update: automation, not a reject-on-save quality gate (AUTO-001).",
+      "boundary": "Reporting on quality scores is analytics (ANA), not this lesson."
+    },
+    {
+      "term": "validation rule",
+      "plain": "A formula that blocks save when it evaluates to True (the data is invalid).",
+      "precise": "Help: verifies entered data before save; formula returns True or False; error shows when True due to an invalid value. Customize Application to define.",
+      "example": "AND(ISPICKVAL(StageName,'Closed Won'), ISBLANK(LAB_CloseReason__c)) — True means reject.",
+      "non_example": "A formula field that calculates a score but never blocks save.",
+      "confusable_neighbor": "Required field: presence only, no cross-field formula.",
+      "boundary": "Order of execution versus Flow is neighboring; do not invent unofficial step numbers here."
+    },
+    {
+      "term": "required field",
+      "plain": "A field that must have a value for the save path you care about.",
+      "precise": "Field-level Required on a custom field is a presence constraint on the field. Page-layout required is configured on that layout for UI users. Rehearse API/Data Loader behavior in sandbox rather than quoting an unofficial bypass list.",
+      "example": "LAB_Source__c marked Required on the field so Loader rows without it fail.",
+      "non_example": "A layout-required field that you assumed would stop Data Loader without testing.",
+      "confusable_neighbor": "Unique: forbids duplicate values, not empty values (empty handling is separate).",
+      "boundary": "Standard required fields (for example LastName on Contact) are platform-required; do not remove them in a lab."
+    },
+    {
+      "term": "page layout required",
+      "plain": "Required only on that layout in the UI, like the dining-room paper ticket.",
+      "precise": "A layout property that prompts UI users. It is not the same metadata as the field-level Required attribute. Interviewers expect you to doubt that it binds every API load.",
+      "example": "Opportunity layout requires Next Step for sales users in the browser.",
+      "non_example": "Assuming that setting blocks a Bulk API insert.",
+      "confusable_neighbor": "Field-level Required on Custom Field Attributes.",
+      "boundary": "Dynamic Forms / Lightning record pages can change where the prompt appears—Needs verification in the org UI."
+    },
+    {
+      "term": "ownership",
+      "plain": "Which user (or queue, where supported) is accountable for the record.",
+      "precise": "OwnerId is a foreign key you can update (SOAP update() allows OwnerId). Assignment rules can override CSV Owner on Lead and Case loads in Data Loader. Ownership also feeds sharing.",
+      "example": "Web-to-lead assignment rule routes LAB_ leads to a queue instead of a dummy user.",
+      "non_example": "Parking 50,000 leads on one dummy user 'to keep it simple' (skew risk, DQM-006).",
+      "confusable_neighbor": "Created By: audit stamp, not the owner you assign work to.",
+      "boundary": "Mass transfer of existing owners is DQM-005."
+    },
+    {
+      "term": "assignment rule",
+      "plain": "Setup logic that sets Lead or Case owner on create/update instead of the CSV owner.",
+      "precise": "Data Loader Settings: specify the assignment rule ID for inserts, updates, and upserts on cases and leads; it overrides Owner values in the file.",
+      "example": "Loader insert of LAB_ Leads with the active assignment rule ID set.",
+      "non_example": "An Account ownership formula—you do not get this Data Loader setting for every object.",
+      "confusable_neighbor": "Sharing rule: who can see, not who owns.",
+      "boundary": "Exact Setup navigation for assignment rules is object-specific; confirm in the org."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name the defect and the channel",
+      "actor": "Admin",
+      "trigger": "Bad data reported",
+      "before": "One validation rule imagined",
+      "after": "UI versus API/Loader, presence versus logic versus identity versus owner",
+      "observe": "Written defect card",
+      "failure": "Adding another AND() to an unrelated validation rule"
+    },
+    {
+      "step": 2,
+      "transition": "Pick presence versus formula",
+      "actor": "Admin",
+      "trigger": "Defect is missing or illegal values",
+      "before": "Required and validation confused",
+      "after": "Field-level required for must-exist; validation for True-when-invalid logic",
+      "observe": "A test row fails with the intended error",
+      "failure": "Writing ISBLANK in a validation when a required field already suffices—and the opposite, using required for cross-field logic"
+    },
+    {
+      "step": 3,
+      "transition": "Assign ownership on purpose",
+      "actor": "Admin",
+      "trigger": "Inbound or loaded records",
+      "before": "CSV Owner or dummy user",
+      "after": "Assignment rule for Lead/Case loads, or an explicit OwnerId plan",
+      "observe": "Sample LAB_ Lead owned by the intended queue/user",
+      "failure": "Ignoring that Data Loader assignment rules override CSV Owner"
+    },
+    {
+      "step": 4,
+      "transition": "Keep identity tools in their lane",
+      "actor": "Admin",
+      "trigger": "Twins or upsert keys",
+      "before": "Validation formula comparing names",
+      "after": "Unique/External ID and matching/duplicate rules (DQM-003)",
+      "observe": "No validation rule trying to reinvent match keys",
+      "failure": "A validation rule that approximates fuzzy matching"
+    }
+  ],
+  "when_to_use": [
+    "When you must design a data quality strategy that combines ownership, required fields, and validation rules instead of one mega-formula.",
+    "When an interviewer asks what True versus False means on a validation rule.",
+    "When Data Loader or APIs ignore a page-layout required field and you need field-level required or a validation rule.",
+    "When Lead or Case ownership on insert/update/upsert should use an assignment rule rather than the CSV Owner column.",
+    "When dummy-user ownership is proposed and you must flag later skew and sharing risk."
+  ],
+  "when_not_to_use": [
+    "Do not use a validation rule to reinvent matching rules or External ID uniqueness (DQM-003).",
+    "Do not use page-layout required as the only control when Data Loader and APIs must also reject blank values.",
+    "Do not use validation rules as a substitute for Flow or Apex when the need is to change data rather than reject it (AUTO-001).",
+    "Do not use assignment rules as a general owner engine for objects Data Loader does not document in that setting.",
+    "Do not test quality rules by corrupting production customer records."
+  ],
+  "configuration_or_code_location": [
+    "Object Manager → Validation Rules; Check Syntax; error message location.",
+    "Object Manager → Fields → Required; Page Layouts → required checkbox on the field.",
+    "Setup → Lead Assignment Rules / Case Assignment Rules; Data Loader Settings → Assignment rule ID.",
+    "Activities Setup for Task/Event validation rules when the field detail page does not list them."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox sales team skips LAB_CloseReason__c on Closed Won Opportunities in the UI. Marketing loads Leads via Data Loader with a dummy owner in the CSV. A BA asks for one validation rule that also blocks duplicate last names. No production data.",
+    "inputs": [
+      "Opportunity Stage and LAB_CloseReason__c",
+      "Lead CSV with OwnerId of a dummy user",
+      "Active Lead assignment rule",
+      "Request to 'also stop duplicate last names'"
+    ],
+    "decisions": [
+      {
+        "decision": "Validation rule: Closed Won AND blank LAB_CloseReason__c is True (invalid).",
+        "because": "Help: error when the formula is True due to an invalid value. This is cross-field logic, not simple requiredness on every Stage.",
+        "rejected": "Making Close Reason layout-required only and hoping Loader never closes Opps"
+      },
+      {
+        "decision": "Set the Data Loader assignment rule ID so Lead loads ignore the dummy CSV Owner.",
+        "because": "Configure Data Loader: assignment rule overrides Owner values on Lead insert/update/upsert.",
+        "rejected": "Parking all leads on the dummy user"
+      },
+      {
+        "decision": "Refuse last-name uniqueness in the validation rule; send identity to Unique/matching (DQM-003).",
+        "because": "Duplicate management is matching plus duplicate rules, not a validation formula.",
+        "rejected": "AND(last-name compare) bolted onto the Close Reason rule"
+      }
+    ],
+    "configuration_or_code": [
+      "AND(ISPICKVAL(StageName,'Closed Won'), ISBLANK(LAB_CloseReason__c))",
+      "Data Loader Settings: assignment rule ID for Lead insert.",
+      "Written note: last-name twins → matching rule, not this validation."
+    ],
+    "output": "UI Closed Won without reason fails. Loader Leads land on the assignment-rule owner. Last-name request is a separate DQM-003 ticket.",
+    "verification": [
+      "A Closed Won LAB_ Opportunity with a reason saves; without, the error appears.",
+      "A Lead CSV Owner of the dummy user is overridden when the assignment rule is set.",
+      "No validation rule contains last-name equality."
+    ],
+    "self_explanation": "True meant invalid. Ownership used the documented Lead assignment-rule override. Identity stayed out of the formula."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ fields and records only.",
+    "starting_state_checks": [
+      "You can create a validation rule on Opportunity or a custom object.",
+      "You will not edit production assignment rules."
+    ],
+    "steps": [
+      "Create LAB_CloseReason__c (text). Add a validation rule that is True when a picklist you choose is a 'closed' value and the reason is blank.",
+      "Prove the error appears on that condition and not on an open-stage save.",
+      "On a page layout, mark a different field required. Try to see (or reason) why that is a weaker API control than field-level Required.",
+      "Write one sentence: Data Loader assignment rules override CSV Owner on which objects?"
+    ],
+    "guided_completion": [
+      "If the rule never fires, you may have written the formula as if False were invalid.",
+      "If every save fails, the formula is True too often."
+    ],
+    "independent_challenge": "List three defects and assign each to required, validation, ownership, or DQM-003.",
+    "evidence": [
+      "Rule formula and error text with LAB_ names.",
+      "Written True-means-invalid sentence."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate the lab validation rule.",
+      "Delete LAB_ records."
+    ],
+    "limitations": "This lab does not prove every API bypass combination."
+  },
+  "decision_table": [
+    {
+      "signal": "A value must exist for every save path you care about, including Data Loader.",
+      "choose": "Field-level Required (and test the load path).",
+      "not": "Page-layout required alone.",
+      "why": "Layout requiredness is a UI control; field attributes are the stronger presence constraint."
+    },
+    {
+      "signal": "Two fields together make a row illegal (dates, stages, amounts).",
+      "choose": "Validation rule whose formula is True when invalid.",
+      "not": "A required checkbox on one field, or a formula field that never blocks.",
+      "why": "Help defines validation as a True/False formula with an error when True."
+    },
+    {
+      "signal": "Inbound Leads or Cases should not keep the dummy Owner in the CSV.",
+      "choose": "Assignment rule, and set its ID in Data Loader for insert/update/upsert.",
+      "not": "A validation rule that compares OwnerId to a hardcoded user Id as the only design.",
+      "why": "The Data Loader Guide documents assignment-rule override of Owner on cases and leads."
+    },
+    {
+      "signal": "Users create twins or integrations need a vendor key.",
+      "choose": "External ID, Unique, matching rules, duplicate rules (DQM-003).",
+      "not": "A validation formula that approximates fuzzy name matching.",
+      "why": "Duplicate management is the official identity-quality path."
+    },
+    {
+      "signal": "The business wants the value filled in automatically, not rejected.",
+      "choose": "Formula, before-save Flow, or Apex (AUTO-001)—not a validation error.",
+      "not": "A validation rule used as a cheap assignment engine.",
+      "why": "Validation rejects; it does not own the record or populate fields."
+    }
+  ],
+  "limitations": [
+    "Does not reprint order of execution.",
+    "Does not design sharing (SEC) or mass transfer (DQM-005).",
+    "Does not list every Validation Rule Consideration.",
+    "API/layout required enforcement must be verified on the org's load path."
+  ],
+  "security_notes": [
+    "OwnerId changes are sharing events.",
+    "Do not hardcode internal user Ids in validation messages that leak org structure to external users.",
+    "Never validate using real national-id samples in labs."
+  ],
+  "common_mistakes": [
+    "Writing validation so False means invalid.",
+    "Trusting page-layout required to stop Data Loader.",
+    "Parking all records on one dummy owner.",
+    "Reinventing duplicate matching inside a validation rule.",
+    "Using a validation rule to update fields."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Validation rule never fires.",
+      "check": [
+        "Formula is True for the bad row (not False).",
+        "Rule is active.",
+        "You are testing the object and record type the rule applies to."
+      ],
+      "do_not_assume": "Validation does not run on UI saves."
+    },
+    {
+      "symptom": "UI requires a field; Data Loader saves blanks.",
+      "check": [
+        "Required is only on the page layout.",
+        "Add field-level Required or a validation rule and retest."
+      ],
+      "do_not_assume": "The layout setting binds every API."
+    },
+    {
+      "symptom": "Loaded Leads ignore the Owner column.",
+      "check": [
+        "Data Loader assignment rule ID is set; it overrides CSV Owner on leads/cases."
+      ],
+      "do_not_assume": "The mapping file dropped OwnerId."
+    }
+  ],
+  "production_notes": [
+    "Activate validation in sandbox with LAB_ data and a sample load.",
+    "Review Validation Rule Considerations before high-volume objects.",
+    "This lesson does not authorize production rule changes without change control."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When does a validation rule show its error message?",
+      "options": {
+        "A": "When the formula returns True because the value is invalid",
+        "B": "When the formula returns False",
+        "C": "Only on hard delete",
+        "D": "Only when a matching rule runs"
+      },
+      "answer": "A",
+      "rationale": "Help: the error displays when the rule returns True due to an invalid value.",
+      "distractor_explanations": {
+        "B": "False means the data passed that rule.",
+        "C": "Hard delete is DQM-002.",
+        "D": "Matching is DQM-003."
+      },
+      "concept": "True means invalid",
+      "citation_ids": ["SF-HELP-VALIDATION"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Permission to define or change validation rules?",
+      "options": {
+        "A": "Customize Application (viewing needs View Setup and Configuration)",
+        "B": "Bulk API Hard Delete",
+        "C": "View All Data only",
+        "D": "Guest user license"
+      },
+      "answer": "A",
+      "rationale": "Define Validation Rules lists those permissions.",
+      "distractor_explanations": {
+        "B": "That is a delete permission.",
+        "C": "View All Data is not the Setup customize permission.",
+        "D": "Guests do not author rules."
+      },
+      "concept": "Permissions",
+      "citation_ids": ["SF-HELP-VALIDATION"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Page-layout required versus field-level Required in a quality strategy?",
+      "options": {
+        "A": "Layout required is a UI control; field-level Required is the stronger presence attribute—test Data Loader/API",
+        "B": "They are identical in every API",
+        "C": "Layout required hard-deletes blanks",
+        "D": "Field-level Required only works in Classic"
+      },
+      "answer": "A",
+      "rationale": "Strategy depends on channel. Layout requiredness is not the same metadata as the field attribute.",
+      "distractor_explanations": {
+        "B": "Interviewers expect a channel difference.",
+        "C": "Requiredness does not hard-delete.",
+        "D": "Field attributes are not Classic-only."
+      },
+      "concept": "Required channels",
+      "citation_ids": ["SF-HELP-FIELD-ATTR"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Data Loader assignment rule setting applies to which objects in the Guide?",
+      "options": {
+        "A": "Cases and leads (insert, update, upsert); it overrides Owner values in the CSV",
+        "B": "Every custom object automatically",
+        "C": "Reports and dashboards",
+        "D": "Apex classes"
+      },
+      "answer": "A",
+      "rationale": "Configure Data Loader documents that assignment-rule option for cases and leads.",
+      "distractor_explanations": {
+        "B": "Not documented as universal.",
+        "C": "Analytics are not assignment rules.",
+        "D": "Apex is metadata."
+      },
+      "concept": "Assignment rule override",
+      "citation_ids": ["SF-DEV-DATALOADER-CFG"]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A BA wants one validation rule to block duplicate last names. What do you do?",
+      "options": {
+        "A": "Refuse and use matching/duplicate rules or Unique (DQM-003)",
+        "B": "Agree; validation is the official fuzzy matcher",
+        "C": "Use hard_delete",
+        "D": "Turn off OwnerId"
+      },
+      "answer": "A",
+      "rationale": "Identity quality is matching, duplicate rules, Unique, External ID—not a validation approximation.",
+      "distractor_explanations": {
+        "B": "Matching rules own comparison.",
+        "C": "Delete is not a quality strategy.",
+        "D": "Ownership is separate."
+      },
+      "concept": "Do not reinvent matching",
+      "citation_ids": ["SF-HELP-DUP-MANAGE", "SF-HELP-VALIDATION"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Closed Won must have LAB_CloseReason__c. Best primary control?",
+      "options": {
+        "A": "Validation rule True when Closed Won and reason blank",
+        "B": "Page-layout required on reason for every stage",
+        "C": "Matching rule on StageName",
+        "D": "extract_all"
+      },
+      "answer": "A",
+      "rationale": "Conditional presence is validation logic, not a blanket required on all stages.",
+      "distractor_explanations": {
+        "B": "Would require the field even when open.",
+        "C": "Matching is identity.",
+        "D": "Export is not a gate."
+      },
+      "concept": "Conditional required",
+      "citation_ids": ["SF-HELP-VALIDATION"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where can Task/Event validation rules hide from a custom activity field page?",
+      "options": {
+        "A": "Setup → Activities → Task or Event Validation Rules",
+        "B": "Only in Reports",
+        "C": "Only in Data Loader Settings",
+        "D": "They cannot exist"
+      },
+      "answer": "A",
+      "rationale": "Help notes the activity field detail page may not list associated validation rules; use Activities setup.",
+      "distractor_explanations": {
+        "B": "Reports do not host the rule editor.",
+        "C": "Loader settings are not the rule store.",
+        "D": "Activity validation rules exist."
+      },
+      "concept": "Activity validation location",
+      "citation_ids": ["SF-HELP-VALIDATION"]
+    },
+    {
+      "id": "Q8",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Validation rule versus before-save Flow for filling a default?",
+      "options": {
+        "A": "Validation rejects; Flow can populate—do not use validation as an assignment engine",
+        "B": "Validation always writes field values",
+        "C": "Flow cannot run on save",
+        "D": "They are the same metadata"
+      },
+      "answer": "A",
+      "rationale": "Quality strategy: reject versus automate. AUTO-001 owns the Flow choice; this topic refuses validation-as-update.",
+      "distractor_explanations": {
+        "B": "Validation shows an error; it does not own the value.",
+        "C": "Record-triggered Flow can run on save.",
+        "D": "Different tools."
+      },
+      "concept": "Reject vs fill",
+      "citation_ids": ["SF-HELP-VALIDATION"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Why is parking 40,000 Leads on one dummy user a quality-strategy smell?",
+      "options": {
+        "A": "Ownership is accountability and later skew/sharing risk; use assignment or distributed owners",
+        "B": "Dummy users make validation rules True automatically",
+        "C": "Salesforce forbids more than one Lead",
+        "D": "External IDs cannot exist on Lead"
+      },
+      "answer": "A",
+      "rationale": "Ownership is part of quality; DQM-006 documents ownership skew above large single-owner volumes.",
+      "distractor_explanations": {
+        "B": "Unrelated to formula True.",
+        "C": "False.",
+        "D": "Lead can have External IDs."
+      },
+      "concept": "Dummy owner",
+      "citation_ids": ["SF-DEV-DATALOADER-CFG"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What should you review before creating validation rules?",
+      "options": {
+        "A": "Validation Rule Considerations",
+        "B": "Only the Recycle Bin",
+        "C": "Only Bulk API 2.0 file size",
+        "D": "Apex access modifiers"
+      },
+      "answer": "A",
+      "rationale": "Help: review Validation Rule Considerations before creating validation rules.",
+      "distractor_explanations": {
+        "B": "Recycle Bin is DQM-005.",
+        "C": "Volume is DQM-001/006.",
+        "D": "Apex modifiers are APEX-001."
+      },
+      "concept": "Considerations",
+      "citation_ids": ["SF-HELP-VALIDATION"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which custom-field attributes are identity constraints rather than presence?",
+      "options": {
+        "A": "Unique and External ID",
+        "B": "Required only",
+        "C": "Help Text only",
+        "D": "Description only"
+      },
+      "answer": "A",
+      "rationale": "Unique/External ID are identity; Required is presence. Strategy keeps them separate.",
+      "distractor_explanations": {
+        "B": "Required is presence.",
+        "C": "Help Text is documentation.",
+        "D": "Description is documentation."
+      },
+      "concept": "Identity vs presence",
+      "citation_ids": ["SF-HELP-FIELD-ATTR"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A validation rule is active but users save bad rows on a list view inline edit. What do you not assume?",
+      "options": {
+        "A": "That every UI path was tested; reproduce the exact save channel and the True/False result",
+        "B": "That validation never runs except in Classic edit",
+        "C": "That OwnerId disables all rules",
+        "D": "That matching rules replace validation"
+      },
+      "answer": "A",
+      "rationale": "Strategy includes channel testing. Do not invent an unofficial 'list views skip validation' rule without evidence.",
+      "distractor_explanations": {
+        "B": "Unsupported blanket claim.",
+        "C": "Owner does not disable validation.",
+        "D": "They solve different defects."
+      },
+      "concept": "Channel testing",
+      "citation_ids": ["SF-HELP-VALIDATION"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "validation",
+      "front": "Validation rule: True or False means what?",
+      "back": "True means invalid: show the error and block save. False means this rule passed."
+    },
+    {
+      "id": "F2",
+      "category": "validation",
+      "front": "Permission to create validation rules?",
+      "back": "Customize Application. Viewing needs View Setup and Configuration."
+    },
+    {
+      "id": "F3",
+      "category": "required",
+      "front": "Page-layout required versus field-level Required?",
+      "back": "Layout required is a UI control. Field-level Required is the stronger presence attribute—test API/Loader."
+    },
+    {
+      "id": "F4",
+      "category": "owner",
+      "front": "What can override CSV Owner on Lead/Case Data Loader jobs?",
+      "back": "An assignment rule ID in Data Loader Settings on insert, update, or upsert."
+    },
+    {
+      "id": "F5",
+      "category": "strategy",
+      "front": "Presence versus correctness versus identity?",
+      "back": "Required = presence. Validation = correctness. Unique/matching = identity. Owner = accountability."
+    },
+    {
+      "id": "F6",
+      "category": "strategy",
+      "front": "Should a validation rule detect fuzzy duplicates?",
+      "back": "No. Use matching and duplicate rules (DQM-003)."
+    },
+    {
+      "id": "F7",
+      "category": "owner",
+      "front": "Dummy-user parking lot risk?",
+      "back": "Weak accountability and later ownership skew / sharing recalculation (DQM-006)."
+    },
+    {
+      "id": "F8",
+      "category": "validation",
+      "front": "What to review before creating validation rules?",
+      "back": "Validation Rule Considerations in Salesforce Help."
+    },
+    {
+      "id": "F9",
+      "category": "activity",
+      "front": "Where are Task/Event validation rules if the field page omits them?",
+      "back": "Setup → Activities → Task or Event Validation Rules."
+    },
+    {
+      "id": "F10",
+      "category": "automation",
+      "front": "Need to fill a value, not reject. Tool family?",
+      "back": "Formula, Flow, or Apex (AUTO-001)—not a validation error."
+    },
+    {
+      "id": "F11",
+      "category": "required",
+      "front": "UI requires a field; Loader saves blank. First check?",
+      "back": "Whether requiredness is only on the page layout."
+    },
+    {
+      "id": "F12",
+      "category": "formula",
+      "front": "Closed Won requires a reason. Formula shape?",
+      "back": "AND(closed-won, ISBLANK(reason)) so the rule is True when invalid."
+    },
+    {
+      "id": "F13",
+      "category": "attributes",
+      "front": "Required versus Unique on Custom Field Attributes?",
+      "back": "Required is presence. Unique is no duplicate values and shares External ID budget."
+    },
+    {
+      "id": "F14",
+      "category": "owner",
+      "front": "Is Created By the same as Owner?",
+      "back": "No. Created By is an audit stamp. OwnerId is who is accountable and who sharing uses."
+    },
+    {
+      "id": "F15",
+      "category": "scope",
+      "front": "Are Data Loader assignment rules for every object?",
+      "back": "The Guide documents them for cases and leads, not as a universal owner engine."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you explain a Salesforce validation rule in an interview?",
+      "answer_30_seconds": "It is a formula that runs on save. If the formula is True, the value is invalid and the user sees the error. False means this rule passed. I need Customize Application to create one.",
+      "answer_2_minutes": "I quote Help: verify data before save, True/False, error when True. I mention Check Syntax and Validation Rule Considerations. I show a conditional example, not ISBLANK on a field that should simply be required. I keep matching and ownership out of the formula unless there is a real cross-field reason. I do not recite an unofficial order-of-execution number unless asked to go to that topic.",
+      "example": "AND(ISPICKVAL(StageName,'Closed Won'), ISBLANK(LAB_CloseReason__c)).",
+      "tradeoffs": [
+        "Required vs validation",
+        "Reject vs Flow-fill"
+      ],
+      "follow_ups": [
+        "What if the rule never fires?",
+        "Where do activity rules live?"
+      ],
+      "weak_answer_warnings": [
+        "Saying the error shows when the formula is False"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Field-level required versus page-layout required?",
+      "answer_30_seconds": "Field-level Required is a field attribute and the stronger presence control. Page-layout required is a UI control on that layout. I do not promise the layout setting binds Data Loader without a test.",
+      "answer_2_minutes": "I pick based on channel. If marketing loads CSV, I do not rely on a sales layout. I may still use layout required for a UX nudge on one app. I rehearse the load in sandbox. I distinguish Unique (identity) from Required (presence). I mark unofficial bypass matrices as Needs verification.",
+      "example": "LAB_Source__c field-required so Loader fails; Next Step layout-required for sales UX only.",
+      "tradeoffs": [
+        "Strict API quality vs flexible integrations",
+        "UX nudge vs hard stop"
+      ],
+      "follow_ups": [
+        "What about standard required fields?",
+        "Dynamic Forms?"
+      ],
+      "weak_answer_warnings": [
+        "Treating both required types as identical"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Data Loader Lead insert ignores the Owner column. What official setting do you check?",
+      "answer_30_seconds": "Assignment rule ID in Data Loader Settings. For cases and leads, that rule overrides Owner values in the CSV on insert, update, and upsert.",
+      "answer_2_minutes": "I treat it as a quality feature, not a bug, if we intended routing. If we intended the CSV owner, I clear the assignment-rule setting. I do not build a validation rule that hardcodes a user Id as the only owner design. I mention dummy-user parking lots as a later skew problem. Mass transfer of existing owners is DQM-005.",
+      "example": "Web-to-lead style CSV with a dummy OwnerId overwritten by the active Lead assignment rule.",
+      "tradeoffs": [
+        "Routing consistency vs file-specified owners",
+        "Queue versus dummy user"
+      ],
+      "follow_ups": [
+        "Does this setting apply to Account?",
+        "How do you see who owns the sample row?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming the mapping dropped OwnerId as the only cause"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Users want one validation rule that also stops duplicate names and sets the owner. How do you answer?",
+      "answer_30_seconds": "I refuse the pile. Validation rejects invalid values. Duplicates are matching/duplicate rules. Owner is assignment or an explicit OwnerId plan. One formula doing all three is a strategy fail.",
+      "answer_2_minutes": "I restated the defect list and mapped each to a control. I teach True-means-invalid so they do not hide assignment inside a rule that sometimes errors. I point DQM-003 for names. I point AUTO-001 if they actually want a field update. I offer a thin validation for the one cross-field condition that is truly reject-on-save.",
+      "example": "Close Reason validation only; Lead assignment rule; Contact matching rule.",
+      "tradeoffs": [
+        "Fewer metadata types vs maintainability",
+        "Reject vs automate"
+      ],
+      "follow_ups": [
+        "When is a validation rule the wrong tool?",
+        "What permission edits duplicate rules?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to one mega-formula"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "What is a data quality strategy on Salesforce, in two minutes?",
+      "answer_30_seconds": "Presence, correctness, identity, and ownership—each with the control that actually enforces it on the channels you use.",
+      "answer_2_minutes": "I start from inbound channels: UI layouts, Data Loader, integrations. Presence: field-level required when every channel must comply. Correctness: validation with True=invalid. Identity: External ID, Unique, matching, duplicate jobs. Ownership: assignment on Lead/Case, distributed owners, no dummy parking lot. I rehearse loads in sandbox. I keep Flow for changes and validation for rejects. I admit edition and order-of-execution details need verification.",
+      "example": "Web-to-lead assignment + required Source + validation on junk email pattern + matching on Contact.",
+      "tradeoffs": [
+        "Strictness vs adoption",
+        "UI polish vs API integrity"
+      ],
+      "follow_ups": [
+        "How do you measure quality later?",
+        "Where does storage/backup fit? (DQM-005)"
+      ],
+      "weak_answer_warnings": [
+        "Only mentioning validation rules"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A validation rule never fires on bad data. Walk the diagnosis.",
+      "answer_30_seconds": "Evaluate the formula on the bad row. If it is False, the rule is written backwards or the condition is wrong. Then check active, object, record type, and the save channel.",
+      "answer_2_minutes": "I use a known-bad LAB_ record. I invert the logic if someone treated False as invalid. I check Activities setup for Task/Event rules. I do not immediately add a second rule. I also ask whether a before-save Flow is changing the field before validation—Needs verification in that org's order of execution rather than a memorized unofficial number.",
+      "example": "Rule used NOT(ISBLANK(reason)) so it errored when the reason was present.",
+      "tradeoffs": [
+        "Fix the formula vs add another rule",
+        "Validation vs Flow interaction"
+      ],
+      "follow_ups": [
+        "How do you unit-test the formula?",
+        "What are Validation Rule Considerations?"
+      ],
+      "weak_answer_warnings": [
+        "Deactivating all rules as the first move"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "A developer says validation rules do not run on Data Loader so requiredness is pointless. Respond.",
+      "answer_30_seconds": "I do not accept a blanket bypass claim. I test the load. Field-level required and validation are the controls I trust more than page-layout required. Strategy is channel-tested, not folklore.",
+      "answer_2_minutes": "I separate layout required (weakest story) from field attributes and validation. I run a 5-row LAB_ file. If a rule does not run, I read Considerations and the exact operation (insert vs update, bulk vs SOAP). I still will not move all quality into Apex 'because Loader.' I document the evidence. Needs verification beats a hallway rule.",
+      "example": "Sandbox insert of Opportunity missing LAB_CloseReason__c on Closed Won fails the validation; a layout-only Next Step does not.",
+      "tradeoffs": [
+        "Folklore vs rehearsal",
+        "Apex gates vs declarative gates"
+      ],
+      "follow_ups": [
+        "Bulk API differences?",
+        "Who owns the test file?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing that Loader ignores all validation"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "Teach the restaurant-pass analogy and where it breaks.",
+      "answer_30_seconds": "Owner is the chef on the ticket, field-required is the health-code item on phone-ins too, layout-required is dining-room paper, validation fails the pass when the formula is True. It breaks because True=invalid is backwards from many if-valid programs, and assignment rules are only documented for some objects.",
+      "answer_2_minutes": "I map Data Loader to phone-in orders. I map matching rules to two tickets for one diner. I break it: sharing is not a station; Flow can cook instead of rejecting; dummy-user parking is a later traffic jam (skew). I finish with strategy: four controls, not one sauce.",
+      "example": "Teaching a BA why layout-required Close Date failed to stop a CSV.",
+      "tradeoffs": [
+        "Memorable story vs Help wording",
+        "Reject vs route vs match"
+      ],
+      "follow_ups": [
+        "State True-means-invalid without the analogy.",
+        "Name the Lead/Case assignment-rule override without the analogy."
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer analogy"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1064 @@
+{
+  "topic_id": "APEX-013",
+  "slug": "callouts-named-credentials-authentication-timeouts-retr",
+  "title": "Callouts, named credentials, authentication, timeouts, retries, and mocking",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-012"
+  ],
+  "objectives": [
+    "Explain Apex HTTP/SOAP callouts and why named credentials beat hardcoded URLs and secrets.",
+    "Apply official callout governors: 100 callouts and 120 seconds cumulative timeout per transaction.",
+    "Sequence DML and callouts to avoid uncommitted-work errors and FOR UPDATE lock release (APEX-010).",
+    "Mock callouts in tests with HttpCalloutMock / Test.setMock rather than live endpoints."
+  ],
+  "diagnostic_question": "A trigger updates LAB_Order__c then Http.sends to an allocator using a password in code. Tests hit the real network. What do you change about named credentials, transaction order, timeouts, retries, and mocking?",
+  "definition": "An Apex callout is an HTTP or SOAP request from Salesforce to an external endpoint. The site must be allowed via Remote Site Settings unless you use a named credential, which stores the endpoint URL and authentication so Apex can call callout:My_Named_Credential/path without embedding secrets. Official per-transaction limits: 100 callouts and 120 seconds cumulative timeout. Tests must mock HTTP—they cannot freely call the live network. ([Invoking Callouts Using Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts.htm); [Named Credentials as Callout Endpoints](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts_named_credentials.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+  "why_it_matters": "Hardcoded passwords, callout-after-DML, and live-network tests are common interview and incident failures. Named credentials keep auth out of Apex; Queueable (APEX-011) gives the callout its own transaction.",
+  "sixty_second_explanation": "Treat the integration as a bonded courier. The named credential is the passport and destination on file; Apex only says callout:LAB_Allocator/v1. You do not stuff cash (passwords) in the backpack. You get 100 stops and 120 seconds total on this trip. You cannot mix uncommitted DML then a callout in the same transaction—finish DML or move the courier to a Queueable after commit. Retries need idempotency and delay so you do not burn daily async. Tests use a dummy loading dock (HttpCalloutMock), not the real warehouse.",
+  "deeper_explanation": [
+    "Callouts let Apex invoke external HTTP or SOAP services. Unauthorized addresses fail unless registered in Remote Site Settings or covered by a named credential. Apex web services are the inverse: the outside world calls in. ([Invoking Callouts Using Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts.htm))",
+    "A named credential stores the endpoint URL and authentication. Salesforce applies auth so Apex does not. You skip remote site settings for that URL. Reference callout:Name/optional/path?query=. Changing the URL later does not require a code edit. The same name can point at different URLs per org for packaging. ([Named Credentials as Callout Endpoints](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts_named_credentials.htm))",
+    "Governors: 100 callouts per transaction; 120 seconds cumulative timeout for all callouts in the transaction. Heap/CPU still apply. Scheduled Apex uses synchronous limits if you mistakenly callout from Schedulable.execute. ([Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+    "You cannot perform a callout after uncommitted DML in the same transaction (uncommitted work pending). FOR UPDATE locks are released on callout (APEX-010). Preferred sequence: compute, DML, commit, Queueable callout—or callout first then DML if the design allows. @future(callout=true) or Queueable with Database.AllowsCallouts.",
+    "Retries are application design, not a platform auto-retry of Http.send. Use Queueable delay (0–10 minutes) or a halt after N attempts. Tests: implement HttpCalloutMock and Test.setMock so tests do not depend on the network. Live callouts in tests are the wrong default."
+  ],
+  "mental_model": {
+    "analogy": "A bonded courier: the named credential is the passport and destination on file; Apex only hands over the sealed pouch. Timeouts are the shift clock (120 seconds total). The dummy loading dock is HttpCalloutMock.",
+    "useful_mapping": [
+      "passport + destination card → named credential + external credential",
+      "callout:LAB_Allocator/v1 → named-credential URL scheme",
+      "cash in the backpack → password in Apex source",
+      "100 stops / 120-minute-wait clock → 100 callouts / 120 s cumulative (seconds, not minutes)",
+      "leaving the vault mid-count → callout after uncommitted DML or under FOR UPDATE",
+      "dummy loading dock → HttpCalloutMock",
+      "second truck tomorrow → Queueable retry with delay"
+    ],
+    "where_it_breaks": [
+      "The 120-second cap is cumulative seconds, not a 120-minute shift.",
+      "Named credentials do not make a non-idempotent POST safe to retry.",
+      "Continuations for long Visualforce/LWC callouts are a neighboring pattern, not this lesson's default."
+    ]
+  },
+  "teach_back_prompt": "Explain to a security reviewer why the callout uses a named credential, why the trigger does not Http.send after DML, and how the test mocks the courier.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Named credential URL scheme and why secrets stay out of Apex."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "100 callouts and 120 s cumulative; uncommitted-work rule."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Queueable vs @future(callout=true) for the courier."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Sketch HttpCalloutMock + Test.setMock for LAB_Allocator."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: auth, timeouts, retries, mocking."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-CALLOUT",
+      "title": "Invoking Callouts Using Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts.htm",
+      "supports": "HTTP/SOAP callouts; remote site or named credential required; callouts vs inbound web services.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Continuation and certificate subtopics are neighboring."
+    },
+    {
+      "source_id": "SF-APEX-NC",
+      "title": "Named Credentials as Callout Endpoints",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts_named_credentials.htm",
+      "supports": "Named credential stores URL + auth; Apex uses callout:Name/path; skip remote site; per-org URL with same name.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "External credential / auth-provider click-path can change; reverify Setup labels."
+    },
+    {
+      "source_id": "SF-APEX-HTTP",
+      "title": "HTTP Classes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_restful_http.htm",
+      "supports": "Http, HttpRequest, HttpResponse; GET/POST and others; timeouts on the request; @future alternative for async.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace the governors table."
+    },
+    {
+      "source_id": "SF-APEX-GOV",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "100 callouts per transaction; 120 seconds cumulative callout timeout.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Per-call default timeout is not invented here if not on this table—setTimeout on HttpRequest should be re-read from HTTP Classes."
+    },
+    {
+      "source_id": "SF-APEX-QUEUEABLE",
+      "title": "Queueable Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_queueing_jobs.htm",
+      "supports": "Callouts from Queueable; delay for rate-limited externals; rollback drops queued jobs.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Must implement Database.AllowsCallouts—confirm on the current Queueable/callout page if a compile error appears."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Named credential",
+        "Apex callout: URL",
+        "100 / 120 s",
+        "No DML-then-callout",
+        "Queueable retry",
+        "HttpCalloutMock"
+      ],
+      "accessible_description": "Named credential; Apex callout: URL; 100 / 120 s; No DML-then-callout; Queueable retry; HttpCalloutMock"
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-CALLOUT",
+        "SF-APEX-NC",
+        "SF-APEX-GOV"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Where does this HTTP request run and how is it authenticated?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Apex[Apex HttpRequest] --> NC[Named credential callout:Name/path]\n  NC --> Auth[Salesforce-managed authentication]\n  Apex --> Lim[Governors: 100 callouts, 120s cumulative]\n  Apex --> Seq{Uncommitted DML already in this transaction?}\n  Seq -->|Yes| Fail[Callout fails: uncommitted work]\n  Seq -->|No| Send[Http.send]\n  Send --> Mock[Tests: HttpCalloutMock via Test.setMock]\n  Send --> Prod[Production: real endpoint from the named credential]",
+      "decision": "flowchart TD\n  Need[Need an external HTTP or SOAP call?] --> Q1{Secrets or URL in Apex?}\n  Q1 -->|Yes today| NC[Move to named credential; use callout:Name]\n  Q1 -->|Already NC| Q2{DML already done in this transaction?}\n  Q2 -->|Yes| Qable[Queueable after commit with AllowsCallouts]\n  Q2 -->|No, callout first is safe| Sync[Callout then DML if design allows]\n  Need --> Q3{Test?}\n  Q3 -->|Always| Mock[HttpCalloutMock; never depend on the live allocator]\n  Need --> Q4{Transient 429 or timeout?}\n  Q4 -->|Retry| Delay[Queueable delay 1-10 min; idempotent POST or GET status]\n  Q4 -->|Poison message| Halt[Stop chaining; log LAB_ error]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Apex callouts require Remote Site Settings or a named credential. Named credentials store endpoint URL and authentication; Apex references callout:Name/path and skips remote site settings for that site.",
+      "source_ids": [
+        "SF-APEX-CALLOUT",
+        "SF-APEX-NC"
+      ],
+      "scope": "Callout allowlist and named credentials",
+      "validation": "Callouts intro plus Named Credentials topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Per-transaction governors: 100 callouts; 120 seconds cumulative timeout for all callouts.",
+      "source_ids": [
+        "SF-APEX-GOV"
+      ],
+      "scope": "Callout governors",
+      "validation": "Execution Governors and Limits.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Http and HttpRequest/HttpResponse perform the request. Tests should not rely on the live network; use a mock. Long work belongs in async (@future(callout=true) or Queueable).",
+      "source_ids": [
+        "SF-APEX-HTTP",
+        "SF-APEX-CALLOUT"
+      ],
+      "scope": "HTTP classes and async",
+      "validation": "HTTP Classes examples and callout intro.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Queueable is the recommended async host for many callouts; delay helps rate-limited externals; parent rollback drops the queued job.",
+      "source_ids": [
+        "SF-APEX-QUEUEABLE"
+      ],
+      "scope": "Retries and async host",
+      "validation": "Queueable delay and rollback notes.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Named credentials now commonly pair with external credentials; reverify Setup labels on Summer '26 Help. Governors 100 / 120 s from API 67.0 table.",
+  "unresolved_uncertainty": [
+    "Default HttpRequest timeout if setTimeout is omitted should be read from the current HTTP Classes / callout limits page—do not invent 10,000 ms here.",
+    "Legacy vs named-principal vs per-user named credential types: confirm in current Help before an identity-architecture interview."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Named credential",
+      "telugu": "పాస్‌పోర్ట్ + గమ్యం: URL మరియు auth కోడ్ బయట."
+    },
+    {
+      "english": "HttpCalloutMock",
+      "telugu": "టెస్ట్ డమ్మీ లోడింగ్ డాక్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Callouts are HTTP/SOAP from Apex. Use a named credential and callout:Name so secrets stay out of code. 100 callouts and 120 seconds cumulative per transaction. Do not callout after uncommitted DML; use Queueable after commit. Tests use HttpCalloutMock.",
+    "two_minutes": "I refuse passwords in custom metadata used as a hiding place if a named credential fits. I sequence callout-before-DML or DML-commit-then-Queueable. I set request timeouts consciously and still respect the 120 s cumulative cap. Retries are idempotent Queueable delays, not a for-loop of Http.send. I implement HttpCalloutMock and Test.setMock. I cite Execution Governors and Limits, not a blog's 10-callout myth."
+  },
+  "terminology": [
+    {
+      "term": "callout",
+      "plain": "Apex calling an external HTTP or SOAP service.",
+      "precise": "Http.send or generated SOAP from a WSDL. Requires remote site or named credential.",
+      "example": "HttpRequest GET to callout:LAB_Allocator/status/123",
+      "non_example": "A platform event publish is not an HTTP callout.",
+      "confusable_neighbor": "Inbound REST Apex: the inverse direction.",
+      "boundary": "100 per transaction; 120 s cumulative."
+    },
+    {
+      "term": "named credential",
+      "plain": "Stored endpoint plus authentication.",
+      "precise": "Setup definition; Apex uses callout:Name/path; Salesforce injects auth; remote site not required for that URL.",
+      "example": "callout:LAB_Allocator/v1/allocate",
+      "non_example": "String password in an Apex constant.",
+      "confusable_neighbor": "Remote site setting: allowlist only, no auth vault.",
+      "boundary": "Same name, different URL per org for packaging."
+    },
+    {
+      "term": "authentication",
+      "plain": "Proving the call is allowed to the external system.",
+      "precise": "Managed by the named/external credential (OAuth, named principal, etc.). Apex should not assemble Bearer tokens from secrets in source.",
+      "example": "External credential OAuth 2.0 client credentials for LAB_Allocator.",
+      "non_example": "Checking a Salesforce profile (that is org authorization, APEX-015).",
+      "confusable_neighbor": "Remote site: network allow, not OAuth.",
+      "boundary": "Reverify protocol options in current Help."
+    },
+    {
+      "term": "timeout",
+      "plain": "How long this request may wait.",
+      "precise": "HttpRequest supports read/connection timeouts; all callouts in the transaction share a 120-second cumulative governor.",
+      "example": "req.setTimeout(20000) still counts toward 120 s total.",
+      "non_example": "Batch QueryLocator wait.",
+      "confusable_neighbor": "Lock wait 10 s (APEX-010) is not a callout timeout.",
+      "boundary": "Do not invent the default if unset—read HTTP Classes."
+    },
+    {
+      "term": "retry",
+      "plain": "Trying the external call again after a transient failure.",
+      "precise": "Not automatic on Http.send. Use Queueable delay and idempotency. Halt on 4xx poison messages.",
+      "example": "Re-enqueue LAB_AllocQueueable with delay 5 after HTTP 503.",
+      "non_example": "for-loop of 100 Http.send in a trigger.",
+      "confusable_neighbor": "Daily async: retries consume Queueable executions.",
+      "boundary": "Without idempotency keys you may double-charge."
+    },
+    {
+      "term": "mocking",
+      "plain": "Replacing the network in tests.",
+      "precise": "HttpCalloutMock + Test.setMock so assertions do not need the allocator to be up.",
+      "example": "Mock returns 200 and a LAB_ JSON body.",
+      "non_example": "SeeAllData=true to 'use prod credentials'.",
+      "confusable_neighbor": "StaticResourceCalloutMock: neighboring helper.",
+      "boundary": "APEX-016 owns startTest; this lesson owns the mock."
+    },
+    {
+      "term": "Remote Site Settings",
+      "plain": "Allowlist for raw URLs.",
+      "precise": "Required when the callout does not use a named credential. Unauthorized addresses fail.",
+      "example": "Legacy endpoint still on a remote site.",
+      "non_example": "Named credential URL (skips this).",
+      "confusable_neighbor": "CSP trusted sites for LWC are not Apex callouts.",
+      "boundary": "Prefer named credentials for new work."
+    },
+    {
+      "term": "uncommitted work",
+      "plain": "DML not yet committed when you try to callout.",
+      "precise": "The platform blocks callout-after-DML in the same transaction. Split with async or reorder.",
+      "example": "Trigger insert then Http.send → error.",
+      "non_example": "Callout then insert (often legal).",
+      "confusable_neighbor": "Publish Immediately is not a callout.",
+      "boundary": "FOR UPDATE locks also drop on callout."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Put URL and auth in a named credential",
+      "actor": "Admin + developer",
+      "trigger": "New integration",
+      "before": "Password in Apex",
+      "after": "callout:LAB_Name/path in HttpRequest.setEndpoint",
+      "observe": "Retrieve named credential metadata; no secret in git",
+      "failure": "Hardcoding the token 'temporarily'"
+    },
+    {
+      "step": 2,
+      "transition": "Sequence DML and callout",
+      "actor": "Developer",
+      "trigger": "Trigger or service does both",
+      "before": "Uncommitted work risk",
+      "after": "Callout then DML, or DML commit then Queueable callout",
+      "observe": "No uncommitted-work exception; no FOR_UPDATE_LOCKS_RELEASE before stock DML",
+      "failure": "Http.send in the after trigger after insert"
+    },
+    {
+      "step": 3,
+      "transition": "Set timeouts and honor 100 / 120 s",
+      "actor": "Developer",
+      "trigger": "HttpRequest built",
+      "before": "Default unknown",
+      "after": "setTimeout chosen; batch callouts or async if volume is high",
+      "observe": "Limits.getCallouts stays within 100",
+      "failure": "Loop of Http.send over Trigger.new"
+    },
+    {
+      "step": 4,
+      "transition": "Mock in tests; retry with delay",
+      "actor": "Developer",
+      "trigger": "Writing tests / handling 503",
+      "before": "Live network in CI",
+      "after": "HttpCalloutMock; Queueable delay for retries",
+      "observe": "Tests pass offline; 503 does not tight-loop",
+      "failure": "Test hitting the real allocator"
+    }
+  ],
+  "when_to_use": [
+    "When Apex must HTTP or SOAP to an external system: use a callout with a named credential, not a password in source.",
+    "When the endpoint or authentication differs by org: same named credential name, different URL.",
+    "When DML already happened: move the callout to Queueable after commit (timeouts and retries live there).",
+    "When writing tests: HttpCalloutMock mocking, never a live allocator dependency.",
+    "When the external API is rate-limited: Queueable delay rather than a tight retry loop that burns 100 callouts.",
+    "When you must cite 100 callouts and 120 seconds cumulative from Execution Governors and Limits."
+  ],
+  "when_not_to_use": [
+    "Do not use a synchronous trigger callout after DML; that trips uncommitted work and can release FOR UPDATE locks.",
+    "Do not use Remote Site Settings plus hardcoded OAuth as the default when a named credential fits.",
+    "Do not retry non-idempotent POSTs in a for-loop of Http.send.",
+    "Do not skip mocking because 'the sandbox can reach QA.'",
+    "Do not invent a 10-callout myth; the governors page says 100.",
+    "Do not put callouts in Schedulable.execute expecting async CPU—scheduled jobs use sync limits (APEX-011)."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Named Credentials / External Credentials.",
+    "Setup → Remote Site Settings only for legacy raw URLs.",
+    "Apex: Http, HttpRequest.setEndpoint('callout:LAB_Allocator/...'), Queueable with callouts.",
+    "Test class: Test.setMock(HttpCalloutMock.class, new LAB_AllocMock())."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox LAB_Order__c submit must reserve stock in an external allocator. Tests must pass offline. No production secrets.",
+    "inputs": [
+      "Named credential LAB_Allocator",
+      "After-insert trigger currently DML then Http.send",
+      "Password in a constant",
+      "No mock"
+    ],
+    "decisions": [
+      {
+        "decision": "Create named credential LAB_Allocator; Apex uses callout:LAB_Allocator/v1/reserve.",
+        "because": "Named Credentials topic: URL + auth outside Apex; skip remote site.",
+        "rejected": "Password constant plus remote site."
+      },
+      {
+        "decision": "Move Http.send to LAB_AllocQueueable after commit.",
+        "because": "Avoids uncommitted work and lock release; Queueable can delay on 503.",
+        "rejected": "Http.send in the after trigger."
+      },
+      {
+        "decision": "LAB_AllocMock implements HttpCalloutMock; tests call Test.setMock.",
+        "because": "Tests must not require the live allocator.",
+        "rejected": "SeeAllData and a real QA URL."
+      }
+    ],
+    "configuration_or_code": [
+      "req.setEndpoint('callout:LAB_Allocator/v1/reserve'); req.setMethod('POST'); req.setTimeout(20000);",
+      "System.enqueueJob(new LAB_AllocQueueable(orderId)); after successful DML.",
+      "Test.setMock(HttpCalloutMock.class, new LAB_AllocMock()); then Test.startTest/stopTest."
+    ],
+    "output": "Trigger has no Http.send. Tests pass with the mock 200. A 503 path enqueues a delayed retry once, then halts.",
+    "verification": [
+      "No secret strings in the class file.",
+      "Test runs with the network disabled conceptually (mock only).",
+      "Forced DML exception: no Queueable (APEX-010/011)."
+    ],
+    "self_explanation": "Passport on file, courier after the vault door closes, dummy dock in tests."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; named credential to a harmless example host or unused URL; mock in tests.",
+    "starting_state_checks": [
+      "You can create named credentials",
+      "No production passwords"
+    ],
+    "steps": [
+      "Create named credential LAB_Allocator (even if the URL is fake).",
+      "Write LAB_AllocService that builds HttpRequest to callout:LAB_Allocator/v1/reserve.",
+      "Write LAB_AllocMock and a test that setMocks and asserts the service maps 200 vs 500.",
+      "Enqueue the service from a Queueable, not from a DML trigger body."
+    ],
+    "guided_completion": [
+      "If the test fails without the network, the mock is not registered.",
+      "If you still have a password in Apex, delete it."
+    ],
+    "independent_challenge": "Add a 503 branch that enqueues one delayed Queueable and refuses a second retry.",
+    "evidence": [
+      "Test class using Test.setMock",
+      "Endpoint string starts with callout:"
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ named credential and classes"
+    ],
+    "limitations": "Does not prove OAuth handshake or production IP allowlists."
+  },
+  "decision_table": [
+    {
+      "signal": "Apex must call an external HTTP API with OAuth.",
+      "choose": "Named credential + callout:Name/path.",
+      "not": "Password in an Apex constant or custom label.",
+      "why": "Named Credentials: Salesforce manages auth; code stays clean."
+    },
+    {
+      "signal": "After-insert trigger already performed DML and now needs a callout.",
+      "choose": "Queueable (AllowsCallouts) after commit.",
+      "not": "Http.send in the trigger.",
+      "why": "Uncommitted work pending; also releases FOR UPDATE locks."
+    },
+    {
+      "signal": "CI tests must not depend on the vendor being up.",
+      "choose": "HttpCalloutMock and Test.setMock.",
+      "not": "SeeAllData plus the QA URL.",
+      "why": "Mocking is the official test seam for HTTP."
+    },
+    {
+      "signal": "Vendor returns 503 occasionally; POST is idempotent with a key.",
+      "choose": "One Queueable retry with delay; then halt.",
+      "not": "for-loop Http.send until 100 callouts.",
+      "why": "Retries consume callouts and daily async; delay is documented on Queueable."
+    },
+    {
+      "signal": "You need SOAP from a WSDL rather than raw HTTP.",
+      "choose": "Generated SOAP class + named credential/remote site as required.",
+      "not": "Hand-built XML in a trigger loop.",
+      "why": "Callouts intro: SOAP/WSDL is a first-class path."
+    },
+    {
+      "signal": "Someone quotes a 10-callout governor.",
+      "choose": "Open Execution Governors and Limits: 100 callouts, 120 s cumulative.",
+      "not": "Accept the myth.",
+      "why": "Cite the Summer '26 table, do not invent."
+    }
+  ],
+  "limitations": [
+    "Does not configure every OAuth flow click-by-click.",
+    "Does not replace event-driven fan-out (APEX-012).",
+    "Default per-request timeout if unset is not invented here.",
+    "Continuation pattern is neighboring."
+  ],
+  "security_notes": [
+    "Never commit client secrets in Apex or git.",
+    "Named credentials are still secrets in Setup—limit who can view them.",
+    "Log status codes, not Authorization headers."
+  ],
+  "common_mistakes": [
+    "Http.send after insert in the same transaction.",
+    "Hardcoded bearer tokens.",
+    "Tests that fail when the vendor is down.",
+    "Retry storms without idempotency.",
+    "Inventing a 10-callout limit."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Unauthorized endpoint / callout not allowed.",
+      "check": [
+        "Named credential name misspelled",
+        "Remote site missing for raw URL"
+      ],
+      "do_not_assume": "The token is wrong."
+    },
+    {
+      "symptom": "You have uncommitted work pending.",
+      "check": [
+        "DML before Http.send",
+        "Move to Queueable"
+      ],
+      "do_not_assume": "setTimeout fixes sequencing."
+    },
+    {
+      "symptom": "Test fails with a callout exception.",
+      "check": [
+        "Test.setMock registered before the code under test",
+        "startTest/stopTest around async"
+      ],
+      "do_not_assume": "The named credential must exist in the test org for a mocked callout—Needs verification per current mock rules."
+    },
+    {
+      "symptom": "Callout timeouts.",
+      "check": [
+        "Cumulative 120 s",
+        "Per-request setTimeout",
+        "Vendor slowness"
+      ],
+      "do_not_assume": "CPU 10,000 ms is the callout clock."
+    }
+  ],
+  "production_notes": [
+    "Rotate external credentials with the vendor, not by editing Apex.",
+    "Monitor 4xx/5xx on LAB_ logs without storing payloads that include PII.",
+    "No production named credential is created by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "If a callout uses a named credential, remote site settings for that site are:",
+      "options": {
+        "A": "Not required for the site defined in the named credential",
+        "B": "Still mandatory in every case",
+        "C": "Replaced by FOR UPDATE",
+        "D": "Only for Batch Apex"
+      },
+      "answer": "A",
+      "rationale": "Callouts intro and Named Credentials: skip remote site for that site.",
+      "distractor_explanations": {
+        "B": "True only for raw URLs.",
+        "C": "Unrelated.",
+        "D": "Not batch-specific."
+      },
+      "concept": "NC skips remote site",
+      "citation_ids": [
+        "SF-APEX-CALLOUT",
+        "SF-APEX-NC"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Named credential URL scheme in Apex?",
+      "options": {
+        "A": "callout:My_Named_Credential/optional/path",
+        "B": "https://only-hardcoded",
+        "C": "soql:Name",
+        "D": "event:Name"
+      },
+      "answer": "A",
+      "rationale": "Named Credentials topic examples.",
+      "distractor_explanations": {
+        "B": "That is the anti-pattern.",
+        "C": "Not a scheme.",
+        "D": "Not HTTP."
+      },
+      "concept": "callout: scheme",
+      "citation_ids": [
+        "SF-APEX-NC"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Maximum callouts per Apex transaction?",
+      "options": {
+        "A": "100",
+        "B": "10",
+        "C": "50",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "Governors table: 100 sync and async.",
+      "distractor_explanations": {
+        "B": "10 is sendEmail, not callouts.",
+        "C": "50 is enqueueJob.",
+        "D": "There is a cap."
+      },
+      "concept": "100 callouts",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Maximum cumulative callout timeout per transaction?",
+      "options": {
+        "A": "120 seconds",
+        "B": "10 seconds",
+        "C": "10 minutes only",
+        "D": "24 hours"
+      },
+      "answer": "A",
+      "rationale": "Governors: 120 seconds cumulative.",
+      "distractor_explanations": {
+        "B": "10 s is FOR UPDATE wait.",
+        "C": "10 minutes is max transaction time, not the callout cumulative row.",
+        "D": "Not daily."
+      },
+      "concept": "120 seconds",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Insert then Http.send in the same trigger transaction typically fails because:",
+      "options": {
+        "A": "Callouts are not allowed after uncommitted DML",
+        "B": "Named credentials forbid POST",
+        "C": "You exceeded 250,000 callouts",
+        "D": "Triggers cannot enqueue Queueable"
+      },
+      "answer": "A",
+      "rationale": "Uncommitted work pending is the sequencing rule taught with callouts.",
+      "distractor_explanations": {
+        "B": "POST is allowed.",
+        "C": "Daily async is not a callout count.",
+        "D": "Triggers can enqueue on the success path."
+      },
+      "concept": "Uncommitted work",
+      "citation_ids": [
+        "SF-APEX-CALLOUT"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Best host for a post-commit HTTP callout with sObject state?",
+      "options": {
+        "A": "Queueable with callouts allowed",
+        "B": "Schedulable.execute heavy loop",
+        "C": "@future passing the sObject",
+        "D": "Before-save Flow HTTP"
+      },
+      "answer": "A",
+      "rationale": "Queueable recommended; future cannot take sObjects.",
+      "distractor_explanations": {
+        "B": "Scheduled uses sync limits.",
+        "C": "Illegal signature.",
+        "D": "Not this lesson's default."
+      },
+      "concept": "Queueable callout",
+      "citation_ids": [
+        "SF-APEX-QUEUEABLE"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "How should tests supply an HTTP response?",
+      "options": {
+        "A": "HttpCalloutMock and Test.setMock",
+        "B": "Always call the production URL",
+        "C": "SeeAllData=true",
+        "D": "System.schedule the test"
+      },
+      "answer": "A",
+      "rationale": "Official HTTP testing seam.",
+      "distractor_explanations": {
+        "B": "Network-dependent tests are brittle and unsafe.",
+        "C": "SeeAllData is APEX-016 anti-pattern.",
+        "D": "Wrong tool."
+      },
+      "concept": "Mocking",
+      "citation_ids": [
+        "SF-APEX-HTTP"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why named credentials help packaging across orgs?",
+      "options": {
+        "A": "Same name, different URL per org; Apex keeps callout:Name",
+        "B": "They delete Remote Site Settings org-wide",
+        "C": "They raise callouts to unlimited",
+        "D": "They replace Queueable"
+      },
+      "answer": "A",
+      "rationale": "Named Credentials packaging paragraph.",
+      "distractor_explanations": {
+        "B": "They skip remote site for that URL, not delete the feature.",
+        "C": "Governors remain 100.",
+        "D": "Different feature."
+      },
+      "concept": "Packaging NC",
+      "citation_ids": [
+        "SF-APEX-NC"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Vendor is rate-limited. Official Queueable tool?",
+      "options": {
+        "A": "enqueueJob with a delay (0–10 minutes) and a halt",
+        "B": "50 futures from a loop",
+        "C": "FOR UPDATE the named credential",
+        "D": "Publish Immediately 150 times"
+      },
+      "answer": "A",
+      "rationale": "Queueable page: delay for rate-limited externals; implement a fail-safe.",
+      "distractor_explanations": {
+        "B": "Burns daily async.",
+        "C": "Nonsense.",
+        "D": "Events are not retries."
+      },
+      "concept": "Retry delay",
+      "citation_ids": [
+        "SF-APEX-QUEUEABLE"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Http class trio?",
+      "options": {
+        "A": "Http, HttpRequest, HttpResponse",
+        "B": "PageReference only",
+        "C": "Database.Batchable only",
+        "D": "CronTrigger only"
+      },
+      "answer": "A",
+      "rationale": "HTTP Classes topic.",
+      "distractor_explanations": {
+        "B": "Visualforce.",
+        "C": "Batch.",
+        "D": "Scheduler."
+      },
+      "concept": "HTTP classes",
+      "citation_ids": [
+        "SF-APEX-HTTP"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Callout while a FOR UPDATE lock is held?",
+      "options": {
+        "A": "The callout releases FOR UPDATE locks",
+        "B": "The lock extends to 10 minutes",
+        "C": "Named credentials prevent release",
+        "D": "Callouts become DML"
+      },
+      "answer": "A",
+      "rationale": "Locking Statements (APEX-010) plus this sequencing lesson.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Auth does not keep locks.",
+        "D": "False."
+      },
+      "concept": "Callout releases lock",
+      "citation_ids": [
+        "SF-APEX-CALLOUT"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Password in Apex 'for now' plus a remote site. What do you change first?",
+      "options": {
+        "A": "Named credential for URL and authentication; remove the secret from code",
+        "B": "Increase callouts to 10,000 in Setup",
+        "C": "Switch to SOSL",
+        "D": "Disable tests"
+      },
+      "answer": "A",
+      "rationale": "Named credentials exist so Apex does not hold auth parameters.",
+      "distractor_explanations": {
+        "B": "No such Setup toggle.",
+        "C": "Wrong tool.",
+        "D": "Tests must mock, not disappear."
+      },
+      "concept": "Secrets out of Apex",
+      "citation_ids": [
+        "SF-APEX-NC"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "def",
+      "front": "What is an Apex callout?",
+      "back": "HTTP or SOAP request from Apex to an external service."
+    },
+    {
+      "id": "F2",
+      "category": "nc",
+      "front": "Named credential in one sentence?",
+      "back": "Stores endpoint URL and auth so Apex can use callout:Name/path without secrets."
+    },
+    {
+      "id": "F3",
+      "category": "nc",
+      "front": "Remote site needed with a named credential?",
+      "back": "Not for the site defined on that named credential."
+    },
+    {
+      "id": "F4",
+      "category": "gov",
+      "front": "Callouts per transaction?",
+      "back": "100 (Execution Governors and Limits)."
+    },
+    {
+      "id": "F5",
+      "category": "gov",
+      "front": "Cumulative callout time?",
+      "back": "120 seconds per transaction."
+    },
+    {
+      "id": "F6",
+      "category": "seq",
+      "front": "DML then callout in one transaction?",
+      "back": "Blocked: uncommitted work pending. Use async or reorder."
+    },
+    {
+      "id": "F7",
+      "category": "seq",
+      "front": "Callout vs FOR UPDATE?",
+      "back": "Callouts release FOR UPDATE locks."
+    },
+    {
+      "id": "F8",
+      "category": "async",
+      "front": "Preferred async host for callouts with sObjects?",
+      "back": "Queueable with callouts allowed; future cannot take sObjects."
+    },
+    {
+      "id": "F9",
+      "category": "retry",
+      "front": "Platform auto-retry Http.send?",
+      "back": "No. You design Queueable delay + idempotency + halt."
+    },
+    {
+      "id": "F10",
+      "category": "mock",
+      "front": "Test seam for HTTP?",
+      "back": "HttpCalloutMock and Test.setMock."
+    },
+    {
+      "id": "F11",
+      "category": "auth",
+      "front": "Where should OAuth live?",
+      "back": "Named/external credential, not Apex source."
+    },
+    {
+      "id": "F12",
+      "category": "pack",
+      "front": "Same NC name, different URL?",
+      "back": "Yes—supports packaging one callout definition across orgs."
+    },
+    {
+      "id": "F13",
+      "category": "http",
+      "front": "Classes for REST callouts?",
+      "back": "Http, HttpRequest, HttpResponse."
+    },
+    {
+      "id": "F14",
+      "category": "timeout",
+      "front": "setTimeout vs 120 s?",
+      "back": "Per-request timeout still counts toward the 120-second cumulative governor."
+    },
+    {
+      "id": "F15",
+      "category": "inverse",
+      "front": "Callout vs Apex web service?",
+      "back": "Callout is Apex calling out; web service is the outside calling in."
+    },
+    {
+      "id": "F16",
+      "category": "myth",
+      "front": "Is the callout cap 10?",
+      "back": "No. The governors page lists 100. Ten is sendEmail."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you authenticate an Apex callout in 2026?",
+      "answer_30_seconds": "Named credential plus external credential. Apex only uses callout:Name/path. Salesforce injects authentication. I do not put passwords in classes.",
+      "answer_2_minutes": "I contrast remote-site-plus-header hacks. I mention packaging: same name, different URL per org. I still enforce HTTPS and least-privilege named principals. I will reverify the exact OAuth click-path in Help rather than inventing Setup labels.",
+      "example": "LAB_Allocator named credential; req.setEndpoint('callout:LAB_Allocator/v1/reserve').",
+      "tradeoffs": [
+        "Named principal vs per-user",
+        "Remote site legacy vs NC"
+      ],
+      "follow_ups": [
+        "What is an external credential?",
+        "Can you merge fields in headers?"
+      ],
+      "weak_answer_warnings": [
+        "Pasting a bearer token into Apex"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What official callout limits do you cite?",
+      "answer_30_seconds": "100 callouts and 120 seconds cumulative per transaction from Execution Governors and Limits. I will not quote a 10-callout myth.",
+      "answer_2_minutes": "I add that CPU/heap still apply and scheduled Apex uses sync limits. I setTimeout on the request but know it still counts toward 120 s. High volume goes to Queueable/Batch, not a trigger loop. I reverify the table for the class API version.",
+      "example": "A trigger looping Http.send over 200 orders blows 100 quickly.",
+      "tradeoffs": [
+        "Per-transaction vs daily async",
+        "Timeout vs CPU"
+      ],
+      "follow_ups": [
+        "What is Limits.getCallouts?",
+        "Default timeout if unset?"
+      ],
+      "weak_answer_warnings": [
+        "Saying 10 callouts",
+        "Confusing 120 s with 10-minute transaction time"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Trigger inserts an order then callouts. It fails. Why?",
+      "answer_30_seconds": "Uncommitted work pending: no callout after uncommitted DML. Also, a FOR UPDATE before the callout would already be released.",
+      "answer_2_minutes": "I move the callout to Queueable after commit, or callout-then-DML if the vendor reservation must precede the insert. I add a mock test for both success and 500. I do not catch the exception and retry Http.send in the trigger.",
+      "example": "LAB_Order after-insert Http.send to allocator → uncommitted work error.",
+      "tradeoffs": [
+        "Callout-first vs DML-first",
+        "Queueable vs future(callout=true)"
+      ],
+      "follow_ups": [
+        "Does Database.insert(allOrNone=false) change this?",
+        "What about publish-immediately events?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming named credentials for sequencing"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "How do you test the allocator callout?",
+      "answer_30_seconds": "HttpCalloutMock returns canned 200/500 bodies. Test.setMock before invoking the service. startTest/stopTest if the service is Queueable. No live URL.",
+      "answer_2_minutes": "I assert status mapping and that a 500 writes a LAB_ error, not that the vendor is up. I never SeeAllData to steal a production named credential. APEX-016 owns isolation; this lesson owns the mock interface.",
+      "example": "LAB_AllocMock.getResponse returns 200 with {\"ok\":true}.",
+      "tradeoffs": [
+        "One mock vs several status cases",
+        "Static resource mock vs inner class"
+      ],
+      "follow_ups": [
+        "Can tests do real callouts at all?",
+        "What exception if mock is missing?"
+      ],
+      "weak_answer_warnings": [
+        "Hitting QA from a unit test"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "How do you retry a failed callout without a storm?",
+      "answer_30_seconds": "Queueable delay, idempotency key, halt after N attempts. I do not for-loop Http.send up to 100. 4xx poison messages stop; 503 may retry once.",
+      "answer_2_minutes": "The Queueable page warns that delay 0 plus chaining burns daily async. I store a LAB_Attempt__c count. I never retry a non-idempotent charge POST without the vendor's idempotency header. Timeouts still count toward 120 s in each transaction, but each Queueable is a new transaction.",
+      "example": "LAB_AllocQueueable on 503 enqueues itself with delay 5 minutes if attempts < 2.",
+      "tradeoffs": [
+        "Retry vs poison",
+        "Delay vs tight loop"
+      ],
+      "follow_ups": [
+        "What delay range is documented?",
+        "Does rollback cancel the retry job?"
+      ],
+      "weak_answer_warnings": [
+        "while(true) Http.send"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Unauthorized endpoint in a sandbox. Walk it.",
+      "answer_30_seconds": "Check the named credential name in setEndpoint, then remote site if it is a raw URL. Do not rotate passwords first.",
+      "answer_2_minutes": "I compare callout:LAB_Allocator versus a typo. I confirm the named credential exists in this org. For packaged code I expect the name to match and the URL to differ. I look at debug for the exact host. I still do not log the Authorization header.",
+      "example": "req.setEndpoint('callout:LAB_Allocater/v1') misspells the credential.",
+      "tradeoffs": [
+        "Name typo vs expired OAuth",
+        "Remote site vs NC"
+      ],
+      "follow_ups": [
+        "How do you test without the NC?",
+        "Merge fields in the path?"
+      ],
+      "weak_answer_warnings": [
+        "Pasting the token into the request to 'just see'"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "Callout plus FOR UPDATE in one design. What is the safe sequence?",
+      "answer_30_seconds": "Do not lock then callout. Callouts release FOR UPDATE locks. Lock, DML, commit, then Queueable callout—or callout first if the vendor must reserve before Salesforce DML.",
+      "answer_2_minutes": "I connect APEX-010 and this topic. I show FOR_UPDATE_LOCKS_RELEASE in a debug log as evidence. I refuse Http.send in the critical section. If the vendor needs the Salesforce Id, I must DML first, which forces async callout.",
+      "example": "Inventory FOR UPDATE, decrement, update, enqueue LAB_AllocQueueable.",
+      "tradeoffs": [
+        "Vendor-first vs Salesforce-first",
+        "Lock duration vs user latency"
+      ],
+      "follow_ups": [
+        "Does AllowsCallouts change lock release?",
+        "Can you callout in before trigger?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming named credentials keep the lock"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "When is a callout the wrong tool?",
+      "answer_30_seconds": "When a platform event or CDC already fans out to the ERP, or when before-save Flow can stay in-org. Callouts are for request/response to a system that is not on the event bus.",
+      "answer_2_minutes": "I will not Http.send from a 200-row trigger. I will not use callouts as a database. I mention 100/120 s and daily async if we Queueable every row. Sometimes inbound REST (the inverse) is the better contract. I do not invent timeout numbers beyond the governors table.",
+      "example": "ERP already subscribed to LAB_Shipment__ChangeEvent: no per-row callout from the writer.",
+      "tradeoffs": [
+        "Callout vs event bus",
+        "Sync UX vs async Queueable"
+      ],
+      "follow_ups": [
+        "What about Continuations?",
+        "Named credential to Salesforce APIs?"
+      ],
+      "weak_answer_warnings": [
+        "Callout for every field update"
+      ]
+    }
+  ]
+}

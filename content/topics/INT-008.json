@@ -1,0 +1,1006 @@
+{
+  "topic_id": "INT-008",
+  "slug": "outbound-messages-webhooks-polling-retries-idempotency-",
+  "title": "Outbound messages, webhooks, polling, retries, idempotency, and dead-letter handling",
+  "track": "Integration and APIs",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "INT-007"
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer official Help and Developer Guides over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "objectives": [
+    "Place outbound messages, webhooks, and polling on the INT-003 style map (fire-and-forget vs request/response vs scheduled pull).",
+    "Design retries with backoff and a dead-letter path after poison messages.",
+    "Require idempotency keys so at-least-once delivery does not double-apply.",
+    "Prefer named-credential REST or events over new SOAP outbound-message designs unless the endpoint already demands OM."
+  ],
+  "diagnostic_question": "A SOAP listener missed a message, a webhook was delivered twice, and a poller hammered Limits. What do retries, idempotency, and dead-letter handling each do—and when is outbound messaging the wrong push?",
+  "definition": "Fire-and-forget integrations still fail. Salesforce outbound messaging delivers a SOAP notification to an endpoint with platform retries. Webhooks are HTTP callbacks (often implemented with named-credential callouts or middleware). Polling pulls on a schedule. Retries repeat failed deliveries; idempotency makes duplicates safe; a dead-letter path isolates poison messages. ([Integration Patterns Fire and Forget](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns); [Apex named callouts](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts_named_credentials.htm))",
+  "why_it_matters": "At-least-once delivery without idempotency double-charges. Infinite retries without a dead letter melt APIs (INT-005). Interviewers want the trio: retry, idempotent, dead-letter.",
+  "sixty_second_explanation": "Think of certified mail. Outbound messaging is a postal SOAP truck with built-in retries. A webhook is a courier knocking on an HTTP door. Polling is you visiting the post office on a schedule. Retries send the truck again. Idempotency is a tracking number so two trucks do not cash the same check. The dead-letter office holds parcels that fail until a human opens them—not an infinite retry loop.",
+  "deeper_explanation": [
+    "Official Fire and Forget: Salesforce does not wait for remote completion. Outbound messaging is a classic declarative SOAP implementation of that style. New work often uses platform events (INT-007) or named-credential HTTP (INT-006). Workflow-rule retirement dates are org-policy—Needs verification; prefer Flow-triggered OM if OM is required.",
+    "Retries: transient 5xx/timeout vs permanent 4xx. Tight loops on 403 REQUEST_LIMIT_EXCEEDED (INT-005) are harmful. Exponential backoff is a practice; exact Salesforce OM retry schedule is in Help—do not invent hours here.",
+    "Idempotency: process the same delivery key once. Store Salesforce Id plus a change stamp or event id (INT-007). At-least-once is the usual contract; exactly-once is a myth unless you build idempotency.",
+    "Dead-letter: after N failures, stop automated retry, alert, keep payload for replay. Without it, poison JSON (INT-005 400) retries forever."
+  ],
+  "mental_model": {
+    "analogy": "Certified mail: SOAP truck (outbound message), HTTP knock (webhook), visiting the desk (polling), extra trucks (retries), tracking numbers (idempotency), dead-letter office (poison parcels).",
+    "useful_mapping": [
+      "outbound message → SOAP certified truck from Salesforce",
+      "webhook → HTTP knock you implement",
+      "polling → scheduled visit to their desk",
+      "retry → send the truck again for transient faults",
+      "idempotency key → tracking number",
+      "dead letter → held parcel + alert, not infinite trucks",
+      "named credential callout → prepaid envelope from INT-006",
+      "platform event → radio DVR from INT-007"
+    ],
+    "where_it_breaks": [
+      "OM retry schedule is documented in Help, not this analogy's 'three days'.",
+      "Webhooks are not a Salesforce product name; they are an HTTP pattern.",
+      "Polling burns API limits if naive.",
+      "Dead-letter is a design, not a Setup checkbox unless a product provides one."
+    ]
+  },
+  "teach_back_prompt": "Contrast outbound messages, webhooks, and polling, then add retries, idempotency, and dead-letter handling to a double-delivery story.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Define the six title terms."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "When OM vs events vs callout."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Idempotency key choice."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Poison 400 vs 503 retry."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: at-least-once."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-INT-PATTERNS",
+      "title": "Integration Patterns (Fire and Forget)",
+      "type": "Official architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns",
+      "supports": "Fire and Forget: do not wait for remote completion; acknowledgment then continue.",
+      "release_or_version": "Architects Fundamentals",
+      "last_verified": "2026-08-16",
+      "limits": "Does not specify OM retry hours."
+    },
+    {
+      "source_id": "SF-OM-HELP",
+      "title": "Outbound Messages (Salesforce Help)",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.workflow_om_considerations.htm",
+      "supports": "Declarative SOAP outbound notifications and considerations—reopen if the article ID redirects.",
+      "release_or_version": "Salesforce Help",
+      "last_verified": "2026-08-16",
+      "limits": "Retry timing and Flow vs workflow: reverify current Help."
+    },
+    {
+      "source_id": "SF-APEX-NC",
+      "title": "Named Credentials as Callout Endpoints",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts_named_credentials.htm",
+      "supports": "HTTP callouts as the usual webhook-style implementation from Apex.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Not a webhook product."
+    },
+    {
+      "source_id": "SF-PUBSUB-DUR",
+      "title": "Event Message Durability",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/pub-sub-api/guide/event-message-durability.html",
+      "supports": "At-least-once style resume via Replay ID; duplicates possible—needs idempotency.",
+      "release_or_version": "Pub/Sub API",
+      "last_verified": "2026-08-16",
+      "limits": "Not OM SOAP."
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "OM SOAP",
+        "HTTP webhook",
+        "Polling",
+        "Retry vs dead letter",
+        "Idempotency key"
+      ],
+      "accessible_description": "Three delivery styles plus retry, idempotency, and dead-letter handling."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-INT-PATTERNS",
+        "SF-OM-HELP",
+        "SF-APEX-NC"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Push, poll, retry, and dead letter"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  SF[Salesforce] --> OM[Outbound message SOAP]\n  SF --> WH[HTTP webhook callout]\n  SF --> EV[Platform event INT-007]\n  Client[Client] --> Poll[Polling pull]\n  OM --> Rtry[Retries]\n  WH --> Rtry\n  Rtry --> Idem[Idempotency key]\n  Rtry --> DLQ[Dead letter after N]",
+      "decision": "flowchart TD\n  Need[Need notify or pull] --> Q1{They can host SOAP OM?}\n  Q1 -->|Legacy yes| OM[Outbound message]\n  Q1 -->|HTTP JSON| WH[Webhook via named credential or middleware]\n  Need --> Q2{We must pull?}\n  Q2 -->|Yes| Poll[Polling with Limits-aware schedule]\n  Fail[Delivery fails] --> Q3{Transient?}\n  Q3 -->|Yes| Retry[Backoff retry]\n  Q3 -->|Poison 400| DLQ[Dead letter plus alert]\n  Any[Any duplicate] --> Idem[Idempotency store]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Fire and Forget does not wait for remote completion; outbound messaging is a SOAP notification style used for that pattern. HTTP callouts with named credentials are the usual JSON webhook-style implementation from Apex.",
+      "source_ids": [
+        "SF-INT-PATTERNS",
+        "SF-APEX-NC",
+        "SF-OM-HELP"
+      ],
+      "scope": "Push styles",
+      "validation": "Patterns plus callout plus OM Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Event replay can redeliver; subscribers must treat delivery as at-least-once and apply idempotency (store Replay ID / event id).",
+      "source_ids": [
+        "SF-PUBSUB-DUR"
+      ],
+      "scope": "Duplicates",
+      "validation": "Durability resume implies possible reprocessing.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "HTTP 403 REQUEST_LIMIT_EXCEEDED must not be tight-retried (INT-005). Poison 400 bodies need a dead-letter path rather than infinite retry.",
+      "source_ids": [
+        "SF-INT-PATTERNS"
+      ],
+      "scope": "Retry policy",
+      "validation": "Combined with REST error-codes lesson; patterns require error handling.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Polling is a client-initiated pull; it consumes API request allocations when pointed at Salesforce APIs.",
+      "source_ids": [
+        "SF-INT-PATTERNS"
+      ],
+      "scope": "Polling",
+      "validation": "Remote Call-In / API limits context in patterns document.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Confirm outbound-message trigger path (Flow vs retired workflow) in the target org for Summer '26—Needs verification.",
+  "unresolved_uncertainty": [
+    "Exact OM retry interval table.",
+    "Whether a given org still allows new workflow OM.",
+    "Webhook signature schemes are vendor-specific."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Idempotency",
+      "telugu": "ఒకే సందేశం రెండుసార్లు వచ్చినా ఒక్కసారే వర్తింపజేయడం."
+    },
+    {
+      "english": "Dead letter",
+      "telugu": "మళ్లీ ప్రయత్నించలేని పాయిజన్ సందేశాల హోల్డ్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "OM is SOAP push with platform retries. Webhooks are HTTP pushes you build. Polling pulls. Retries handle transients. Idempotency makes duplicates safe. Dead letters stop poison loops.",
+    "two_minutes": "I assume at-least-once. I pick a key (record Id + version or event id). Transient 503 backs off; 400 goes to dead letter; 403 limits do not hot-loop. New designs prefer events or named-credential HTTP unless the partner is already an OM SOAP listener. Workflow OM availability Needs verification; I would use Flow if OM is required."
+  },
+  "terminology": [
+    {
+      "term": "outbound message",
+      "plain": "Salesforce SOAP-notifies a URL you registered.",
+      "precise": "Declarative outbound messaging sends SOAP to an endpoint; platform retries. Confirm current Help for session, fields, and retry timing.",
+      "example": "Legacy ERP SOAP listener receiving Opportunity notifications.",
+      "non_example": "Apex JSON callout:LAB_Hook/notify.",
+      "confusable_neighbor": "Platform event (JSON/Avro bus, INT-007).",
+      "boundary": "Triggering automation (Flow vs workflow) Needs verification."
+    },
+    {
+      "term": "webhook",
+      "plain": "HTTP callback when something happens.",
+      "precise": "Not a single Salesforce product name. Usually Apex/middleware HTTP POST using named credentials (INT-006) or a partner's inbound URL.",
+      "example": "POST JSON to a billing endpoint on Closed Won.",
+      "non_example": "SOAP OM envelope.",
+      "confusable_neighbor": "Outbound message.",
+      "boundary": "Signature verification is vendor-specific—do not invent HMAC details."
+    },
+    {
+      "term": "polling",
+      "plain": "You ask on a schedule instead of being pushed.",
+      "precise": "Client-initiated pull (REST Query, Bulk, or remote GET). Burns limits if naive (INT-005).",
+      "example": "Every 15 minutes GET remote status when they cannot push.",
+      "non_example": "CDC subscribe (push/stream).",
+      "confusable_neighbor": "Scheduled Apex as the timer, not the pattern name.",
+      "boundary": "Backoff and windows matter."
+    },
+    {
+      "term": "retries",
+      "plain": "Send again after a transient failure.",
+      "precise": "Re-attempt delivery with backoff. Distinguish 5xx/timeout from 4xx poison and 403 limits.",
+      "example": "Retry 503 three times with backoff, then dead-letter.",
+      "non_example": "50 ms loop on REQUEST_LIMIT_EXCEEDED.",
+      "confusable_neighbor": "Event replay (INT-007) which is resume, not HTTP retry.",
+      "boundary": "OM retry table: Help, not invented hours."
+    },
+    {
+      "term": "idempotency",
+      "plain": "Two trucks with the same tracking number cash the check once.",
+      "precise": "Processing the same business key twice yields one effect. Store keys (Id, event id, Replay ID + event id).",
+      "example": "Upsert by External Id; ignore second Closed Won webhook with same Opportunity Id and LastModifiedDate.",
+      "non_example": "Insert a payment row on every HTTP retry.",
+      "confusable_neighbor": "Salesforce Id uniqueness ≠ your side effects are unique.",
+      "boundary": "Exactly-once delivery is not promised by the bus."
+    },
+    {
+      "term": "dead-letter handling",
+      "plain": "Hold poison parcels for humans, stop the infinite truck.",
+      "precise": "After N failures or on non-retryable errors, persist payload, alert, halt auto-retry.",
+      "example": "400 malformed JSON from INT-005 goes to LAB_DeadLetter__c plus email.",
+      "non_example": "Retry 400 forever.",
+      "confusable_neighbor": "Salesforce email bounce—different product.",
+      "boundary": "No single Setup checkbox unless a product provides a DLQ."
+    },
+    {
+      "term": "at-least-once",
+      "plain": "You might see the same mail twice; design for that.",
+      "precise": "Common contract for OM retries, HTTP retries, and event replay. Requires idempotency.",
+      "example": "Listener acknowledges after persist-with-key.",
+      "non_example": "Assuming SOAP OM is exactly-once.",
+      "confusable_neighbor": "Request/response 201 that the user waited for (still can double-click).",
+      "boundary": "Combine with INT-007 event id."
+    },
+    {
+      "term": "poison message",
+      "plain": "A parcel that will never succeed as-is.",
+      "precise": "Typically permanent 4xx / schema errors. Dead-letter, do not backoff-retry forever.",
+      "example": "Required field missing in JSON.",
+      "non_example": "Occasional 503.",
+      "confusable_neighbor": "401 expired token (fix INT-004, then retry)."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose push vs poll",
+      "actor": "Architect",
+      "trigger": "Need notify",
+      "before": "Default OM",
+      "after": "OM vs webhook vs event vs poll",
+      "observe": "Partner protocol written",
+      "failure": "New JSON API forced into SOAP OM"
+    },
+    {
+      "step": 2,
+      "transition": "Define idempotency key",
+      "actor": "Both sides",
+      "trigger": "At-least-once",
+      "before": "Insert always",
+      "after": "Key stored before side effects",
+      "observe": "Unique constraint",
+      "failure": "Double payments"
+    },
+    {
+      "step": 3,
+      "transition": "Classify errors",
+      "actor": "Developer",
+      "trigger": "Failures",
+      "before": "Retry all",
+      "after": "Transient vs poison vs limits",
+      "observe": "Status mapping table",
+      "failure": "Hot loop 403"
+    },
+    {
+      "step": 4,
+      "transition": "Dead-letter and alert",
+      "actor": "Ops",
+      "trigger": "N failures",
+      "before": "Silent drop or infinite retry",
+      "after": "Held payload + owner",
+      "observe": "Alert fired in sandbox test",
+      "failure": "Lost money events"
+    }
+  ],
+  "when_to_use": [
+    "When designing outbound messages, webhooks, polling, retries, idempotency, and dead-letter handling together.",
+    "When a partner already exposes a SOAP outbound-message listener and OM is the agreed push.",
+    "When HTTP webhooks or polling would otherwise double-apply or hot-loop limits.",
+    "When event replay (INT-007) makes duplicate processing likely.",
+    "When poison 400 responses must stop automated retries."
+  ],
+  "when_not_to_use": [
+    "Do not invent OM retry hours; read Help.",
+    "Do not use OM SOAP as the default for a new JSON API (prefer named-credential callout or events).",
+    "Do not poll Salesforce REST every second (INT-005 limits).",
+    "Do not skip idempotency because 'SOAP is reliable'.",
+    "Do not build production DLQs with real payments in this lesson."
+  ],
+  "configuration_or_code_location": [
+    "Sandbox Flow/OM if required",
+    "Apex webhook with callout:",
+    "LAB_DeadLetter__c optional",
+    "Subscriber idempotency store"
+  ],
+  "worked_example": {
+    "scenario": "Billing wants Closed Won once. Partner can take JSON. A second copy of the HTTP POST arrives. A third payload is malformed 400.",
+    "inputs": [
+      "Closed Won",
+      "Duplicate POST",
+      "Poison JSON"
+    ],
+    "decisions": [
+      {
+        "decision": "HTTP webhook via named credential, not new SOAP OM.",
+        "because": "Partner is JSON; OM is SOAP.",
+        "rejected": "Force OM because it is 'native'"
+      },
+      {
+        "decision": "Idempotency on Opportunity Id + CloseDate; 400 to dead letter; 503 backoff retry.",
+        "because": "At-least-once plus poison isolation.",
+        "rejected": "Insert Invoice__c on every POST"
+      }
+    ],
+    "configuration_or_code": [
+      "Upsert Invoice__c by External Id.",
+      "Do not use production billing URLs."
+    ],
+    "output": "One invoice, one alert for poison.",
+    "verification": [
+      "Second POST does not create a second invoice.",
+      "400 does not retry 100 times.",
+      "Design cites Fire and Forget plus HTTP."
+    ],
+    "self_explanation": "Tracking number plus dead-letter office beat extra trucks."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ objects only.",
+    "starting_state_checks": [
+      "Can create custom objects",
+      "No production webhooks"
+    ],
+    "steps": [
+      "Create LAB_DeliveryKey__c with Unique External Id field Key__c and Status__c.",
+      "Write Apex that on 'process' upserts by Key__c and only performs a side-effect flag if Status__c was New.",
+      "Call it twice with the same key in a test; assert the side-effect ran once.",
+      "Add a branch: if mock HTTP status is 400, insert LAB_DeadLetter__c instead of retrying in a loop."
+    ],
+    "guided_completion": [
+      "If two inserts occur for one key, idempotency failed.",
+      "If 400 retries in a for-loop, dead-letter failed."
+    ],
+    "independent_challenge": "Write three bullets: when you would still choose outbound messaging (existing SOAP listener) vs events vs polling.",
+    "evidence": [
+      "Test asserting single side-effect.",
+      "Dead-letter record on 400 mock."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ objects and Apex."
+    ],
+    "limitations": "Does not configure production OM."
+  },
+  "decision_table": [
+    {
+      "signal": "Partner already has a SOAP outbound-message endpoint.",
+      "choose": "Outbound messaging (confirm Flow trigger in current Help).",
+      "not": "Invent a JSON webhook they cannot accept this quarter without a bridge.",
+      "why": "OM is the documented SOAP notification feature."
+    },
+    {
+      "signal": "Partner wants JSON HTTP callbacks.",
+      "choose": "Webhook-style named-credential callout or middleware, with retries/idempotency/DLQ.",
+      "not": "New SOAP OM as the default.",
+      "why": "Apex named callouts are the HTTP vehicle (INT-006)."
+    },
+    {
+      "signal": "They cannot receive push at all.",
+      "choose": "Polling on a Limits-aware schedule, or they subscribe via Pub/Sub if they can (INT-007).",
+      "not": "1-second REST polls against Salesforce.",
+      "why": "Polling consumes API allocations (INT-005)."
+    },
+    {
+      "signal": "Duplicate deliveries or event replay.",
+      "choose": "Idempotency key store before side effects.",
+      "not": "Assume exactly-once OM or Pub/Sub.",
+      "why": "At-least-once is the honest contract."
+    },
+    {
+      "signal": "Permanent 400 or schema poison.",
+      "choose": "Dead-letter plus alert; stop auto-retry.",
+      "not": "Exponential backoff forever.",
+      "why": "Retries will not fix a malformed contract."
+    }
+  ],
+  "limitations": [
+    "OM retry hours not quoted.",
+    "Webhook signatures not specified.",
+    "Workflow retirement Needs verification."
+  ],
+  "security_notes": [
+    "Authenticate webhooks.",
+    "Do not log full payloads with secrets.",
+    "Least-privilege named credentials."
+  ],
+  "common_mistakes": [
+    "Infinite 400 retry.",
+    "No idempotency.",
+    "Default SOAP OM for JSON.",
+    "1-second polling.",
+    "Invented OM retry hours.",
+    "Dropping poison silently."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Duplicate invoices.",
+      "check": [
+        "Missing idempotency key.",
+        "Retries after success ack too late."
+      ],
+      "do_not_assume": "Salesforce billed twice by itself."
+    },
+    {
+      "symptom": "Listener never gets OM.",
+      "check": [
+        "Endpoint, firewall, OM session, Flow entry criteria—per Help.",
+        "Not a Replay ID issue."
+      ],
+      "do_not_assume": "Pub/Sub is involved."
+    }
+  ],
+  "production_notes": [
+    "Alert on DLQ depth.",
+    "Document the tracking number.",
+    "No production endpoints in the lab."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Outbound messaging protocol?",
+      "options": {
+        "A": "SOAP notification to a registered endpoint",
+        "B": "GraphQL only",
+        "C": "Bulk CSV only",
+        "D": "OAuth PKCE"
+      },
+      "answer": "A",
+      "rationale": "OM is SOAP-based declarative notification.",
+      "distractor_explanations": {
+        "B": "INT-002.",
+        "C": "Bulk.",
+        "D": "INT-004."
+      },
+      "concept": "OM SOAP",
+      "citation_ids": [
+        "SF-OM-HELP"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Fire and Forget wait?",
+      "options": {
+        "A": "Does not wait for remote completion",
+        "B": "Always waits like Request and Reply",
+        "C": "Only Bulk waits",
+        "D": "Never retries"
+      },
+      "answer": "A",
+      "rationale": "Official Fire and Forget.",
+      "distractor_explanations": {
+        "B": "INT-003.",
+        "C": "False.",
+        "D": "OM retries exist."
+      },
+      "concept": "FF",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Idempotency means?",
+      "options": {
+        "A": "Reprocessing the same key does not duplicate side effects",
+        "B": "Infinite retries",
+        "C": "Skipping HTTPS",
+        "D": "Using OFFSET"
+      },
+      "answer": "A",
+      "rationale": "Tracking-number idea.",
+      "distractor_explanations": {
+        "B": "Retries are separate.",
+        "C": "False.",
+        "D": "INT-005."
+      },
+      "concept": "Idempotent",
+      "citation_ids": [
+        "SF-PUBSUB-DUR"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "JSON partner, new integration. Default push?",
+      "options": {
+        "A": "HTTP webhook via named credential (or events), not new SOAP OM",
+        "B": "Must use OM",
+        "C": "Must poll every second",
+        "D": "Must use Metadata API"
+      },
+      "answer": "A",
+      "rationale": "Match protocol to partner.",
+      "distractor_explanations": {
+        "B": "SOAP.",
+        "C": "Limits.",
+        "D": "Wrong."
+      },
+      "concept": "Webhook",
+      "citation_ids": [
+        "SF-APEX-NC"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "HTTP 400 poison. Action?",
+      "options": {
+        "A": "Dead-letter and alert; do not retry forever",
+        "B": "Tight loop retry",
+        "C": "Treat as 201",
+        "D": "Compute Replay +1"
+      },
+      "answer": "A",
+      "rationale": "Poison vs transient.",
+      "distractor_explanations": {
+        "B": "Harms.",
+        "C": "False.",
+        "D": "INT-007."
+      },
+      "concept": "DLQ",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "403 REQUEST_LIMIT_EXCEEDED on a poller.",
+      "options": {
+        "A": "Back off; do not hot-retry (INT-005)",
+        "B": "Poll faster",
+        "C": "Switch to OM automatically",
+        "D": "Ignore Remaining"
+      },
+      "answer": "A",
+      "rationale": "Limits error.",
+      "distractor_explanations": {
+        "B": "Worse.",
+        "C": "Unrelated default.",
+        "D": "False."
+      },
+      "concept": "Poll limits",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Event replay redelivers. Subscriber must?",
+      "options": {
+        "A": "Apply idempotency using event id / business key",
+        "B": "Assume exactly-once",
+        "C": "Drop Replay ID",
+        "D": "Use nextRecordsUrl"
+      },
+      "answer": "A",
+      "rationale": "At-least-once plus INT-007.",
+      "distractor_explanations": {
+        "B": "Myth.",
+        "C": "Need the ID.",
+        "D": "Wrong API."
+      },
+      "concept": "Replay dup",
+      "citation_ids": [
+        "SF-PUBSUB-DUR"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Two HTTP POSTs same Opportunity close. Design?",
+      "options": {
+        "A": "Upsert/ignore by idempotency key",
+        "B": "Insert two invoices",
+        "C": "Disable HTTPS",
+        "D": "Use Tooling API"
+      },
+      "answer": "A",
+      "rationale": "Idempotency.",
+      "distractor_explanations": {
+        "B": "Duplicate.",
+        "C": "False.",
+        "D": "Wrong."
+      },
+      "concept": "Dup POST",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Existing SOAP OM listener at ERP. Short-term?",
+      "options": {
+        "A": "Keep outbound messaging; confirm current trigger path in Help",
+        "B": "Rewrite to GraphQL this afternoon as the only option",
+        "C": "Poll Accounts every second",
+        "D": "Put tokens in the SOAP body"
+      },
+      "answer": "A",
+      "rationale": "Match existing SOAP.",
+      "distractor_explanations": {
+        "B": "Unneeded churn.",
+        "C": "Limits.",
+        "D": "Unsafe."
+      },
+      "concept": "Keep OM",
+      "citation_ids": [
+        "SF-OM-HELP"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Retries with no DLQ on bad schema. Risk?",
+      "options": {
+        "A": "Infinite failure loop / ops noise / possible limit burn",
+        "B": "Guaranteed exactly-once",
+        "C": "Automatic Bulk 2.0",
+        "D": "OAuth scopes expand"
+      },
+      "answer": "A",
+      "rationale": "Poison without dead letter.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "No DLQ",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Webhook vs outbound message?",
+      "options": {
+        "A": "Webhook: HTTP JSON pattern you build; OM: Salesforce SOAP notification feature",
+        "B": "Identical",
+        "C": "OM is GraphQL",
+        "D": "Webhooks are Metadata API"
+      },
+      "answer": "A",
+      "rationale": "Protocol split.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "HTTP vs SOAP",
+      "citation_ids": [
+        "SF-OM-HELP",
+        "SF-APEX-NC"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Polling vs Pub/Sub?",
+      "options": {
+        "A": "Polling pulls on a timer; Pub/Sub is a pushed event stream (INT-007)",
+        "B": "Polling stores Replay IDs on the bus",
+        "C": "Pub/Sub requires SOAP OM",
+        "D": "They both use nextRecordsUrl for events"
+      },
+      "answer": "A",
+      "rationale": "Push stream vs pull.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "INT-005 mix-up."
+      },
+      "concept": "Pull vs stream",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-PUBSUB-DUR"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "om",
+      "front": "Outbound message format?",
+      "back": "SOAP to a registered endpoint, with platform retries (see Help for timing)."
+    },
+    {
+      "id": "F2",
+      "category": "wh",
+      "front": "Webhook in this handbook?",
+      "back": "HTTP callback pattern, usually named-credential callout or middleware."
+    },
+    {
+      "id": "F3",
+      "category": "po",
+      "front": "Polling risk against Salesforce?",
+      "back": "Naive high-frequency REST burns API limits."
+    },
+    {
+      "id": "F4",
+      "category": "rt",
+      "front": "Retry what, not what?",
+      "back": "Transient 5xx/timeouts; not poison 400 or hot 403 limits."
+    },
+    {
+      "id": "F5",
+      "category": "id",
+      "front": "Idempotency?",
+      "back": "Same key ⇒ one business effect."
+    },
+    {
+      "id": "F6",
+      "category": "dl",
+      "front": "Dead letter?",
+      "back": "Hold poison messages, alert, stop auto-retry."
+    },
+    {
+      "id": "F7",
+      "category": "al",
+      "front": "At-least-once?",
+      "back": "Duplicates possible; design idempotency."
+    },
+    {
+      "id": "F8",
+      "category": "ff",
+      "front": "Fire and Forget wait?",
+      "back": "No wait for remote completion."
+    },
+    {
+      "id": "F9",
+      "category": "ev",
+      "front": "Event replay duplicates?",
+      "back": "Yes possible; use event id keys."
+    },
+    {
+      "id": "F10",
+      "category": "ch",
+      "front": "New JSON API default?",
+      "back": "A new JSON partner API is not SOAP outbound messaging. Prefer an HTTP webhook or events."
+    },
+    {
+      "id": "F11",
+      "category": "fl",
+      "front": "OM trigger path?",
+      "back": "Confirm Flow vs workflow in current Help—Needs verification."
+    },
+    {
+      "id": "F12",
+      "category": "key",
+      "front": "Example idempotency key?",
+      "back": "Opportunity Id plus version/event id."
+    },
+    {
+      "id": "F13",
+      "category": "503",
+      "front": "503 then 400?",
+      "back": "Retry 503 with backoff; send a poison 400 to the dead-letter queue instead of looping."
+    },
+    {
+      "id": "F14",
+      "category": "sec",
+      "front": "Webhook auth?",
+      "back": "Do not leave anonymous; use documented vendor/Salesforce auth."
+    },
+    {
+      "id": "F15",
+      "category": "lim",
+      "front": "Poll every second?",
+      "back": "Anti-pattern for REST limits."
+    },
+    {
+      "id": "F16",
+      "category": "drop",
+      "front": "Silent drop vs DLQ?",
+      "back": "Prefer DLQ plus alert over silent loss."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Cover outbound messages, webhooks, polling, retries, idempotency, and dead-letter handling.",
+      "answer_30_seconds": "OM SOAP push with retries. Webhooks HTTP push. Polling pull. Retry transients. Idempotency for duplicates. Dead letter for poison.",
+      "answer_2_minutes": "I assume at-least-once delivery. Outbound messages are SOAP push with platform retries; webhooks are HTTP push; polling is a pull. I add idempotency keys and a dead-letter path. I will not invent outbound-message retry hours; I open Help. Platform events still need this trio.",
+      "example": "Closed Won JSON webhook with a duplicate POST and a 400.",
+      "tradeoffs": [
+        "Native OM vs HTTP"
+      ],
+      "follow_ups": [
+        "Flow OM?"
+      ],
+      "weak_answer_warnings": [
+        "Exactly-once"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why is exactly-once the wrong promise?",
+      "answer_30_seconds": "Retries and replay exist. Promise idempotent at-least-once instead.",
+      "answer_2_minutes": "Pub/Sub durability notes and HTTP retries can deliver the same payload twice. Exactly-once is the wrong promise. I put a unique business key in front of money side effects and treat the integration as idempotent at-least-once, including outbound messages and webhooks.",
+      "example": "Invoice External Id equals Opportunity Id so a duplicate POST cannot bill twice.",
+      "tradeoffs": [
+        "Honesty vs sales"
+      ],
+      "follow_ups": [
+        "OM exception?"
+      ],
+      "weak_answer_warnings": [
+        "Disable retries"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "ERP has only a SOAP OM listener this year.",
+      "answer_30_seconds": "Use outbound messaging, confirm Help retry/session notes, still design idempotency on their side.",
+      "answer_2_minutes": "I will not force GraphQL. I check how OM is invoked after workflow changes—Needs verification. Long-term I might bridge to events.",
+      "example": "Existing ERP WSDL listener can accept only SOAP outbound messages this fiscal year.",
+      "tradeoffs": [
+        "Change cost vs fit"
+      ],
+      "follow_ups": [
+        "TLS/certs?"
+      ],
+      "weak_answer_warnings": [
+        "Must rewrite this sprint"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Startups want a webhook; they double-POST.",
+      "answer_30_seconds": "Named-credential callout plus idempotency store; 4xx to DLQ.",
+      "answer_2_minutes": "I send the webhook through a named-credential callout (INT-006), branch on HTTP status (INT-005), and store an idempotency key so a double POST cannot create two invoices. Poison 400 goes to a dead-letter queue; I do not tight-loop 403 REQUEST_LIMIT_EXCEEDED.",
+      "example": "LAB_Invoice__c unique External Id test that replays the same webhook POST twice.",
+      "tradeoffs": [
+        "Speed vs safety"
+      ],
+      "follow_ups": [
+        "HMAC?"
+      ],
+      "weak_answer_warnings": [
+        "Insert always"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "An outbound message never arrives at the ERP SOAP listener. How do you diagnose it?",
+      "answer_30_seconds": "Endpoint reachability, automation entry, OM delivery status in Help—not Replay ID.",
+      "answer_2_minutes": "I distinguish SOAP outbound messaging from Pub/Sub replay. I check endpoint reachability, the automation that fires the message, firewall and certificates, and Help delivery status. I do not invent retry hours and I do not treat a missing OM as a Replay ID problem.",
+      "example": "Sandbox OM to a listener that only allowed production IPs.",
+      "tradeoffs": [
+        "Network vs config"
+      ],
+      "follow_ups": [
+        "Session id in OM?"
+      ],
+      "weak_answer_warnings": [
+        "Switch to Bulk"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Poller hits 403 limits.",
+      "answer_30_seconds": "Slow the poll, use CDC/Pub/Sub if they can subscribe, or Bulk for extracts.",
+      "answer_2_minutes": "I slow the poll and read Limits Remaining (INT-005). If the partner can subscribe, I switch to CDC or platform events on Pub/Sub (INT-007). For large extracts I consider Bulk 2.0. Polling every few seconds is an anti-pattern against REST rate limits.",
+      "example": "A 30-second Account SOQL poller that burns Daily API Requests until HTTP 403.",
+      "tradeoffs": [
+        "Freshness vs quota"
+      ],
+      "follow_ups": [
+        "CDC license?"
+      ],
+      "weak_answer_warnings": [
+        "Poll faster"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How many retries before dead letter?",
+      "answer_30_seconds": "I pick a finite N for transients and I do not quote a fake OM table. Poison 400 goes immediately to DLQ.",
+      "answer_2_minutes": "I pick a finite N for transient failures in the runbook and I Needs-verify outbound-message built-in retries so we do not double-retry blindly. A poison 400 goes immediately to the dead-letter queue with an alert; I will not quote a fake Help table of hours.",
+      "example": "N equals 5 exponential backoff for HTTP 503; HTTP 400 goes immediately to DLQ.",
+      "tradeoffs": [
+        "Noise vs loss"
+      ],
+      "follow_ups": [
+        "Who watches DLQ?"
+      ],
+      "weak_answer_warnings": [
+        "Retry 400 five hundred times"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach certified-mail analogy and where it breaks.",
+      "answer_30_seconds": "Trucks, knocks, desk visits, extra trucks, tracking numbers, dead-letter office. It breaks when I invent OM hours or call webhook a product.",
+      "answer_2_minutes": "Certified mail maps outbound messages to trucks, webhooks to knocks, polling to desk visits, retries to extra trucks, idempotency to tracking numbers, and dead letters to the undeliverable office. It breaks when I invent OM retry hours or treat webhook as a Salesforce product name. Events belong on the radio bus in INT-007, not on this mail route.",
+      "example": "Whiteboard duplicate POST plus poison 400.",
+      "tradeoffs": [
+        "Clarity vs fake schedules"
+      ],
+      "follow_ups": [
+        "Where is polling?"
+      ],
+      "weak_answer_warnings": [
+        "Generic furniture metaphor"
+      ]
+    }
+  ]
+}

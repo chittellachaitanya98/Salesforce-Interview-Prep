@@ -1,0 +1,983 @@
+{
+  "topic_id": "LWC-012",
+  "slug": "jest-tests-debugging-deployment-and-troubleshooting",
+  "title": "Jest tests, debugging, deployment, and troubleshooting",
+  "track": "Lightning Web Components",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-011"
+  ],
+  "objectives": [
+    "Write local Jest tests in __tests__ that never deploy to Salesforce, using sfdx-lwc-jest wire mocks.",
+    "Debug LWC with debug mode and Chrome DevTools, including wired data/error and LWS differences.",
+    "Treat LWC source as metadata you deploy; treat Jest as local-only artifacts listed in .forceignore.",
+    "Troubleshoot wires, tests, and production issues without confusing Jest with Lightning Testing Service."
+  ],
+  "diagnostic_question": "A Jest test passes locally, the LWC fails on the record page, and debug logs show nothing. How do you split Jest tests, debugging, deployment, and troubleshooting?",
+  "definition": "Jest tests for LWC are local JavaScript tests run with sfdx-lwc-jest. They live in a __tests__ folder, are committed to Git, and are never saved to Salesforce (.forceignore). Debugging uses Lightning debug mode and Chrome DevTools, with extra notes when Lightning Web Security is on. Deployment pushes the component metadata, not the tests. Troubleshooting follows wire payloads, config completeness, and test mocks that must not depend on live org data. ([Write Jest Tests](https://developer.salesforce.com/docs/platform/lwc/guide/unit-testing-using-jest-create-tests.html); [Write Jest Tests for Wire Service](https://developer.salesforce.com/docs/platform/lwc/guide/unit-testing-using-wire-utility.html); [Debug Wire Adapters](https://developer.salesforce.com/docs/platform/lwc/guide/debug-wire.html))",
+  "why_it_matters": "Interviewers fail candidates who say Jest runs in the org, who mock nothing and hit Salesforce from CI, or who debug minified production JS. Jest is not Lightning Testing Service (Jasmine/Mocha). A green test that never connected the element to the DOM is a false pass.",
+  "sixty_second_explanation": "Think of an aircraft hangar. Jest is a pre-flight checklist on a mock fuselage—you control the weather. Debugging is the flight-data recorder and a well-lit hangar (debug mode). Deployment is releasing the real aircraft to the gate; the checklist binder stays on the ground. Troubleshooting is finding why the engine light is on: missing fuel ($recordId), bad mock weather, or a production-only LWS distortion.",
+  "deeper_explanation": [
+    "Create tests with sf force lightning lwc test create, or add __tests__/component.test.js yourself. Jest runs local .js files ending in .test.js (recommended). Add **/__tests__/** to .forceignore so push/pull never sends tests to Salesforce. Jest is not Lightning Testing Service. ([Write Jest Tests](https://developer.salesforce.com/docs/platform/lwc/guide/unit-testing-using-jest-create-tests.html))",
+    "Wire tests must not depend on org latency. sfdx-lwc-jest provides generic, LDS, and Apex wire adapters. Import the same adapter as production code, emit mock JSON, append the element to the DOM (wires provision only when connected), then Promise.resolve() before asserting. Prefer UI API snapshots over hand-written JSON. Spring ’21 registration APIs still work but are not recommended. ([Wire Jest utility](https://developer.salesforce.com/docs/platform/lwc/guide/unit-testing-using-wire-utility.html))",
+    "Debug: enable debug mode for unminified JS. For wires, inspect data/error in Sources or use custom formatters ($0 on the element). An undefined $ param means both data and error stay undefined. With LWS, enable debug mode first; some debugging differences exist versus non-LWS. ([Debug Wire Adapters](https://developer.salesforce.com/docs/platform/lwc/guide/debug-wire.html); [Debug with LWS Enabled](https://developer.salesforce.com/docs/platform/lwc/guide/debug-lwsec.html))",
+    "Jest debug: Salesforce Extension Pack LWC Tests sidebar, or npm run test:unit:debug which runs sfdx-lwc-jest --debug, then chrome://inspect. Chrome does not honor VS Code breakpoints unless you use debugger statements in that flow. ([Debug Jest Tests](https://developer.salesforce.com/docs/platform/lwc/guide/unit-testing-using-jest-debug-tests.html))",
+    "Deployment is metadata (the LWC bundle minus tests). Troubleshooting production: confirm the bundle deployed, FLS, wire config, LWS/CSP (LWC-010), and that you are not chasing a Jest-only mock."
+  ],
+  "mental_model": {
+    "analogy": "An aircraft hangar: mock fuselage checklist (Jest), flight recorder in a lit hangar (debug mode), release to the gate (deploy metadata), engine-light diagnosis (troubleshooting).",
+    "useful_mapping": [
+      "mock fuselage → Jest with emit() data, no live org",
+      "checklist binder stays on the ground → __tests__ in .forceignore",
+      "well-lit hangar → debug mode unminified JS",
+      "release to the gate → deploy LWC metadata",
+      "engine light → undefined $recordId, LWS distortion, or missed DOM connect in the test",
+      "old Jasmine trolley → Lightning Testing Service, not Jest"
+    ],
+    "where_it_breaks": [
+      "A real pre-flight still uses real fuel; Jest must not call Salesforce.",
+      "Green Jest does not prove FLS or LWS in the org.",
+      "chrome://inspect ignores VS Code breakpoints unless you use debugger."
+    ]
+  },
+  "teach_back_prompt": "Explain why Jest never deploys, how you mock a wire, and what you still debug in the org after tests pass.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Where do Jest files live and why .forceignore?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Why append the element to document.body before emit?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "How do you debug a wired property in Chrome?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Jest versus Lightning Testing Service in one sentence."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: test, debug, deploy, troubleshoot."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-JEST-WRITE",
+      "title": "Write Jest Tests for Lightning Web Components",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/unit-testing-using-jest-create-tests.html",
+      "supports": "Local tests; not saved to Salesforce; __tests__; .forceignore; CLI create; not LTS Jasmine/Mocha.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "CLI command names can change; reverify sf force lightning lwc test create."
+    },
+    {
+      "source_id": "SF-LWC-JEST-WIRE",
+      "title": "Write Jest Tests for Lightning Web Components That Use the Wire Service",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/unit-testing-using-wire-utility.html",
+      "supports": "sfdx-lwc-jest adapters; emit mock JSON; connect to DOM; Promise.resolve; UI API snapshots.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Spring ’21 register APIs are legacy."
+    },
+    {
+      "source_id": "SF-LWC-DEBUG-WIRE",
+      "title": "Debug Wire Adapters",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/debug-wire.html",
+      "supports": "Debug mode; custom formatters; data/error/config; undefined $ param prevents fire.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "UI of DevTools varies by Chrome version."
+    },
+    {
+      "source_id": "SF-LWC-DEBUG-LWS",
+      "title": "Debug Components in an Org with LWS Enabled",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/debug-lwsec.html",
+      "supports": "Enable debug mode first when LWS is on; debugging differences exist.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Detailed LWS debug limits live on the security sibling page."
+    },
+    {
+      "source_id": "SF-LWC-JEST-DEBUG",
+      "title": "Debug Jest Tests for Lightning Web Components",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/unit-testing-using-jest-debug-tests.html",
+      "supports": "Extension Pack sidebar; npm run test:unit:debug; chrome://inspect; debugger statements.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "VS Code breakpoint behavior differs from Chrome inspect."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Jest is local",
+        ".forceignore",
+        "emit after connect",
+        "Debug mode",
+        "Deploy metadata",
+        "Not LTS"
+      ],
+      "accessible_description": "Portrait map from local Jest through wire mocks and debug mode to metadata deploy, with org troubleshooting separate from CI green."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-JEST-WRITE",
+        "SF-LWC-JEST-WIRE",
+        "SF-LWC-DEBUG-WIRE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "What runs locally versus what deploys"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Src[LWC JS HTML CSS meta] --> Git[Git]\n  Git --> Jest[__tests__ sfdx-lwc-jest]\n  Git --> Deploy[Deploy metadata to org]\n  Jest -.->|never| Org[(Salesforce)]\n  Deploy --> Org\n  Org --> Debug[Debug mode + Chrome]\n  Jest --> Mock[emit mock wire JSON]",
+      "decision": "flowchart TD\n  Fail[Failure] --> Q1{Fails only in Jest?}\n  Q1 -->|Yes| T[Fix mock, DOM connect, Promise.resolve]\n  Q1 -->|No| Q2{Fails only in org?}\n  Q2 -->|Yes| D[Debug mode, wire $ params, LWS, FLS, deploy]\n  Q2 -->|No| Q3{Tests not in the org?}\n  Q3 -->|Expected| Ign[.forceignore __tests__]\n  Q3 -->|Someone pushed tests| Fix[Do not deploy Jest to Salesforce]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Jest tests are local, committed with the component, and never saved to Salesforce. Put **/__tests__/** in .forceignore. They are not Lightning Testing Service tests.",
+      "source_ids": ["SF-LWC-JEST-WRITE"],
+      "scope": "Jest location",
+      "validation": "Write Jest Tests topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Wire tests use sfdx-lwc-jest adapters, mock JSON, emit after the element is connected to the DOM, then Promise.resolve before assertions.",
+      "source_ids": ["SF-LWC-JEST-WIRE"],
+      "scope": "Wire mocking",
+      "validation": "Write Jest Tests for Wire Service.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Debug wires with debug mode and Chrome; undefined reactive params prevent the wire from firing so data and error stay undefined.",
+      "source_ids": ["SF-LWC-DEBUG-WIRE"],
+      "scope": "Debugging",
+      "validation": "Debug Wire Adapters.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "With LWS enabled, enable debug mode first. Jest debug via npm run test:unit:debug and chrome://inspect; Chrome inspect does not step VS Code breakpoints without debugger statements.",
+      "source_ids": ["SF-LWC-DEBUG-LWS", "SF-LWC-JEST-DEBUG"],
+      "scope": "LWS and Jest debug",
+      "validation": "Debug with LWS Enabled; Debug Jest Tests.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Salesforce CLI test create command syntax may change; reverify sf force lightning lwc test create for Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact sfdx-lwc-jest npm version pins are project-specific.",
+    "Needs verification: current Lightning Testing Service status if an org still has legacy Aura tests."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Jest",
+      "telugu": "LWC కోసం స్థానిక యూనిట్ టెస్ట్ రన్నర్."
+    },
+    {
+      "english": "Debug mode",
+      "telugu": "అన్‌మినిఫైడ్ జావాస్క్రిప్ట్‌తో ఆర్గ్‌లో డీబగ్ చేయడం."
+    },
+    {
+      "english": "Deployment",
+      "telugu": "LWC మెటాడేటాను ఆర్గ్‌కు పంపడం; Jest కాదు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Jest is local and git-tracked, never in the org. I mock wires with emit after DOM connect. I debug in the org with debug mode. I deploy metadata, then troubleshoot $ params, LWS, and FLS separately from CI green.",
+    "two_minutes": "I contrast Jest with LTS. I show __tests__ and .forceignore. I refuse tests that call Salesforce. If production fails, I turn on debug mode, inspect the wired object, and check LWS. A test that never appended the element is invalid."
+  },
+  "terminology": [
+    {
+      "term": "Jest tests",
+      "plain": "Local unit tests for an LWC that run on your machine or CI, not in Salesforce.",
+      "precise": "sfdx-lwc-jest, files under __tests__, recommended *.test.js. Input must be fully controlled; mock wires.",
+      "example": "labOpenCases.test.js emitting a mock related-list payload.",
+      "non_example": "Apex @IsTest class, or LTS Jasmine in the org.",
+      "confusable_neighbor": "Lightning Testing Service.",
+      "boundary": "End-to-end UI tests are a different Guide section."
+    },
+    {
+      "term": "sfdx-lwc-jest",
+      "plain": "The Salesforce Jest runner and wire-mock utility for LWC.",
+      "precise": "Generic, LDS, and Apex wire adapters with emit(). Prefer this over wiring @salesforce/wire-service-jest-util alone.",
+      "example": "getRecord.emit(mockGetRecord) after appendChild.",
+      "non_example": "Live REST calls to UI API from the test.",
+      "confusable_neighbor": "jest-preset-angular or other ecosystem presets.",
+      "boundary": "Adapter internals are in the utility docs."
+    },
+    {
+      "term": "debugging",
+      "plain": "Inspecting running LWC JavaScript in the browser or Jest inspector.",
+      "precise": "Org: debug mode + Chrome, custom formatters for wires. Jest: inspect-brk / chrome://inspect. LWS orgs: debug mode first.",
+      "example": "$0 on a c-lab-open-cases element to see wired config/data.",
+      "non_example": "Reading only Apex debug logs for a template bug.",
+      "confusable_neighbor": "Apex replay debugger.",
+      "boundary": "LWS-specific limits are on the security debug page."
+    },
+    {
+      "term": "deployment",
+      "plain": "Sending the LWC bundle metadata to an org.",
+      "precise": "JS/HTML/CSS/js-meta.xml deploy. Tests stay local via .forceignore. Green Jest does not mean the bundle is in production.",
+      "example": "sf project deploy start of labOpenCases without __tests__.",
+      "non_example": "Expecting Jest coverage to appear in Apex coverage.",
+      "confusable_neighbor": "Change sets of Apex tests.",
+      "boundary": "CI/CD pipelines are DEVOPS topics."
+    },
+    {
+      "term": "troubleshooting",
+      "plain": "Finding why the component misbehaves in tests or in the org.",
+      "precise": "Split Jest-only failures (mocks, DOM) from org-only (FLS, LWS, missing deploy, undefined $ params).",
+      "example": "data and error still undefined because recordId never set.",
+      "non_example": "Rewriting SLDS first (LWC-009) for a wire that never fired.",
+      "confusable_neighbor": "Performance freeze (LWC-011) versus a thrown error.",
+      "boundary": "Start from payload and config, not random Setup clicks."
+    },
+    {
+      "term": ".forceignore",
+      "plain": "The file that tells Salesforce DX not to push or pull certain paths.",
+      "precise": "Must include **/__tests__/** so Jest never becomes org metadata.",
+      "example": "sf force lightning lwc test setup adds the glob.",
+      "non_example": ".gitignore alone (Git ≠ org).",
+      "confusable_neighbor": ".gitignore.",
+      "boundary": "You still commit tests to Git."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Author the test next to the component",
+      "actor": "Developer",
+      "trigger": "New LWC behavior",
+      "before": "No __tests__",
+      "after": "component.test.js + .forceignore glob",
+      "observe": "Tests run locally; retrieve does not pull them from the org",
+      "failure": "Putting tests in static resources"
+    },
+    {
+      "step": 2,
+      "transition": "Mock the wire",
+      "actor": "Developer",
+      "trigger": "@wire in production code",
+      "before": "Live org dependency",
+      "after": "JSON fixture + emit after appendChild + Promise.resolve",
+      "observe": "Assertion sees DOM text from mock Name",
+      "failure": "emit before the element is connected"
+    },
+    {
+      "step": 3,
+      "transition": "Debug the org copy",
+      "actor": "Developer",
+      "trigger": "Jest green, page red",
+      "before": "Minified JS",
+      "after": "Debug mode, inspect data/error/config",
+      "observe": "Undefined $ param or LWS distortion",
+      "failure": "Only reading Apex logs"
+    },
+    {
+      "step": 4,
+      "transition": "Deploy metadata, not tests",
+      "actor": "Developer + DevOps",
+      "trigger": "Ready for sandbox",
+      "before": "Local-only bundle",
+      "after": "LWC in the org; Jest still in Git",
+      "observe": "Bundle present; __tests__ absent in org",
+      "failure": "Claiming Jest coverage as Salesforce coverage"
+    }
+  ],
+  "when_to_use": [
+    "When you must prove LWC behavior with Jest tests, then debug, deploy, and troubleshoot the org copy separately.",
+    "When a wire test should emit mock JSON instead of calling Salesforce.",
+    "When production JS is minified: enable debug mode before Chrome stepping, especially with LWS.",
+    "When someone expects Jest files to appear in the org: explain .forceignore and metadata deployment."
+  ],
+  "when_not_to_use": [
+    "Do not use Jest as a substitute for Apex tests, FLS verification, or LWS org testing.",
+    "Do not treat Lightning Testing Service Jasmine tests as sfdx-lwc-jest, or deploy __tests__ to Salesforce.",
+    "Do not debug minified production LWC without debug mode, or honor only VS Code breakpoints in chrome://inspect.",
+    "Do not call a test valid if the element was never connected to the DOM before emit."
+  ],
+  "configuration_or_code_location": [
+    "force-app/main/default/lwc/myCmp/__tests__/myCmp.test.js",
+    ".forceignore: **/__tests__/**",
+    "package.json script test:unit → sfdx-lwc-jest",
+    "Setup: Debug Mode for your user; Chrome DevTools on the Lightning page"
+  ],
+  "worked_example": {
+    "scenario": "labProductCard wires getRecord for Name. Jest must prove the name renders. The sandbox page is blank. Tests must not call the org.",
+    "inputs": [
+      "Mock getRecord.json snapshot",
+      "recordId not set on first page paint",
+      "LWS-enabled org"
+    ],
+    "decisions": [
+      {
+        "decision": "Jest: create element, appendChild, getRecord.emit(mock), Promise.resolve, assert text.",
+        "because": "Wires provision only when connected; emit is the mock.",
+        "rejected": "HTTP to UI API from the test"
+      },
+      {
+        "decision": "Org: debug mode, inspect wired config; find recordId undefined.",
+        "because": "Jest used a fixture Id; the page did not pass one yet.",
+        "rejected": "Rewriting Jest to 'match production' by skipping mocks"
+      },
+      {
+        "decision": "Deploy only the bundle; keep __tests__ ignored.",
+        "because": "Jest is never Salesforce metadata.",
+        "rejected": "Zipping tests into a static resource"
+      }
+    ],
+    "configuration_or_code": [
+      "import { getRecord } from 'lightning/uiRecordApi';",
+      "document.body.appendChild(element); getRecord.emit(mockGetRecord); return Promise.resolve().then(() => expect(...))",
+      ".forceignore contains **/__tests__/**"
+    ],
+    "output": "Jest asserts Name from mock; org blank explained by missing $recordId; tests not in the org.",
+    "verification": [
+      "CI runs sfdx-lwc-jest without Salesforce credentials for that test.",
+      "Retrieve of the LWC from the org has no __tests__ folder.",
+      "Chrome shows data/error undefined until recordId is set."
+    ],
+    "self_explanation": "I split mock weather from real flight. Green Jest did not prove the page passed an Id."
+  },
+  "hands_on_lab": {
+    "environment": "VS Code + sfdx-lwc-jest on a scratch org project; LAB_ LWC only.",
+    "starting_state_checks": [
+      "npm / sfdx-lwc-jest is installed in the project.",
+      ".forceignore includes **/__tests__/** or you add it."
+    ],
+    "steps": [
+      "Create labProductCard with @wire(getRecord) displaying Name.",
+      "Add __tests__/data/getRecord.json and a test that appends the element, emits, and asserts.",
+      "Run sfdx-lwc-jest (or npm run test:unit) and confirm pass without org credentials.",
+      "In the org with debug mode, confirm the card stays empty until recordId is provided; do not change the Jest mock to hide that."
+    ],
+    "guided_completion": [
+      "If emit before appendChild, the test likely fails or never updates.",
+      "If tests appeared in the org retrieve, .forceignore is wrong."
+    ],
+    "independent_challenge": "Add a second test that emit.error(...) and asserts the error state from LWC-007.",
+    "evidence": [
+      "Jest CLI output with LAB_ test names.",
+      "Screenshot or note that retrieve has no __tests__."
+    ],
+    "stop_recovery_cleanup": [
+      "Leave tests in Git; do not deploy them.",
+      "Delete LAB_ components from the scratch org when done."
+    ],
+    "limitations": "Does not replace Apex tests or full LWS library certification."
+  },
+  "decision_table": [
+    {
+      "signal": "Need to prove template output for a wired Name field in CI.",
+      "choose": "Jest with sfdx-lwc-jest emit of snapshot JSON after DOM connect.",
+      "not": "A live UI API call from the test, or an Apex @IsTest for the HTML.",
+      "why": "Jest must fully control input; tests never save to Salesforce."
+    },
+    {
+      "signal": "Page is blank but Jest passed.",
+      "choose": "Debug mode in the org; inspect wire config for undefined $ params, FLS, and deploy.",
+      "not": "Delete the Jest mocks so CI hits production.",
+      "why": "Mocks prove logic; the org still must supply recordId and access."
+    },
+    {
+      "signal": "Need to step through minified Lightning JS.",
+      "choose": "Enable debug mode (especially with LWS), then Chrome DevTools.",
+      "not": "Set breakpoints only in VS Code and expect chrome://inspect to honor them without debugger.",
+      "why": "Debug-mode and Jest-debug topics document those tools."
+    },
+    {
+      "signal": "Someone wants Jest files in the org 'for coverage.'",
+      "choose": "Keep **/__tests__/** in .forceignore; deploy the LWC bundle only.",
+      "not": "Lightning Testing Service as if it were sfdx-lwc-jest.",
+      "why": "The Write Jest Tests topic says tests are local and are not LTS."
+    }
+  ],
+  "limitations": [
+    "Jest does not prove sharing, LWS, or CSP.",
+    "CLI command names can change.",
+    "Chrome inspect versus VS Code breakpoints differ.",
+    "Does not replace Apex test coverage requirements."
+  ],
+  "security_notes": [
+    "Never commit real customer JSON into __tests__/data.",
+    "Debug mode widens what JS is visible; use in sandboxes.",
+    "Do not log session IDs while troubleshooting."
+  ],
+  "common_mistakes": [
+    "emit before the element is in the DOM.",
+    "Forgetting Promise.resolve after emit.",
+    "Deploying tests to Salesforce.",
+    "Confusing Jest with LTS.",
+    "Debugging minified JS without debug mode."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Jest assertion never sees the Name.",
+      "check": [
+        "appendChild before emit",
+        "Promise.resolve after emit",
+        "Same wire adapter import as production"
+      ],
+      "do_not_assume": "The production component is wrong before checking the test harness."
+    },
+    {
+      "symptom": "data and error stay undefined on the page.",
+      "check": [
+        "Reactive $ config complete?",
+        "Debug mode custom formatter on the element"
+      ],
+      "do_not_assume": "Jest failed; this is org config."
+    },
+    {
+      "symptom": "Jest debug ignores VS Code breakpoints.",
+      "check": [
+        "Using chrome://inspect? Add debugger statements.",
+        "Or use the Salesforce Extension Pack Debug Test path."
+      ],
+      "do_not_assume": "Jest is broken."
+    }
+  ],
+  "production_notes": [
+    "Run sfdx-lwc-jest in CI on every LWC change.",
+    "Turn debug mode off when not diagnosing.",
+    "No production deploy is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Are LWC Jest tests saved to Salesforce?",
+      "options": {
+        "A": "No; they are local and should be in .forceignore",
+        "B": "Yes; they become Apex tests",
+        "C": "Yes; they must be static resources",
+        "D": "Only if cacheable=true"
+      },
+      "answer": "A",
+      "rationale": "Jest tests are not saved to Salesforce; ignore __tests__ so CLI will not push them.",
+      "distractor_explanations": {
+        "B": "Different test type.",
+        "C": "Not the documented home.",
+        "D": "Unrelated."
+      },
+      "concept": "Jest is local",
+      "citation_ids": ["SF-LWC-JEST-WRITE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Jest tests for LWC are written differently from which older suite?",
+      "options": {
+        "A": "Jasmine or Mocha tests for Lightning Testing Service",
+        "B": "SOQL",
+        "C": "Validation rules",
+        "D": "Change sets"
+      },
+      "answer": "A",
+      "rationale": "The Write Jest Tests topic contrasts Jest with LTS Jasmine/Mocha.",
+      "distractor_explanations": {
+        "B": "Query language.",
+        "C": "Declarative.",
+        "D": "Deployment tool."
+      },
+      "concept": "Not LTS",
+      "citation_ids": ["SF-LWC-JEST-WRITE"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "When does a component receive wire updates in a Jest test?",
+      "options": {
+        "A": "After it is connected to the DOM, then you emit",
+        "B": "Before createElement",
+        "C": "Only in production",
+        "D": "Only if LWS is off"
+      },
+      "answer": "A",
+      "rationale": "The component receives updates about data only when connected to the DOM. Then emit mock data.",
+      "distractor_explanations": {
+        "B": "Too early.",
+        "C": "Jest is local.",
+        "D": "LWS is the org sandbox."
+      },
+      "concept": "Connect then emit",
+      "citation_ids": ["SF-LWC-JEST-WIRE"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "After getRecord.emit(mock), why Promise.resolve().then(...)?",
+      "options": {
+        "A": "To wait for a rerender with the new data before asserting",
+        "B": "To deploy the component",
+        "C": "To disable Locker",
+        "D": "To call Apex"
+      },
+      "answer": "A",
+      "rationale": "Resolve a promise to ensure the test runs after the DOM updates.",
+      "distractor_explanations": {
+        "B": "Tests do not deploy.",
+        "C": "Unrelated.",
+        "D": "This is a mock."
+      },
+      "concept": "Wait for rerender",
+      "citation_ids": ["SF-LWC-JEST-WIRE"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Best practice for LDS mock JSON?",
+      "options": {
+        "A": "Snapshot from the UI API REST resource the adapter uses",
+        "B": "Always an empty string",
+        "C": "Production customer records in Git",
+        "D": "Apex System.debug output only"
+      },
+      "answer": "A",
+      "rationale": "Grab a snapshot via a REST client against the UI API; more accurate than hand-written JSON.",
+      "distractor_explanations": {
+        "B": "Useless fixture.",
+        "C": "Data exposure.",
+        "D": "Wrong shape."
+      },
+      "concept": "UI API snapshots",
+      "citation_ids": ["SF-LWC-JEST-WIRE"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "An undefined reactive wire parameter means?",
+      "options": {
+        "A": "The wire does not fire; data and error stay undefined",
+        "B": "Jest always fails",
+        "C": "CSP blocks Apex",
+        "D": "The component must be Aura"
+      },
+      "answer": "A",
+      "rationale": "Debug Wire Adapters: an undefined reactive parameter prevents the wire from firing.",
+      "distractor_explanations": {
+        "B": "Org symptom.",
+        "C": "Wrong layer.",
+        "D": "Still LWC."
+      },
+      "concept": "Undefined $ param",
+      "citation_ids": ["SF-LWC-DEBUG-WIRE"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You debug Jest via chrome://inspect. VS Code breakpoints do not hit. What does the Guide say?",
+      "options": {
+        "A": "Use a debugger statement in the test; Chrome inspect does not step VS Code breakpoints",
+        "B": "Delete Jest",
+        "C": "Enable Locker",
+        "D": "Deploy __tests__"
+      },
+      "answer": "A",
+      "rationale": "The Chrome inspector does not step through VS Code breakpoints; use debugger in the test.",
+      "distractor_explanations": {
+        "B": "Overkill.",
+        "C": "Unrelated.",
+        "D": "Forbidden."
+      },
+      "concept": "Jest Chrome inspect",
+      "citation_ids": ["SF-LWC-JEST-DEBUG"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "LWS is on and stack traces are hard to read. First debug step?",
+      "options": {
+        "A": "Enable debug mode for the best debugging experience",
+        "B": "Disable FLS",
+        "C": "Remove .forceignore",
+        "D": "Switch the LWC to Visualforce"
+      },
+      "answer": "A",
+      "rationale": "Debug with LWS Enabled: first enable debug mode.",
+      "distractor_explanations": {
+        "B": "Wrong layer.",
+        "C": "Unrelated.",
+        "D": "Not the debug path."
+      },
+      "concept": "LWS debug mode",
+      "citation_ids": ["SF-LWC-DEBUG-LWS"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Jest versus Lightning Testing Service?",
+      "options": {
+        "A": "Jest is local sfdx-lwc-jest; LTS used Jasmine/Mocha in a different model",
+        "B": "They are the same command",
+        "C": "Jest runs only inside Apex",
+        "D": "LTS is required for all LWC"
+      },
+      "answer": "A",
+      "rationale": "The Guide states Jest tests are written, saved, and run differently than LTS tests.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Jest is JavaScript.",
+        "D": "LWC Jest is the current LWC unit approach."
+      },
+      "concept": "Jest vs LTS",
+      "citation_ids": ["SF-LWC-JEST-WRITE"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "What deploys to the org versus what stays in Git only?",
+      "options": {
+        "A": "LWC bundle metadata deploys; __tests__ stay local because of .forceignore",
+        "B": "Jest deploys; HTML does not",
+        "C": "Only Apex tests deploy for LWC",
+        "D": "Nothing is metadata"
+      },
+      "answer": "A",
+      "rationale": "Tests are never saved to Salesforce; the component is metadata.",
+      "distractor_explanations": {
+        "B": "Reversed.",
+        "C": "Apex tests are for Apex.",
+        "D": "LWC is metadata."
+      },
+      "concept": "Deploy vs Jest",
+      "citation_ids": ["SF-LWC-JEST-WRITE"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Recommended npm command to debug all unit tests?",
+      "options": {
+        "A": "npm run test:unit:debug (sfdx-lwc-jest --debug)",
+        "B": "sf org login jwt from the test",
+        "C": "npm run deploy:prod",
+        "D": "sfdx force:mdapi:deploy the __tests__ folder"
+      },
+      "answer": "A",
+      "rationale": "The Jest debug topic recommends npm run test:unit:debug because sfdx-lwc-jest is a node dependency.",
+      "distractor_explanations": {
+        "B": "Tests should not need that.",
+        "C": "Not debug.",
+        "D": "Do not deploy tests."
+      },
+      "concept": "Jest debug script",
+      "citation_ids": ["SF-LWC-JEST-DEBUG"]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "sfdx-lwc-jest wire adapters include which three?",
+      "options": {
+        "A": "Generic, LDS, and Apex",
+        "B": "Only SOAP",
+        "C": "Only Visualforce",
+        "D": "Only GraphQL"
+      },
+      "answer": "A",
+      "rationale": "The utility has a generic adapter, an LDS adapter, and an Apex wire adapter.",
+      "distractor_explanations": {
+        "B": "Not the Jest utility list.",
+        "C": "Unrelated.",
+        "D": "Not the three named adapters."
+      },
+      "concept": "Three adapters",
+      "citation_ids": ["SF-LWC-JEST-WIRE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "Do Jest tests deploy to Salesforce?",
+      "back": "No. They are local. Ignore **/__tests__/** in .forceignore."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "Recommended test filename suffix?",
+      "back": ".test.js inside the component's __tests__ folder."
+    },
+    {
+      "id": "F3",
+      "category": "decision",
+      "front": "When to emit mock wire data?",
+      "back": "After the element is connected to the DOM, then Promise.resolve before assert."
+    },
+    {
+      "id": "F4",
+      "category": "decision",
+      "front": "Jest vs Lightning Testing Service?",
+      "back": "Jest is local sfdx-lwc-jest. LTS used Jasmine/Mocha differently."
+    },
+    {
+      "id": "F5",
+      "category": "limitation_security",
+      "front": "May Jest call the org UI API?",
+      "back": "No. Tests must fully control input with mocks and fixtures."
+    },
+    {
+      "id": "F6",
+      "category": "scenario",
+      "front": "Undefined $recordId in the org. Wire?",
+      "back": "Does not fire. data and error stay undefined."
+    },
+    {
+      "id": "F7",
+      "category": "scenario",
+      "front": "LWS org, hard stacks. First switch?",
+      "back": "Enable debug mode, then Chrome DevTools."
+    },
+    {
+      "id": "F8",
+      "category": "terminology",
+      "front": "Three sfdx-lwc-jest wire adapters?",
+      "back": "Generic (emit), LDS, and Apex."
+    },
+    {
+      "id": "F9",
+      "category": "limitation_security",
+      "front": "chrome://inspect vs VS Code breakpoints?",
+      "back": "Inspect does not step VS Code breakpoints; use debugger in the test."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "Best LDS fixture source?",
+      "back": "A UI API REST snapshot of the resource behind the adapter."
+    },
+    {
+      "id": "F11",
+      "category": "terminology",
+      "front": "What still must be debugged after green Jest?",
+      "back": "Org wiring: recordId, FLS, LWS, whether the bundle deployed."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "npm script to debug unit tests?",
+      "back": "npm run test:unit:debug → sfdx-lwc-jest --debug."
+    },
+    {
+      "id": "F13",
+      "category": "terminology",
+      "front": "Does Jest coverage count as Apex coverage?",
+      "back": "No. Different runners, different platforms."
+    },
+    {
+      "id": "F14",
+      "category": "decision",
+      "front": "Spring ’21 wire register API?",
+      "back": "Still works, but registering adapters is not recommended now."
+    },
+    {
+      "id": "F15",
+      "category": "terminology",
+      "front": "CLI to scaffold a test file?",
+      "back": "sf force lightning lwc test create -f path/to/component.js (reverify CLI name)."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do Jest tests, debugging, deployment, and troubleshooting split for LWC?",
+      "answer_30_seconds": "Jest is local mocks in Git. Debugging is debug mode in the org. Deployment is metadata without tests. Troubleshooting decides which of those three is failing.",
+      "answer_2_minutes": "I never say Jest runs on the server. I show __tests__ and .forceignore. I mock wires with emit after connect. If the page fails, I inspect $ params and LWS, not the mock. I do not equate Jest coverage with Apex coverage.",
+      "example": "labProductCard: CI green, page blank until recordId is passed.",
+      "tradeoffs": [
+        "Fast mocks versus org fidelity",
+        "Debug mode versus performance"
+      ],
+      "follow_ups": [
+        "What is LTS?",
+        "How do you mock Apex wires?"
+      ],
+      "weak_answer_warnings": [
+        "Jest is an Apex test"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Walk through a correct Jest test for a wired getRecord.",
+      "answer_30_seconds": "Import the same adapter, load JSON, create and append the element, emit, Promise.resolve, assert shadow DOM text.",
+      "answer_2_minutes": "I stress connect-before-emit. I prefer a UI API snapshot. I name generic versus LDS versus Apex adapters. I do not hit Salesforce from CI. Spring ’21 register calls are legacy.",
+      "example": "getRecord.emit(mockGetRecord) then expect Name.",
+      "tradeoffs": [
+        "Hand JSON versus snapshot",
+        "One file versus many test files"
+      ],
+      "follow_ups": [
+        "How do you test the error path?",
+        "shadowRoot queries?"
+      ],
+      "weak_answer_warnings": [
+        "fetch() the record in the test"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Jest passed, production users see a blank card. Your first hour?",
+      "answer_30_seconds": "Confirm deploy, enable debug mode, inspect wire config. Look for undefined recordId, FLS, or LWS. Do not delete mocks.",
+      "answer_2_minutes": "I treat green Jest as proof of rendering logic given a fixture. The org supplies identity and access. I check js-meta.xml targets and whether the page actually assigns the Id. I compare LWS between scratch and prod if a library is involved.",
+      "example": "Quick action vs record page recordId timing from LWC-008 combined with this lesson.",
+      "tradeoffs": [
+        "More integration tests versus faster unit tests",
+        "Debug mode on in UAT"
+      ],
+      "follow_ups": [
+        "Would an E2E test have caught it?",
+        "Apex logs?"
+      ],
+      "weak_answer_warnings": [
+        "Jest is wrong because production failed"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A teammate commits real Account JSON from production into __tests__/data. What do you do?",
+      "answer_30_seconds": "Remove it. That is data exposure. Replace with a synthetic UI API-shaped fixture using LAB_ names.",
+      "answer_2_minutes": "The Guide wants realistic shape, not real PII. I rotate anything that leaked, add a review check, and keep snapshots from a sandbox. This is LWC-010 meeting LWC-012.",
+      "example": "Replacing a production getRecord dump with a sandbox snapshot of a LAB_ Account.",
+      "tradeoffs": [
+        "Realism versus privacy",
+        "Shared fixtures versus per-test JSON"
+      ],
+      "follow_ups": [
+        "Git history cleanup?",
+        "CI secret scanning?"
+      ],
+      "weak_answer_warnings": [
+        "It's only a test folder"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Your wire test never updates the DOM. Checklist?",
+      "answer_30_seconds": "Connected? Same adapter import? emit after append? Promise.resolve? Mock shape match?",
+      "answer_2_minutes": "I also check they used the LDS adapter when the component uses uiRecordApi. I look for querying the wrong CSS class. I do not start with LWS; Jest is not the org sandbox.",
+      "example": "emit before appendChild in labProductCard.test.js.",
+      "tradeoffs": [
+        "Testing-library helpers versus raw shadowRoot",
+        "One fat test versus focused cases"
+      ],
+      "follow_ups": [
+        "How do you emit an error?",
+        "flushPromises patterns?"
+      ],
+      "weak_answer_warnings": [
+        "Salesforce Jest is broken"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "How do you debug a wired property on a live page?",
+      "answer_30_seconds": "Debug mode, custom formatters, select the element, inspect data, error, config, isDataProvisionedForConfig.",
+      "answer_2_minutes": "If both data and error are undefined, I look at config completeness. I do not wrap @wire in try-catch (LWC-007). With LWS I still start with debug mode. Apex logs will not show a missing $ param.",
+      "example": "$0 on c-lab-product-card in the Console.",
+      "tradeoffs": [
+        "Wired property versus wired function for debug",
+        "Debug mode cost"
+      ],
+      "follow_ups": [
+        "What is context on the formatter?",
+        "GraphQL errors plural?"
+      ],
+      "weak_answer_warnings": [
+        "Only System.debug in Apex"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When are Jest tests not enough to ship?",
+      "answer_30_seconds": "When the risk is FLS, LWS, CSP, container support, or data volume. Those need org or performance tests.",
+      "answer_2_minutes": "I still require Jest for rendering branches (loading/empty/error). I add Apex tests for the server. I do a sandbox keyboard/mobile pass (LWC-009) and a payload review (LWC-010/011). Jest is necessary and not sufficient.",
+      "example": "Shipping labCaseGrid with Jest but 3,000 rows in UAT—still a fail.",
+      "tradeoffs": [
+        "CI speed versus org time",
+        "Unit versus E2E"
+      ],
+      "follow_ups": [
+        "What E2E tool? (Needs verification)",
+        "Apex coverage?"
+      ],
+      "weak_answer_warnings": [
+        "100% Jest means production-ready"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this with a hangar analogy, then break it.",
+      "answer_30_seconds": "Jest is a mock fuselage checklist. Debug mode is a lit hangar. Deploy sends the plane, not the binder. The break: real flights still need real fuel—recordId and FLS—that mocks cannot supply.",
+      "answer_2_minutes": "I also break Chrome inspect versus VS Code breakpoints. I mention LTS as the old trolley. I never use a library metaphor. Troubleshooting is reading the engine light: missing $ param versus distortion versus failed deploy.",
+      "example": "Whiteboard Git → Jest vs Git → deploy arrows, no arrow from Jest to the org.",
+      "tradeoffs": [
+        "Analogy versus showing emit code",
+        "Local speed versus org truth"
+      ],
+      "follow_ups": [
+        "Draw .forceignore",
+        "Name the three adapters"
+      ],
+      "weak_answer_warnings": [
+        "catalog-shelf metaphor"
+      ]
+    }
+  ]
+}

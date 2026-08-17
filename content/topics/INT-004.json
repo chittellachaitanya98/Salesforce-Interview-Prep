@@ -1,0 +1,1021 @@
+{
+  "topic_id": "INT-004",
+  "slug": "oauth-flows-connected-apps-external-credentials-named-c",
+  "title": "OAuth flows, connected apps, external credentials, named credentials, and token safety",
+  "track": "Integration and APIs",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "INT-003"
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer official Help and Developer Guides over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "objectives": [
+    "Describe OAuth 2.0 as token-based authorization via a connected app or external client app, using the official three-step model—without inventing grant parameter lists.",
+    "Choose connected-app inbound access versus named credentials plus external credentials for outbound callouts.",
+    "State that user external credentials store encrypted tokens and that Apex should use callout named credentials instead of hardcoded secrets.",
+    "Name only OAuth flows that Salesforce Help documents, and send grant details to that page."
+  ],
+  "diagnostic_question": "A middleware app must call Salesforce REST, and Apex must call GitHub. Where do connected apps vs named/external credentials belong, and where must tokens never live?",
+  "definition": "OAuth 2.0 is an open protocol that authorizes sharing Salesforce (or remote) data through tokens rather than handing over a password to every client. A connected app (or external client app) requests access; an authorizing server issues tokens; a resource server validates them. For Salesforce callouts, a named credential holds the endpoint URL and HTTP transport; an external credential holds the authentication protocol and principals; user external credentials store encrypted tokens. ([Authorize Apps with OAuth](https://help.salesforce.com/s/articleView?id=remoteaccess_authenticate.htm); [Named Credentials](https://developer.salesforce.com/docs/platform/named-credentials/guide/get-started.html); [OAuth and connected apps](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_oauth_and_connected_apps.htm))",
+  "why_it_matters": "Hard-coded tokens in Apex, username-password 'because it is faster,' and over-scoped connected apps are interview and incident failures. Token safety is the difference between a managed secret and a leaked session.",
+  "sixty_second_explanation": "Think of a bonded warehouse. A connected app is a registered visitor company. An OAuth flow is how the gate issues a time-limited badge (token) after the right dance—look up the dance in Salesforce Help, do not invent it. Named credentials are the labeled truck route to someone else's warehouse. External credentials are how that truck proves itself. Encrypted user external credentials are the badge locker. Apex should ask the locker, not tape badges to the windshield.",
+  "deeper_explanation": [
+    "Official three steps for an OAuth authorization flow: the client (via connected app or external client app) requests access; the authorizing server grants access tokens; the resource server validates tokens and allows the protected resource. Details of each supported flow are in Salesforce Help: OAuth Authorization Flows. This lesson will not invent grant_type values, endpoint query strings, or token lifetimes. ([SOAP/REST OAuth topics](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_oauth_and_connected_apps.htm))",
+    "Help articles that configure connected apps mention enabling OAuth settings, selecting OAuth scopes (see OAuth Tokens and Scopes), optional PKCE for supported authorization-code style flows, and separate configuration topics for the OAuth 2.0 Client Credentials Flow and the Authorization Code and Credentials Flow. If an interviewer asks for a full grant catalog, open Help—do not recitation-invent. ([Enable OAuth Settings](https://help.salesforce.com/s/articleView?id=connected_app_create_api_integration.htm))",
+    "Named credentials (preferred, post-Winter '23 model): named credential = callout endpoint + HTTP transport; external credential = authentication protocol and principals; the same external credential can serve multiple named credentials; principals map to permission sets/profiles; user external credentials store encrypted tokens. Legacy named credentials are deprecated and slated for discontinuation. ([Get Started with Named Credentials](https://developer.salesforce.com/docs/platform/named-credentials/guide/get-started.html))",
+    "Token safety: do not put access tokens, refresh tokens, or client secrets in Apex source, debug logs, or LAB_ fields. Prefer named credentials so Salesforce generates the authorization header. Rotate and revoke via Setup/connected-app policies. Exact refresh behavior is flow-specific—Needs verification on the Help page for that flow."
+  ],
+  "mental_model": {
+    "analogy": "A bonded warehouse gate: visitor company registration (connected app), badge-issuing dance (OAuth flow from Help), truck route (named credential), proof method (external credential), locked badge cabinet (encrypted user external credentials).",
+    "useful_mapping": [
+      "connected app / external client app → registered visiting company",
+      "OAuth scope → which rooms the badge opens",
+      "access token → time-limited badge (lifetime: see Help, do not invent)",
+      "named credential → destination dock URL plus HTTP truck type",
+      "external credential → how the truck authenticates",
+      "principal → who is allowed to send that truck",
+      "user external credential → encrypted stored tokens",
+      "Apex callout:Name → ask the gate, do not tape a badge on the code"
+    ],
+    "where_it_breaks": [
+      "OAuth dances differ; this warehouse sketch is not a grant-type table.",
+      "Inbound (they call Salesforce) vs outbound (Salesforce calls them) use different objects.",
+      "PKCE and client-secret rules differ for public vs confidential clients—use Help, not this analogy.",
+      "Legacy named credentials still exist until discontinued; prefer the new model."
+    ]
+  },
+  "teach_back_prompt": "Explain inbound connected-app OAuth versus outbound named/external credentials, then name two token-safety rules and one thing you will look up in Help rather than invent.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Three official OAuth steps from memory."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Connected app vs named credential vs external credential."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Where encrypted tokens live."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Debug a 401: token vs named credential vs scope."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: token safety without listing invented grants."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-OAUTH-HELP",
+      "title": "Authorize Apps with OAuth (Salesforce Help)",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=remoteaccess_authenticate.htm",
+      "supports": "OAuth flows grant restricted access via tokens; tokens and scopes; identity URL; endpoints. Points to OAuth Authorization Flows for per-flow detail.",
+      "release_or_version": "Salesforce Help / Summer '26 verification date",
+      "last_verified": "2026-08-16",
+      "limits": "Flow parameter lists live on child Help topics—do not invent them here."
+    },
+    {
+      "source_id": "SF-OAUTH-API",
+      "title": "Authorization Through External Client Apps or Connected Apps and OAuth 2.0",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_oauth_and_connected_apps.htm",
+      "supports": "Use connected app or external client app; OAuth 2.0 token exchange; three-step flow; consult Help for each supported flow.",
+      "release_or_version": "SOAP API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace the Help flow catalog."
+    },
+    {
+      "source_id": "SF-CONNECTED-OAUTH",
+      "title": "Enable OAuth Settings for API Integration",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=connected_app_create_api_integration.htm",
+      "supports": "Enable OAuth on a connected app; scopes; PKCE option for supported authorization-code style flows; pointers to Client Credentials and Authorization Code and Credentials configuration.",
+      "release_or_version": "Salesforce Help",
+      "last_verified": "2026-08-16",
+      "limits": "UI labels can shift; reverify in the target org."
+    },
+    {
+      "source_id": "SF-NC-START",
+      "title": "Get Started with Named Credentials",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/named-credentials/guide/get-started.html",
+      "supports": "Named credential = endpoint + HTTP; external credential = protocol + principals; encrypted user external credentials; legacy named credentials deprecated after Winter '23 preferred model.",
+      "release_or_version": "Named Credentials Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Packaging of secrets is a neighboring guide; tokens are not packageable."
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Inbound connected app",
+        "Three OAuth steps",
+        "Look up flows in Help",
+        "Named vs external credential",
+        "Encrypted tokens",
+        "Never in Apex source"
+      ],
+      "accessible_description": "Inbound apps use connected apps and OAuth tokens. Outbound callouts use named plus external credentials. Tokens stay encrypted, not in code."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-OAUTH-HELP",
+        "SF-OAUTH-API",
+        "SF-NC-START",
+        "SF-CONNECTED-OAUTH"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Inbound OAuth versus outbound named credentials"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Client[External client] --> CA[Connected app or external client app]\n  CA --> Flow[OAuth flow from Help]\n  Flow --> Token[Access token]\n  Token --> API[Salesforce REST SOAP etc]\n  Apex[Apex or External Services] --> NC[Named credential endpoint]\n  NC --> EC[External credential protocol]\n  EC --> UEC[Encrypted user external credentials]\n  UEC --> Remote[Remote HTTP API]",
+      "decision": "flowchart TD\n  Need[Need credentials] --> Q1{Who is calling Salesforce APIs?}\n  Q1 -->|External app inbound| In[Connected app or external client app plus OAuth flow from Help]\n  Q1 -->|Salesforce calling out| Out[Named credential plus external credential]\n  Out --> Q2{Where do tokens live?}\n  Q2 -->|Correct| Enc[Encrypted user external credentials]\n  Q2 -->|Wrong| Code[Never Apex source or debug logs]\n  In --> Q3{Need a specific grant table?}\n  Q3 --> Help[Open OAuth Authorization Flows Help do not invent]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "OAuth 2.0 authorizes secure data sharing through tokens. Connected apps or external client apps request access using an OAuth 2.0 flow. Official general steps: request access, authorizing server grants tokens, resource server validates tokens.",
+      "source_ids": [
+        "SF-OAUTH-HELP",
+        "SF-OAUTH-API"
+      ],
+      "scope": "OAuth model",
+      "validation": "Authorize Apps with OAuth and SOAP API OAuth topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Per-flow procedures and parameters are documented in Salesforce Help OAuth Authorization Flows. This handbook does not invent grant details. Help for connected apps also documents OAuth scopes, an optional PKCE requirement for supported authorization-code style flows, and separate setup for Client Credentials and Authorization Code and Credentials flows.",
+      "source_ids": [
+        "SF-OAUTH-API",
+        "SF-CONNECTED-OAUTH"
+      ],
+      "scope": "Flow catalog boundary",
+      "validation": "Developer guide defers to Help; Enable OAuth Settings names those flows without this lesson copying parameter tables.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A named credential specifies a callout endpoint and HTTP transport. An external credential supplies authentication protocol and principals. User external credentials store encrypted tokens. The same external credential can be reused by more than one named credential. Legacy named credentials are deprecated in favor of this model introduced Winter '23.",
+      "source_ids": [
+        "SF-NC-START"
+      ],
+      "scope": "Named and external credentials",
+      "validation": "Get Started with Named Credentials.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "OAuth scopes on a connected app define the protected resources tokens may access. Identity URL is available when the id scope is authorized in user-agent or web server flows as documented in Help.",
+      "source_ids": [
+        "SF-OAUTH-HELP",
+        "SF-CONNECTED-OAUTH"
+      ],
+      "scope": "Scopes and identity",
+      "validation": "Authorize Apps with OAuth; Enable OAuth Settings.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Prefer new named/external credentials over legacy named credentials. Reverify External Client Apps vs connected-app creation policy in the target org for Summer '26—Needs verification, do not invent a cutoff date here.",
+  "unresolved_uncertainty": [
+    "Exact token lifetimes, endpoint paths, and grant_type strings are flow-specific—use OAuth Authorization Flows Help.",
+    "Org-level restrictions on creating connected apps versus external client apps—Needs verification in the target org."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Named credential",
+      "telugu": "కాల్‌అవుట్ URL మరియు HTTP ట్రాన్స్‌పోర్ట్ నిర్వచనం."
+    },
+    {
+      "english": "OAuth token",
+      "telugu": "పాస్‌వర్డ్ బదులు యాక్సెస్ ఇచ్చే బ్యాడ్జ్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Inbound: connected app or external client app plus an OAuth flow from Help. Outbound: named credential for the URL, external credential for auth, encrypted user external credentials for tokens. I never paste tokens into Apex, and I do not invent grant parameter lists.",
+    "two_minutes": "OAuth 2.0 exchanges tokens, not a shared password taped in code. I can recite the three official steps. For which dance to use, I name only flows Help names—web server, PKCE for supported authorization-code style flows, client credentials, Authorization Code and Credentials—and I send details to OAuth Authorization Flows. Scopes bound the badge. Named credentials skip embedding secrets and can skip remote site settings for that host. Legacy named credentials should not be the default after Winter '23."
+  },
+  "terminology": [
+    {
+      "term": "OAuth 2.0",
+      "plain": "A standard way to hand out badges (tokens) instead of raw passwords to every app.",
+      "precise": "Open protocol that authorizes secure data sharing between applications through the exchange of tokens.",
+      "example": "Middleware receives an access token after a Help-documented flow and calls REST.",
+      "non_example": "Storing a Salesforce user password in Apex.",
+      "confusable_neighbor": "Salesforce user login MFA: proves a human; OAuth authorizes an app.",
+      "boundary": "Grant tables are Help, not this lesson."
+    },
+    {
+      "term": "OAuth flow",
+      "plain": "The specific dance that results in tokens.",
+      "precise": "Each flow is a different approval process. General steps: request, token grant, resource validation. Supported flows are listed in OAuth Authorization Flows Help.",
+      "example": "Interviewer asks for client credentials setup: you cite the Help topic rather than inventing a body.",
+      "non_example": "Inventing a grant_type from memory in a handbook answer.",
+      "confusable_neighbor": "Named credential browser vs JWT variants on external credentials—also documented, not invented.",
+      "boundary": "This lesson names Help-documented flow families only."
+    },
+    {
+      "term": "connected app",
+      "plain": "The Salesforce registration that lets an external app request OAuth access.",
+      "precise": "A connected app (or external client app) requests access to API resources on behalf of a client using OAuth 2.0.",
+      "example": "Create/enable OAuth settings and scopes for a sandbox middleware app.",
+      "non_example": "A named credential pointing at GitHub (outbound).",
+      "confusable_neighbor": "External client app: documented alternative; confirm org policy.",
+      "boundary": "Policy of who may create apps is org-specific."
+    },
+    {
+      "term": "named credential",
+      "plain": "The named destination URL Salesforce callouts should use.",
+      "precise": "Specifies the URL of a callout endpoint and HTTP transport. Use it as the callout endpoint instead of a raw URL.",
+      "example": "callout:LAB_GitHub in Apex (INT-006).",
+      "non_example": "Hard-coded https://api.example.com plus a token header in Apex.",
+      "confusable_neighbor": "Remote site setting: still needed if you do not use a named credential for that host.",
+      "boundary": "Preferred over legacy named credentials."
+    },
+    {
+      "term": "external credential",
+      "plain": "How Salesforce authenticates to that destination.",
+      "precise": "Authentication protocol and user credentials/principals for the callout. Reusable across named credentials. Principals map to permissions.",
+      "example": "OAuth protocol on an external credential linked to two named credentials for related APIs.",
+      "non_example": "Putting the client secret in a custom label.",
+      "confusable_neighbor": "Connected app: inbound to Salesforce, not the outbound protocol pack.",
+      "boundary": "Packaging cannot include live tokens."
+    },
+    {
+      "term": "user external credential",
+      "plain": "The locked cabinet where tokens sit.",
+      "precise": "Stores encrypted tokens used by named credentials.",
+      "example": "Per-user principal tokens after each user authorizes GitHub.",
+      "non_example": "Debug log of Authorization: Bearer.",
+      "confusable_neighbor": "Named Principal vs Per User identity types (documented on packaging/Help).",
+      "boundary": "Do not dump these objects in unmanaged git."
+    },
+    {
+      "term": "OAuth scope",
+      "plain": "Which rooms the badge opens.",
+      "precise": "Scopes define permissions granted with tokens; assigned on the connected app; listed in OAuth Tokens and Scopes Help.",
+      "example": "api scope versus tighter custom scopes as documented.",
+      "non_example": "Profile CRUD as a substitute for app scopes.",
+      "confusable_neighbor": "Permission set for external credential principal: outbound authorization to make the callout.",
+      "boundary": "Do not memorize unofficial scope tables."
+    },
+    {
+      "term": "token safety",
+      "plain": "Treat tokens like badge keys: encrypt, least scope, never log, never commit.",
+      "precise": "Prefer platform-managed encrypted user external credentials and generated authorization headers. Do not embed secrets in Apex. Refresh/revoke using documented Setup/flow behavior—do not invent TTLs.",
+      "example": "Callout uses named credential; code review rejects a pasted Bearer token.",
+      "non_example": "System.debug of the access token 'just in sandbox'.",
+      "confusable_neighbor": "Password policies for human logins.",
+      "boundary": "PKCE and secret requirements: Help for the flow."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide inbound vs outbound",
+      "actor": "Architect",
+      "trigger": "Need auth",
+      "before": "One blob of 'OAuth'",
+      "after": "Connected app vs named/external credential",
+      "observe": "Arrow drawn: they call us vs we call them",
+      "failure": "Using a connected app as a GitHub callout URL"
+    },
+    {
+      "step": 2,
+      "transition": "Select flow from Help",
+      "actor": "Developer + admin",
+      "trigger": "Inbound client type known",
+      "before": "Guessed grant",
+      "after": "Named Help flow; PKCE considered if authorization-code style",
+      "observe": "Link to OAuth Authorization Flows in the design record",
+      "failure": "Invented grant_type in Apex"
+    },
+    {
+      "step": 3,
+      "transition": "Configure outbound credentials",
+      "actor": "Admin",
+      "trigger": "Salesforce calls out",
+      "before": "URL in code",
+      "after": "Named credential + external credential + principal permissions",
+      "observe": "No secret in the Apex class",
+      "failure": "Legacy named credential as the default without reason"
+    },
+    {
+      "step": 4,
+      "transition": "Token hygiene",
+      "actor": "Developer + security",
+      "trigger": "Tokens exist",
+      "before": "Logs and repos at risk",
+      "after": "Encrypted storage, least scopes, no debug of Bearer",
+      "observe": "Code scan clean; Help used for refresh",
+      "failure": "Pasting tokens into LAB_ fields"
+    }
+  ],
+  "when_to_use": [
+    "When an external app needs OAuth access to Salesforce APIs via a connected app or external client app.",
+    "When Apex, External Services, or Connect must call a remote URL using named credentials and external credentials.",
+    "When you must explain token safety: encrypted user external credentials, not secrets in source.",
+    "When an interviewer asks which OAuth flow to use—and you should point at Help rather than invent grant details.",
+    "When replacing hardcoded endpoints and Bearer headers with the Winter '23+ named/external credential model."
+  ],
+  "when_not_to_use": [
+    "Do not use this lesson as a copy-paste grant_type cookbook; OAuth Authorization Flows Help owns those details.",
+    "Do not treat named credentials as a substitute for picking REST vs Bulk (INT-002) or integration style (INT-003).",
+    "Do not put OAuth tokens in Apex, custom labels, or debug logs as a 'temporary' token-safety shortcut.",
+    "Do not configure production connected apps from this handbook lab, or invent External Client App cutoff dates.",
+    "Do not use username-password as a default flow because it 'is easier' without reading current Help warnings."
+  ],
+  "configuration_or_code_location": [
+    "Setup: App Manager / connected apps or External Client Apps (verify current nav).",
+    "Setup: Named Credentials and External Credentials.",
+    "Apex: callout:My_Named_Credential (INT-006).",
+    "Sandbox only; LAB_ names."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox: middleware must read LAB_Account via REST. Separately, Apex must GET a public test HTTP API. No production tokens. You must not invent a grant body.",
+    "inputs": [
+      "Inbound REST client",
+      "Outbound Apex GET",
+      "Need least privilege",
+      "No secrets in git"
+    ],
+    "decisions": [
+      {
+        "decision": "Inbound uses a connected app (or external client app) with OAuth enabled and documented scopes.",
+        "because": "Official model: app + OAuth 2.0 tokens for API access.",
+        "rejected": "Sharing a human password in the middleware config file"
+      },
+      {
+        "decision": "Outbound uses a named credential plus external credential; Apex uses callout:LAB_HttpBin.",
+        "because": "Named credential holds URL/transport; tokens stay in encrypted user external credentials.",
+        "rejected": "req.setHeader('Authorization','Bearer '+hardcoded)"
+      },
+      {
+        "decision": "Flow details come from OAuth Authorization Flows Help, not from this page's imagination.",
+        "because": "Developer guide explicitly defers per-flow detail to Help.",
+        "rejected": "Inventing grant_type=password parameters in the design record"
+      }
+    ],
+    "configuration_or_code": [
+      "Design record links Help flow topic; does not paste a token.",
+      "Apex HttpRequest endpoint starts with callout: (full send is INT-006)."
+    ],
+    "output": "Inbound vs outbound split with token-safety rules.",
+    "verification": [
+      "No Bearer in Apex source.",
+      "Design record cites Help for the inbound flow.",
+      "Named credential, not raw host, is the outbound endpoint plan."
+    ],
+    "self_explanation": "I split inbound vs outbound and refused to invent grants."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox. Synthetic LAB_ named credential to a non-production HTTP test host if policy allows; otherwise stop at metadata names.",
+    "starting_state_checks": [
+      "Permission to create named credentials in sandbox",
+      "No production client secrets"
+    ],
+    "steps": [
+      "In a scratch Apex class LAB_TokenSafety, write a comment block: inbound = connected app; outbound = named + external credential; tokens = encrypted user external credentials.",
+      "Create (or mock in comments if blocked) named credential LAB_HttpBin and reference endpoint 'callout:LAB_HttpBin/get' in a private method without a Bearer literal.",
+      "Run a regex or visual scan of the class: zero matches for Bearer, client_secret, refresh_token assignments.",
+      "Add a test method that asserts req.getEndpoint().startsWith('callout:') without sending to production."
+    ],
+    "guided_completion": [
+      "If a secret string is in the class, fail the lab.",
+      "If the design uses a connected app for the outbound URL, reverse inbound vs outbound."
+    ],
+    "independent_challenge": "Write three bullets naming Help-documented flow families (web server / PKCE, client credentials, Authorization Code and Credentials) and a fourth bullet that says remaining grant details are in Help.",
+    "evidence": [
+      "Apex without secrets; test asserting callout: prefix.",
+      "Comment citing OAuth Authorization Flows Help."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Apex and unused sandbox credentials.",
+      "Revoke any sandbox tokens you created."
+    ],
+    "limitations": "Does not complete a live OAuth dance against production."
+  },
+  "decision_table": [
+    {
+      "signal": "An external program must call Salesforce REST or SOAP APIs.",
+      "choose": "Connected app or external client app with OAuth 2.0; pick the flow from Help.",
+      "not": "A named credential pointing at login.salesforce.com as if Salesforce were the remote callout target for that inbound client.",
+      "why": "Official inbound model is app + OAuth tokens for Platform APIs."
+    },
+    {
+      "signal": "Apex or External Services must call a remote HTTPS API.",
+      "choose": "Named credential (endpoint) plus external credential (protocol/principals).",
+      "not": "Hard-coded URL and Bearer token in Apex.",
+      "why": "Named credentials exist to specify URL and auth without secrets in code."
+    },
+    {
+      "signal": "You need the exact token request fields for a flow.",
+      "choose": "Salesforce Help OAuth Authorization Flows (and the specific flow article).",
+      "not": "An invented grant_type list from memory in this handbook.",
+      "why": "Developer guides defer per-flow detail to Help; inventing grants is out of contract."
+    },
+    {
+      "signal": "Tokens must be stored after a user or named principal authorizes.",
+      "choose": "Encrypted user external credentials managed by the platform.",
+      "not": "Custom object, debug log, or git-tracked .env committed to the repo.",
+      "why": "Official model: user external credentials store encrypted tokens."
+    },
+    {
+      "signal": "Authorization-code style browser flow on a connected app.",
+      "choose": "Follow Help; consider Require PKCE when the article says it applies.",
+      "not": "Disable all secrets and PKCE without reading the public vs confidential client guidance.",
+      "why": "Enable OAuth Settings documents PKCE for supported authorization-code style flows."
+    }
+  ],
+  "limitations": [
+    "No invented grant tables.",
+    "Org policy on connected apps vs external client apps needs verification.",
+    "Legacy named credentials still appear until discontinued.",
+    "INT-006 owns the Apex send."
+  ],
+  "security_notes": [
+    "Least-privilege scopes.",
+    "Never log tokens.",
+    "Revoke unused connected apps.",
+    "Per-user vs named principal changes who can call out."
+  ],
+  "common_mistakes": [
+    "Inventing OAuth grants.",
+    "Tokens in Apex.",
+    "Connected app for outbound GitHub URL.",
+    "Legacy named credentials by default.",
+    "Username-password because it is easy.",
+    "Debug of Bearer headers."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "401 from Salesforce API.",
+      "check": [
+        "Token missing/expired—use Help refresh rules, do not invent.",
+        "Wrong connected app, scope, or env (sandbox vs prod)."
+      ],
+      "do_not_assume": "REST is down."
+    },
+    {
+      "symptom": "Apex callout 401 to remote API.",
+      "check": [
+        "Named vs external credential link.",
+        "Principal permission.",
+        "Whether generate authorization header is enabled."
+      ],
+      "do_not_assume": "You should paste a token into Apex to 'test'."
+    }
+  ],
+  "production_notes": [
+    "Rotate secrets via documented Setup paths.",
+    "Review Connected Apps OAuth Usage.",
+    "No production tokens in this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Official general OAuth steps?",
+      "options": {
+        "A": "Client requests access; authorizing server grants tokens; resource server validates tokens",
+        "B": "Apex stores passwords; REST ignores tokens; Metadata deploys tokens",
+        "C": "Bulk API issues OAuth grants",
+        "D": "Named credentials replace OAuth for inbound Salesforce API clients"
+      },
+      "answer": "A",
+      "rationale": "Developer guide and Help describe those three steps.",
+      "distractor_explanations": {
+        "B": "Nonsense mix.",
+        "C": "Bulk is a data API.",
+        "D": "Named credentials are outbound callout config."
+      },
+      "concept": "Three steps",
+      "citation_ids": [
+        "SF-OAUTH-API",
+        "SF-OAUTH-HELP"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Named credential vs external credential?",
+      "options": {
+        "A": "Named: endpoint URL and HTTP transport; external: authentication protocol and principals",
+        "B": "Named stores Apex classes; external deploys layouts",
+        "C": "They are Bulk job types",
+        "D": "External credential is only for inbound connected apps"
+      },
+      "answer": "A",
+      "rationale": "Get Started with Named Credentials.",
+      "distractor_explanations": {
+        "B": "Wrong families.",
+        "C": "False.",
+        "D": "Outbound callout auth."
+      },
+      "concept": "NC vs EC",
+      "citation_ids": [
+        "SF-NC-START"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do named-credential tokens live in the preferred model?",
+      "options": {
+        "A": "Encrypted user external credentials",
+        "B": "Apex static final Strings",
+        "C": "Page layout XML",
+        "D": "Metadata API retrieve of Account rows"
+      },
+      "answer": "A",
+      "rationale": "User external credentials store encrypted tokens.",
+      "distractor_explanations": {
+        "B": "Token-safety fail.",
+        "C": "UI metadata.",
+        "D": "Data API confusion."
+      },
+      "concept": "Token store",
+      "citation_ids": [
+        "SF-NC-START"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Middleware must call Salesforce REST. First auth object?",
+      "options": {
+        "A": "Connected app or external client app with OAuth",
+        "B": "Named credential to api.github.com",
+        "C": "Tooling API WSDL only",
+        "D": "A custom object of tokens"
+      },
+      "answer": "A",
+      "rationale": "Inbound API access uses connected/external client apps and OAuth.",
+      "distractor_explanations": {
+        "B": "Outbound.",
+        "C": "Wrong family.",
+        "D": "Unsafe store."
+      },
+      "concept": "Inbound",
+      "citation_ids": [
+        "SF-OAUTH-API"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Apex must call a remote HTTPS API. Preferred endpoint style?",
+      "options": {
+        "A": "Named credential URL scheme callout:My_Named_Credential",
+        "B": "Hard-coded Bearer in source",
+        "C": "Metadata API",
+        "D": "SOAP Enterprise WSDL of the remote GitHub org"
+      },
+      "answer": "A",
+      "rationale": "Named credentials as callout endpoints (detail INT-006).",
+      "distractor_explanations": {
+        "B": "Unsafe.",
+        "C": "Not callouts.",
+        "D": "Not how GitHub is called from Apex."
+      },
+      "concept": "Outbound",
+      "citation_ids": [
+        "SF-NC-START"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Interviewer wants the token request POST body for a flow. Best answer?",
+      "options": {
+        "A": "Open Salesforce Help OAuth Authorization Flows for that flow; do not invent grant fields",
+        "B": "Always grant_type=password",
+        "C": "Always copy a blog",
+        "D": "OAuth does not use HTTP"
+      },
+      "answer": "A",
+      "rationale": "Guides defer per-flow detail to Help; this lesson will not invent grants.",
+      "distractor_explanations": {
+        "B": "Invented and often discouraged.",
+        "C": "Unverified.",
+        "D": "False."
+      },
+      "concept": "No invented grants",
+      "citation_ids": [
+        "SF-OAUTH-API",
+        "SF-CONNECTED-OAUTH"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Winter '23+ guidance on legacy named credentials?",
+      "options": {
+        "A": "Prefer the new named + external credential model; legacy is deprecated and to be discontinued",
+        "B": "Legacy is required for REST",
+        "C": "Legacy stores tokens in Apex",
+        "D": "There were never legacy named credentials"
+      },
+      "answer": "A",
+      "rationale": "Get Started: preferred credential vs deprecated legacy.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Legacy NC",
+      "citation_ids": [
+        "SF-NC-START"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Code review finds Authorization: Bearer in Apex. Fix?",
+      "options": {
+        "A": "Remove it; use named credential generated authorization header and encrypted tokens",
+        "B": "Log the token instead",
+        "C": "Move the token to a formula field",
+        "D": "Switch to Metadata API"
+      },
+      "answer": "A",
+      "rationale": "Token safety plus named credentials purpose.",
+      "distractor_explanations": {
+        "B": "Worse.",
+        "C": "Still exposed.",
+        "D": "Wrong API."
+      },
+      "concept": "Token in code",
+      "citation_ids": [
+        "SF-NC-START"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "PKCE checkbox on a connected app. Official idea?",
+      "options": {
+        "A": "Require PKCE for supported authorization-code style flows listed in Help; flows without PKCE are blocked if required",
+        "B": "PKCE replaces named credentials",
+        "C": "PKCE is a Bulk header",
+        "D": "PKCE is only for Metadata API"
+      },
+      "answer": "A",
+      "rationale": "Enable OAuth Settings documents PKCE for those flows.",
+      "distractor_explanations": {
+        "B": "Different feature.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "PKCE",
+      "citation_ids": [
+        "SF-CONNECTED-OAUTH"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Same OAuth protocol needed for two remote URLs. Reuse?",
+      "options": {
+        "A": "One external credential linked from two named credentials",
+        "B": "Two connected apps pointing outbound",
+        "C": "Duplicate tokens in two Apex classes",
+        "D": "Two Metadata deploys of Account"
+      },
+      "answer": "A",
+      "rationale": "Same external credential can be used by more than one named credential.",
+      "distractor_explanations": {
+        "B": "Inbound objects.",
+        "C": "Unsafe.",
+        "D": "Wrong."
+      },
+      "concept": "Reuse EC",
+      "citation_ids": [
+        "SF-NC-START"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Connected app vs named credential?",
+      "options": {
+        "A": "Connected app: inbound OAuth client registration; named credential: outbound endpoint definition",
+        "B": "They are identical",
+        "C": "Named credential issues Salesforce session IDs for humans",
+        "D": "Connected apps only work with Bulk CSV"
+      },
+      "answer": "A",
+      "rationale": "Inbound vs outbound split.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Human sessions are not this topic.",
+        "D": "False."
+      },
+      "concept": "Inbound vs outbound",
+      "citation_ids": [
+        "SF-OAUTH-API",
+        "SF-NC-START"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "OAuth scope vs external credential principal permission?",
+      "options": {
+        "A": "Scope: what the inbound token may access on Salesforce; principal permission: who may use the outbound callout credential",
+        "B": "Both are page layouts",
+        "C": "Scopes replace FLS on Account always",
+        "D": "Principals are GraphQL types"
+      },
+      "answer": "A",
+      "rationale": "Help scopes vs named-credential principal mapping.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "FLS still applies to data.",
+        "D": "False."
+      },
+      "concept": "Scope vs principal",
+      "citation_ids": [
+        "SF-OAUTH-HELP",
+        "SF-NC-START"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "oauth",
+      "front": "What does OAuth 2.0 exchange?",
+      "back": "Tokens that authorize access, not a password shared into every client."
+    },
+    {
+      "id": "F2",
+      "category": "steps",
+      "front": "Three official OAuth steps?",
+      "back": "Request access; authorizing server grants tokens; resource server validates tokens."
+    },
+    {
+      "id": "F3",
+      "category": "help",
+      "front": "Where are per-flow grant details?",
+      "back": "Salesforce Help OAuth Authorization Flows—do not invent them."
+    },
+    {
+      "id": "F4",
+      "category": "ca",
+      "front": "Connected app purpose?",
+      "back": "Register a client so it can request Salesforce API access with OAuth."
+    },
+    {
+      "id": "F5",
+      "category": "nc",
+      "front": "Named credential holds?",
+      "back": "Callout endpoint URL and HTTP transport."
+    },
+    {
+      "id": "F6",
+      "category": "ec",
+      "front": "External credential holds?",
+      "back": "Authentication protocol and principals; reusable across named credentials."
+    },
+    {
+      "id": "F7",
+      "category": "uec",
+      "front": "User external credentials store?",
+      "back": "Encrypted tokens used by named credentials."
+    },
+    {
+      "id": "F8",
+      "category": "legacy",
+      "front": "Legacy named credentials status?",
+      "back": "Deprecated; prefer Winter '23+ named + external credentials; to be discontinued."
+    },
+    {
+      "id": "F9",
+      "category": "scope",
+      "front": "OAuth scopes do what?",
+      "back": "Define which protected resources the connected app's tokens can access."
+    },
+    {
+      "id": "F10",
+      "category": "pkce",
+      "front": "PKCE on connected apps?",
+      "back": "Optional requirement for supported authorization-code style flows per Help."
+    },
+    {
+      "id": "F11",
+      "category": "safety",
+      "front": "Token in Apex source?",
+      "back": "Never. Use named credentials and encrypted stores."
+    },
+    {
+      "id": "F12",
+      "category": "in",
+      "front": "Inbound vs outbound objects?",
+      "back": "Inbound: connected/external client app. Outbound: named + external credentials."
+    },
+    {
+      "id": "F13",
+      "category": "reuse",
+      "front": "Two URLs, one protocol?",
+      "back": "Two named credentials can share one external credential."
+    },
+    {
+      "id": "F14",
+      "category": "header",
+      "front": "Who should generate the Authorization header?",
+      "back": "Prefer Salesforce named-credential generated header, not a pasted Bearer."
+    },
+    {
+      "id": "F15",
+      "category": "eca",
+      "front": "External client app?",
+      "back": "Documented alternative to connected apps for authorizing API clients; confirm org policy."
+    },
+    {
+      "id": "F16",
+      "category": "idurl",
+      "front": "Identity URL?",
+      "back": "Help: with id scope on certain flows, the app can GET identity details using the access token."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do OAuth, connected apps, named credentials, and token safety fit together?",
+      "answer_30_seconds": "OAuth issues tokens for apps. Connected apps (or external client apps) are inbound registration. Named plus external credentials are outbound. Tokens stay encrypted, never in Apex.",
+      "answer_2_minutes": "I draw two arrows. They call Salesforce: OAuth 2.0 three steps, scopes, Help for the flow. We call them: named credential URL, external credential protocol, user external credentials encrypted. Token safety is least scope, no logs, no git. I will not recite invented grant_type tables.",
+      "example": "Middleware inbound REST plus Apex outbound to a test HTTP API in sandbox.",
+      "tradeoffs": [
+        "Convenience vs secret sprawl"
+      ],
+      "follow_ups": [
+        "Where is PKCE?"
+      ],
+      "weak_answer_warnings": [
+        "One object does both directions"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "An interviewer asks you to list every OAuth grant Salesforce supports with POST bodies. What do you do?",
+      "answer_30_seconds": "I refuse to invent. I name Help: OAuth Authorization Flows, plus Help-mentioned families like web server, client credentials, Authorization Code and Credentials, PKCE. Details stay on those pages.",
+      "answer_2_minutes": "The SOAP/REST developer topics explicitly say to apply a flow after reviewing Help. Invented password grants are a red flag. I can still explain the three steps and inbound vs outbound.",
+      "example": "Whiteboard with a link-out box labeled Help instead of fake JSON.",
+      "tradeoffs": [
+        "Memorization vs accuracy"
+      ],
+      "follow_ups": [
+        "What if they insist on grant_type?"
+      ],
+      "weak_answer_warnings": [
+        "Reciting a blog"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Apex currently sets a Bearer header from a Custom Label. Redesign.",
+      "answer_30_seconds": "Create named credential and external credential; switch endpoint to callout:; delete the label; never log the old token; revoke it.",
+      "answer_2_minutes": "Official named credentials exist so code does not manage authentication. User external credentials hold encrypted tokens. I add principal permissions so only the integration profile can call out. INT-006 is the send() lab.",
+      "example": "LAB_HttpBin named credential replacing a leaked label.",
+      "tradeoffs": [
+        "Migration effort vs leak risk"
+      ],
+      "follow_ups": [
+        "Named vs per-user principal?"
+      ],
+      "weak_answer_warnings": [
+        "Leave the label 'as backup'"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Product wants a connected app with every OAuth scope 'to save time.'",
+      "answer_30_seconds": "I refuse. Scopes define token reach. Least privilege, documented in OAuth Tokens and Scopes Help.",
+      "answer_2_minutes": "Enable OAuth Settings is where scopes are chosen. Over-scoping turns a stolen token into a wider incident. I still will not invent scope string tables; I will open Help in the review.",
+      "example": "Sandbox app that only needs api to LAB_ objects.",
+      "tradeoffs": [
+        "Time vs blast radius"
+      ],
+      "follow_ups": [
+        "Which scope is enough?"
+      ],
+      "weak_answer_warnings": [
+        "Full access by default"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Outbound callout 401 after rotating a remote client secret.",
+      "answer_30_seconds": "Update the external credential/principal secret via documented Setup or Connect API; do not paste the secret into Apex to test.",
+      "answer_2_minutes": "Named credential still points at the URL; auth material lives on the external credential. Packaging guides note secrets are not packaged. I check generate authorization header and principal access. I re-auth named or per-user principal as the identity type requires.",
+      "example": "GitHub app secret rotated; Apex unchanged and still using callout:.",
+      "tradeoffs": [
+        "Rotation speed vs downtime"
+      ],
+      "follow_ups": [
+        "Who can edit credentials?"
+      ],
+      "weak_answer_warnings": [
+        "Hard-code until Monday"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Inbound integration 401 in production, 200 in sandbox.",
+      "answer_30_seconds": "Different connected app, callback, secret, username, or my-domain. Tokens are environment-specific. I do not copy production tokens into sandbox logs.",
+      "answer_2_minutes": "I compare OAuth usage, login history, and scopes. I look up the flow's refresh rules in Help rather than guessing expiry seconds. I check IP relaxation and policies on the connected app.",
+      "example": "CI still using sandbox client id against prod host.",
+      "tradeoffs": [
+        "Env isolation vs convenience"
+      ],
+      "follow_ups": [
+        "Refresh token valid across orgs?"
+      ],
+      "weak_answer_warnings": [
+        "Disable OAuth to 'test'"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When named principal versus per-user principal on an external credential?",
+      "answer_30_seconds": "Named principal: one identity for all users of that callout. Per-user: each user authorizes; callouts use that user's token. I will not invent protocol-specific claim tables.",
+      "answer_2_minutes": "Get Started and the OAuth named-credential guide distinguish identity types. Packaging examples mention named vs per-user for basic auth and OAuth variants. I pick named for a shared org-level ERP and per-user when the remote system must see the human.",
+      "example": "Org-wide markdown converter vs per-user GitHub gists (from named-credential examples).",
+      "tradeoffs": [
+        "Admin simplicity vs user context"
+      ],
+      "follow_ups": [
+        "Guest user callouts?"
+      ],
+      "weak_answer_warnings": [
+        "Always per-user"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the bonded-warehouse analogy and where it breaks.",
+      "answer_30_seconds": "Connected app is a registered company, OAuth flow is the badge dance from Help, named credential is the truck route, external credential is the proof, encrypted cabinet holds badges. It breaks if I pretend the dance steps are in the analogy.",
+      "answer_2_minutes": "I emphasize inbound vs outbound docks. I say PKCE and client-secret rules are Help, not warehouse folklore. Legacy named credentials are old paper forms being retired, and I will not invent grant_type bodies or token TTLs.",
+      "example": "Two-arrow whiteboard: they call us vs we call them.",
+      "tradeoffs": [
+        "Teaching vs false grants"
+      ],
+      "follow_ups": [
+        "Where do scopes sit?"
+      ],
+      "weak_answer_warnings": [
+        "Invented grant_type in the analogy"
+      ]
+    }
+  ]
+}

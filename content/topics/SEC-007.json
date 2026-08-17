@@ -1,0 +1,986 @@
+{
+  "topic_id": "SEC-007",
+  "slug": "login-hours-ip-ranges-session-settings-mfa-and-connecte",
+  "title": "Login hours, IP ranges, session settings, MFA, and connected apps",
+  "track": "Identity, access, and security",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "SEC-006"
+  ],
+  "objectives": [
+    "Separate profile login hours and login IP ranges from org-wide trusted IP ranges that only skip identity verification.",
+    "Place MFA on the authentication path and session settings on the authenticated connection, not as permission grants.",
+    "Explain that connected apps have their own OAuth and IP policies that can differ from browser login.",
+    "Diagnose a blocked login versus a timed-out session versus a connected-app token restricted by IP."
+  ],
+  "diagnostic_question": "LAB_Agent cannot log in from home after 18:00, LAB_Rep is prompted for a verification code at a café Wi-Fi, LAB_Integration's connected app fails from a new data center IP, and a manager wants to 'raise session timeout to give them admin.' Which control is each, and which is not a permission set?",
+  "definition": "Login hours on a profile limit when those users may log in. Profile login IP ranges can block login from addresses outside the range. Org trusted IP ranges (Network Access) do not by themselves block login; they skip extra identity verification from known networks. After login, session settings control timeout and session security. MFA requires additional verification methods at login. Connected apps apply OAuth access policies, including IP relaxation, that may differ from interactive login. ([Session Security](https://help.salesforce.com/s/articleView?id=sf.security_overview_sessions.htm); [What Is MFA?](https://help.salesforce.com/s/articleView?id=xcloud.basics_identity_mfa.htm))",
+  "why_it_matters": "These controls look like 'access' but they are mostly when/where/how you authenticate and keep a session, not which objects you can use. Mixing them with permission sets or sharing wastes time. Connected apps are a common production miss: browser login works, the integration still fails on IP policy.",
+  "sixty_second_explanation": "Think of a shift-work loading dock. The posted shift board is login hours: after closing you do not start a new shift. The staff-only gate with a hard turnstile is profile IP ranges: wrong street, no entry. The sticker on the office Wi-Fi that skips a second ID check is org trusted IPs. The time clock that auto-clocks you out after idle time is session timeout. The second ID at the door is MFA. The vendor truck's own gate pass is the connected app—it is not the employee turnstile.",
+  "deeper_explanation": [
+    "Trailhead's org-access module, pointing at Salesforce Help, distinguishes org trusted IP ranges from profile login IP ranges: trusted org ranges bypass verification codes for known networks, while users can still log in from elsewhere after verifying identity. Profile login IP ranges, when used, mean users outside the range cannot log in. Reverify the live Help articles Restrict Login IP Ranges and Network Access in the target org. ([Control Login Access](https://help.salesforce.com/s/articleView?id=sf.security_restricting_logins.htm); [Network Access](https://help.salesforce.com/s/articleView?id=sf.security_networkaccess.htm))",
+    "Login hours are specified per profile. Help-oriented training states that if users are logged in when hours end, they can continue to view the current page but cannot take further action. Confirm the wording on the profile Login Hours page in the org rather than inventing extra lockout timers.",
+    "Session Security Help: after login a session is established. Default inactivity timeout is two hours unless Session Settings change. Session security levels (Standard vs High Assurance) can gate sensitive operations. Timeout is not a permission grant. ([Session Security](https://help.salesforce.com/s/articleView?id=sf.security_overview_sessions.htm))",
+    "Salesforce requires MFA for user-interface logins. MFA asks for a second factor after username and password. It does not assign permission sets. ([What Is MFA?](https://help.salesforce.com/s/articleView?id=xcloud.basics_identity_mfa.htm))",
+    "Connected-app OAuth policies include IP relaxation: whether tokens are restricted to trusted IP ranges. Browser success does not prove the connected app will accept a new data-center IP. ([Connected App IP policies](https://help.salesforce.com/s/articleView?id=xcloud.shr_manage_oauth_access_policies_for_a_connected_app_ip_relaxation.htm))"
+  ],
+  "mental_model": {
+    "analogy": "A shift-work loading dock: shift board = login hours, hard turnstile = profile IP ranges, office-Wi-Fi sticker = org trusted IPs, idle time clock = session, second ID = MFA, vendor gate pass = connected app.",
+    "useful_mapping": [
+      "shift board → profile login hours",
+      "hard turnstile → profile login IP ranges (block)",
+      "Wi-Fi sticker skipping second check → org Network Access trusted IPs",
+      "idle time clock → session timeout",
+      "second ID → MFA",
+      "vendor gate pass → connected app OAuth/IP policy"
+    ],
+    "where_it_breaks": [
+      "SSO identity providers may perform MFA before Salesforce sees the user (SEC-001).",
+      "High-assurance session policies can feel like authorization but remain session security.",
+      "Connected apps also have permission and scope models; this lesson only introduces IP/session adjacency."
+    ]
+  },
+  "teach_back_prompt": "Explain why a café verification prompt is not the same as a profile IP block, and why a connected app can fail when Lightning still works.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Org trusted IP vs profile login IP vs login hours vs session timeout vs MFA vs connected app."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify four login-failure tickets."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Default session timeout from Help?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a connected-app IP relaxation failure."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: these are not permission sets."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-SESSIONS",
+      "title": "Session Security",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_overview_sessions.htm",
+      "supports": "Session established after login; default two-hour inactivity timeout; Standard vs High Assurance.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Org Session Settings override the default; reverify."
+    },
+    {
+      "source_id": "SF-HELP-MFA",
+      "title": "What Is Multi-Factor Authentication?",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=xcloud.basics_identity_mfa.htm",
+      "supports": "MFA required for UI logins; password plus a second verification method.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "SSO MFA can be satisfied at the IdP; see MFA-for-SSO Help."
+    },
+    {
+      "source_id": "SF-HELP-RESTRICT-LOGIN",
+      "title": "Restrict Login Access",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_restricting_logins.htm",
+      "supports": "Login restrictions including IP-related login controls; reverify profile versus org range behavior in this article and Network Access.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Exact Setup labels can differ with enhanced profile UI."
+    },
+    {
+      "source_id": "SF-HELP-NETWORK",
+      "title": "Network Access",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_networkaccess.htm",
+      "supports": "Org trusted IP ranges for network access / identity-verification bypass behavior; confirm live page wording.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Trusted org ranges are not the same control as profile login IP ranges."
+    },
+    {
+      "source_id": "SF-HELP-CONNECTED-IP",
+      "title": "Manage OAuth Access Policies for a Connected App: IP Relaxation",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=xcloud.shr_manage_oauth_access_policies_for_a_connected_app_ip_relaxation.htm",
+      "supports": "Connected-app IP relaxation can restrict OAuth tokens to trusted IP ranges.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Do not invent token lifetimes; those are neighboring OAuth topics."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Login hours",
+        "Profile IP vs org trusted IP",
+        "MFA",
+        "Session timeout",
+        "Connected app IP policy",
+        "Not a permission set"
+      ],
+      "accessible_description": "When/where/how login controls versus session versus connected-app gate."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-SESSIONS",
+        "SF-HELP-MFA",
+        "SF-HELP-RESTRICT-LOGIN",
+        "SF-HELP-NETWORK",
+        "SF-HELP-CONNECTED-IP"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "When, where, session, MFA, connected app"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Attempt[Login attempt] --> Hours[Profile login hours]\n  Hours --> ProfIP[Profile login IP ranges]\n  ProfIP --> OrgIP[Org trusted IPs: verification skip]\n  OrgIP --> MFA[MFA verification method]\n  MFA --> Session[Session settings timeout and level]\n  Session --> App[Interactive app]\n  Attempt --> CA[Connected app OAuth]\n  CA --> CAIP[Connected app IP relaxation]",
+      "decision": "flowchart TD\n  Fail[Cannot work in Salesforce] --> Q1{Did a session ever start?}\n  Q1 -->|No| Q2{Outside hours or profile IP?}\n  Q2 -->|Hours| Hours[Profile login hours]\n  Q2 -->|Hard IP block| ProfIP[Profile login IP ranges]\n  Q2 -->|Verification code at new network| OrgIP[Not in org trusted IPs; still authentication]\n  Q2 -->|MFA method| MFA[MFA registration]\n  Q1 -->|Was in then kicked idle| Sess[Session timeout]\n  Q1 -->|Browser works integration fails| CA[Connected app IP / OAuth policy]\n  Q1 -->|Missing Setup| Perm[Not this lesson: user permission]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "After login a session is established. The documented default inactivity timeout is two hours. Session security levels can require High Assurance for sensitive operations.",
+      "source_ids": ["SF-HELP-SESSIONS"],
+      "scope": "Sessions",
+      "validation": "Session Security Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "MFA requires multiple factors at login and is required for Salesforce UI logins. It is not a permission grant.",
+      "source_ids": ["SF-HELP-MFA"],
+      "scope": "MFA",
+      "validation": "What Is Multi-Factor Authentication?",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Connected-app IP relaxation can restrict OAuth access tokens to trusted IP ranges, independent of a successful browser session.",
+      "source_ids": ["SF-HELP-CONNECTED-IP"],
+      "scope": "Connected apps",
+      "validation": "Connected app IP relaxation Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Login hours and login IP restrictions are login-path controls documented under restricting login access; org Network Access ranges are a distinct trusted-network control. Reverify profile-block versus verification-skip behavior on the live Help pages.",
+      "source_ids": ["SF-HELP-RESTRICT-LOGIN", "SF-HELP-NETWORK"],
+      "scope": "Hours and IPs",
+      "validation": "Restrict Login Access and Network Access Help.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "MFA remains required for UI logins. Reverify Session Settings and connected-app IP policies in the target org.",
+  "unresolved_uncertainty": [
+    "Exact profile Login Hours end-of-shift behavior should be confirmed on the live profile page Help.",
+    "Connected-app token lifetimes and refresh-token policies are neighboring OAuth topics; do not invent numbers."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Login hours",
+      "telugu": "ఆ ప్రొఫైల్ వినియోగదారులు ఎప్పుడు లాగిన్ కావచ్చో."
+    },
+    {
+      "english": "Login IP ranges",
+      "telugu": "ఏ చిరునామాల నుంచి లాగిన్ అనుమతి."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Login hours and profile IPs decide when and where login is allowed. Org trusted IPs mainly skip extra verification. MFA is a second factor. Session settings govern the connection after login. Connected apps have their own IP/OAuth policies. None of these is a permission set.",
+    "two_minutes": "I split tickets. Never logged in: hours, profile IP, MFA, IdP. Verification prompt at a café: probably not in org trusted IPs. Idle logout: session timeout, default two hours unless changed. Integration-only failure: connected app IP relaxation. Missing Setup: go back to user permissions. I will not raise timeout to grant admin."
+  },
+  "terminology": [
+    {
+      "term": "Login hours",
+      "plain": "The clock window when a profile's users may log in.",
+      "precise": "Per-profile schedule of allowed login times. Training materials state that when hours end, users may view the current page but cannot take further action; confirm on live Help.",
+      "example": "LAB_Agent profile allows 09:00–18:00 weekdays.",
+      "non_example": "Session inactivity timeout.",
+      "confusable_neighbor": "Session timeout: idle after login, not the shift board.",
+      "boundary": "Configured on the profile, not on a permission set overlay in this lesson."
+    },
+    {
+      "term": "Profile login IP ranges",
+      "plain": "Addresses from which that profile may log in.",
+      "precise": "When used, login from outside the range is blocked (Help/Trailhead: no verification-code workaround). Reverify Restrict Login Access Help.",
+      "example": "LAB_CallCenter profile limited to office CIDR in a lab.",
+      "non_example": "Org Network Access trusted IPs that only skip a verification challenge.",
+      "confusable_neighbor": "Org trusted IP ranges.",
+      "boundary": "Do not invent CIDR limits."
+    },
+    {
+      "term": "Trusted IP ranges",
+      "plain": "Org-known networks that skip extra identity verification.",
+      "precise": "Network Access ranges. Users outside can still log in after verifying identity, unless a profile IP block also applies.",
+      "example": "Office range added so campus Wi-Fi does not prompt a code every time.",
+      "non_example": "A hard profile IP allowlist.",
+      "confusable_neighbor": "Connected-app IP relaxation.",
+      "boundary": "Confirm live Network Access Help wording."
+    },
+    {
+      "term": "Session settings",
+      "plain": "How long and how strictly the authenticated connection lasts.",
+      "precise": "Timeout, locking, security levels. Default inactivity timeout two hours.",
+      "example": "Idle LAB_Rep sees the continue-or-logout prompt.",
+      "non_example": "Granting View Setup by lengthening timeout.",
+      "confusable_neighbor": "Login hours.",
+      "boundary": "High Assurance can gate operations; still not a permission set."
+    },
+    {
+      "term": "MFA",
+      "plain": "A second proof of identity at login.",
+      "precise": "Multiple factors from different categories. Required for Salesforce UI logins.",
+      "example": "Password plus authenticator app.",
+      "non_example": "A permission-set group.",
+      "confusable_neighbor": "High-assurance session.",
+      "boundary": "SSO MFA may run at the IdP (SEC-001)."
+    },
+    {
+      "term": "Connected app",
+      "plain": "An application that connects to Salesforce with OAuth (or SAML) policies of its own.",
+      "precise": "IP relaxation and other OAuth access policies can restrict tokens independently of a browser session.",
+      "example": "LAB_ETL connected app enforcing IP restrictions while Lightning still works from home.",
+      "non_example": "A permission set named Connected App.",
+      "confusable_neighbor": "Identity provider (SAML) from SEC-001.",
+      "boundary": "Full OAuth scope design is INT-004 territory."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Ask whether login started",
+      "actor": "Admin",
+      "trigger": "Access ticket",
+      "before": "Unknown layer",
+      "after": "No session vs dead session vs integration-only",
+      "observe": "Session Management, login history",
+      "failure": "Assigning a permission set first"
+    },
+    {
+      "step": 2,
+      "transition": "Check hours and IPs",
+      "actor": "Admin",
+      "trigger": "No session",
+      "before": "MFA blamed by default",
+      "after": "Hours, profile IP, or org trusted IP identified",
+      "observe": "Profile Login Hours / Login IP Ranges / Network Access",
+      "failure": "Confusing verification skip with a hard block"
+    },
+    {
+      "step": 3,
+      "transition": "Check MFA and session",
+      "actor": "Admin",
+      "trigger": "Identity challenge or idle drop",
+      "before": "User thinks they 'lost access'",
+      "after": "MFA method or timeout named",
+      "observe": "Verification method registration; Session Settings",
+      "failure": "Disabling MFA to grant capability"
+    },
+    {
+      "step": 4,
+      "transition": "Check the connected app separately",
+      "actor": "Admin + integration owner",
+      "trigger": "API/ETL failure",
+      "before": "Assumed identical to Lightning",
+      "after": "IP relaxation / OAuth policy inspected",
+      "observe": "Connected app policies vs user login history success",
+      "failure": "Opening OWD"
+    }
+  ],
+  "when_to_use": [
+    "When users cannot log in during certain hours or from certain IP ranges.",
+    "When MFA or session timeout is blamed for a missing permission.",
+    "When a connected app fails from a new IP while the same user still uses Lightning.",
+    "When you must distinguish org trusted IPs (verification skip) from profile login IP ranges (possible hard block)."
+  ],
+  "when_not_to_use": [
+    "Do not use login hours or IP ranges to grant object permissions or sharing.",
+    "Do not use session timeout as an authorization upgrade.",
+    "Do not disable MFA to 'give more access' (SEC-001).",
+    "Do not treat connected-app IP relaxation as a substitute for a permission set or OWD change."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Profiles → Login Hours and Login IP Ranges.",
+    "Setup → Network Access for org trusted IPs.",
+    "Setup → Session Settings and Session Management.",
+    "Setup → Connected Apps → OAuth policies / IP relaxation."
+  ],
+  "worked_example": {
+    "scenario": "Disposable LAB org. LAB_Agent should not start work after 18:00. LAB_Rep at a café gets a verification prompt. LAB_ETL connected app breaks from a new IP. A manager asks to extend session timeout so agents 'become admins.'",
+    "inputs": [
+      "Profile login hours for LAB_Agent",
+      "No office range in Network Access for the café",
+      "Connected app IP restrictions enabled",
+      "Invalid timeout-as-admin request"
+    ],
+    "decisions": [
+      {
+        "decision": "Set LAB_Agent login hours; do not use a permission set.",
+        "because": "When they may log in is a profile login-hours control.",
+        "rejected": "Remove Opportunity Read after 18:00 via sharing"
+      },
+      {
+        "decision": "Treat the café prompt as authentication extra verification, not a profile IP block unless Login IP Ranges exist.",
+        "because": "Org trusted IPs skip codes; they do not always equal a hard block.",
+        "rejected": "Cloning System Administrator"
+      },
+      {
+        "decision": "Inspect connected-app IP relaxation for LAB_ETL separately.",
+        "because": "OAuth token IP policy is not the Lightning session.",
+        "rejected": "Changing OWD"
+      },
+      {
+        "decision": "Refuse timeout as an admin grant.",
+        "because": "Session Security Help is exposure control.",
+        "rejected": "Two-day timeout to mimic privileges"
+      }
+    ],
+    "configuration_or_code": [
+      "Document current Login Hours, Network Access, Session Settings, connected-app IP policy in the lab.",
+      "Make only reversible LAB profile hour changes.",
+      "Do not disable org MFA."
+    ],
+    "output": "Each symptom maps to hours, verification skip, connected-app IP, or a refused authorization shortcut.",
+    "verification": [
+      "Login History shows hour or IP failures versus success-then-timeout.",
+      "Lightning login succeeds while the connected app still fails if IP policy is the cause.",
+      "Session timeout was not changed as an authorization fix."
+    ],
+    "self_explanation": "I kept when/where/session/MFA/connected-app off the permission-set layer."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable org. Do not lock yourself out of the only admin profile.",
+    "starting_state_checks": [
+      "You have a second LAB user to test hours/IP.",
+      "You can view Login History."
+    ],
+    "steps": [
+      "Read Session Settings and write the org's timeout (compare to the documented two-hour default).",
+      "Inspect a LAB profile's Login Hours and Login IP Ranges without saving a lockout for your only admin.",
+      "Inspect Network Access trusted IPs and write whether they are a skip or a block in your own words after reading Help.",
+      "Open one connected app's OAuth/IP policy if present; otherwise write Needs verification.",
+      "Write four ticket classifications from the diagnostic question."
+    ],
+    "guided_completion": [
+      "If you almost applied Login IP Ranges to System Administrator, stop.",
+      "If you disabled MFA, revert immediately."
+    ],
+    "independent_challenge": "Explain to a manager why café verification is not the same as a call-center profile IP allowlist.",
+    "evidence": [
+      "Written timeout value.",
+      "Four-row classification table with LAB names."
+    ],
+    "stop_recovery_cleanup": [
+      "Revert any LAB profile hour changes.",
+      "Do not leave admin profiles IP-locked."
+    ],
+    "limitations": "This lab prefers inspection over enforcing a lockout."
+  },
+  "decision_table": [
+    {
+      "signal": "User cannot start a session after 18:00 but could at 10:00.",
+      "choose": "Profile login hours.",
+      "not": "A sharing rule or FLS change.",
+      "why": "When login is allowed is a profile schedule, not record access."
+    },
+    {
+      "signal": "User at a new café is asked for a verification code but can still complete login.",
+      "choose": "Treat as org trusted-IP / identity-verification path, plus MFA if prompted.",
+      "not": "Assume a profile IP hard block (those cannot log in at all when configured).",
+      "why": "Verification skip and hard block are different Network Access versus profile IP controls."
+    },
+    {
+      "signal": "User was working, then an inactivity dialog logged them out.",
+      "choose": "Session timeout / Session Settings.",
+      "not": "Grant System Administrator.",
+      "why": "Default documented inactivity timeout is two hours; it is not a permission."
+    },
+    {
+      "signal": "Lightning works; integration user or connected app fails from a new IP.",
+      "choose": "Connected-app OAuth IP relaxation and related policies.",
+      "not": "Organization-wide defaults.",
+      "why": "Token IP policy is independent of the interactive session."
+    }
+  ],
+  "limitations": [
+    "Does not design full OAuth scopes.",
+    "Does not replace SEC-001 identity-provider flows.",
+    "Do not invent IP count limits."
+  ],
+  "security_notes": [
+    "Never IP-restrict the only admin profile in production from this lesson.",
+    "Do not disable MFA.",
+    "Connected apps are privileged; least privilege still applies to their OAuth policies."
+  ],
+  "common_mistakes": [
+    "Confusing org trusted IPs with profile login IP blocks.",
+    "Using timeout as authorization.",
+    "Ignoring connected-app IP policy when the UI works.",
+    "Treating MFA as a permission set."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Login History shows failures at night only.",
+      "check": [
+        "Profile login hours and time zone.",
+        "Whether the user was already in a session when hours ended."
+      ],
+      "do_not_assume": "The password expired."
+    },
+    {
+      "symptom": "Verification code at a hotel, office is fine.",
+      "check": [
+        "Network Access trusted ranges.",
+        "Whether profile Login IP Ranges are empty (if set, hotel would hard-fail)."
+      ],
+      "do_not_assume": "MFA is broken."
+    },
+    {
+      "symptom": "Connected app 403/IP errors, UI fine.",
+      "check": [
+        "Connected app IP relaxation.",
+        "Whether the integration IP was added to the relevant trusted ranges."
+      ],
+      "do_not_assume": "The user license is wrong first."
+    }
+  ],
+  "production_notes": [
+    "Change hours and IPs in a disposable org with a spare admin.",
+    "Document time zones on login hours.",
+    "This lesson does not authorize production MFA or connected-app policy changes."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Documented default inactivity session timeout?",
+      "options": {
+        "A": "Two hours of inactivity",
+        "B": "Thirty seconds",
+        "C": "Sessions never time out",
+        "D": "Equal to login hours"
+      },
+      "answer": "A",
+      "rationale": "Session Security Help: default is two hours of inactivity.",
+      "distractor_explanations": {
+        "B": "Not the documented default.",
+        "C": "Timeout exists.",
+        "D": "Different control."
+      },
+      "concept": "Session timeout",
+      "citation_ids": ["SF-HELP-SESSIONS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "MFA at Salesforce UI login is primarily what?",
+      "options": {
+        "A": "An authentication second factor, required for UI logins",
+        "B": "A permission-set group",
+        "C": "An OWD setting",
+        "D": "A sharing rule"
+      },
+      "answer": "A",
+      "rationale": "What Is MFA? Help: multiple factors at login; required for UI.",
+      "distractor_explanations": {
+        "B": "Authorization.",
+        "C": "Record access.",
+        "D": "Record access."
+      },
+      "concept": "MFA",
+      "citation_ids": ["SF-HELP-MFA"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Org trusted IPs versus profile login IP ranges—key distinction to verify in Help?",
+      "options": {
+        "A": "Trusted org ranges relate to skipping extra verification; profile ranges can hard-block login when used",
+        "B": "They are identical metadata",
+        "C": "Profile ranges only affect connected apps",
+        "D": "Org ranges grant Modify All Data"
+      },
+      "answer": "A",
+      "rationale": "Network Access versus restricting login access are different controls.",
+      "distractor_explanations": {
+        "B": "Different Setup areas.",
+        "C": "Connected apps have their own IP policies.",
+        "D": "Not a permission."
+      },
+      "concept": "Two IP controls",
+      "citation_ids": ["SF-HELP-NETWORK", "SF-HELP-RESTRICT-LOGIN"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Raising session timeout grants more object permissions?",
+      "options": {
+        "A": "No. Timeout is session security on an authenticated connection",
+        "B": "Yes, it assigns System Administrator",
+        "C": "Yes, it opens OWD",
+        "D": "Yes, it disables MFA"
+      },
+      "answer": "A",
+      "rationale": "Session Security Help is exposure control, not authorization.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Timeout ≠ permission",
+      "citation_ids": ["SF-HELP-SESSIONS"]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Lightning works from home; ETL connected app fails from a new data center. First look?",
+      "options": {
+        "A": "Connected-app IP relaxation / OAuth IP policy",
+        "B": "Opportunity OWD",
+        "C": "Amount FLS",
+        "D": "Apex with sharing"
+      },
+      "answer": "A",
+      "rationale": "Connected-app token IP policy is independent of the browser session.",
+      "distractor_explanations": {
+        "B": "Record sharing.",
+        "C": "Field security.",
+        "D": "Apex record filter."
+      },
+      "concept": "Connected app vs UI",
+      "citation_ids": ["SF-HELP-CONNECTED-IP"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "User cannot log in after 18:00. Best first control?",
+      "options": {
+        "A": "Profile login hours",
+        "B": "Restriction rule",
+        "C": "Field-level security",
+        "D": "Permission-set group"
+      },
+      "answer": "A",
+      "rationale": "When login may start is login hours.",
+      "distractor_explanations": {
+        "B": "Record filter after access.",
+        "C": "Fields.",
+        "D": "Capability after login."
+      },
+      "concept": "Login hours",
+      "citation_ids": ["SF-HELP-RESTRICT-LOGIN"]
+    },
+    {
+      "id": "Q7",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Login hours versus session timeout?",
+      "options": {
+        "A": "Hours gate whether a login may start (and end-of-shift behavior); timeout ends an idle session",
+        "B": "They are the same setting",
+        "C": "Timeout is configured on the role",
+        "D": "Hours are a sharing rule"
+      },
+      "answer": "A",
+      "rationale": "Different lifecycle points: start login vs idle connection.",
+      "distractor_explanations": {
+        "B": "Different Setup.",
+        "C": "Roles are record access.",
+        "D": "False."
+      },
+      "concept": "Hours vs timeout",
+      "citation_ids": ["SF-HELP-SESSIONS", "SF-HELP-RESTRICT-LOGIN"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Café Wi-Fi prompts a verification code; office does not. Likely?",
+      "options": {
+        "A": "Café IP is not in org trusted ranges (and profile IP ranges are not a hard block)",
+        "B": "OWD flipped to Private at the café",
+        "C": "The permission set expired with the Wi-Fi",
+        "D": "with sharing turned off"
+      },
+      "answer": "A",
+      "rationale": "Trusted org IPs skip extra verification on known networks.",
+      "distractor_explanations": {
+        "B": "Sharing is not Wi-Fi-aware.",
+        "C": "Permission sets are not SSID-bound.",
+        "D": "Apex is not involved."
+      },
+      "concept": "Trusted IP skip",
+      "citation_ids": ["SF-HELP-NETWORK"]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "High Assurance in Session Security Help is a…",
+      "options": {
+        "A": "Session security level that can gate sensitive operations",
+        "B": "User license",
+        "C": "Sharing rule type",
+        "D": "Restriction rule"
+      },
+      "answer": "A",
+      "rationale": "Login methods have Standard or High Assurance session levels.",
+      "distractor_explanations": {
+        "B": "SEC-002.",
+        "C": "SEC-004.",
+        "D": "SEC-005."
+      },
+      "concept": "High Assurance",
+      "citation_ids": ["SF-HELP-SESSIONS"]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where are login hours configured in this lesson's model?",
+      "options": {
+        "A": "On the profile",
+        "B": "On each permission set only",
+        "C": "On OWD",
+        "D": "On a restriction rule"
+      },
+      "answer": "A",
+      "rationale": "Login hours are a profile login restriction.",
+      "distractor_explanations": {
+        "B": "Not the primary documented place in this topic.",
+        "C": "Record baseline.",
+        "D": "Record filter."
+      },
+      "concept": "Hours location",
+      "citation_ids": ["SF-HELP-RESTRICT-LOGIN"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Manager wants MFA off so after-hours support can 'have more permissions.' Reply?",
+      "options": {
+        "A": "MFA is authentication; after-hours is login hours; permissions are a different layer",
+        "B": "Agree; MFA assigns CRUD",
+        "C": "Agree; MFA is login hours",
+        "D": "Agree; disable Network Access"
+      },
+      "answer": "A",
+      "rationale": "Three different controls; none is a CRUD grant.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Unrelated."
+      },
+      "concept": "Do not mix layers",
+      "citation_ids": ["SF-HELP-MFA", "SF-HELP-RESTRICT-LOGIN"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Connected-app IP relaxation restricts what?",
+      "options": {
+        "A": "OAuth access tokens to trusted IP ranges when enforced",
+        "B": "Page layouts",
+        "C": "Role hierarchy",
+        "D": "Formula fields"
+      },
+      "answer": "A",
+      "rationale": "IP relaxation Help: whether OAuth tokens are restricted to trusted IP ranges.",
+      "distractor_explanations": {
+        "B": "UX.",
+        "C": "Sharing.",
+        "D": "Data model."
+      },
+      "concept": "IP relaxation",
+      "citation_ids": ["SF-HELP-CONNECTED-IP"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "hours",
+      "front": "What do login hours control?",
+      "back": "When users with that profile may log in (a when-control, not CRUD)."
+    },
+    {
+      "id": "F2",
+      "category": "ip",
+      "front": "Profile login IP ranges vs org trusted IPs?",
+      "back": "Profile ranges can hard-block login when used. Org trusted IPs skip extra verification; outside users can still verify."
+    },
+    {
+      "id": "F3",
+      "category": "session",
+      "front": "Default inactivity session timeout?",
+      "back": "Two hours, unless Session Settings differ."
+    },
+    {
+      "id": "F4",
+      "category": "mfa",
+      "front": "Is MFA a permission set?",
+      "back": "No. It is a second authentication factor for UI login."
+    },
+    {
+      "id": "F5",
+      "category": "ca",
+      "front": "Why can a connected app fail when Lightning works?",
+      "back": "OAuth IP relaxation and other connected-app policies are separate from the browser session."
+    },
+    {
+      "id": "F6",
+      "category": "session",
+      "front": "Does longer timeout grant View Setup?",
+      "back": "No. Session security is not authorization."
+    },
+    {
+      "id": "F7",
+      "category": "hours",
+      "front": "Login hours vs session timeout?",
+      "back": "Hours: may a login start. Timeout: idle session ends."
+    },
+    {
+      "id": "F8",
+      "category": "ip",
+      "front": "Café verification prompt, login still succeeds. Likely?",
+      "back": "Not in org trusted IPs; not a profile hard-block if they got in."
+    },
+    {
+      "id": "F9",
+      "category": "ha",
+      "front": "High Assurance is…?",
+      "back": "A session security level that can gate sensitive operations."
+    },
+    {
+      "id": "F10",
+      "category": "where",
+      "front": "Where are login hours set?",
+      "back": "On the profile (Login Hours)."
+    },
+    {
+      "id": "F11",
+      "category": "where",
+      "front": "Where are org trusted IPs set?",
+      "back": "Setup Network Access."
+    },
+    {
+      "id": "F12",
+      "category": "where",
+      "front": "Where is connected-app IP policy?",
+      "back": "Connected app OAuth policies / IP relaxation."
+    },
+    {
+      "id": "F13",
+      "category": "boundary",
+      "front": "Missing object tab after a successful login. This lesson?",
+      "back": "No. That is object permissions (SEC-003), not hours/IP/MFA."
+    },
+    {
+      "id": "F14",
+      "category": "sso",
+      "front": "Can SSO still require MFA?",
+      "back": "Yes. Salesforce requires MFA for UI, including SSO paths; it may be satisfied at the IdP or by Salesforce MFA. See MFA-for-SSO Help."
+    },
+    {
+      "id": "F15",
+      "category": "safety",
+      "front": "Why not IP-lock the only admin profile in a lab?",
+      "back": "You can lock yourself out. Use a spare LAB user and a disposable org."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do login hours, IP ranges, session settings, MFA, and connected apps differ?",
+      "answer_30_seconds": "Hours and profile IPs gate when/where login may occur. Org trusted IPs skip extra verification. MFA is a second factor. Session settings govern the connection after login. Connected apps have separate OAuth/IP policies. None is a permission set.",
+      "answer_2_minutes": "I use a timeline. Before session: hours, profile IP, MFA, maybe IdP. During session: timeout and High Assurance. Beside the browser: connected-app tokens. I distinguish org Network Access from profile Login IP Ranges because one is often a skip and the other can be a wall. I refuse to mix in OWD.",
+      "example": "LAB_Agent hours, LAB_Rep café code, LAB_ETL IP relaxation, refused timeout-as-admin.",
+      "tradeoffs": [
+        "Hard IP allowlists vs verification-on-the-road",
+        "Short timeouts vs user friction"
+      ],
+      "follow_ups": [
+        "Default timeout?",
+        "SSO MFA?"
+      ],
+      "weak_answer_warnings": [
+        "Calling them all sharing"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Org trusted IPs versus profile login IP ranges?",
+      "answer_30_seconds": "Org Network Access trusted IPs skip extra identity verification on known networks; users can still log in from elsewhere after verifying. Profile login IP ranges, when used, can prevent login from outside the range.",
+      "answer_2_minutes": "I always re-read Restrict Login Access and Network Access rather than reciting a blog. The interview point is: a café verification prompt usually means you were allowed to continue after proving identity, so it was not a profile hard-block. A call-center profile that cannot log in from home is the hard-block pattern. I would not apply the hard-block to the only admin.",
+      "example": "Office range in Network Access; LAB_CallCenter profile Login IP Ranges limited to that CIDR in a lab with a spare admin.",
+      "tradeoffs": [
+        "Roaming users vs strict network control",
+        "Admin lockout risk"
+      ],
+      "follow_ups": [
+        "What about VPNs?",
+        "IPv6? (Needs verification)"
+      ],
+      "weak_answer_warnings": [
+        "Treating them as the same list"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Call-center agents must not log in from home after shift. Design?",
+      "answer_30_seconds": "Profile login hours for the shift, and consider profile login IP ranges for the site. Do not use sharing or FLS as a clock. Keep a spare admin profile without those locks.",
+      "answer_2_minutes": "Situation: shift workers. Task: when/where login. Action: LAB_Agent profile hours in the correct time zone, optional IP allowlist, test Login History as LAB_Agent, not as System Administrator. I mention end-of-hours behavior should be confirmed on Help: they may still see the current page. Result: after-hours login fails without touching Opportunity CRUD.",
+      "example": "LAB_Agent 09:00–18:00, office IP range, spare LAB_Admin unrestricted.",
+      "tradeoffs": [
+        "IP allowlist vs work-from-home exceptions",
+        "Hours vs session timeout after they already logged in"
+      ],
+      "follow_ups": [
+        "What if they must finish a call after 18:00?",
+        "Mobile app?"
+      ],
+      "weak_answer_warnings": [
+        "Restriction rule on Accounts after 18:00"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "ETL fails from a new cloud IP; users are fine. Walk the diagnosis.",
+      "answer_30_seconds": "I check the connected app's IP relaxation and OAuth policies, the integration user's login history, and whether Network Access or profile IP applies to that user. I do not open OWD.",
+      "answer_2_minutes": "Situation: UI green, job red. Task: find the token path. Action: connected app policies first, then the user the app impersonates, then org trusted ranges if the policy enforces them. I coordinate a documented IP add in a change window. Result: Lightning never needed a sharing change. I will not invent token TTLs.",
+      "example": "LAB_ETL connected app Enforce IP Restrictions; new NAT not in range.",
+      "tradeoffs": [
+        "IP allowlists vs compensating controls listed in Help",
+        "Relaxing IP vs private connectivity"
+      ],
+      "follow_ups": [
+        "What is IP relaxation?",
+        "Does MFA apply to the integration user?"
+      ],
+      "weak_answer_warnings": [
+        "Changing Public Read/Write"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Users say Salesforce logs them out and they want System Administrator. Diagnose.",
+      "answer_30_seconds": "If they were in and got an inactivity prompt, it is session timeout, default two hours unless changed. System Administrator is unrelated authorization. If they never got in, inspect hours, IP, MFA.",
+      "answer_2_minutes": "I reproduce. Session Management and Login History split 'never in' versus 'was in.' I read Session Settings. I keep MFA. I explain High Assurance if they were blocked from a sensitive Setup area rather than logged out. I will not lengthen timeout as a privilege grant. If they cannot see a record, I leave this topic.",
+      "example": "LAB_Rep idle past org timeout; cloning System Administrator would not stop the prompt and would over-authorize.",
+      "tradeoffs": [
+        "Security of short timeouts vs friction",
+        "High Assurance vs user permissions"
+      ],
+      "follow_ups": [
+        "Where do you see active sessions?",
+        "What is lock sessions to IP?"
+      ],
+      "weak_answer_warnings": [
+        "Granting System Administrator"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "design",
+      "question": "How does MFA fit next to login hours and IP ranges?",
+      "answer_30_seconds": "Hours and IPs decide if a login may be attempted from that time and place. MFA still proves identity when a login is allowed. You do not disable MFA because hours are tight.",
+      "answer_2_minutes": "They stack. A user in hours and on a allowed IP still completes MFA for UI login. SSO may satisfy MFA at the IdP. Profile IP hard-blocks never reach MFA. Org trusted IPs may skip some verification codes but Salesforce still requires MFA for UI—do not confuse a network verification code with MFA itself. I keep least privilege on permissions separately.",
+      "example": "LAB_Agent on campus during hours: MFA plus no café-style extra network code if the campus is trusted.",
+      "tradeoffs": [
+        "Layered authentication vs user friction",
+        "SSO MFA vs Salesforce MFA"
+      ],
+      "follow_ups": [
+        "Phishing-resistant methods?",
+        "MFA for SSO Help?"
+      ],
+      "weak_answer_warnings": [
+        "Disabling MFA for shift workers"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "User gets a verification code at a hotel. Teammate wants to add the hotel IP to the profile Login IP Ranges. Risk?",
+      "answer_30_seconds": "If you meant org trusted IPs, you are skipping extra verification for that network. If you instead set profile Login IP Ranges to only the hotel, you may hard-block the office. I would not add random hotel IPs without a policy.",
+      "answer_2_minutes": "I separate skip versus allowlist. Hotel IPs are ephemeral NAT. Putting them on a profile allowlist is operationally fragile and can lock the user out when the hotel changes. Better: complete the verification/MFA, use VPN onto a trusted range if policy allows, and keep profile hard-blocks for true site-only populations. I document the difference in the ticket so nobody 'fixes' Network Access by emptying Login IP Ranges.",
+      "example": "LAB_Rep at a hotel completes a verification code; LAB_CallCenter profile remains office-only.",
+      "tradeoffs": [
+        "Roaming employees vs site-bound agents",
+        "Trusted range sprawl vs MFA prompts"
+      ],
+      "follow_ups": [
+        "VPN split tunnel?",
+        "Mobile carrier IPs?"
+      ],
+      "weak_answer_warnings": [
+        "Pasting hotel CIDR onto System Administrator"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the loading-dock analogy, then break it.",
+      "answer_30_seconds": "Shift board is hours, turnstile is profile IP, Wi-Fi sticker is trusted org IPs, time clock is session, second ID is MFA, vendor pass is the connected app. It breaks for SSO MFA at an IdP and for High Assurance gating Setup.",
+      "answer_2_minutes": "I walk LAB_Agent off shift, LAB_Rep at a café, LAB_ETL at a new dock. I refuse timeout-as-admin. I then break the dock: SAML may authenticate elsewhere, High Assurance is a session level, OAuth scopes are more than a gate pass. Close: these controls are when/where/how, not CRUD or OWD.",
+      "example": "Four LAB tickets, four controls, one refused permission grant.",
+      "tradeoffs": [
+        "Memorable ops story vs Help precision",
+        "Hard blocks vs verification"
+      ],
+      "follow_ups": [
+        "Where does SEC-001 stop and this start?",
+        "Where do permission sets start?"
+      ],
+      "weak_answer_warnings": [
+        "A generic teaching metaphor",
+        "Calling connected apps a sharing rule"
+      ]
+    }
+  ]
+}

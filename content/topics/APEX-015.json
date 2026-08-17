@@ -1,0 +1,1060 @@
+{
+  "topic_id": "APEX-015",
+  "slug": "apex-security-sharing-crud-fls-user-mode-and-safe-dynam",
+  "title": "Apex security: sharing, CRUD, FLS, user mode, and safe dynamic queries",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-014"
+  ],
+  "objectives": [
+    "Separate sharing (which records) from CRUD/FLS (which objects and fields) and from authentication.",
+    "Choose with sharing, without sharing, or inherited sharing and explain the default when omitted.",
+    "Use USER_MODE / AccessLevel.USER_MODE or stripInaccessible / SECURITY_ENFORCED as cited—not as folklore.",
+    "Bind dynamic SOQL and refuse string-concatenated user input."
+  ],
+  "diagnostic_question": "A REST class omitted a sharing keyword, builds SOQL by concatenating a filter string, and updates Amount. A standard user can see every Account and overwrite a hidden field. What is sharing vs CRUD vs FLS vs user mode vs safe dynamic queries?",
+  "definition": "Apex security is several layers. Sharing keywords decide whether the class honors the running user's record sharing. CRUD is object create/read/update/delete permission; FLS is field permission. User mode (WITH USER_MODE / as user / AccessLevel.USER_MODE) asks the platform to enforce sharing, CRUD, and FLS together. Dynamic SOQL is safe only with binds or escapeSingleQuotes—not concatenated filters. ([Enforcing Sharing Rules](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_keywords_sharing.htm); [Enforcing Object and Field Permissions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_security_sharing_rules.htm); [Apex Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm))",
+  "why_it_matters": "Default Apex is system mode for object/field permissions. Interviewers fail candidates who say with sharing 'does FLS' or who concatenate SOQL. User mode is the modern way to run as the user without a pile of manual checks.",
+  "sixty_second_explanation": "Hotel keys: sharing is which rooms your floor key opens; CRUD is whether you may enter the room at all; FLS is the minibar and safe. User mode is walking the hall as a guest; omitted sharing plus system DML is the night manager's master key. inherited sharing takes the caller's key. Dynamic SOQL is the front-desk log: bind the guest name, never glue their raw string into the query. with sharing is not FLS. Profiles are not authentication (SEC-001).",
+  "deeper_explanation": [
+    "with sharing enforces record-level sharing for that class. without sharing ignores sharing (still not a CRUD/FLS grant by itself). inherited sharing uses the caller’s mode—recommended for entry-agnostic services. If you omit the keyword, the class does not enforce sharing unless a caller’s with sharing context applies in documented inherited cases—re-read the sharing-keywords page for the API version; do not invent a 'default with sharing' story. ([Sharing keywords](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_keywords_sharing.htm))",
+    "CRUD and FLS are permission-set/profile capabilities on objects and fields. System-mode Apex can read and write fields the user cannot see. WITH SECURITY_ENFORCED on SOQL fails the query if FLS/CRUD would hide fields. Security.stripInaccessible removes inaccessible fields from queries/DML. Schema describe checks are the older manual path. ([Object and Field Permissions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_security_sharing_rules.htm))",
+    "User mode (WITH USER_MODE in SOQL, insert/update as user, AccessLevel.USER_MODE on Database methods) enforces sharing, CRUD, and FLS in one declaration. It is not the same as with sharing alone. Reverify exact exception types on the current user-mode page rather than inventing error names.",
+    "Dynamic SOQL: Database.query with bind variables (queryWithBinds / :bind in string where supported) or String.escapeSingleQuotes. Never concatenate unsanitized request parameters into WHERE. Dynamic SOQL still consumes SOQL governors (APEX-007). USER_MODE or SECURITY_ENFORCED still apply to the string you built.",
+    "Scheduled Apex runs as system (APEX-011). That does not excuse without sharing on a user-facing REST class. global APIs (APEX-001) widen who can call the class; they do not replace FLS."
+  ],
+  "mental_model": {
+    "analogy": "A hotel key cabinet: sharing is the floor key (which rooms), CRUD is whether you may open the door, FLS is the minibar and in-room safe, user mode is walking as a guest, system mode is the night manager's master, and dynamic SOQL is the guest-name log you must bind not glue.",
+    "useful_mapping": [
+      "floor key → with sharing / record visibility",
+      "door permission → CRUD on the object",
+      "minibar / safe → FLS on fields",
+      "guest walk → USER_MODE / as user",
+      "night manager → system-mode Apex without user-mode DML",
+      "inherit the caller's key → inherited sharing",
+      "bind the guest name → bind variables / queryWithBinds",
+      "glued hallway rumor → concatenated SOQL injection"
+    ],
+    "where_it_breaks": [
+      "with sharing does not hide fields; FLS/user mode does.",
+      "stripInaccessible does not replace sharing by itself.",
+      "The hotel analogy does not encode OWD math (later SEC topics)."
+    ]
+  },
+  "teach_back_prompt": "Explain sharing vs CRUD vs FLS vs user mode to a Java developer, then show one unsafe dynamic query and its bind-variable fix.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "with / without / inherited sharing in one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Why with sharing is not FLS."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "USER_MODE versus SECURITY_ENFORCED versus stripInaccessible."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Rewrite a concatenated SOQL string to a bind."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: Apex security layers."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-SHAREKW",
+      "title": "Using the with sharing, without sharing, and inherited sharing Keywords",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_keywords_sharing.htm",
+      "supports": "Sharing keywords control record sharing enforcement for the class; inherited sharing follows the caller.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Exact default when the keyword is omitted should be re-read for the class API version."
+    },
+    {
+      "source_id": "SF-APEX-CRUDFLS",
+      "title": "Enforcing Object and Field Permissions",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_security_sharing_rules.htm",
+      "supports": "CRUD/FLS are not automatic in system-mode Apex; SECURITY_ENFORCED, stripInaccessible, and describe checks are documented enforcement tools.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "User-mode syntax lives in neighboring Guide topics; cite those when quoting as user."
+    },
+    {
+      "source_id": "SF-APEX-DEVGUIDE",
+      "title": "Apex Developer Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm",
+      "supports": "Hub for user mode, dynamic SOQL, and Security class topics in the current TOC.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Deep links move; follow the live TOC for WITH USER_MODE and queryWithBinds."
+    },
+    {
+      "source_id": "SF-APEX-GOV",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "Dynamic SOQL still counts toward per-transaction SOQL ceilings (100 sync / 200 async).",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "No extra 'security governor' is invented here."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Sharing keyword",
+        "CRUD",
+        "FLS",
+        "User mode",
+        "Safe binds",
+        "Not authentication"
+      ],
+      "accessible_description": "Sharing keyword; CRUD; FLS; User mode; Safe binds; Not authentication"
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-SHAREKW",
+        "SF-APEX-CRUDFLS",
+        "SF-APEX-DEVGUIDE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Which security layer is missing on this Apex entry?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Req[User or integration request] --> Auth[Authentication: not this lesson]\n  Auth --> Share[Sharing keyword: which records]\n  Share --> Crud[CRUD: object permission]\n  Crud --> Fls[FLS: field permission]\n  Fls --> Mode{USER_MODE or as user?}\n  Mode -->|Yes| Enf[Platform enforces sharing CRUD FLS together]\n  Mode -->|System DML| Manual[SECURITY_ENFORCED or stripInaccessible or describe]\n  Enf --> Dyn[Dynamic SOQL: binds only]\n  Manual --> Dyn",
+      "decision": "flowchart TD\n  Need[Need Apex to honor the user?] --> Q1{Record visibility?}\n  Q1 -->|Yes| Share[with sharing or inherited sharing]\n  Q1 -->|Must see all rows by design| Without[without sharing plus a written reason]\n  Need --> Q2{Object and field permissions?}\n  Q2 -->|Modern default| User[USER_MODE / AccessLevel.USER_MODE / as user]\n  Q2 -->|Query must fail closed| Sec[WITH SECURITY_ENFORCED]\n  Q2 -->|Strip fields keep the rest| Strip[Security.stripInaccessible]\n  Need --> Q3{Dynamic WHERE from the client?}\n  Q3 -->|Yes| Bind[queryWithBinds or :bind; never concatenate]\n  Q3 -->|Static SOQL| Static[Ordinary bind variables]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "with sharing, without sharing, and inherited sharing control whether the class enforces the running user's record sharing. inherited sharing follows the caller.",
+      "source_ids": [
+        "SF-APEX-SHAREKW"
+      ],
+      "scope": "Sharing keywords",
+      "validation": "Sharing keywords topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "System-mode Apex does not automatically enforce CRUD/FLS. Documented tools include WITH SECURITY_ENFORCED, Security.stripInaccessible, and Schema describe checks.",
+      "source_ids": [
+        "SF-APEX-CRUDFLS"
+      ],
+      "scope": "CRUD/FLS",
+      "validation": "Enforcing Object and Field Permissions.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "User mode (WITH USER_MODE / as user / AccessLevel.USER_MODE) is the Guide's way to enforce user sharing and object/field permissions together. Confirm syntax on the current TOC.",
+      "source_ids": [
+        "SF-APEX-DEVGUIDE",
+        "SF-APEX-CRUDFLS"
+      ],
+      "scope": "User mode",
+      "validation": "Guide hub plus permissions topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Dynamic SOQL must use binds or escapeSingleQuotes; concatenated user input is unsafe. Those queries still count toward SOQL governors (100/200).",
+      "source_ids": [
+        "SF-APEX-DEVGUIDE",
+        "SF-APEX-GOV"
+      ],
+      "scope": "Safe dynamic queries",
+      "validation": "Dynamic SOQL guidance plus governors.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "User-mode SOQL/DML syntax expanded in recent API versions. Reverify WITH USER_MODE and as user on the Summer '26 Guide TOC for the class API version.",
+  "unresolved_uncertainty": [
+    "Exact exception type when USER_MODE DML fails FLS should be read from the current user-mode page.",
+    "Omit-keyword default interaction with inherited sharing inner classes: re-read sharing keywords rather than inventing."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "with sharing",
+      "telugu": "ఫ్లోర్ కీ: యూజర్‌కు కనిపించే రికార్డులే."
+    },
+    {
+      "english": "USER_MODE",
+      "telugu": "అతిథి�."
+    },
+    {
+      "english": "USER_MODE",
+      "telugu": "అతిథిగా నడవడం: sharing + CRUD + FLS కలిసి."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Sharing is which records. CRUD is the object. FLS is the field. User mode enforces all three. with sharing is not FLS. Dynamic SOQL uses binds, never glued strings. Default Apex is system mode for permissions.",
+    "two_minutes": "I pick inherited sharing on reusable services so the entry class decides. User-facing REST uses with sharing plus USER_MODE DML. I use SECURITY_ENFORCED when a hidden field must fail the query, stripInaccessible when I should drop fields and continue. I bind dynamic filters. I never say sharing 'does FLS.' I cite the sharing-keywords and object-permissions Guide topics, not a blog checklist."
+  },
+  "terminology": [
+    {
+      "term": "sharing keyword",
+      "plain": "Whether this class honors record sharing.",
+      "precise": "with sharing, without sharing, inherited sharing on the class definition.",
+      "example": "public with sharing class LAB_AccountService",
+      "non_example": "A profile permission.",
+      "confusable_neighbor": "OWD: org-wide default, not an Apex keyword.",
+      "boundary": "Does not enforce FLS."
+    },
+    {
+      "term": "CRUD",
+      "plain": "Object-level create/read/update/delete permission.",
+      "precise": "Checked via user mode, SECURITY_ENFORCED, stripInaccessible, or describe. Not automatic in system-mode Apex.",
+      "example": "User cannot create LAB_Invoice__c; user-mode insert fails.",
+      "non_example": "FLS on Amount__c.",
+      "confusable_neighbor": "Sharing: row visibility.",
+      "boundary": "Scheduled Apex running as system still needs an explicit story."
+    },
+    {
+      "term": "FLS",
+      "plain": "Field-level security.",
+      "precise": "Which fields the user may read or edit. System-mode Apex can ignore it unless you enforce.",
+      "example": "stripInaccessible removes Amount__c from a queried LAB_ row.",
+      "non_example": "CRUD on the object.",
+      "confusable_neighbor": "with sharing.",
+      "boundary": "SECURITY_ENFORCED fails the query rather than stripping."
+    },
+    {
+      "term": "user mode",
+      "plain": "Run SOQL/DML as the user, enforcing sharing + CRUD + FLS.",
+      "precise": "WITH USER_MODE, as user, AccessLevel.USER_MODE. Confirm current syntax in the Guide TOC.",
+      "example": "insert as user labRows;",
+      "non_example": "with sharing alone on a class that still does system DML.",
+      "confusable_neighbor": "without sharing.",
+      "boundary": "Not authentication."
+    },
+    {
+      "term": "dynamic SOQL",
+      "plain": "SOQL built at runtime as a string.",
+      "precise": "Safe with binds / queryWithBinds / escapeSingleQuotes. Unsafe with concatenated request parameters.",
+      "example": "Database.queryWithBinds('SELECT Id FROM Account WHERE Name = :n', binds, AccessLevel.USER_MODE)",
+      "non_example": "Static [SELECT Id FROM Account WHERE Name = :name].",
+      "confusable_neighbor": "Dynamic DML (sObject type chosen at runtime).",
+      "boundary": "Still counts as SOQL toward 100/200."
+    },
+    {
+      "term": "WITH SECURITY_ENFORCED",
+      "plain": "SOQL clause that fails closed on inaccessible fields/objects.",
+      "precise": "Query throws if CRUD/FLS would hide selected fields.",
+      "example": "SELECT Amount__c FROM LAB_Invoice__c WITH SECURITY_ENFORCED",
+      "non_example": "stripInaccessible (strips, may continue).",
+      "confusable_neighbor": "USER_MODE (broader enforcement family).",
+      "boundary": "Does not replace bind safety."
+    },
+    {
+      "term": "stripInaccessible",
+      "plain": "Security method that removes inaccessible fields from in-memory sObjects.",
+      "precise": "Use before returning data or performing DML so hidden fields are not read or written.",
+      "example": "Security.stripInaccessible(AccessType.READABLE, rows)",
+      "non_example": "with sharing.",
+      "confusable_neighbor": "Schema describe isAccessible loops (older manual path).",
+      "boundary": "Does not bind dynamic SOQL for you."
+    },
+    {
+      "term": "inherited sharing",
+      "plain": "Use the caller's sharing mode.",
+      "precise": "Service classes that should not hard-code with/without.",
+      "example": "public inherited sharing class LAB_QueryService",
+      "non_example": "without sharing 'just in case'.",
+      "confusable_neighbor": "global: access modifier, not sharing.",
+      "boundary": "Entry class still chooses with or without."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Declare sharing on every top-level class",
+      "actor": "Developer",
+      "trigger": "New class",
+      "before": "Omitted keyword",
+      "after": "with, without, or inherited with a written reason",
+      "observe": "Class header review",
+      "failure": "Copy-paste without sharing from a batch job into REST"
+    },
+    {
+      "step": 2,
+      "transition": "Enforce CRUD/FLS",
+      "actor": "Developer",
+      "trigger": "User-facing DML/SOQL",
+      "before": "System mode by default",
+      "after": "USER_MODE or SECURITY_ENFORCED or stripInaccessible",
+      "observe": "Standard-user test fails on hidden Amount__c",
+      "failure": "Trusting with sharing to hide fields"
+    },
+    {
+      "step": 3,
+      "transition": "Bind dynamic filters",
+      "actor": "Developer",
+      "trigger": "Client-supplied WHERE",
+      "before": "String concat",
+      "after": "queryWithBinds or :bind / escapeSingleQuotes",
+      "observe": "Injection payload does not change the WHERE",
+      "failure": "filter = req.params.get('q') inside the string"
+    },
+    {
+      "step": 4,
+      "transition": "Test as a standard user",
+      "actor": "Developer",
+      "trigger": "Security claim",
+      "before": "Only system tests",
+      "after": "System.runAs a LAB_ user without View All Data",
+      "observe": "Query count drops; FLS field null or exception as designed",
+      "failure": "SeeAllData admin-only tests"
+    }
+  ],
+  "when_to_use": [
+    "When user-facing Apex must honor sharing: with sharing or inherited sharing, not an omitted keyword.",
+    "When the user must not read or write hidden fields: user mode, SECURITY_ENFORCED, or stripInaccessible—not with sharing alone.",
+    "When CRUD on LAB_Invoice__c is missing: user-mode DML should fail rather than insert as system.",
+    "When filters come from the client: safe dynamic queries with binds, never concatenated SOQL.",
+    "When a batch must see all rows: without sharing plus a comment, then still decide CRUD/FLS.",
+    "When an interviewer conflates authentication with Apex security layers."
+  ],
+  "when_not_to_use": [
+    "Do not treat with sharing as FLS or CRUD.",
+    "Do not use without sharing on a REST/UI class 'for convenience'.",
+    "Do not concatenate request parameters into dynamic SOQL.",
+    "Do not invent a numeric 'security governor'; cite SOQL 100/200 only as query budget.",
+    "Do not confuse profile CRUD with authentication (SEC-001).",
+    "Do not skip standard-user tests because admin tests were green."
+  ],
+  "configuration_or_code_location": [
+    "Class header: with sharing / without sharing / inherited sharing.",
+    "SOQL: WITH USER_MODE or WITH SECURITY_ENFORCED; DML: as user / AccessLevel.USER_MODE.",
+    "Security.stripInaccessible in a service before returning rows to LWC.",
+    "Permission sets on the LAB_ test user, not View All Data."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox REST class lists LAB_Invoice__c for the running user. A filter query param exists. Amount__c is FLS-hidden for Standard User. No production data.",
+    "inputs": [
+      "Omitted sharing keyword today",
+      "String concat WHERE",
+      "System-mode query includes Amount__c",
+      "Admin-only tests"
+    ],
+    "decisions": [
+      {
+        "decision": "public inherited sharing on the service; with sharing on the REST entry.",
+        "because": "Sharing keywords topic: inherited follows the caller; entry enforces sharing.",
+        "rejected": "without sharing so tests are easier."
+      },
+      {
+        "decision": "Query WITH USER_MODE (or SECURITY_ENFORCED) and bind the filter.",
+        "because": "User mode enforces CRUD/FLS/sharing; binds stop injection.",
+        "rejected": "WHERE ' + userFilter."
+      },
+      {
+        "decision": "System.runAs a standard user whose FLS hides Amount__c.",
+        "because": "Admin tests cannot prove FLS.",
+        "rejected": "SeeAllData admin-only."
+      }
+    ],
+    "configuration_or_code": [
+      "String soql = 'SELECT Id, Name FROM LAB_Invoice__c WHERE Name = :name';",
+      "List<LAB_Invoice__c> rows = Database.queryWithBinds(soql, new Map<String,Object>{'name' => name}, AccessLevel.USER_MODE);",
+      "Security.stripInaccessible(AccessType.READABLE, rows) if returning a DTO without user mode."
+    ],
+    "output": "Standard user sees only shared invoices and not Amount__c. Injection payload stays a bind. Admin still sees all in a separate without-sharing admin tool if required.",
+    "verification": [
+      "runAs standard user: row count matches sharing.",
+      "Amount__c absent or exception as designed.",
+      "Quoted-quote filter does not widen the WHERE."
+    ],
+    "self_explanation": "Floor key plus guest walk plus bound guest name; no master key on the REST door."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_Invoice__c; a standard user without View All Data.",
+    "starting_state_checks": [
+      "You can create users and permission sets",
+      "No production accounts"
+    ],
+    "steps": [
+      "Create LAB_InvoiceService inherited sharing with a USER_MODE query.",
+      "Add a dynamic Name filter using a bind, not concatenation.",
+      "Hide Amount__c from the standard user's permission set.",
+      "Write runAs tests for sharing (0 rows) and FLS (no Amount__c)."
+    ],
+    "guided_completion": [
+      "If the standard user sees all rows, sharing is not enforced.",
+      "If Amount__c still serializes to the caller, FLS is not enforced."
+    ],
+    "independent_challenge": "Demonstrate SECURITY_ENFORCED failing closed when Amount__c is selected.",
+    "evidence": [
+      "runAs test output",
+      "SOQL string without string-added user input"
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ classes and the test user"
+    ],
+    "limitations": "Does not prove every OWD/sharing-rule combination."
+  },
+  "decision_table": [
+    {
+      "signal": "LWC/REST must show only records the user can see.",
+      "choose": "with sharing on the entry; inherited sharing on helpers.",
+      "not": "Omitted keyword or without sharing copied from Batch.",
+      "why": "Sharing keywords exist to enforce record visibility."
+    },
+    {
+      "signal": "The user must not read Amount__c.",
+      "choose": "USER_MODE or SECURITY_ENFORCED or stripInaccessible.",
+      "not": "with sharing only.",
+      "why": "Sharing is rows, not fields."
+    },
+    {
+      "signal": "A nightly Batch must process all LAB_ invoices.",
+      "choose": "without sharing on that Batch class, with a comment; still decide FLS for emails/UI.",
+      "not": "without sharing on the LWC controller too.",
+      "why": "System-wide jobs are the documented without-sharing use."
+    },
+    {
+      "signal": "Client sends a filter string.",
+      "choose": "Bind / queryWithBinds; optional allowlist of field names.",
+      "not": "WHERE ' + filter.",
+      "why": "Safe dynamic queries never concatenate unsanitized input."
+    },
+    {
+      "signal": "You need the query to fail if a hidden field is selected.",
+      "choose": "WITH SECURITY_ENFORCED.",
+      "not": "stripInaccessible if you intended to drop the field and continue.",
+      "why": "Fail-closed vs strip-and-continue."
+    },
+    {
+      "signal": "Interviewer says Apex is 'always user mode'.",
+      "choose": "Correct them: default is system mode for CRUD/FLS; user mode is explicit.",
+      "not": "Agree and skip USER_MODE.",
+      "why": "Permissions topic: enforcement is not automatic."
+    }
+  ],
+  "limitations": [
+    "Does not teach the full sharing-rule catalog (SEC track).",
+    "User-mode exception names should be re-read.",
+    "Does not replace named-credential auth (APEX-013).",
+    "SOQL 100/200 is budget, not a security control."
+  ],
+  "security_notes": [
+    "global REST widens callers; still enforce user mode.",
+    "Never log field values that FLS hid.",
+    "without sharing is a privileged decision, not a default."
+  ],
+  "common_mistakes": [
+    "with sharing equals FLS.",
+    "Concatenated dynamic SOQL.",
+    "without sharing on every class.",
+    "Admin-only tests for security claims.",
+    "Thinking inherited sharing is 'no sharing'."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Standard user sees every Account in an LWC.",
+      "check": [
+        "Class sharing keyword",
+        "USER_MODE vs system query",
+        "View All Data on the user"
+      ],
+      "do_not_assume": "OWD is Public Read/Write without checking the class."
+    },
+    {
+      "symptom": "Amount__c appears in JSON.",
+      "check": [
+        "FLS on the profile",
+        "stripInaccessible / USER_MODE",
+        "inner class without sharing"
+      ],
+      "do_not_assume": "with sharing hid the field."
+    },
+    {
+      "symptom": "QueryException after adding SECURITY_ENFORCED.",
+      "check": [
+        "Selected fields the user cannot read",
+        "Object CRUD"
+      ],
+      "do_not_assume": "The WHERE bind is wrong."
+    },
+    {
+      "symptom": "SOQL injection demo still works.",
+      "check": [
+        "String concatenation",
+        "Missing binds"
+      ],
+      "do_not_assume": "escapeSingleQuotes was applied when it was not."
+    }
+  ],
+  "production_notes": [
+    "Review without sharing in every production PR.",
+    "Permission-set driven FLS, not hidden UI only.",
+    "No production user-mode experiment on customer orgs is authorized here."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "with sharing primarily enforces:",
+      "options": {
+        "A": "The running user's record sharing",
+        "B": "FLS on every field automatically",
+        "C": "Named credential OAuth",
+        "D": "sendEmail 10"
+      },
+      "answer": "A",
+      "rationale": "Sharing keywords topic: record sharing.",
+      "distractor_explanations": {
+        "B": "FLS is a different layer.",
+        "C": "APEX-013.",
+        "D": "APEX-014."
+      },
+      "concept": "Sharing vs FLS",
+      "citation_ids": [
+        "SF-APEX-SHAREKW"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "inherited sharing means:",
+      "options": {
+        "A": "The class uses the caller's sharing mode",
+        "B": "Sharing is always off",
+        "C": "FLS is inherited from the object",
+        "D": "The class becomes global"
+      },
+      "answer": "A",
+      "rationale": "inherited sharing follows the caller.",
+      "distractor_explanations": {
+        "B": "That is without sharing.",
+        "C": "FLS is not inherited sharing.",
+        "D": "Access modifier."
+      },
+      "concept": "inherited sharing",
+      "citation_ids": [
+        "SF-APEX-SHAREKW"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "System-mode Apex and CRUD/FLS:",
+      "options": {
+        "A": "Not enforced automatically; use user mode, SECURITY_ENFORCED, stripInaccessible, or describe checks",
+        "B": "Always enforced",
+        "C": "Enforced only in Batch",
+        "D": "Replaced by FOR UPDATE"
+      },
+      "answer": "A",
+      "rationale": "Enforcing Object and Field Permissions.",
+      "distractor_explanations": {
+        "B": "The opposite of the topic.",
+        "C": "False.",
+        "D": "Locking is APEX-010."
+      },
+      "concept": "System mode",
+      "citation_ids": [
+        "SF-APEX-CRUDFLS"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Safest way to apply a client-supplied Name filter?",
+      "options": {
+        "A": "Bind / queryWithBinds, optionally USER_MODE",
+        "B": "WHERE ' + name",
+        "C": "without sharing so injection is easier to see",
+        "D": "SOQL in a loop"
+      },
+      "answer": "A",
+      "rationale": "Safe dynamic queries use binds.",
+      "distractor_explanations": {
+        "B": "Injection.",
+        "C": "Worse.",
+        "D": "Unrelated."
+      },
+      "concept": "Binds",
+      "citation_ids": [
+        "SF-APEX-DEVGUIDE"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Need the query to fail if Amount__c is selected but hidden.",
+      "options": {
+        "A": "WITH SECURITY_ENFORCED",
+        "B": "with sharing only",
+        "C": "stripInaccessible if you want it to fail closed",
+        "D": "EventBus.publish"
+      },
+      "answer": "A",
+      "rationale": "SECURITY_ENFORCED fails closed.",
+      "distractor_explanations": {
+        "B": "Rows not fields.",
+        "C": "stripInaccessible strips and can continue.",
+        "D": "Wrong tool."
+      },
+      "concept": "Fail closed",
+      "citation_ids": [
+        "SF-APEX-CRUDFLS"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Need to drop hidden fields but keep the rest of the row.",
+      "options": {
+        "A": "Security.stripInaccessible",
+        "B": "without sharing",
+        "C": "CDC",
+        "D": "sendEmail"
+      },
+      "answer": "A",
+      "rationale": "stripInaccessible removes inaccessible fields.",
+      "distractor_explanations": {
+        "B": "Sharing.",
+        "C": "Events.",
+        "D": "Email."
+      },
+      "concept": "Strip",
+      "citation_ids": [
+        "SF-APEX-CRUDFLS"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "User mode is different from with sharing because it also:",
+      "options": {
+        "A": "Enforces CRUD and FLS, not only record sharing",
+        "B": "Disables governors",
+        "C": "Makes the class global",
+        "D": "Sends email"
+      },
+      "answer": "A",
+      "rationale": "User mode is the combined enforcement path.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "User mode",
+      "citation_ids": [
+        "SF-APEX-DEVGUIDE"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Dynamic SOQL still counts toward which official cap?",
+      "options": {
+        "A": "SOQL queries 100 sync / 200 async",
+        "B": "sendEmail 10",
+        "C": "enqueueJob 50 only",
+        "D": "Unlimited if the string is dynamic"
+      },
+      "answer": "A",
+      "rationale": "Governors apply to Database.query as well.",
+      "distractor_explanations": {
+        "B": "Email.",
+        "C": "Queueable.",
+        "D": "No unlimited escape."
+      },
+      "concept": "Dynamic SOQL governors",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Nightly Batch must touch every LAB_Invoice__c.",
+      "options": {
+        "A": "without sharing on that Batch, documented; do not copy it to the LWC controller",
+        "B": "without sharing on every class in the package",
+        "C": "USER_MODE so it sees all rows",
+        "D": "SECURITY_ENFORCED to see hidden rows"
+      },
+      "answer": "A",
+      "rationale": "without sharing is for privileged jobs, not UI.",
+      "distractor_explanations": {
+        "B": "Over-broad.",
+        "C": "User mode would hide unshared rows.",
+        "D": "Opposite."
+      },
+      "concept": "Batch without sharing",
+      "citation_ids": [
+        "SF-APEX-SHAREKW"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Authentication vs this Apex security lesson?",
+      "options": {
+        "A": "Authentication proves identity; this lesson is authorization of records/objects/fields in Apex",
+        "B": "They are the same keyword",
+        "C": "User mode logs the user in",
+        "D": "with sharing replaces MFA"
+      },
+      "answer": "A",
+      "rationale": "SEC-001 vs APEX-015.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "User mode is enforcement, not login.",
+        "D": "False."
+      },
+      "concept": "Auth vs authZ",
+      "citation_ids": [
+        "SF-APEX-SHAREKW"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "REST class omitted sharing and concatenates q= from the query string.",
+      "options": {
+        "A": "Add a sharing keyword, bind the filter, and enforce user mode or FLS tools",
+        "B": "Only add with sharing and keep concatenation",
+        "C": "Only raise heap",
+        "D": "Switch to SOSL without binds"
+      },
+      "answer": "A",
+      "rationale": "All three layers plus safe dynamic queries.",
+      "distractor_explanations": {
+        "B": "Sharing does not fix injection or FLS.",
+        "C": "Unrelated.",
+        "D": "SOSL still needs safe construction."
+      },
+      "concept": "Stacked defects",
+      "citation_ids": [
+        "SF-APEX-SHAREKW",
+        "SF-APEX-CRUDFLS",
+        "SF-APEX-DEVGUIDE"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which is NOT a documented CRUD/FLS tool on the permissions topic family?",
+      "options": {
+        "A": "FOR UPDATE",
+        "B": "WITH SECURITY_ENFORCED",
+        "C": "Security.stripInaccessible",
+        "D": "Schema describe isAccessible"
+      },
+      "answer": "A",
+      "rationale": "FOR UPDATE is locking (APEX-010).",
+      "distractor_explanations": {
+        "B": "Documented.",
+        "C": "Documented.",
+        "D": "Documented manual path."
+      },
+      "concept": "Not FLS",
+      "citation_ids": [
+        "SF-APEX-CRUDFLS"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "share",
+      "front": "with sharing?",
+      "back": "Enforce the running user's record sharing in that class."
+    },
+    {
+      "id": "F2",
+      "category": "share",
+      "front": "without sharing?",
+      "back": "Do not enforce sharing; privileged. Still not automatic FLS."
+    },
+    {
+      "id": "F3",
+      "category": "share",
+      "front": "inherited sharing?",
+      "back": "Follow the caller's sharing mode."
+    },
+    {
+      "id": "F4",
+      "category": "crud",
+      "front": "CRUD vs FLS?",
+      "back": "Object permissions vs field permissions."
+    },
+    {
+      "id": "F5",
+      "category": "mode",
+      "front": "Default Apex permission mode?",
+      "back": "System mode for CRUD/FLS unless you enforce."
+    },
+    {
+      "id": "F6",
+      "category": "mode",
+      "front": "User mode in one line?",
+      "back": "SOQL/DML as the user: sharing + CRUD + FLS together."
+    },
+    {
+      "id": "F7",
+      "category": "fls",
+      "front": "SECURITY_ENFORCED vs stripInaccessible?",
+      "back": "Fail closed vs strip fields and continue."
+    },
+    {
+      "id": "F8",
+      "category": "dyn",
+      "front": "Safe dynamic SOQL?",
+      "back": "Binds / queryWithBinds / escapeSingleQuotes—never raw concat."
+    },
+    {
+      "id": "F9",
+      "category": "gov",
+      "front": "Does dynamic SOQL skip governors?",
+      "back": "No. 100 sync / 200 async still apply."
+    },
+    {
+      "id": "F10",
+      "category": "anti",
+      "front": "Does with sharing hide fields?",
+      "back": "No. That is FLS/user mode."
+    },
+    {
+      "id": "F11",
+      "category": "test",
+      "front": "How to prove sharing?",
+      "back": "System.runAs a user without View All Data."
+    },
+    {
+      "id": "F12",
+      "category": "batch",
+      "front": "When is without sharing justified?",
+      "back": "Privileged jobs that must see all rows, documented."
+    },
+    {
+      "id": "F13",
+      "category": "rest",
+      "front": "REST omitted sharing + concat filter?",
+      "back": "Add sharing, binds, and user-mode/FLS enforcement."
+    },
+    {
+      "id": "F14",
+      "category": "auth",
+      "front": "Is this authentication?",
+      "back": "No. Identity is SEC-001; this is authorization in Apex."
+    },
+    {
+      "id": "F15",
+      "category": "inherit",
+      "front": "Why inherited sharing on services?",
+      "back": "So the entry class decides with vs without."
+    },
+    {
+      "id": "F16",
+      "category": "strip",
+      "front": "stripInaccessible purpose?",
+      "back": "Remove inaccessible fields from in-memory sObjects before read/DML/return."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Sharing vs CRUD vs FLS vs user mode?",
+      "answer_30_seconds": "Sharing is which records. CRUD is the object. FLS is the field. User mode enforces all three. with sharing is not FLS. Default Apex is system mode for permissions.",
+      "answer_2_minutes": "I draw four boxes. I put inherited sharing on services. I pick USER_MODE for user-facing DML. I mention SECURITY_ENFORCED vs stripInaccessible. I refuse to call this authentication. I cite the sharing-keywords and object-permissions Guide topics.",
+      "example": "Standard user querying LAB_Invoice__c: fewer rows (sharing), no Amount__c (FLS), cannot insert if CRUD missing (user mode).",
+      "tradeoffs": [
+        "Fail closed vs strip",
+        "inherited vs with"
+      ],
+      "follow_ups": [
+        "What if the keyword is omitted?",
+        "Does scheduled Apex honor sharing?"
+      ],
+      "weak_answer_warnings": [
+        "with sharing does FLS"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you write safe dynamic queries?",
+      "answer_30_seconds": "Binds or queryWithBinds, optional USER_MODE. Never concatenate request parameters. escapeSingleQuotes if you must build a string. Still counts as SOQL toward 100/200.",
+      "answer_2_minutes": "I allowlist field names if the client chooses a field. I show a broken concat and the bind fix. I add a test with a quote-injection payload. I do not claim dynamic SOQL is banned—only unsafe construction is.",
+      "example": "Database.queryWithBinds('SELECT Id FROM Account WHERE Name = :n', map, AccessLevel.USER_MODE)",
+      "tradeoffs": [
+        "Allowlist vs free-form WHERE",
+        "Static vs dynamic"
+      ],
+      "follow_ups": [
+        "queryWithBinds API version?",
+        "SOSL injection?"
+      ],
+      "weak_answer_warnings": [
+        "String addition of params"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "LWC shows Amount__c to a user whose FLS hides it. Walk the diagnosis.",
+      "answer_30_seconds": "The Apex is system mode and selected the field. with sharing would not hide it. Add USER_MODE or stripInaccessible or stop selecting the field.",
+      "answer_2_minutes": "I check the class keyword, the SOQL, DTOs, and @AuraEnabled cache. I runAs the standard user. I do not change OWD to 'fix FLS.' I mention inner classes can drop inherited sharing if declared without sharing.",
+      "example": "LAB_InvoiceService system query includes Amount__c and returns it to the wire.",
+      "tradeoffs": [
+        "Strip vs fail closed",
+        "UI hide vs server hide"
+      ],
+      "follow_ups": [
+        "Does Lightning Data Service honor FLS?",
+        "What about formula fields?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the LWC template only"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A managed Batch uses without sharing; a new REST class copied that header. Risk?",
+      "answer_30_seconds": "REST now ignores sharing. Users see every LAB_ row. Batch may still be justified; REST is not. Use inherited sharing on the service and with sharing on REST.",
+      "answer_2_minutes": "I treat without sharing as a privileged annotation requiring a comment. I add runAs tests on the REST path. I do not 'fix' it by adding SECURITY_ENFORCED only—rows would still be the wrong set if sharing is off and user mode is off.",
+      "example": "Copied without sharing onto LAB_InvoiceRest.",
+      "tradeoffs": [
+        "Privileged batch vs user entry",
+        "inherited sharing as the default service"
+      ],
+      "follow_ups": [
+        "Can inner classes break this?",
+        "What about Queueable called from REST?"
+      ],
+      "weak_answer_warnings": [
+        "without sharing everywhere for speed"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When do you choose SECURITY_ENFORCED versus stripInaccessible versus user-mode DML?",
+      "answer_30_seconds": "SECURITY_ENFORCED when a hidden selected field must fail the query. stripInaccessible when you drop fields and continue. User-mode DML when inserts/updates must honor CRUD/FLS/sharing together.",
+      "answer_2_minutes": "I often use user mode as the default for new user-facing code. I use SECURITY_ENFORCED on reporting queries that must not silently omit columns. I use stripInaccessible when building a DTO for LWC from a system query I cannot yet migrate. I reverify syntax on the current Guide.",
+      "example": "Reporting query WITH SECURITY_ENFORCED; LWC mapper uses stripInaccessible during migration.",
+      "tradeoffs": [
+        "Fail closed vs degrade",
+        "Migration vs greenfield"
+      ],
+      "follow_ups": [
+        "AccessLevel.USER_MODE on Database.update?",
+        "as user keyword?"
+      ],
+      "weak_answer_warnings": [
+        "Using all three on one line without a reason"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Standard user gets zero rows; admin gets hundreds. Is it a bug?",
+      "answer_30_seconds": "Maybe not: with sharing or user mode is working. Confirm OWD, sharing rules, and whether the business wanted that. If the user should see more, fix sharing metadata, not the keyword.",
+      "answer_2_minutes": "I compare runAs results, role, and permission sets. I do not flip to without sharing to 'make the demo work.' I check if USER_MODE also hid rows the user cannot CRUD.",
+      "example": "LAB_ invoices private OWD; standard user owns none.",
+      "tradeoffs": [
+        "Correct hide vs accidental without-sharing",
+        "Sharing metadata vs Apex keyword"
+      ],
+      "follow_ups": [
+        "Does inherited sharing from a without-sharing caller leak?",
+        "Queueable user context?"
+      ],
+      "weak_answer_warnings": [
+        "Removing with sharing to unblock UAT"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "How do you test Apex security without SeeAllData?",
+      "answer_30_seconds": "Insert LAB_ rows as the test, create a standard user, assign a permission set, System.runAs, assert row counts and field absence. Isolation is APEX-016; the assertions are this lesson.",
+      "answer_2_minutes": "I never query production Accounts to prove FLS. I create two invoices with different owners. I hide Amount__c on the perm set. I assert query size 1 and Amount__c not returned. I add an injection string test.",
+      "example": "runAs(standard) on LAB_InvoiceService.listMine() expects one row and no Amount__c.",
+      "tradeoffs": [
+        "Synthetic data vs org data",
+        "Perm set vs profile edit"
+      ],
+      "follow_ups": [
+        "Can you runAs a guest user?",
+        "Permission set group?"
+      ],
+      "weak_answer_warnings": [
+        "SeeAllData to grab a real user"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "Where does Apex security stop and platform sharing start?",
+      "answer_30_seconds": "Apex keywords and user mode enforce whatever sharing metadata exists. They do not create OWD, roles, or sharing rules. Wrong OWD cannot be 'fixed' with USER_MODE.",
+      "answer_2_minutes": "I send OWD/role/workbench questions to the SEC track. I still own the class keyword, FLS enforcement, and binds. Interviewers like that split. I mention scheduled/system context as a reason privileged jobs exist.",
+      "example": "Private OWD plus with sharing: users see what sharing grants; Apex does not invent extra rows.",
+      "tradeoffs": [
+        "Metadata sharing vs Apex enforcement",
+        "Privileged job vs user entry"
+      ],
+      "follow_ups": [
+        "Manual share from Apex?",
+        "stripInaccessible on subquery fields?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming with sharing creates sharing rules"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,995 @@
+{
+  "topic_id": "INT-003",
+  "slug": "request-response-event-driven-batch-and-data-virtualiza",
+  "title": "Request/response, event-driven, batch, and data-virtualization patterns",
+  "track": "Integration and APIs",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "INT-002"
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer official Help and Developer Guides over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "objectives": [
+    "Map request/response, event-driven, batch, and data-virtualization styles to official Integration Patterns names.",
+    "Choose synchronous request/response only when the caller must wait; otherwise event-driven or batch.",
+    "Explain that data virtualization reads remote data live without a Salesforce copy to reconcile.",
+    "Keep INT-002 API families as implementations of these styles, not replacements for them."
+  ],
+  "diagnostic_question": "A user clicks Get Credit Score and must see the result; inventory changes should fan out to three systems; item master is 400k rows nightly; warehouse bins must appear live without a Salesforce table. Which of the four styles for each?",
+  "definition": "Four integration styles sit on the official Salesforce Integration Patterns catalog. Request/response is Remote Process Invocation—Request and Reply: the caller waits and tracks state from the response. Event-driven work matches Fire and Forget and later event-bus tools: acknowledge and continue. Batch Data Synchronization refreshes copies in a batch manner. Data Virtualization accesses external data in real time without persisting a copy to reconcile. ([Integration Patterns](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns); [Data Virtualization](https://architect.salesforce.com/docs/architect/fundamentals/guide/data-virtualization.html))",
+  "why_it_matters": "Mixing styles—waiting on a batch, copying data you meant to virtualize, or firing events when the UI needs a score—creates timeouts, stale reports, and duplicate sources of truth.",
+  "sixty_second_explanation": "Picture a restaurant pass. Request/response is the waiter standing at the pass until the plate comes back. Event-driven is the ticket spike: kitchen cooks, waiter is free, a bell rings later. Batch is tonight's inventory count after close. Data virtualization is looking through the walk-in window at the supplier's shelf instead of stocking a second fridge you must count twice.",
+  "deeper_explanation": [
+    "Official timing: synchronous request/response blocks; asynchronous is nonblocking, queue, or message-based. Process + sync + Salesforce-initiated maps to Request and Reply. Process + async maps to Fire and Forget. Large copies map to Batch Data Synchronization. Live remote access without a copy is Data Virtualization / virtual integration. ([Pattern Selection Guide](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns))",
+    "Event-driven on the Platform is often implemented with platform events, Change Data Capture, or Pub/Sub API (INT-007). This lesson owns the style: the publisher does not wait for every consumer to finish. Request/response implementations are often REST, SOAP, Composite, or Apex callouts (INT-002/INT-006).",
+    "Batch is about how much and how fast (INT-001): thousands to millions, hours not seconds. Official Bulk intro (INT-002) is a common vehicle, not the pattern name.",
+    "Salesforce Connect powers data virtualization with external objects: a schema projection, not stored rows. INT-009 owns adapters; here you only decide whether a copy is allowed."
+  ],
+  "mental_model": {
+    "analogy": "A restaurant pass window: waiter waits (request/response), ticket spike (event-driven), after-hours inventory (batch), supplier fridge window (data virtualization).",
+    "useful_mapping": [
+      "request/response → waiter blocks until the plate returns",
+      "event-driven → spike the ticket and keep serving",
+      "batch → close-of-day inventory between systems",
+      "data virtualization → look at the supplier shelf; do not stock a second fridge",
+      "API family → cookware, chosen after the pass style",
+      "stored sObject copy → food in YOUR fridge (must be counted)",
+      "external object → window, not a fridge"
+    ],
+    "where_it_breaks": [
+      "Remote downtime is not a pretty window—users see errors unless you design fallback.",
+      "Event-driven still needs monitoring and replay (INT-007/INT-008).",
+      "Batch copies still need keys and reconciliation (INT-010).",
+      "Governors and Connect licenses are not kitchen folklore to invent."
+    ]
+  },
+  "teach_back_prompt": "Assign the four styles to credit-score click, multi-system notify, nightly item master, and live warehouse bins, then say which official pattern name each maps to.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Name official pattern equivalents of the four styles."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify four tickets into request/response vs event-driven vs batch vs virtualization."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why a five-minute copy is not virtualization."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Timeout on a UI callout: which style was wrong?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: styles versus API families."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-INT-PATTERNS",
+      "title": "Integration Patterns (selection matrix and pattern list)",
+      "type": "Official architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns",
+      "supports": "Request and Reply, Fire and Forget, Batch Data Synchronization, Data Virtualization; sync vs async; process/data/virtual.",
+      "release_or_version": "Architects Fundamentals",
+      "last_verified": "2026-08-16",
+      "limits": "Does not implement Pub/Sub or Connect adapters."
+    },
+    {
+      "source_id": "SF-INT-VIRT",
+      "title": "Salesforce Data Virtualization",
+      "type": "Official architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/fundamentals/guide/data-virtualization.html",
+      "supports": "Salesforce Connect and external objects as a schema projection; no data stored in Salesforce; live callouts.",
+      "release_or_version": "Architects Fundamentals",
+      "last_verified": "2026-08-16",
+      "limits": "Adapter SKUs and limits are org-specific (INT-009)."
+    },
+    {
+      "source_id": "SF-TH-INT-PATTERNS",
+      "title": "Trailhead: Integration Patterns and Designs",
+      "type": "Official Trailhead",
+      "url": "https://trailhead.salesforce.com/content/learn/modules/app-integration-patterns/app-integration-patterns-1",
+      "supports": "Same five Lightning Platform patterns including request and reply, fire and forget, batch, remote call-in, data virtualization.",
+      "release_or_version": "Live Trailhead",
+      "last_verified": "2026-08-16",
+      "limits": "Learning module, not a license matrix."
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Request/response wait",
+        "Event-driven continue",
+        "Batch copy",
+        "Virtualize no copy",
+        "APIs are later"
+      ],
+      "accessible_description": "Four styles: wait for a response, publish and continue, batch copies, live remote access without storing a copy."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-INT-PATTERNS",
+        "SF-INT-VIRT"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Four integration styles to official patterns"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Style[Integration style] --> RR[Request/response: wait]\n  Style --> ED[Event-driven: ack and continue]\n  Style --> BA[Batch: scheduled copies]\n  Style --> DV[Data virtualization: live no copy]\n  RR --> OfficialRR[Official: Request and Reply]\n  ED --> OfficialFF[Official: Fire and Forget plus events]\n  BA --> OfficialB[Official: Batch Data Synchronization]\n  DV --> OfficialV[Official: Data Virtualization]",
+      "decision": "flowchart TD\n  Need[Need a style] --> Q1{Must the caller wait for this result?}\n  Q1 -->|Yes| RR[Request/response]\n  Q1 -->|No| Q2{Is the work a large copy on a schedule?}\n  Q2 -->|Yes| BA[Batch]\n  Q2 -->|No| Q3{Should Salesforce store a copy at all?}\n  Q3 -->|No live remote| DV[Data virtualization]\n  Q3 -->|Yes but later write-back ok| ED[Event-driven fire and forget]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Request and Reply: Salesforce invokes a remote process, waits for completion, and tracks state from the response.",
+      "source_ids": [
+        "SF-INT-PATTERNS"
+      ],
+      "scope": "Request/response",
+      "validation": "Pattern Summary table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Fire and Forget: Salesforce invokes a remote process but does not wait for completion; the remote side acknowledges and Salesforce continues.",
+      "source_ids": [
+        "SF-INT-PATTERNS"
+      ],
+      "scope": "Event-driven style",
+      "validation": "Pattern Summary table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Batch Data Synchronization refreshes data in Salesforce and/or an external system in a batch manner in either direction.",
+      "source_ids": [
+        "SF-INT-PATTERNS"
+      ],
+      "scope": "Batch",
+      "validation": "Pattern Summary table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Data Virtualization: Salesforce accesses external data in real time, removing the need to persist and then reconcile that data. Salesforce Connect external objects are a schema projection and hold no stored rows.",
+      "source_ids": [
+        "SF-INT-PATTERNS",
+        "SF-INT-VIRT"
+      ],
+      "scope": "Virtualization",
+      "validation": "Pattern list plus Data Virtualization architect page.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Pattern names are stable; Connect adapter limits changed in recent releases—reverify INT-009, not this style lesson.",
+  "unresolved_uncertainty": [
+    "Connect licenses and row/callout limits are edition- and hosting-specific.",
+    "Event retention windows belong to INT-007 (commonly 72 hours—reverify there)."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Request/response",
+      "telugu": "పిలిచి సమాధానం వచ్చేంత వరకు వేచి ఉండే స్టైల్."
+    },
+    {
+      "english": "Data virtualization",
+      "telugu": "కాపీ లేకుండా రిమోట్ డేటాను లైవ్‌గా చూడటం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Four styles: request/response waits; event-driven acknowledges and continues; batch copies on a schedule; data virtualization reads live without a Salesforce copy. They map to official Request and Reply, Fire and Forget, Batch Data Synchronization, and Data Virtualization.",
+    "two_minutes": "I start with whether the caller must wait. If yes and volume is small, request/response. If the user must not wait, event-driven. If how much is huge, batch. If we refuse a second store, virtualize. APIs from INT-002 implement the style; they are not the style. A five-minute copy is still a copy, not virtualization."
+  },
+  "terminology": [
+    {
+      "term": "request/response",
+      "plain": "Call, wait, use the answer in this conversation.",
+      "precise": "Synchronous Remote Process Invocation—Request and Reply: wait for remote completion and track state from the response.",
+      "example": "Screen Get Credit Score callout that writes Score__c before the page returns.",
+      "non_example": "Publishing a platform event and navigating away.",
+      "confusable_neighbor": "Composite API: a vehicle for request/response, not a fourth style.",
+      "boundary": "INT-006 shows named-credential callouts implementing this style."
+    },
+    {
+      "term": "event-driven",
+      "plain": "Announce that something happened; do not wait for every listener to finish.",
+      "precise": "Matches Fire and Forget: acknowledge and continue. Platform events/CDC/Pub/Sub (INT-007) are common implementations.",
+      "example": "Opportunity Closed Won publishes an event; billing and warehouse subscribe separately.",
+      "non_example": "Http.send in a Visualforce controller waiting for ERP.",
+      "confusable_neighbor": "Batch: scheduled bulk copy, not a per-event message (though CDC can feed batch).",
+      "boundary": "Replay and durability are INT-007."
+    },
+    {
+      "term": "batch",
+      "plain": "Move or refresh lots of rows on a schedule, not in a user click.",
+      "precise": "Batch Data Synchronization: copies created or refreshed in a batch manner in either direction.",
+      "example": "Nightly Bulk 2.0 upsert of LAB_Item__c.",
+      "non_example": "Per-save REST to ERP for each of 400,000 items.",
+      "confusable_neighbor": "Apex Batch Apex: a job type that may implement batch integration, not the pattern name itself.",
+      "boundary": "Bulk vs SOAP choice is INT-002."
+    },
+    {
+      "term": "data virtualization",
+      "plain": "See remote rows live; do not keep a second Salesforce table to reconcile.",
+      "precise": "Official Data Virtualization: real-time access without persisting data that then needs reconciliation. Connect external objects hold no stored data.",
+      "example": "LAB_ERP_Bin__x related list on Account.",
+      "non_example": "Hourly copy into LAB_ERP_Bin__c.",
+      "confusable_neighbor": "Remote Call-In that upserts a real Account: that is a stored copy.",
+      "boundary": "Adapters and lookups are INT-009."
+    },
+    {
+      "term": "synchronous",
+      "plain": "The caller is blocked until this operation returns.",
+      "precise": "Official Timing: blocking real-time request/response; result returns to the caller immediately via that operation.",
+      "example": "REST PATCH waiting for 200 OK.",
+      "non_example": "Bulk job you poll later.",
+      "confusable_neighbor": "User-perceived 'real time' that is actually a later event write-back.",
+      "boundary": "Do not invent timeout defaults."
+    },
+    {
+      "term": "asynchronous",
+      "plain": "The caller continues; results arrive later.",
+      "precise": "Official Timing: nonblocking, queue, or message-based; results and faults return via other operations.",
+      "example": "Fire-and-forget platform event; Bulk 2.0 ingest.",
+      "non_example": "Composite POST that still waits for all subrequests in that HTTP call.",
+      "confusable_neighbor": "Queueable Apex: an implementation tool, not the pattern.",
+      "boundary": "INT-008 owns retries."
+    },
+    {
+      "term": "copy vs projection",
+      "plain": "A copy is rows you store; a projection is a window.",
+      "precise": "External objects are a schema projection over the source. Stored custom objects are data integration copies that need keys and reconciliation.",
+      "example": "LAB_Order__x vs LAB_Order__c nightly load.",
+      "non_example": "Calling a cached copy 'virtualization'.",
+      "confusable_neighbor": "Big objects / archive: still stored data.",
+      "boundary": "Reconciliation playbooks are INT-010."
+    },
+    {
+      "term": "Remote Call-In",
+      "plain": "They call us and change our stored data.",
+      "precise": "Official pattern: remote system CRUD on Platform data. Style is inbound data/process, not virtualization.",
+      "example": "ERP REST update to Account.",
+      "non_example": "Salesforce Connect query out to ERP.",
+      "confusable_neighbor": "Request/response outbound from Salesforce.",
+      "boundary": "Auth is INT-004."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Ask if the caller waits",
+      "actor": "Architect",
+      "trigger": "Integration requested",
+      "before": "Style unnamed",
+      "after": "Wait vs continue",
+      "observe": "UX or job SLA written",
+      "failure": "Defaulting to request/response"
+    },
+    {
+      "step": 2,
+      "transition": "Ask if Salesforce stores a copy",
+      "actor": "Architect + data owner",
+      "trigger": "Wait/continue known",
+      "before": "Copy assumed",
+      "after": "Copy, event, or virtualize",
+      "observe": "System of record named",
+      "failure": "Hourly copies labeled virtualization"
+    },
+    {
+      "step": 3,
+      "transition": "Scale how much",
+      "actor": "Architect",
+      "trigger": "Copy needed",
+      "before": "Row count ignored",
+      "after": "Batch vs per-event vs request/response",
+      "observe": "Volume band",
+      "failure": "Event per row for 400k without a plan"
+    },
+    {
+      "step": 4,
+      "transition": "Pick INT-002 vehicles",
+      "actor": "Developer",
+      "trigger": "Style named",
+      "before": "API first",
+      "after": "REST/SOAP/Bulk/events/Connect as implementations",
+      "observe": "Style name appears above API name",
+      "failure": "SOAP because 'we always SOAP'"
+    }
+  ],
+  "when_to_use": [
+    "When you must choose request/response versus event-driven versus batch versus data-virtualization styles.",
+    "When a UI must block on a remote result (request/response) versus only notify other systems (event-driven).",
+    "When how much forces a batch copy instead of per-click callouts.",
+    "When stakeholders want live remote rows and you must refuse a second stored copy (data virtualization).",
+    "When mapping these four styles to official Integration Patterns names in an interview."
+  ],
+  "when_not_to_use": [
+    "Do not use this styles lesson as a substitute for REST vs SOAP vs Bulk vs GraphQL selection (INT-002).",
+    "Do not treat event-driven as 'no error handling'—retries live in INT-008 and events in INT-007.",
+    "Do not call a scheduled Salesforce copy data virtualization.",
+    "Do not implement Connect adapters here (INT-009) or OAuth here (INT-004).",
+    "Do not run request/response callouts in production from this lesson."
+  ],
+  "configuration_or_code_location": [
+    "Decision record: style name plus official pattern name.",
+    "Sandbox LAB_ objects only for any later proof.",
+    "Event definitions and Connect are later topics."
+  ],
+  "worked_example": {
+    "scenario": "Four sandbox stories: (1) Get Credit Score on a Contact page, (2) Closed Won must notify billing and warehouse, (3) 400k item master nightly, (4) live ERP bins on Account with no Salesforce bin table.",
+    "inputs": [
+      "User-blocking score",
+      "Multi-consumer notify",
+      "Large copy",
+      "No-copy live bins"
+    ],
+    "decisions": [
+      {
+        "decision": "Score path is request/response (Request and Reply).",
+        "because": "Caller waits and must track the returned score.",
+        "rejected": "Platform event with no wait"
+      },
+      {
+        "decision": "Closed Won is event-driven (Fire and Forget).",
+        "because": "User must not wait; multiple consumers.",
+        "rejected": "Synchronous callout to each system in the trigger"
+      },
+      {
+        "decision": "Item master is batch; bins are data virtualization.",
+        "because": "Official batch vs virtualization definitions: copy vs live no copy.",
+        "rejected": "One REST API for all four stories"
+      }
+    ],
+    "configuration_or_code": [
+      "Write a four-row style matrix; do not call production ERP.",
+      "Name candidate APIs only (INT-002)."
+    ],
+    "output": "Four styles with official pattern names.",
+    "verification": [
+      "Score row is not batch.",
+      "Bin row is not a custom object copy.",
+      "Closed Won row does not wait."
+    ],
+    "self_explanation": "Wait vs copy vs window split the designs."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ custom object only.",
+    "starting_state_checks": [
+      "Can create objects",
+      "No production ERP"
+    ],
+    "steps": [
+      "Create LAB_StylePick__c with fields Wait__c (checkbox), Copy__c (checkbox), VolumeLarge__c (checkbox), SuggestedStyle__c (text).",
+      "Insert four records matching the four stories above.",
+      "Write anonymous Apex or a test that stamps request_response, event_driven, batch, or data_virtualization using those three booleans.",
+      "Assert the no-copy live row is data_virtualization even if Wait__c is true (user waiting on a live query is still virtualization, not a stored batch)."
+    ],
+    "guided_completion": [
+      "If nightly large copy stamps request_response, fix the mapping.",
+      "If no-copy stamps batch, you treated a window as a fridge."
+    ],
+    "independent_challenge": "Add Remote Call-In as a fifth inbound stored-copy style and explain why it is not virtualization.",
+    "evidence": [
+      "SOQL of four SuggestedStyle__c values.",
+      "Written mapping to official pattern names."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_StylePick__c and helper Apex."
+    ],
+    "limitations": "Does not subscribe to events or configure Connect."
+  },
+  "decision_table": [
+    {
+      "signal": "User or transaction is blocked until the remote answer is written back.",
+      "choose": "Request/response (official Request and Reply).",
+      "not": "Fire-and-forget event with no wait, and not a nightly batch for this click.",
+      "why": "Official Request and Reply waits for completion and tracks state from the response."
+    },
+    {
+      "signal": "Salesforce must notify others; the click must finish without remote completion.",
+      "choose": "Event-driven Fire and Forget (events detailed in INT-007).",
+      "not": "Chained synchronous callouts to every consumer in one save.",
+      "why": "Fire and Forget acknowledges and returns control without waiting for remote completion."
+    },
+    {
+      "signal": "Hundreds of thousands of rows must stay aligned on a schedule.",
+      "choose": "Batch Data Synchronization.",
+      "not": "Per-row request/response from the UI.",
+      "why": "Official batch pattern refreshes copies in a batch manner."
+    },
+    {
+      "signal": "Users need live remote rows and you will not store a Salesforce copy.",
+      "choose": "Data virtualization (Connect/external objects in INT-009).",
+      "not": "An hourly custom-object copy labeled 'near real time'.",
+      "why": "Official virtualization avoids persisting data that then must be reconciled."
+    }
+  ],
+  "limitations": [
+    "Does not configure events, Bulk jobs, or Connect.",
+    "Does not pick OAuth flows.",
+    "Does not quantify Connect limits."
+  ],
+  "security_notes": [
+    "Virtualization still authenticates to the remote system (named credentials).",
+    "Event payloads can leak fields—minimize.",
+    "Inbound Remote Call-In is an API surface."
+  ],
+  "common_mistakes": [
+    "Calling REST a style.",
+    "Hourly copies as virtualization.",
+    "Request/response for 400k rows.",
+    "Event-driven means no monitoring.",
+    "Blocking the UI on a warehouse batch job."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "UI callout timeouts.",
+      "check": [
+        "Style may need to be event-driven or async status.",
+        "Volume may be batch, not request/response."
+      ],
+      "do_not_assume": "A longer timeout fixes architecture."
+    },
+    {
+      "symptom": "Reports disagree with ERP.",
+      "check": [
+        "You stored a copy; reconciling is INT-010.",
+        "If virtualized, check live errors and filters, not a stale table."
+      ],
+      "do_not_assume": "Virtualization caches a second fridge."
+    }
+  ],
+  "production_notes": [
+    "Name the style in the design record.",
+    "Revisit after volume changes.",
+    "No production traffic from this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Official pattern for request/response from Salesforce?",
+      "options": {
+        "A": "Remote Process Invocation—Request and Reply",
+        "B": "Metadata API",
+        "C": "Bulk API 2.0 only",
+        "D": "OAuth client credentials"
+      },
+      "answer": "A",
+      "rationale": "Pattern summary: wait for completion and track state from the response.",
+      "distractor_explanations": {
+        "B": "Metadata is an API family.",
+        "C": "Bulk is a vehicle for batch.",
+        "D": "Auth is INT-004."
+      },
+      "concept": "Request and Reply",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Fire and Forget means?",
+      "options": {
+        "A": "Salesforce does not wait for remote completion after acknowledgment",
+        "B": "Salesforce always stores a second copy",
+        "C": "The user must block on ERP",
+        "D": "GraphQL is required"
+      },
+      "answer": "A",
+      "rationale": "Official Fire and Forget: acknowledge and continue.",
+      "distractor_explanations": {
+        "B": "That is data integration copies.",
+        "C": "Opposite of fire-and-forget.",
+        "D": "API family."
+      },
+      "concept": "Fire and Forget",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Data virtualization official meaning?",
+      "options": {
+        "A": "Access external data in real time without persisting a copy to reconcile",
+        "B": "Nightly Bulk copy",
+        "C": "SOAP only",
+        "D": "UI mashup in the Integration Patterns scope"
+      },
+      "answer": "A",
+      "rationale": "Pattern list plus virtualization page.",
+      "distractor_explanations": {
+        "B": "Batch copy.",
+        "C": "Not required.",
+        "D": "Mashups out of scope."
+      },
+      "concept": "Virtualization",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-INT-VIRT"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Get Credit Score must display before the page returns. Style?",
+      "options": {
+        "A": "Request/response",
+        "B": "Batch",
+        "C": "Data virtualization of the score with no wait",
+        "D": "Event-driven with no write-back on this click"
+      },
+      "answer": "A",
+      "rationale": "Caller waits for the result.",
+      "distractor_explanations": {
+        "B": "Not a large scheduled copy.",
+        "C": "You still wait; also score may be stored.",
+        "D": "User would not see the score."
+      },
+      "concept": "UI wait",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "400,000 item-master rows nightly. Style?",
+      "options": {
+        "A": "Batch",
+        "B": "Request/response per row in a trigger",
+        "C": "Data virtualization that stores LAB_Item__c",
+        "D": "Event-driven HTTP callout waiting in a loop"
+      },
+      "answer": "A",
+      "rationale": "Large scheduled copy is Batch Data Synchronization.",
+      "distractor_explanations": {
+        "B": "How much too large.",
+        "C": "Stored copy is not virtualization.",
+        "D": "Still waiting."
+      },
+      "concept": "Batch",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Live ERP bins, no Salesforce bin object. Style?",
+      "options": {
+        "A": "Data virtualization",
+        "B": "Batch every minute",
+        "C": "Request/response insert of all bins on login",
+        "D": "Metadata API"
+      },
+      "answer": "A",
+      "rationale": "No copy; live access.",
+      "distractor_explanations": {
+        "B": "Still a copy.",
+        "C": "Creates a copy.",
+        "D": "Wrong family."
+      },
+      "concept": "Virtualize",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-INT-VIRT"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Closed Won should notify two systems; user must not wait. Style?",
+      "options": {
+        "A": "Event-driven (Fire and Forget)",
+        "B": "Request/response to both in one trigger",
+        "C": "Metadata deploy",
+        "D": "Data virtualization of Opportunity"
+      },
+      "answer": "A",
+      "rationale": "Do not wait for remote completion.",
+      "distractor_explanations": {
+        "B": "User waits and risks limits.",
+        "C": "Not data notify.",
+        "D": "Opportunity already stored."
+      },
+      "concept": "Events style",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A five-minute copy into a custom object is labeled virtualization. Correct?",
+      "options": {
+        "A": "No. A stored copy requires reconciliation; virtualization does not persist that copy",
+        "B": "Yes. Any cadence under an hour is virtualization",
+        "C": "Yes if the object name ends with __x",
+        "D": "Yes if REST is used"
+      },
+      "answer": "A",
+      "rationale": "Official virtualization removes persisting data to reconcile.",
+      "distractor_explanations": {
+        "B": "Cadence does not change a copy into a window.",
+        "C": "__x is the external-object suffix, not a rename trick.",
+        "D": "API family is irrelevant."
+      },
+      "concept": "Copy trap",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-INT-VIRT"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Composite POST that waits for subrequests is which style?",
+      "options": {
+        "A": "Request/response (synchronous), even though several REST calls are chained",
+        "B": "Batch Data Synchronization by definition",
+        "C": "Always event-driven",
+        "D": "Data virtualization"
+      },
+      "answer": "A",
+      "rationale": "Composite is still a blocking HTTP operation (INT-002).",
+      "distractor_explanations": {
+        "B": "Batch is large async copies.",
+        "C": "Caller waits.",
+        "D": "Not a live external object."
+      },
+      "concept": "Composite style",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-TH-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "ERP pushes Account updates into Salesforce. That is primarily?",
+      "options": {
+        "A": "Remote Call-In on stored Platform data, not data virtualization",
+        "B": "Data virtualization because ERP is external",
+        "C": "Request/response from a Salesforce trigger",
+        "D": "Batch only"
+      },
+      "answer": "A",
+      "rationale": "Remote system operates on stored Salesforce data.",
+      "distractor_explanations": {
+        "B": "Virtualization would not store Account as the copy.",
+        "C": "Salesforce is not the caller.",
+        "D": "May be near-real-time inbound, not necessarily batch."
+      },
+      "concept": "Call-in vs virtual",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Event-driven vs request/response?",
+      "options": {
+        "A": "Event-driven continues after ack; request/response waits for completion and state from the response",
+        "B": "They are identical official patterns",
+        "C": "Event-driven is always Bulk API",
+        "D": "Request/response cannot use REST"
+      },
+      "answer": "A",
+      "rationale": "Official Fire and Forget vs Request and Reply.",
+      "distractor_explanations": {
+        "B": "Different patterns.",
+        "C": "Bulk is a vehicle.",
+        "D": "REST often implements request/response."
+      },
+      "concept": "Wait vs continue",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Batch vs data virtualization?",
+      "options": {
+        "A": "Batch stores/refreshes copies; virtualization reads live without that copy",
+        "B": "Both always use SOAP",
+        "C": "Virtualization is a Bulk job type",
+        "D": "Batch never uses keys"
+      },
+      "answer": "A",
+      "rationale": "Official definitions of the two patterns.",
+      "distractor_explanations": {
+        "B": "APIs vary.",
+        "C": "False.",
+        "D": "Keys still matter for copies."
+      },
+      "concept": "Copy vs window",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-INT-VIRT"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "rr",
+      "front": "Request/response official pattern name?",
+      "back": "Remote Process Invocation—Request and Reply."
+    },
+    {
+      "id": "F2",
+      "category": "ed",
+      "front": "Event-driven official cousin pattern?",
+      "back": "Remote Process Invocation—Fire and Forget, often implemented with events (INT-007)."
+    },
+    {
+      "id": "F3",
+      "category": "ba",
+      "front": "Batch official pattern name?",
+      "back": "Batch Data Synchronization."
+    },
+    {
+      "id": "F4",
+      "category": "dv",
+      "front": "Data virtualization in one official sentence?",
+      "back": "Salesforce accesses external data in real time without persisting a copy to reconcile."
+    },
+    {
+      "id": "F5",
+      "category": "sync",
+      "front": "Official synchronous timing?",
+      "back": "Caller waits; result returns in that request/response operation."
+    },
+    {
+      "id": "F6",
+      "category": "async",
+      "front": "Official asynchronous timing?",
+      "back": "Caller continues; results or faults arrive via later operations."
+    },
+    {
+      "id": "F7",
+      "category": "copy",
+      "front": "External object vs custom object copy?",
+      "back": "External object is a schema projection with no stored rows; custom object is a copy."
+    },
+    {
+      "id": "F8",
+      "category": "trap",
+      "front": "Is a five-minute copy virtualization?",
+      "back": "No. It is still a stored copy that must be reconciled."
+    },
+    {
+      "id": "F9",
+      "category": "api",
+      "front": "Are REST and Bulk styles?",
+      "back": "No. They are API families (INT-002) that implement styles."
+    },
+    {
+      "id": "F10",
+      "category": "ui",
+      "front": "User must see ERP number on click. Style?",
+      "back": "Request/response, not fire-and-forget."
+    },
+    {
+      "id": "F11",
+      "category": "vol",
+      "front": "400k nightly rows. Style?",
+      "back": "Batch Data Synchronization."
+    },
+    {
+      "id": "F12",
+      "category": "live",
+      "front": "Live bins, no Salesforce table. Style?",
+      "back": "Data virtualization."
+    },
+    {
+      "id": "F13",
+      "category": "in",
+      "front": "ERP updates Salesforce Accounts. Pattern?",
+      "back": "Remote Call-In, not virtualization."
+    },
+    {
+      "id": "F14",
+      "category": "comp",
+      "front": "Is Composite event-driven?",
+      "back": "No. It is still synchronous request/response chaining."
+    },
+    {
+      "id": "F15",
+      "category": "err",
+      "front": "Does event-driven skip monitoring?",
+      "back": "No. INT-008/INT-010 still apply."
+    },
+    {
+      "id": "F16",
+      "category": "sel",
+      "front": "Process + sync + Salesforce-initiated key pattern?",
+      "back": "Request and Reply per the selection matrix."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain request/response, event-driven, batch, and data-virtualization styles.",
+      "answer_30_seconds": "Request/response waits. Event-driven acknowledges and continues. Batch refreshes copies on a schedule. Data virtualization reads live without a Salesforce copy.",
+      "answer_2_minutes": "I map them to official names: Request and Reply, Fire and Forget, Batch Data Synchronization, Data Virtualization. I keep INT-002 APIs as vehicles. A copy on any cadence is not virtualization. If the caller must wait, I will not pretend an event is request/response.",
+      "example": "Credit-score click vs Closed Won notify vs nightly items vs live bins.",
+      "tradeoffs": [
+        "Wait vs throughput",
+        "Copy vs live"
+      ],
+      "follow_ups": [
+        "Which official pattern for each?"
+      ],
+      "weak_answer_warnings": [
+        "Listing only REST and SOAP"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "When is request/response the wrong style?",
+      "answer_30_seconds": "When the user must not wait, how much is huge, or the remote work is a long batch job. Then event-driven or batch.",
+      "answer_2_minutes": "Official Request and Reply waits for completion. If ERP credit check takes minutes, blocking Lightning save fights governors and UX. I split: show In Progress, event-driven completion, Remote Call-In write-back. I do not just raise timeouts.",
+      "example": "Two-minute warehouse allocation during Opportunity save.",
+      "tradeoffs": [
+        "UX vs certainty"
+      ],
+      "follow_ups": [
+        "What status field?"
+      ],
+      "weak_answer_warnings": [
+        "Always real-time"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Design the four-story ACME lab using only the four styles.",
+      "answer_30_seconds": "Score: request/response. Notify: event-driven. Items: batch. Bins: data virtualization. I will not one-API all four.",
+      "answer_2_minutes": "I write wait/copy/volume for each. I name official patterns in the decision record. Candidate vehicles: named-credential REST for score (INT-006), platform events (INT-007), Bulk 2.0 (INT-002), Connect (INT-009). Auth later (INT-004).",
+      "example": "Four LAB_ stories in one architecture review.",
+      "tradeoffs": [
+        "Simplicity vs fit"
+      ],
+      "follow_ups": [
+        "What if bins must be reported offline?"
+      ],
+      "weak_answer_warnings": [
+        "One REST service"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Stakeholders want 'real-time inventory' and also Salesforce reports on last night's numbers.",
+      "answer_30_seconds": "That is two styles: live virtualization for the page, plus a batch copy if reports need a stored snapshot. I will not pretend one style does both without saying so.",
+      "answer_2_minutes": "Official virtualization does not persist a copy. Reports on stored objects need data integration and reconciliation (INT-010). I make the extra copy explicit, with keys and cadence, not a hidden five-minute sync labeled virtualization.",
+      "example": "Account related list live; finance report on LAB_Inv_Snapshot__c.",
+      "tradeoffs": [
+        "Freshness vs report performance"
+      ],
+      "follow_ups": [
+        "Who owns the snapshot?"
+      ],
+      "weak_answer_warnings": [
+        "Calling both virtualization"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Trigger callout times out on Data Loader updates.",
+      "answer_30_seconds": "How much turned a request/response style into a batch problem. I stop per-row wait and move to event-driven or batch.",
+      "answer_2_minutes": "INT-001 how much was ignored. I check bulk trigger context. I do not raise timeout as architecture. I may publish events per successful chunk or run Bulk the other direction.",
+      "example": "5,000 Opportunity updates each calling ERP.",
+      "tradeoffs": [
+        "Bulk UX vs integrity"
+      ],
+      "follow_ups": [
+        "Partial success?"
+      ],
+      "weak_answer_warnings": [
+        "Network only"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "External object page shows errors; someone wants a cache table 'to virtualize better.'",
+      "answer_30_seconds": "A cache table is a copy, which is batch/data integration, not virtualization. I diagnose Connect/auth/remote availability first (INT-009/INT-004).",
+      "answer_2_minutes": "Architects page: external objects hold no data. If we add LAB_cache__c we accept reconciliation. That may be valid but must be named batch, not 'better virtualization.'",
+      "example": "OData endpoint is down during a demo, so the related list errors instead of showing a cached copy.",
+      "tradeoffs": [
+        "Availability vs purity"
+      ],
+      "follow_ups": [
+        "Fallback UX?"
+      ],
+      "weak_answer_warnings": [
+        "Invent Connect row limits"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How do event-driven and batch cooperate?",
+      "answer_30_seconds": "Events can notify; batch can backfill or reconcile. CDC can feed downstream stores. They are not the same style.",
+      "answer_2_minutes": "Fire and Forget handles the interesting moment. Batch Data Synchronization heals drift. INT-007 replay is for missed events inside the retention window; it is not a nightly item-master substitute by itself. I keep names separate in the design record.",
+      "example": "CDC on Account plus nightly customer-master reconcile.",
+      "tradeoffs": [
+        "Latency vs completeness"
+      ],
+      "follow_ups": [
+        "Replay window?"
+      ],
+      "weak_answer_warnings": [
+        "Events replace batch always"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the restaurant-pass analogy and where it breaks.",
+      "answer_30_seconds": "Waiter waits, ticket spike, nightly inventory, supplier window. It breaks when the supplier window is dark (remote down) and when governors are not kitchen rules I can invent.",
+      "answer_2_minutes": "I map the four styles, then say APIs are cookware, Composite is still waiting at the pass, and a second fridge is a copy. Connect licenses are not spices to guess, and a live OData outage is not a pretty freeze-frame of the kitchen.",
+      "example": "Whiteboard the four ACME stories with the pass sketch.",
+      "tradeoffs": [
+        "Clarity vs precision"
+      ],
+      "follow_ups": [
+        "Where do named credentials sit?"
+      ],
+      "weak_answer_warnings": [
+        "Library analogy"
+      ]
+    }
+  ]
+}

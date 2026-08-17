@@ -1,0 +1,1034 @@
+{
+  "topic_id": "ARCH-012",
+  "slug": "architecture-diagrams-decision-records-design-reviews-a",
+  "title": "Architecture diagrams, decision records, design reviews, and production-readiness reviews",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-011"
+  ],
+  "objectives": [
+    "Select Salesforce Architecture Center diagram types (capability, landscape, solution, interaction process flow) for the question being asked.",
+    "Write architecture decision records that capture context, options, decision, and consequences—not a wiki afterthought.",
+    "Run a design review that uses Well-Architected Trusted/Easy/Adaptable and Decision Guides, not taste.",
+    "Define production-readiness as evidence: tests, Scale Test where required, security, rollback, observability—not a calendar date."
+  ],
+  "diagnostic_question": "A squad wants to go live Friday with a new event-driven warehouse integration, no landscape diagram, no decision record for CDC versus platform events, and no Full-sandbox scale evidence. Which artifacts and reviews do you require before production-readiness?",
+  "definition": "Architecture diagrams are the Architecture Center's standard views of topology, capability, process, and solution structure. Decision records capture a significant choice with context and consequences. Design reviews test a proposal against Well-Architected and Decision Guides before build hardens. Production-readiness reviews ask whether evidence (tests, scale, security, rollback, monitoring) exists to operate in production. ([Reference Diagrams](https://architect.salesforce.com/docs/architect/reference-diagrams/overview); [Well-Architected overview](https://architect.salesforce.com/docs/architect/well-architected/guide/overview.html))",
+  "why_it_matters": "Interviewers fail 'we talked about it' architectures. Diagrams without a decision record hide why CDC was chosen. Design reviews without Well-Architected become opinion. A go-live without production-readiness evidence is a scheduled incident. These artifacts are how CoE governance (ARCH-011) becomes visible.",
+  "sixty_second_explanation": "Treat a Salesforce program like a building permit set. Diagrams are the stamped drawings: site plan (landscape), floor plan (solution), sequence of trades (interaction process flow). A decision record is the approved variance: why we used platform events instead of request/reply. Design review is plan check against code. Production-readiness is the occupancy inspection: smoke tests, load drill, keys, and a rollback—not the date on the invitation.",
+  "deeper_explanation": [
+    "Salesforce Reference Diagrams give a shared visual language: capability maps, data-model notation, interaction process flows (including async, platform events, queues), solution architecture, system landscape (including org hierarchies and CoE), and roadmaps. Use the type that answers the stakeholder's question; do not paste one busy picture for every meeting. ([Reference Diagrams](https://architect.salesforce.com/docs/architect/reference-diagrams/overview))",
+    "Well-Architected organizes healthy solutions as Trusted, Easy, and Adaptable, with patterns and anti-patterns. Decision Guides (for example Event-Driven Architecture) exist to choose tools. A design review should cite those artifacts: Trusted (security, reliability), Easy (automated, engaging, performant), Adaptable (composable, resilient). ([Well-Architected overview](https://architect.salesforce.com/docs/architect/well-architected/guide/overview.html); [Event-Driven Decision Guide](https://architect.salesforce.com/docs/architect/decision-guides/guide/event-driven.html))",
+    "Architecture decision records (ADRs) are the team's durable memory of a significant, costly-to-reverse choice: context, options, decision, consequences, status. Salesforce does not ship a mandatory ADR object; the practice is how you keep diagrams honest. Link the ADR to the diagram and the package (ARCH-010).",
+    "Production-readiness is Well-Architected operationalized: Scale Test in Full sandbox when scale is an NFR (ARCH-009/011), failure mitigation, monitoring (Scale Center, Event Monitoring if licensed), security review, rollback, and no risky first-time production configuration. A design review that passed last quarter does not replace a readiness review against current evidence."
+  ],
+  "mental_model": {
+    "analogy": "Building permit set and occupancy inspection: drawings are architecture diagrams, variance forms are decision records, plan check is design review, occupancy inspection is production-readiness.",
+    "useful_mapping": [
+      "system landscape → site plan (orgs, systems, trust boundaries)",
+      "capability map → what the building is for",
+      "solution architecture → floor plan of Salesforce components",
+      "interaction process flow → sequence of trades (including events)",
+      "decision record → approved variance with options and consequences",
+      "design review → plan check against Well-Architected code",
+      "production-readiness → occupancy inspection with tests and rollback",
+      "go-live date → invitation, not the inspection certificate"
+    ],
+    "where_it_breaks": [
+      "Software can iterate after occupancy; a concrete building cannot. ADRs must be amended, not frozen forever.",
+      "Salesforce has no single Setup object named ADR—this is a team practice.",
+      "A pretty diagram that contradicts the org is worse than no diagram.",
+      "Readiness is edition- and license-sensitive (Scale Test, Event Monitoring)."
+    ]
+  },
+  "teach_back_prompt": "Show which diagram you would bring to a CFO versus a developer, what belongs in a decision record for CDC versus REST, and what evidence a production-readiness review would refuse to skip.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Name four Reference Diagram types and one question each answers."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Write an ADR skeleton: context, options, decision, consequences."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Map Trusted / Easy / Adaptable to a design-review agenda."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "List production-readiness evidence for an event-driven integration."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: diagrams, ADRs, design review, production-readiness."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-REF-DIAGRAMS",
+      "title": "Reference Diagrams overview",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/reference-diagrams/overview",
+      "supports": "Diagram types: capability, process flow, solution architecture, system landscape, roadmaps.",
+      "release_or_version": "Architecture Center / Summer '26 review",
+      "last_verified": "2026-08-16",
+      "limits": "Diagram catalog can refresh; pick current names."
+    },
+    {
+      "source_id": "SF-WA-OVERVIEW",
+      "title": "Well-Architected overview",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/overview.html",
+      "supports": "Trusted, Easy, Adaptable as the review compass; patterns and anti-patterns.",
+      "release_or_version": "Well-Architected",
+      "last_verified": "2026-08-16",
+      "limits": "Framework is guidance, not an org certification Salesforce stamps automatically."
+    },
+    {
+      "source_id": "SF-ARCH-EDA",
+      "title": "Event-Driven Architecture Decision Guide",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/decision-guides/guide/event-driven.html",
+      "supports": "Example of a Decision Guide a design review should cite for tool choice.",
+      "release_or_version": "Decision Guides",
+      "last_verified": "2026-08-16",
+      "limits": "One guide among many; do not force EDA into every ADR."
+    },
+    {
+      "source_id": "SF-WA-RELIABLE",
+      "title": "Well-Architected — Reliable",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/reliable",
+      "supports": "Scale Test before production, Scale Center, failure mitigation as readiness evidence.",
+      "release_or_version": "Well-Architected",
+      "last_verified": "2026-08-16",
+      "limits": "Scale Test licensing Needs verification."
+    },
+    {
+      "source_id": "SF-WA-ALM",
+      "title": "Resilient — Application Lifecycle Management tools",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected-tools/guide/adaptable-application-lifecycle-management",
+      "supports": "No risky production configuration; source-driven artifacts; environment strategy as readiness input.",
+      "release_or_version": "Well-Architected tools",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define a customer's CAB name."
+    },
+    {
+      "source_id": "SF-COE-DIAGRAM",
+      "title": "Center of Excellence reference diagram",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/reference-diagrams/guide/center-of-excellence.html",
+      "supports": "CoE as the usual owner of design-review standards and training.",
+      "release_or_version": "Reference Diagrams",
+      "last_verified": "2026-08-16",
+      "limits": "CoE is not required to chair every low-risk review."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Architecture Center diagrams and Well-Architected overview",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Pick the diagram type",
+        "ADR: context options decision",
+        "Design review: Well-Architected",
+        "Decision Guides",
+        "Production-readiness evidence",
+        "Date is not occupancy"
+      ],
+      "accessible_description": "Portrait map from landscape diagrams through ADRs and Well-Architected design review to a production-readiness checklist with tests and rollback."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-REF-DIAGRAMS",
+        "SF-WA-OVERVIEW",
+        "SF-ARCH-EDA",
+        "SF-WA-RELIABLE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Which review gate is this change in?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Q[Stakeholder question] --> Diag[Architecture diagram type]\n  Diag --> ADR[Decision record]\n  ADR --> DR[Design review vs Well-Architected]\n  DR --> Build[Build in non-prod]\n  Build --> PRR[Production-readiness review]\n  PRR --> Prod[Production]\n  PRR --> Block[Not ready: missing evidence]",
+      "decision": "flowchart TD\n  Need[Need to communicate?] --> Q1{What question?}\n  Q1 -->|Who talks to whom| Land[System landscape diagram]\n  Q1 -->|How a process runs| Flow[Interaction process flow]\n  Q1 -->|What we buy/build| Sol[Solution architecture]\n  Choice[Significant tool choice] --> ADR[Write a decision record]\n  Review[Before hardening code] --> DR[Design review citing Well-Architected / Decision Guides]\n  GoLive[Want production?] --> PRR{Evidence: tests scale security rollback monitor?}\n  PRR -->|Yes| Ready[Production-readiness pass]\n  PRR -->|No| Wait[Do not confuse the date with occupancy]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Salesforce Reference Diagrams provide standard views: capability maps, interaction process flows (including events and async), solution architecture, system landscapes (including org hierarchies), and roadmaps. Choose the view that matches the question.",
+      "source_ids": ["SF-REF-DIAGRAMS"],
+      "scope": "Architecture diagrams",
+      "validation": "Reference Diagrams overview.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Well-Architected (Trusted, Easy, Adaptable) plus Decision Guides are the official compass for design reviews. They supply patterns and anti-patterns, not a substitute for org-specific NFRs.",
+      "source_ids": ["SF-WA-OVERVIEW", "SF-ARCH-EDA"],
+      "scope": "Design reviews",
+      "validation": "Well-Architected overview and an example Decision Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Production-readiness includes validating scalability with Scale Test before production when that NFR applies, plus failure mitigation and monitoring. Risky configuration must not appear first in production.",
+      "source_ids": ["SF-WA-RELIABLE", "SF-WA-ALM"],
+      "scope": "Production-readiness reviews",
+      "validation": "Reliable Scale Test guidance plus ALM no-prod-experiments pattern.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "A Center of Excellence commonly owns review standards and training. Low-risk changes should not all wait on the same heavy review path (risk-based governance from ARCH-011).",
+      "source_ids": ["SF-COE-DIAGRAM", "SF-WA-ALM"],
+      "scope": "Who reviews",
+      "validation": "CoE diagram plus ALM risk-based paths.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Architecture decision records are a team practice for significant choices (context, options, decision, consequences). Salesforce does not provide a single mandatory ADR sObject; mark productized ADR features as Needs verification if claimed.",
+      "source_ids": ["SF-WA-OVERVIEW", "SF-ARCH-EDA"],
+      "scope": "Decision records",
+      "validation": "Decision Guides show the kind of choice ADRs must freeze; ADR format is practice, not a Help object.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify Reference Diagram catalog names and Well-Architected URLs for Summer '26.",
+  "unresolved_uncertainty": [
+    "There is no single official Salesforce Help article that mandates a specific ADR file format; teams should adopt one and keep it consistent.",
+    "Scale Test and Event Monitoring availability for a readiness checklist is license-specific."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Decision record",
+      "telugu": "ఎందుకు ఈ ఆర్కిటెక్చర్ ఎంపిక చేశామో రాసిన పత్రం."
+    },
+    {
+      "english": "Production-readiness",
+      "telugu": "ప్రొడక్షన్‌లో నడపడానికి సాక్ష్యం ఉందా అనే తనిఖీ."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Pick the right architecture diagram, write a decision record for costly choices, design-review against Well-Architected, and only then production-readiness with tests, scale evidence, security, rollback, and monitoring. The Friday date is not the certificate.",
+    "two_minutes": "I bring a landscape to executives and a process flow to developers. The ADR states why CDC beat REST. Design review cites Trusted/Easy/Adaptable and the Decision Guide, not taste. Readiness asks for Full-sandbox scale if we claimed peak load, no first-time prod clicks, and a rollback. CoE sets the bar; not every report color needs a full architecture board."
+  },
+  "terminology": [
+    {
+      "term": "architecture diagrams",
+      "plain": "Standard pictures of the system so people share one map.",
+      "precise": "Architecture Center types: capability, landscape, solution, interaction process flow, roadmap. Match the question; do not use one spaghetti slide.",
+      "example": "System landscape showing Salesforce, warehouse, and EventBridge.",
+      "non_example": "A screenshot of Setup as the landscape.",
+      "confusable_neighbor": "ERD: data model, not the same as a landscape.",
+      "boundary": "Use official notation when presenting to architects; informal sketches are for working sessions."
+    },
+    {
+      "term": "decision records",
+      "plain": "A short paper on a choice we might regret forgetting.",
+      "precise": "Context, options considered, decision, consequences, status. Linked to diagrams. Practice, not a standard Salesforce object.",
+      "example": "ADR-014: CDC for Account replica; custom PE for warehouse code; Publish After Commit.",
+      "non_example": "A Slack thumbs-up with no options listed.",
+      "confusable_neighbor": "Change set description: deployment, not architecture rationale.",
+      "boundary": "Not every field needs an ADR—significant and costly-to-reverse."
+    },
+    {
+      "term": "design reviews",
+      "plain": "A structured look before the design hardens.",
+      "precise": "Compare the proposal to Well-Architected pillars and relevant Decision Guides. Risk-based: CoE on high-risk, squad on low-risk.",
+      "example": "Review of warehouse EDA against the Event-Driven Decision Guide.",
+      "non_example": "A meeting that only debates color of a dashboard.",
+      "confusable_neighbor": "Code review: later, smaller grain.",
+      "boundary": "Passing design review does not equal production-readiness."
+    },
+    {
+      "term": "production-readiness reviews",
+      "plain": "Are we allowed to operate this in production now?",
+      "precise": "Evidence: tests, scale (Full sandbox/Scale Test when NFR applies), security, monitoring, rollback, no first-time prod config. Date is not evidence.",
+      "example": "Go/no-go with Scale Center baseline and rollback notes for LAB_ShipmentReady__e.",
+      "non_example": "The sprint ends Friday so it must be ready.",
+      "confusable_neighbor": "Design review: intent versus operational evidence.",
+      "boundary": "License gaps (no Scale Test) must be named as residual risk."
+    },
+    {
+      "term": "system landscape",
+      "plain": "Who talks to whom at the enterprise level.",
+      "precise": "Reference Diagrams: Salesforce products, external systems, integration points, org hierarchies.",
+      "example": "US prod, EU prod, ERP, EventBridge.",
+      "non_example": "A Flow canvas.",
+      "confusable_neighbor": "Solution architecture: inside-Salesforce components.",
+      "boundary": "Keep trust boundaries visible (AUTH/SEC)."
+    },
+    {
+      "term": "interaction process flow",
+      "plain": "The sequence of steps and messages.",
+      "precise": "Reference Diagrams cover async, platform events, queues, pub/sub. Use when order and failure modes matter.",
+      "example": "Order commit → After Commit PE → warehouse → status callback.",
+      "non_example": "A capability map of 'Order to Cash' boxes only.",
+      "confusable_neighbor": "UML sequence: similar intent; prefer Salesforce diagram language in CoE packs.",
+      "boundary": "Does not replace an ADR for tool choice."
+    },
+    {
+      "term": "Well-Architected review",
+      "plain": "Checking Trusted, Easy, Adaptable—not vibes.",
+      "precise": "Official framework of patterns/anti-patterns. Design reviews should name the pillar and the anti-pattern avoided.",
+      "example": "Adaptable: unlocked package, not a monoflow.",
+      "non_example": "We used Lightning so we are Well-Architected.",
+      "confusable_neighbor": "AppExchange security review: different program.",
+      "boundary": "Framework is guidance; Salesforce does not auto-certify your org."
+    },
+    {
+      "term": "occupancy versus invitation",
+      "plain": "A go-live party is not a readiness certificate.",
+      "precise": "Handbook teaching phrase: the date is an invitation; production-readiness is the inspection. Not an official Salesforce object name.",
+      "example": "Friday invite cancelled because Scale Test was in Developer sandbox.",
+      "non_example": "Renaming the CAB to 'occupancy.'",
+      "confusable_neighbor": "Release calendar: scheduling, not evidence.",
+      "boundary": "Use in teaching; in interviews prefer 'readiness evidence.'"
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Pick diagram types",
+      "actor": "Architect",
+      "trigger": "New initiative",
+      "before": "One overloaded slide",
+      "after": "Landscape for execs, process flow for builders",
+      "observe": "Diagrams in Architecture Center notation",
+      "failure": "Setup screenshot as the landscape"
+    },
+    {
+      "step": 2,
+      "transition": "Write ADRs",
+      "actor": "Architect + tech lead",
+      "trigger": "Costly-to-reverse choice",
+      "before": "Tribal memory",
+      "after": "Context, options, decision, consequences",
+      "observe": "ADR linked from the diagram",
+      "failure": "Slack emoji as the record"
+    },
+    {
+      "step": 3,
+      "transition": "Design review",
+      "actor": "CoE or delegated reviewer",
+      "trigger": "Before hardening",
+      "before": "Taste debate",
+      "after": "Well-Architected + Decision Guide citations",
+      "observe": "Actions and owners",
+      "failure": "Same heavy board for a report color"
+    },
+    {
+      "step": 4,
+      "transition": "Production-readiness",
+      "actor": "Release + architect",
+      "trigger": "Candidate for production",
+      "before": "Calendar pressure",
+      "after": "Evidence checklist pass or explicit residual risk",
+      "observe": "Tests, scale, security, rollback, monitoring",
+      "failure": "First-time risky config in production"
+    }
+  ],
+  "when_to_use": [
+    "When stakeholders disagree about topology: produce architecture diagrams of the right type (landscape versus process flow).",
+    "When a tool choice is costly to reverse: write decision records (CDC vs REST, org split, package type).",
+    "When a design is about to harden: run a design review against Well-Architected and Decision Guides.",
+    "When a date is approaching: run a production-readiness review on evidence, not on the invitation."
+  ],
+  "when_not_to_use": [
+    "Do not require a full architecture-board design review for a low-risk report color; use risk-based paths.",
+    "Do not treat a pretty diagram as a decision record if options and consequences are missing.",
+    "Do not call a sprint-end date a production-readiness pass without tests, rollback, and (when claimed) scale evidence.",
+    "Do not skip diagrams and ADRs because 'we are agile'; agility still needs a map and a memory."
+  ],
+  "configuration_or_code_location": [
+    "Architecture Center Reference Diagrams and Well-Architected.",
+    "Team ADR repo (docs/adr or similar)—practice, not Setup.",
+    "CoE review templates.",
+    "Scale Center / Scale Test / sandbox evidence attached to the readiness packet."
+  ],
+  "worked_example": {
+    "scenario": "Warehouse EDA (from ARCH-007) wants Friday go-live. No landscape, no ADR for CDC vs custom PE, scale test was two clicks in a Developer sandbox. CoE can block. Lab is documentary; no production deploy.",
+    "inputs": [
+      "LAB_Order__c ship event",
+      "ERP replica need",
+      "Peak season next month",
+      "Developer sandbox 'test'"
+    ],
+    "decisions": [
+      {
+        "decision": "Require a system landscape plus an interaction process flow before design review.",
+        "because": "Different questions: who integrates versus message order.",
+        "rejected": "One spaghetti slide"
+      },
+      {
+        "decision": "ADR: CDC for Account/Order replica; custom PE After Commit for warehouse code; not UI request/reply.",
+        "because": "Event-Driven Decision Guide; eventual consistency (ARCH-007).",
+        "rejected": "Slack 'PE is fine'"
+      },
+      {
+        "decision": "Production-readiness fails until Full-sandbox scale evidence or an explicit residual-risk sign-off.",
+        "because": "Reliable Scale Test; Developer sandbox is not scale testing.",
+        "rejected": "Ship Friday because the sprint ends"
+      }
+    ],
+    "configuration_or_code": [
+      "Draft landscape and process-flow diagrams using Architecture Center types.",
+      "Write ADR-014 with options REST vs CDC vs PE.",
+      "Design-review agenda: Trusted (payload PII), Easy/Reliable (limits), Adaptable (package).",
+      "Readiness checklist: Apex tests, rollback, monitoring, Full sandbox plan."
+    ],
+    "output": "Go-live delayed or risk accepted in writing; artifacts exist.",
+    "verification": [
+      "ADR lists rejected REST spinner.",
+      "Diagram type matches audience.",
+      "Readiness log states Developer sandbox is insufficient for the scale NFR."
+    ],
+    "self_explanation": "I separated design review (intent) from production-readiness (evidence) and forced an ADR for the event choice."
+  },
+  "hands_on_lab": {
+    "environment": "Whiteboard or repo docs; no production org required.",
+    "starting_state_checks": [
+      "You will not deploy to production.",
+      "Use LAB_ names only."
+    ],
+    "steps": [
+      "Pick a LAB_ initiative and name two diagram types you need and why.",
+      "Write a one-page decision record with at least two options.",
+      "Draft a five-bullet design-review agenda mapped to Trusted, Easy, or Adaptable.",
+      "Draft a production-readiness checklist including rollback and where scale evidence would come from."
+    ],
+    "guided_completion": [
+      "If you only have a Developer sandbox, the checklist must say scale evidence is incomplete.",
+      "If CoE does not exist, say who plays that role."
+    ],
+    "independent_challenge": "Rewrite a fake ADR that only says 'we chose platform events' until it includes consequences.",
+    "evidence": [
+      "ADR with options.",
+      "Readiness checklist with a fail criterion."
+    ],
+    "stop_recovery_cleanup": [
+      "Do not store real customer architecture in public repos.",
+      "No org changes required."
+    ],
+    "limitations": "Paper architecture; does not prove Scale Test access."
+  },
+  "decision_table": [
+    {
+      "signal": "Executives ask which systems and orgs are in play.",
+      "choose": "System landscape architecture diagrams (and org hierarchy if multi-org).",
+      "not": "A Flow canvas or Setup screenshot.",
+      "why": "Reference Diagrams: landscapes answer topology questions."
+    },
+    {
+      "signal": "Builders ask what happens when the order commits and the warehouse is down.",
+      "choose": "Interaction process flow plus a decision record on retry/idempotency.",
+      "not": "A capability map alone.",
+      "why": "Process flows cover async/events; ADRs freeze the failure design."
+    },
+    {
+      "signal": "CDC versus custom platform event versus REST spinner is still argued.",
+      "choose": "Decision record citing the Event-Driven Decision Guide; then design review.",
+      "not": "A diagram with no options or consequences.",
+      "why": "Diagrams show structure; ADRs show why."
+    },
+    {
+      "signal": "Peak load was claimed but only a Developer sandbox was exercised.",
+      "choose": "Fail production-readiness (or written residual risk) until Full-sandbox/Scale Test evidence exists.",
+      "not": "Pass because the sprint ends Friday.",
+      "why": "Reliable and Resilient: scale testing is Full sandbox; date is not occupancy."
+    },
+    {
+      "signal": "A report formula change with no integration or security NFR.",
+      "choose": "Lightweight path; skip a full architecture-board design review.",
+      "not": "The same board as a multi-org split.",
+      "why": "ALM risk-based paths; CoE should not bottleneck trivia."
+    }
+  ],
+  "limitations": [
+    "ADR format is a practice, not a Salesforce object.",
+    "Diagram catalog names can change.",
+    "Readiness tools depend on licenses.",
+    "Does not replace legal or security sign-off templates."
+  ],
+  "security_notes": [
+    "Landscapes should mark trust boundaries and data classes.",
+    "ADRs may mention PII in event payloads—restrict repo access.",
+    "Readiness includes least privilege, not only performance."
+  ],
+  "common_mistakes": [
+    "One spaghetti diagram for every audience.",
+    "Diagram without an ADR.",
+    "Design review as taste.",
+    "Friday date as readiness.",
+    "Same heavy review for every change."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Two teams implemented different event tools for the same job.",
+      "check": [
+        "No decision record.",
+        "Design review skipped.",
+        "Diagrams not shared."
+      ],
+      "do_not_assume": "The event bus picked for them."
+    },
+    {
+      "symptom": "Go-live incident after a 'green' design review.",
+      "check": [
+        "Readiness was not a separate gate.",
+        "Scale evidence missing.",
+        "First-time prod configuration."
+      ],
+      "do_not_assume": "Well-Architected failed as a brand."
+    },
+    {
+      "symptom": "Reviews take six weeks for every field.",
+      "check": [
+        "No risk-based path.",
+        "CoE reject-only.",
+        "ADR required for trivia."
+      ],
+      "do_not_assume": "More diagrams will speed it up."
+    }
+  ],
+  "production_notes": [
+    "Attach diagrams and ADRs to the release record.",
+    "Re-run readiness if the design changed after the last review.",
+    "This lesson authorizes no production go-live."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which Architecture Center resource lists capability maps, landscapes, and process flows?",
+      "options": {
+        "A": "Reference Diagrams",
+        "B": "FOR UPDATE",
+        "C": "Platform Cache partitions",
+        "D": "OWD"
+      },
+      "answer": "A",
+      "rationale": "Reference Diagrams overview is the catalog of those views.",
+      "distractor_explanations": {
+        "B": "Locking.",
+        "C": "Performance.",
+        "D": "Sharing."
+      },
+      "concept": "Architecture diagrams",
+      "citation_ids": ["SF-REF-DIAGRAMS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Well-Architected top-level pillars used in a design review?",
+      "options": {
+        "A": "Trusted, Easy, and Adaptable",
+        "B": "Only CPU, heap, and SOQL",
+        "C": "Only Classic, Lightning, and Mobile",
+        "D": "Only Batch, Bulk, and CDC"
+      },
+      "answer": "A",
+      "rationale": "Well-Architected overview is organized around Trusted, Easy, Adaptable.",
+      "distractor_explanations": {
+        "B": "Limits are one Reliable concern.",
+        "C": "Clients, not pillars.",
+        "D": "Integration patterns."
+      },
+      "concept": "Well-Architected",
+      "citation_ids": ["SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A landscape diagram versus an interaction process flow?",
+      "options": {
+        "A": "Landscape: who/what systems; process flow: sequence including async/events",
+        "B": "They are identical",
+        "C": "Process flow replaces ADRs",
+        "D": "Landscape is only for Flow Builder"
+      },
+      "answer": "A",
+      "rationale": "Reference Diagrams separate system landscape from interaction process flows.",
+      "distractor_explanations": {
+        "B": "Different questions.",
+        "C": "ADRs capture why.",
+        "D": "Landscapes are enterprise views."
+      },
+      "concept": "Diagram types",
+      "citation_ids": ["SF-REF-DIAGRAMS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Minimum contents of a useful architecture decision record?",
+      "options": {
+        "A": "Context, options, decision, and consequences",
+        "B": "Only the chosen tool name",
+        "C": "Only a go-live date",
+        "D": "Only a screenshot of Setup"
+      },
+      "answer": "A",
+      "rationale": "ADRs must preserve why, not only what. Salesforce does not ship a mandatory object; the practice still needs those fields.",
+      "distractor_explanations": {
+        "B": "No options or consequences.",
+        "C": "A date is not a decision.",
+        "D": "Not a record of choice."
+      },
+      "concept": "Decision records",
+      "citation_ids": ["SF-ARCH-EDA", "SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Peak load claimed; only Developer sandbox was tested. Production-readiness?",
+      "options": {
+        "A": "Not ready (or residual risk must be explicit); scale testing belongs on Full sandbox",
+        "B": "Ready because the sprint ends",
+        "C": "Ready if a landscape diagram exists",
+        "D": "Ready if CoE exists"
+      },
+      "answer": "A",
+      "rationale": "Reliable/Resilient: Scale Test in Full sandbox. Date and diagrams are not scale evidence.",
+      "distractor_explanations": {
+        "B": "Invitation ≠ occupancy.",
+        "C": "Diagrams are necessary but not sufficient.",
+        "D": "CoE does not replace evidence."
+      },
+      "concept": "Production-readiness",
+      "citation_ids": ["SF-WA-RELIABLE", "SF-WA-ALM"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "A design review for an event-driven warehouse should cite which kind of Architecture Center doc?",
+      "options": {
+        "A": "The Event-Driven Architecture Decision Guide (and Well-Architected)",
+        "B": "Only a Trailhead playground badge",
+        "C": "Only FOR UPDATE syntax",
+        "D": "Only OWD"
+      },
+      "answer": "A",
+      "rationale": "Decision Guides exist to choose EDA tools; Well-Architected is the review compass.",
+      "distractor_explanations": {
+        "B": "Insufficient.",
+        "C": "Locking is ARCH-008.",
+        "D": "Sharing is SEC."
+      },
+      "concept": "Design reviews",
+      "citation_ids": ["SF-ARCH-EDA", "SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Risky configuration first performed in production. Readiness view?",
+      "options": {
+        "A": "Fails ALM guidance; do not treat it as production-ready practice",
+        "B": "Required for agility",
+        "C": "Replaces diagrams",
+        "D": "Required for ADRs"
+      },
+      "answer": "A",
+      "rationale": "ALM anti-pattern: risky config in production.",
+      "distractor_explanations": {
+        "B": "Agility still uses sandboxes.",
+        "C": "Unrelated.",
+        "D": "ADRs are documents."
+      },
+      "concept": "No prod experiments",
+      "citation_ids": ["SF-WA-ALM"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Report color change with no NFR. Full architecture-board design review?",
+      "options": {
+        "A": "No—use a risk-based lightweight path",
+        "B": "Always, for every metadata change",
+        "C": "Only if there is no CoE",
+        "D": "Only on weekends"
+      },
+      "answer": "A",
+      "rationale": "ALM: not every change uses the same path; CoE should not bottleneck trivia.",
+      "distractor_explanations": {
+        "B": "Creates the six-week field problem.",
+        "C": "Opposite of risk-based.",
+        "D": "Irrelevant."
+      },
+      "concept": "Risk-based reviews",
+      "citation_ids": ["SF-WA-ALM", "SF-COE-DIAGRAM"]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Who often owns review standards and training?",
+      "options": {
+        "A": "The Center of Excellence",
+        "B": "The event bus",
+        "C": "Platform Cache",
+        "D": "A Full sandbox by itself"
+      },
+      "answer": "A",
+      "rationale": "CoE diagram: standards, training, hard problems.",
+      "distractor_explanations": {
+        "B": "Messaging.",
+        "C": "Cache.",
+        "D": "An environment, not a governance body."
+      },
+      "concept": "CoE",
+      "citation_ids": ["SF-COE-DIAGRAM"]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Design review passed last quarter; payload and volume changed. Production-readiness?",
+      "options": {
+        "A": "Re-run readiness against current evidence; old design review is not occupancy",
+        "B": "Automatically ready",
+        "C": "Skip diagrams now",
+        "D": "Skip ADRs now"
+      },
+      "answer": "A",
+      "rationale": "Readiness is current operational evidence; design review is earlier intent.",
+      "distractor_explanations": {
+        "B": "Stale.",
+        "C": "Worse.",
+        "D": "Worse."
+      },
+      "concept": "Stale reviews",
+      "citation_ids": ["SF-WA-RELIABLE", "SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates review artifacts (metadata) from business data?",
+      "options": {
+        "A": "Diagrams and ADR files are documentation metadata in the repo; LAB_Order__c rows are business data",
+        "B": "ADRs insert Account rows",
+        "C": "Landscapes are CDC events",
+        "D": "Readiness checklists are User records"
+      },
+      "answer": "A",
+      "rationale": "Artifacts are documents/metadata; records are data.",
+      "distractor_explanations": {
+        "B": "ADRs are not DML.",
+        "C": "Diagrams are not events.",
+        "D": "Checklists are not User rows."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-REF-DIAGRAMS"]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Scale Test before production supports which readiness concern?",
+      "options": {
+        "A": "Reliability/scalability evidence when that NFR applies",
+        "B": "Replacing security review",
+        "C": "Replacing ADRs",
+        "D": "Making Developer sandbox equal Full"
+      },
+      "answer": "A",
+      "rationale": "Reliable: Scale Test in a test environment before production deploy.",
+      "distractor_explanations": {
+        "B": "Security is separate.",
+        "C": "ADRs are decisions.",
+        "D": "False."
+      },
+      "concept": "Scale evidence",
+      "citation_ids": ["SF-WA-RELIABLE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "diagrams",
+      "front": "Landscape versus process flow?",
+      "back": "Landscape = systems/orgs. Process flow = sequence, including events/async."
+    },
+    {
+      "id": "F2",
+      "category": "adr",
+      "front": "Four ADR fields?",
+      "back": "Context, options, decision, consequences (plus status)."
+    },
+    {
+      "id": "F3",
+      "category": "review",
+      "front": "Well-Architected pillars?",
+      "back": "Trusted, Easy, Adaptable."
+    },
+    {
+      "id": "F4",
+      "category": "review",
+      "front": "Design review versus production-readiness?",
+      "back": "Design review tests intent against the framework. Readiness tests operational evidence."
+    },
+    {
+      "id": "F5",
+      "category": "ready",
+      "front": "Is Friday a readiness certificate?",
+      "back": "No. The date is an invitation; evidence is the inspection."
+    },
+    {
+      "id": "F6",
+      "category": "scale",
+      "front": "Developer sandbox as scale evidence?",
+      "back": "Not for a peak-load NFR. Use Full sandbox / Scale Test."
+    },
+    {
+      "id": "F7",
+      "category": "guides",
+      "front": "Where do you cite EDA tool choice?",
+      "back": "Event-Driven Architecture Decision Guide in the ADR and design review."
+    },
+    {
+      "id": "F8",
+      "category": "risk",
+      "front": "Report color needs full architecture board?",
+      "back": "No. Risk-based lightweight path."
+    },
+    {
+      "id": "F9",
+      "category": "coe",
+      "front": "CoE role in reviews?",
+      "back": "Standards, training, hard problems—not necessarily every low-risk change."
+    },
+    {
+      "id": "F10",
+      "category": "prod",
+      "front": "First-time risky config in production?",
+      "back": "ALM anti-pattern; readiness fail."
+    },
+    {
+      "id": "F11",
+      "category": "adr",
+      "front": "Is ADR a standard Salesforce object?",
+      "back": "No. It is a team practice. Do not invent a Setup menu."
+    },
+    {
+      "id": "F12",
+      "category": "diagrams",
+      "front": "Capability map answers what?",
+      "back": "What the business can do; not message sequence."
+    },
+    {
+      "id": "F13",
+      "category": "stale",
+      "front": "Old design review, new volume?",
+      "back": "Re-run production-readiness; do not reuse occupancy."
+    },
+    {
+      "id": "F14",
+      "category": "artifacts",
+      "front": "Diagram without consequences?",
+      "back": "Not a decision record. Add options and consequences."
+    },
+    {
+      "id": "F15",
+      "category": "ready",
+      "front": "Name four readiness evidence types.",
+      "back": "Tests, scale (when NFR), security, rollback/monitoring."
+    },
+    {
+      "id": "F16",
+      "category": "notation",
+      "front": "Prefer which visual language for CoE packs?",
+      "back": "Salesforce Reference Diagrams types, not a random screenshot."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Which architecture diagrams do you bring to which audience?",
+      "answer_30_seconds": "Landscape for executives (systems and orgs). Process flow for builders (sequence, events). Solution diagram for what we build on Salesforce. Not one spaghetti slide.",
+      "answer_2_minutes": "I use Reference Diagrams types. Capability maps for scope. I refuse Setup screenshots as landscapes. I link diagrams to ADRs so the picture does not drift from the decision.",
+      "example": "CFO sees US/EU boxes; developers see After Commit publish then warehouse.",
+      "tradeoffs": [
+        "Standard notation versus working-session sketches",
+        "One pack versus audience-specific views"
+      ],
+      "follow_ups": [
+        "What is a roadmap diagram for?",
+        "CoE diagram?"
+      ],
+      "weak_answer_warnings": [
+        "One visio for every meeting"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What belongs in an architecture decision record?",
+      "answer_30_seconds": "Context, options, the decision, and consequences. Status. Link to diagrams. Not a Slack thumbs-up.",
+      "answer_2_minutes": "I write ADRs for costly-to-reverse choices: org split, CDC vs PE, unlocked vs org-dependent. I cite Decision Guides. I admit Salesforce has no ADR sObject. I do not ADR a report color.",
+      "example": "ADR-014 records CDC versus custom platform event versus a REST spinner for warehouse ship.",
+      "tradeoffs": [
+        "Too many ADRs versus tribal knowledge",
+        "Lightweight template versus novel-length"
+      ],
+      "follow_ups": [
+        "Who can amend an ADR?",
+        "Where do you store them?"
+      ],
+      "weak_answer_warnings": [
+        "We do not write things down because we are agile"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Warehouse EDA wants Friday go-live with no ADR and a Developer sandbox test. What reviews?",
+      "answer_30_seconds": "Design review against the EDA Decision Guide and Well-Architected. Production-readiness fails without Full-sandbox scale evidence if peak load was claimed.",
+      "answer_2_minutes": "I require landscape plus process flow, an ADR, and a readiness packet: tests, rollback, monitoring, security. I will not confuse the sprint date with occupancy. CoE can waive scale only as written residual risk, not as silence.",
+      "example": "LAB_ShipmentReady__e Friday invite cancelled.",
+      "tradeoffs": [
+        "Delay versus documented risk",
+        "CoE gate versus squad urgency"
+      ],
+      "follow_ups": [
+        "What if there is no Full sandbox SKU?",
+        "What is minimum test evidence?"
+      ],
+      "weak_answer_warnings": [
+        "Ship because leadership already announced Friday"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "How do you run a design review that is not a taste contest?",
+      "answer_30_seconds": "Agenda mapped to Trusted, Easy, Adaptable, plus the relevant Decision Guide. Actions and owners. Risk-based attendance.",
+      "answer_2_minutes": "I ask which anti-patterns we are avoiding: monoflow, Publish Immediately on a query subscriber, Developer sandbox scale test. I keep low-risk changes off this board. I record the ADR number in the minutes.",
+      "example": "Warehouse design review citing EDA guide After Commit.",
+      "tradeoffs": [
+        "Framework rigidity versus org NFRs",
+        "CoE chair versus peer review"
+      ],
+      "follow_ups": [
+        "How long is the meeting?",
+        "Async review?"
+      ],
+      "weak_answer_warnings": [
+        "I just know good architecture when I see it"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Two integrations went live with different patterns for the same event. Root cause?",
+      "answer_30_seconds": "Missing decision record and skipped design review. Diagrams were not shared or did not show the channel.",
+      "answer_2_minutes": "I freeze an ADR now, even after the fact, and schedule a readiness look at duplicate side effects (idempotency). I do not add a third pattern. CoE updates standards so the next squad finds the record.",
+      "example": "CDC and a custom PE both cloning Order fields.",
+      "tradeoffs": [
+        "Standardize now versus strangler migration",
+        "One bus versus two"
+      ],
+      "follow_ups": [
+        "How do you find existing events?",
+        "Package ownership?"
+      ],
+      "weak_answer_warnings": [
+        "The platform should have stopped them"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Incident after a green design review. What did you mix up?",
+      "answer_30_seconds": "Design review is intent. Production-readiness is evidence. Volume or security may have changed; first-time prod clicks may have happened.",
+      "answer_2_minutes": "I separate the gates. I re-run readiness. I check Scale Center. I look for ALM anti-patterns. I do not blame Well-Architected for skipping Scale Test.",
+      "example": "Design approved in January; go-live in August with 10x volume.",
+      "tradeoffs": [
+        "Re-review cost versus incident cost",
+        "Residual risk sign-off versus delay"
+      ],
+      "follow_ups": [
+        "What is stale?",
+        "Who signs residual risk?"
+      ],
+      "weak_answer_warnings": [
+        "Design review means production-ready"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you skip a heavy architecture design review?",
+      "answer_30_seconds": "Low-risk, reversible changes with no integration or security NFR—risk-based path. Still may need a tiny note, not a board.",
+      "answer_2_minutes": "I still want diagrams/ADRs for costly choices. I will not make report colors wait on the warehouse EDA board. CoE publishes the threshold. Skipping readiness for a peak-load feature is not the same as skipping a board for a formula.",
+      "example": "Dashboard filter versus multi-org split.",
+      "tradeoffs": [
+        "Speed versus missed NFR",
+        "Federated reviewers versus central CoE"
+      ],
+      "follow_ups": [
+        "Who defines low risk?",
+        "Audit trail?"
+      ],
+      "weak_answer_warnings": [
+        "Never review anything / review everything equally"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach diagrams, ADRs, design review, and production-readiness with a building-permit analogy, then break it.",
+      "answer_30_seconds": "Drawings, variance form, plan check, occupancy inspection. It breaks because software iterates after occupancy and Salesforce has no ADR object.",
+      "answer_2_minutes": "I map landscape to site plan and process flow to trade sequence. I say Friday is an invitation. I cite Reference Diagrams and Well-Architected so it is not only a metaphor. I mention Full-sandbox scale as part of occupancy when we claimed peak load.",
+      "example": "Warehouse EDA permit set versus Friday party.",
+      "tradeoffs": [
+        "Metaphor versus framework names",
+        "Inspection rigor versus agility"
+      ],
+      "follow_ups": [
+        "Map CoE",
+        "Map Decision Guides"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer filler"
+      ]
+    }
+  ]
+}

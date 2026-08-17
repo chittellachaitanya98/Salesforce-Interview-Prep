@@ -1,0 +1,1012 @@
+{
+  "topic_id": "DEVOPS-001",
+  "slug": "metadata-vs-data-and-source-driven-development",
+  "title": "Metadata vs data and source-driven development",
+  "track": "Development lifecycle and DevOps",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "FOUND-004"
+  ],
+  "objectives": [
+    "Contrast Salesforce metadata (schema, process, presentation, authorization, configuration) with business data (records such as accounts and products) using Metadata API meanings.",
+    "Explain why Metadata API deploy and retrieve move customizations, not Account or Lead rows, and which APIs own record CRUD.",
+    "Describe source-driven development: version control holds the metadata source of truth, while the org is a deployment target.",
+    "Separate custom metadata type records, sample data, and production business records so a release plan does not mix the wrong pipeline."
+  ],
+  "diagnostic_question": "A teammate wants to 'move the new LAB_Property object, its layout, and last week's property rows' from a sandbox to production in one change set. Before reading, which pieces are metadata, which are business data, and which tool owns each move?",
+  "definition": "Salesforce metadata describes how the org is structured, displayed, secured, and configured. Business data is the records that correspond to the company's work, such as an account or product. Metadata API deploys, retrieves, creates, updates, or deletes customization information such as custom object definitions and page layouts; it does not work directly with business data. Source-driven development stores that metadata outside the org so a version control system, not the live org, is the source of truth. ([Understanding Metadata API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_api_intro.htm); [Salesforce DX tooling](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm))",
+  "why_it_matters": "Teams that treat Account rows as deployable customizations either fail the move or overwrite production records. Teams that treat Apex and object definitions as Data Loader work never get the shape into production. Interviewers listen for the Metadata API sentence: move the model, not the accounts, and for the DX sentence: Git is truth, the org is a target.",
+  "sixty_second_explanation": "Picture an airport. The published runway map, gate assignments, and security procedures are metadata: they describe how the airport works. Today's passenger list and baggage tags are business data: they are the day's instances. Metadata API flies the map and procedures between airports. SOAP or REST (or Data Loader) move passenger records. Source-driven development means the published procedure binder in Git is authoritative, not whatever a gate agent scribbled on a whiteboard this morning. Deploying a custom object does not board any passengers.",
+  "deeper_explanation": [
+    "The Metadata API Developer Guide defines metadata as data that describes other data, then splits Salesforce metadata from business data. Business data includes records that correspond to the company, such as an address, account, or product. Salesforce metadata describes schema, process, presentation, authorization, and general configuration. Schema example: Address Type, City, and Postal Code are metadata; Mailing address, Chicago, and 60106 are data. Process metadata describes what happens on Save. Presentation metadata is layout. Authorization metadata is access. General configuration includes org settings. ([Understanding Metadata API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_api_intro.htm))",
+    "Metadata API's purpose is to move metadata between orgs during development. Use it to deploy, retrieve, create, update, or delete customization such as custom object definitions and page layouts. It does not work directly with business data. Record CRUD for accounts or leads uses SOAP API or REST API. Two movement styles exist: deploy() and retrieve() for the metadata model (often late-stage production promotion), and source push/pull with source tracking for changed metadata during intermediate development. ([Understanding Metadata API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_api_intro.htm); [Deploying and Retrieving Metadata](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/file_based.htm))",
+    "Salesforce DX makes that file-based metadata the team asset. Source code and metadata exist outside the org. Instead of the org, the version control system is the source of truth. A Salesforce DX project holds org metadata (code and configuration), org templates, sample data, and tests so the team can retrieve a consistent project from the repository. Sample or dummy data for testing is not production business data; scratch-org guidance says not to add personal data. ([Salesforce DX tooling](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm); [Project Setup](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_workspace_setup.htm); [Scratch Orgs](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_scratch_orgs.htm))",
+    "Interview precision: a custom object, field, layout, Apex class, Flow, permission set, and report definition are metadata. An Account row, a ContentVersion file body, and last week's Opportunity amounts are business data. Custom metadata type records are configuration stored as deployable metadata, not a substitute for Account migration. Metadata can itself contain PII such as custom object names or report names, so 'metadata is never sensitive' is false. Unsupported metadata types cannot be retrieved or deployed with Metadata API and must be changed manually in each org; check Metadata Coverage. ([Understanding Metadata API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_api_intro.htm); [Unsupported Metadata Types](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_unsupported_types.htm))"
+  ],
+  "mental_model": {
+    "analogy": "An airport: published maps, procedures, and gate wiring are metadata; today's passengers and bags are business data. Git is the published procedure binder. The live terminal is a day's operation, not the binder.",
+    "useful_mapping": [
+      "runway map and procedures → Salesforce metadata (schema, process, presentation, authorization, configuration)",
+      "today's passenger list → business data (Account, Lead, Product records)",
+      "Metadata API deploy/retrieve → flying the map between airports",
+      "SOAP/REST or Data Loader → moving passenger records",
+      "Git repository → published binder; source of truth in source-driven development",
+      "live org → a terminal operating from a deployed copy of the binder",
+      "sample/dummy data in a DX project → a drill passenger list, not production PII",
+      "custom metadata type records → laminated procedure cards that travel with the binder"
+    ],
+    "where_it_breaks": [
+      "Airports do not have 'unsupported metadata types' that you must rewire by hand in every terminal; Salesforce does—check Metadata Coverage.",
+      "Metadata can contain PII (report names, custom object names); a runway map is rarely personal.",
+      "Custom metadata type records look like rows but deploy as metadata; passengers never become the map.",
+      "Source tracking push/pull is not the same as a full retrieve/deploy of the model.",
+      "The analogy does not encode edition gates, package type, or 75% Apex coverage."
+    ]
+  },
+  "teach_back_prompt": "Without saying only 'metadata is configuration,' explain schema versus an Account row, then name the API family for each move and one place the airport analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, write the Metadata API sentence that metadata is schema/process/presentation/authorization/configuration and that the API does not work directly with business data."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify eight items as metadata, business data, or gray (CMDT, sample data, report name PII) and name the move tool for each."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain source-driven development: what lives in Git, what stays out, and why the org is not the source of truth."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a failed 'change set of records' request from first clarifying question to the correct split pipeline."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: metadata vs data, Metadata API vs SOAP/REST, Git as truth, one unsupported-type caveat."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-META-INTRO",
+      "title": "Understanding Metadata API",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_api_intro.htm",
+      "supports": "Metadata vs business data; schema/process/presentation/authorization/configuration; Metadata API does not work directly with business data; SOAP/REST for records; deploy/retrieve vs source tracking push/pull.",
+      "release_or_version": "Metadata API Developer Guide / Summer '26 (API 67.0)",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every metadata type; use Metadata Coverage for channel support."
+    },
+    {
+      "source_id": "SF-META-FILE",
+      "title": "Deploying and Retrieving Metadata",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/file_based.htm",
+      "supports": "deploy() and retrieve() move metadata XML between an org and a local file system so changes can be managed in source control.",
+      "release_or_version": "Metadata API Developer Guide / Summer '26 (API 67.0)",
+      "last_verified": "2026-08-16",
+      "limits": "Numeric retrieve/deploy caps (for example custom-field batch size) are versioned; reverify before citing a number in an interview."
+    },
+    {
+      "source_id": "SF-DX-INTRO",
+      "title": "How Salesforce Developer Experience (DX) Tooling Changes the Way You Work",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm",
+      "supports": "Source-driven development: source code and metadata exist outside the org; the version control system is the source of truth; CLI for development and CI.",
+      "release_or_version": "Salesforce DX Developer Guide / Summer '26 (API 67.0)",
+      "last_verified": "2026-08-16",
+      "limits": "Requires API Enabled. Tooling list (VS Code, DevOps Center) is optional, not a mandate."
+    },
+    {
+      "source_id": "SF-DX-PROJECT",
+      "title": "Project Setup",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_workspace_setup.htm",
+      "supports": "A DX project holds org metadata (code and configuration), org templates, sample data, and tests, stored in source control.",
+      "release_or_version": "Salesforce DX Developer Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Sample data in the project is not a production data-migration design."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Metadata API and Salesforce DX Developer Guides over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Metadata vs business data",
+        "Five metadata concerns",
+        "Metadata API vs SOAP/REST",
+        "Git as source of truth",
+        "CMDT and sample data traps",
+        "Unsupported types"
+      ],
+      "accessible_description": "Portrait map: Salesforce metadata describes schema, process, presentation, authorization, and configuration; business data is records; Metadata API moves customizations; SOAP/REST move records; Git is the source-driven source of truth; custom metadata type records travel with metadata; unsupported types need a manual org change."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-META-INTRO",
+        "SF-META-FILE",
+        "SF-DX-INTRO",
+        "SF-DX-PROJECT"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "What travels on a metadata deploy versus a data load"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Org[Salesforce org]\n  Org --> Meta[Metadata: schema process presentation authorization configuration]\n  Org --> Data[Business data: Account Lead Product records]\n  Meta --> MDAPI[Metadata API deploy retrieve]\n  Meta --> VCS[Version control: source of truth]\n  Data --> SOAPREST[SOAP API or REST API / Data Loader]\n  VCS --> Project[DX project: metadata plus sample data plus tests]\n  CMDT[Custom metadata type records] --> Meta\n  Sample[Synthetic LAB_ sample rows] --> Project",
+      "decision": "flowchart TD\n  Need[Need to move something?] --> Q1{Is it a definition, layout, Apex, Flow, permission, or config?}\n  Q1 -->|Yes: metadata| Q2{Is the type on Metadata Coverage?}\n  Q2 -->|Yes| Git[Commit to source then retrieve or deploy]\n  Q2 -->|Unsupported| Manual[Change manually in each org: Needs verification per type]\n  Q1 -->|No: Account Lead file rows| DataMove[SOAP REST Bulk or Data Loader: not Metadata API]\n  Q1 -->|CMDT records| MetaMove[Treat as metadata in the package, not a business-data load]\n  Q1 -->|Production PII for a scratch org| Stop[Do not load personal data into scratch orgs]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Salesforce metadata describes schema, process, presentation, authorization, and general configuration. Business data includes records that correspond to the company such as an address, account, or product.",
+      "source_ids": ["SF-META-INTRO"],
+      "scope": "Metadata vs data definition",
+      "validation": "Understanding Metadata API opening contrast of Salesforce metadata and business data.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Metadata API deploys, retrieves, creates, updates, or deletes customization information such as custom object definitions and page layouts. It does not work directly with business data. Use SOAP API or REST API for records such as accounts or leads.",
+      "source_ids": ["SF-META-INTRO"],
+      "scope": "API choice",
+      "validation": "Metadata API Functionality section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "deploy() and retrieve() move metadata XML between an org and a local file system so changes can be managed in a source-code control system. Source tracking push/pull moves changed metadata during intermediate development.",
+      "source_ids": ["SF-META-INTRO", "SF-META-FILE"],
+      "scope": "File-based and source-tracked movement",
+      "validation": "Understanding Metadata API movement methods and Deploying and Retrieving Metadata.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "In Salesforce DX, source code and metadata exist outside the org. The version control system is the source of truth. A DX project stores org metadata, org templates, sample data, and tests in source control.",
+      "source_ids": ["SF-DX-INTRO", "SF-DX-PROJECT"],
+      "scope": "Source-driven development",
+      "validation": "Salesforce DX Developer Guide introduction and Project Setup.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Summer '26 (API 67.0) DX and Metadata API guides were the verification target. Reverify Metadata Coverage for any type you plan to retrieve or package.",
+  "unresolved_uncertainty": [
+    "Exact retrieve/deploy behavior of every custom setting type and every User-related artifact is type-specific; confirm on Metadata Coverage rather than assuming all 'setup-looking' rows are metadata.",
+    "Numeric Metadata API retrieve/deploy batch limits change by release; do not memorize unofficial numbers."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Metadata",
+      "telugu": "ఆర్గ్ ఎలా నిర్మించబడిందో, కనిపిస్తుందో, ఎవరు చూస్తారో చెప్పే నిర్వచనాలు."
+    },
+    {
+      "english": "Business data",
+      "telugu": "కంపెనీ పనికి సంబంధించిన రికార్డులు — Account వంటి వరుసలు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Metadata is the org's schema, process, presentation, authorization, and configuration. Business data is records like accounts. Metadata API moves customizations, not rows. Source-driven development puts that metadata in Git; the org is a target, not the source of truth.",
+    "two_minutes": "I start with the Metadata API contrast: field definitions versus field values, then process, layout, and access as metadata. I name the wrong tool: Data Loader will not deploy an Apex class; a change set will not migrate last week's Opportunities. I mention custom metadata type records as configuration that deploys with metadata, and I mention that metadata can contain PII. I close with DX: version control is truth, sample data in the project is not production data, and unsupported types need a manual change."
+  },
+  "terminology": [
+    {
+      "term": "Salesforce metadata",
+      "plain": "The definitions that describe how the org is built, shown, secured, and configured.",
+      "precise": "Data that describes other data. In Salesforce it covers schema, process, presentation, authorization, and general configuration of the org.",
+      "example": "LAB_Property__c object, its fields, page layout, and a permission set that grants access.",
+      "non_example": "A row in LAB_Property__c named 'Downtown lot' with a purchase price.",
+      "confusable_neighbor": "Business data: the record values, not the field definitions.",
+      "boundary": "This lesson owns the split and the move APIs; packaging choice is DEVOPS-005."
+    },
+    {
+      "term": "business data",
+      "plain": "The records that are the company's actual work items.",
+      "precise": "Records that correspond to the company such as an address, account, or product. Metadata API does not work directly with this data; use SOAP API or REST API.",
+      "example": "Account 'LAB_Airport Kiosk' created in a sandbox for a demo.",
+      "non_example": "The Account object definition, its validation rules, or its compact layout.",
+      "confusable_neighbor": "Custom metadata type records: configuration that deploys as metadata.",
+      "boundary": "Production data migration design is not this lesson; do not load personal data into scratch orgs."
+    },
+    {
+      "term": "Metadata API",
+      "plain": "The API that moves org customizations as files, not Account rows.",
+      "precise": "Used to deploy, retrieve, create, update, or delete customization information such as custom object definitions and page layouts. Main purpose is moving metadata between orgs during development.",
+      "example": "Retrieving LAB_Property__c and its layout into a DX project, then deploying that metadata to another sandbox.",
+      "non_example": "Bulk API load of 10,000 Opportunity rows.",
+      "confusable_neighbor": "Tooling API: often used for developer tooling queries, not the file-based metadata zip model taught here.",
+      "boundary": "CLI project retrieve/deploy wrap this API; command flags are DEVOPS-002."
+    },
+    {
+      "term": "source-driven development",
+      "plain": "Git holds the real copy of the metadata; the org is where you run a copy.",
+      "precise": "Salesforce DX guidance: source code and metadata exist outside the org and the version control system is the source of truth, not the org.",
+      "example": "A teammate retrieves a Flow from a sandbox, commits it, and another sandbox is deployed from that commit.",
+      "non_example": "Treating production Setup as canonical and never committing the XML.",
+      "confusable_neighbor": "Org-based click-build without retrieve: still metadata, but not source-driven.",
+      "boundary": "Git mechanics (commit, branch, merge) are DEVOPS-003."
+    },
+    {
+      "term": "schema metadata",
+      "plain": "The shape of the data: objects and fields, not the values in them.",
+      "precise": "Metadata that describes properties of business data. Example: Address Type, City, and Postal Code are schema metadata; Chicago and 60106 are data.",
+      "example": "Adding LAB_GateNumber__c on a custom object in source, then deploying the field definition.",
+      "non_example": "Updating an existing Account's BillingCity from Chicago to Austin.",
+      "confusable_neighbor": "Presentation metadata: page layouts and Lightning pages, not the field type.",
+      "boundary": "Field-type change side effects on existing rows are a data-and-metadata interaction; still two pipelines."
+    },
+    {
+      "term": "custom metadata type records",
+      "plain": "Configuration rows that travel with a metadata deploy, not with Data Loader as business data.",
+      "precise": "Configuration stored as metadata components so source-driven projects can version and deploy them. They are not a substitute for migrating Account records.",
+      "example": "LAB_AirportConfig__mdt records that store a feature flag, committed next to Apex.",
+      "non_example": "Loading customer Addresses with Data Loader and calling that a metadata deploy.",
+      "confusable_neighbor": "Custom settings: related configuration; confirm current Metadata API coverage per type rather than assuming identical retrieve behavior.",
+      "boundary": "Feature-toggle design continues in DEVOPS-009."
+    },
+    {
+      "term": "sample data",
+      "plain": "Synthetic records kept with a DX project for tests and demos.",
+      "precise": "A DX project may include sample data and tests. Scratch-org guidance: do not add personal data. Sample data is not production business data.",
+      "example": "A CSV of LAB_ accounts imported into a scratch org after metadata deploy.",
+      "non_example": "Exporting production Contacts into Git.",
+      "confusable_neighbor": "Business data migration between sandbox and production.",
+      "boundary": "Scratch org mechanics are DEVOPS-004."
+    },
+    {
+      "term": "unsupported metadata type",
+      "plain": "A setup feature you cannot retrieve or deploy with Metadata API.",
+      "precise": "Some features have metadata types not available in Metadata API; those changes must be made manually in each organization. Coverage also varies by packaging and change sets.",
+      "example": "Checking Metadata Coverage before promising a type will be in the Git project.",
+      "non_example": "Assuming every Setup screen round-trips through package.xml.",
+      "confusable_neighbor": "A retrieve that omitted a type because package.xml did not list it: that is a manifest gap, not necessarily an unsupported type.",
+      "boundary": "Change-set and package coverage differences are DEVOPS-005."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name the artifact",
+      "actor": "Admin + developer",
+      "trigger": "Someone asks to 'move this to production'",
+      "before": "Object, layout, Apex, Flow, records, and files are lumped together",
+      "after": "Each item is labeled metadata, business data, or unknown pending Metadata Coverage",
+      "observe": "A written split: definitions versus rows",
+      "failure": "Putting Opportunity rows on a change set and calling it done"
+    },
+    {
+      "step": 2,
+      "transition": "Choose the API family",
+      "actor": "Developer + release owner",
+      "trigger": "The split is agreed",
+      "before": "One tool is assumed to move everything",
+      "after": "Metadata API (or CLI/change set/package wrapping it) for customizations; SOAP/REST/Bulk for records",
+      "observe": "No Data Loader job targeting .cls files; no metadata deploy expected to insert Accounts",
+      "failure": "Using Metadata API to 'copy last week's leads'"
+    },
+    {
+      "step": 3,
+      "transition": "Externalize metadata to source",
+      "actor": "Developer",
+      "trigger": "The team claims source-driven development",
+      "before": "Production Setup is treated as truth",
+      "after": "Retrieve into a DX project and commit; the repository is the source of truth",
+      "observe": "A Git history of the object and layout XML",
+      "failure": "Building only in production and never retrieving"
+    },
+    {
+      "step": 4,
+      "transition": "Keep sample data off the production path",
+      "actor": "Developer + reviewer",
+      "trigger": "The DX project includes CSV or dummy records",
+      "before": "Sample files look like a production load",
+      "after": "Synthetic LAB_ data for scratch/sandbox tests only; no personal data in scratch orgs",
+      "observe": "README that sample import is not the production data plan",
+      "failure": "Committing production Contact exports next to Apex"
+    }
+  ],
+  "when_to_use": [
+    "When a release mix includes both metadata (objects, Apex, layouts) and business data, and you must split the pipelines.",
+    "When someone proposes Metadata API, a change set, or a package to move Account or Lead rows.",
+    "When adopting source-driven development and you must decide what belongs in Git versus what stays a data load.",
+    "When custom metadata type records, sample data, and production records are being treated as the same kind of 'data'.",
+    "When an interview asks why deploying a custom object does not create business records."
+  ],
+  "when_not_to_use": [
+    "Do not use this metadata-versus-data lesson as a substitute for Salesforce CLI retrieve/deploy flags and package.xml mechanics (DEVOPS-002).",
+    "Do not use source-driven Git-as-truth as a Git branching and pull-request lesson (DEVOPS-003).",
+    "Do not choose unlocked versus managed packages or change sets here; that package and deploy-channel decision is DEVOPS-005.",
+    "Do not treat this topic as a Bulk API or Data Loader how-to for production data migration.",
+    "Do not use scratch-org sample-data rules as permission to load personal data anywhere."
+  ],
+  "configuration_or_code_location": [
+    "Metadata API Developer Guide: Understanding Metadata API, in a browser—not in Setup as a single toggle.",
+    "A Salesforce DX project directory with sfdx-project.json and a package directory of retrieved metadata.",
+    "Version control remote that stores that project; the org is authorized as a retrieve/deploy target.",
+    "Data Loader, Bulk API, or SOAP/REST clients for business records, kept off the metadata manifest."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox has a new LAB_Property__c object, a layout, a permission set, three LAB_Property__c demo rows, and a Flow. A stakeholder asks to 'ship the whole thing' to another sandbox with one change set. No production PII.",
+    "inputs": [
+      "Custom object and fields (schema metadata)",
+      "Page layout (presentation metadata)",
+      "Permission set (authorization metadata)",
+      "Record-triggered Flow (process metadata)",
+      "Three synthetic LAB_Property__c rows (business data)",
+      "A DX project already used as the metadata source of truth"
+    ],
+    "decisions": [
+      {
+        "decision": "Retrieve object, layout, permission set, and Flow into Git and deploy that metadata.",
+        "because": "Those artifacts are customizations. Metadata API is the documented way to move them; DX treats the repository as truth.",
+        "rejected": "Export the three rows and the object XML in one Data Loader zip"
+      },
+      {
+        "decision": "Load the three LAB_ rows with a data tool after the object exists in the target.",
+        "because": "Metadata API does not work directly with business data. Records need SOAP/REST/Bulk after schema exists.",
+        "rejected": "Expecting the metadata deploy to insert the demo rows"
+      },
+      {
+        "decision": "Keep the CSV in the project as sample data labeled synthetic, not as a production extract.",
+        "because": "DX projects may hold sample data and tests; scratch-org guidance forbids personal data.",
+        "rejected": "Copying real customer properties into the repo"
+      }
+    ],
+    "configuration_or_code": [
+      "sf project retrieve start --metadata CustomObject:LAB_Property__c Layout PermissionSet Flow --target-org lab-sandbox",
+      "Commit the retrieved source. Deploy to the target org from that commit.",
+      "After the object exists, import three LAB_Property__c rows with a data command or Data Loader using synthetic names only."
+    ],
+    "output": "Target sandbox has the object, layout, permission set, and Flow from source. Three synthetic rows exist only because of a separate data load.",
+    "verification": [
+      "Retrieve in the target shows the object and Flow; Setup shows no extra production-like addresses.",
+      "Data Loader export in the target counts three LAB_ rows, not created by the metadata deploy alone.",
+      "Git history contains XML/source for the object, not a production Contact dump."
+    ],
+    "self_explanation": "I split shape from instances. I used Metadata API for customizations and a data tool for rows. I kept sample data synthetic."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable Developer sandbox or scratch org; synthetic LAB_ names only; no personal data.",
+    "starting_state_checks": [
+      "You can create a custom object in this org.",
+      "Salesforce CLI can authorize the org, or you can use Setup plus a documented retrieve path.",
+      "No production aliases in object or record names."
+    ],
+    "steps": [
+      "Create custom object LAB_Gate__c with one custom field in the org (schema metadata).",
+      "Create one synthetic record on LAB_Gate__c (business data).",
+      "Retrieve the object metadata into a DX project (or inspect the retrieve output) and confirm the record values are not in the object XML.",
+      "In a second disposable org or after deleting the record, deploy only the metadata and confirm the record did not return until you load data separately."
+    ],
+    "guided_completion": [
+      "If the record reappeared after a metadata-only deploy, you included data in the wrong pipeline—find the extra step.",
+      "If the object XML contains the field value 'LAB_North' as if it were a row, you are looking at a default or picklist definition, not a record; do not confuse them."
+    ],
+    "independent_challenge": "Add a LAB_GateConfig__mdt custom metadata type with one record and argue in one paragraph why that record deploys with metadata while the LAB_Gate__c row does not.",
+    "evidence": [
+      "Retrieve output or source tree showing LAB_Gate__c metadata without the business row.",
+      "A note that the synthetic record required a data load after deploy."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ objects, CMDT, and sample files from the disposable org and local project if they must not linger.",
+      "Do not deploy this lab to production. Do not commit personal data."
+    ],
+    "limitations": "This lab does not prove change-set coverage, unlocked-package install, or production data-migration volume."
+  },
+  "decision_table": [
+    {
+      "signal": "You must move a custom object, field, layout, Apex class, or Flow between orgs.",
+      "choose": "Metadata retrieve/deploy (CLI, Metadata API, or a channel that wraps it) from source control.",
+      "not": "Data Loader or Bulk API aimed at the object definition.",
+      "why": "Those artifacts are customizations. Metadata API does not treat them as account-style records."
+    },
+    {
+      "signal": "You must copy Account, Lead, or custom-object business rows to another org.",
+      "choose": "SOAP API, REST API, Bulk API, or Data Loader after the schema exists.",
+      "not": "A metadata-only change set or package expecting rows to appear.",
+      "why": "Metadata API does not work directly with business data."
+    },
+    {
+      "signal": "The team wants Setup in production to remain the only copy of the customization.",
+      "choose": "Retrieve into a DX project and treat version control as the source of truth.",
+      "not": "Endless production clicks with no retrieve.",
+      "why": "Salesforce DX defines source-driven development as metadata outside the org with VCS as truth."
+    },
+    {
+      "signal": "You need configuration flags versioned with the app, not customer Accounts.",
+      "choose": "Custom metadata type records in the metadata project.",
+      "not": "Storing those flags as ordinary custom-object business rows you plan to Data Load each release.",
+      "why": "CMDT records are configuration that belongs on the metadata pipeline; Accounts are business data."
+    },
+    {
+      "signal": "A Setup feature might not round-trip through package.xml.",
+      "choose": "Check Metadata Coverage and plan a manual org change if the type is unsupported.",
+      "not": "Promising Git will capture every Setup screen.",
+      "why": "Unsupported metadata types cannot be retrieved or deployed with Metadata API."
+    }
+  ],
+  "limitations": [
+    "Does not teach Salesforce CLI flag syntax (DEVOPS-002) or Git branch mechanics (DEVOPS-003).",
+    "Does not choose change sets versus unlocked versus managed packages (DEVOPS-005).",
+    "Does not enumerate Metadata Coverage for every type.",
+    "Does not authorize production deploys or production data extracts."
+  ],
+  "security_notes": [
+    "Metadata can contain PII such as custom object names and report names; treat the Git repo as sensitive.",
+    "Do not add personal data to scratch orgs or commit production extracts next to Apex.",
+    "Modify Metadata Through Metadata API Functions is a powerful permission; it is not the same as record CRUD."
+  ],
+  "common_mistakes": [
+    "Calling Metadata API a way to copy last week's Opportunities.",
+    "Believing a metadata deploy inserts business records.",
+    "Treating the production org as the source of truth after claiming source-driven development.",
+    "Putting production Contact CSV files in Git as if they were Apex.",
+    "Assuming custom metadata type records are the same as Account rows.",
+    "Saying metadata never contains PII."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "After a 'successful deploy,' the custom object exists but the demo rows are missing.",
+      "check": [
+        "The deploy payload was metadata. Rows require a data load after schema exists.",
+        "You did not accidentally deploy to a different org than you inspected."
+      ],
+      "do_not_assume": "The deploy failed. Missing rows are the expected metadata/data split."
+    },
+    {
+      "symptom": "A retrieve of CustomObject does not include Account record values.",
+      "check": [
+        "That is correct: field values on business records are not schema metadata.",
+        "If you needed configuration rows, confirm whether they are CMDT, not Account."
+      ],
+      "do_not_assume": "The retrieve is broken because it omitted Opportunity amounts."
+    },
+    {
+      "symptom": "A type used in Setup never appears in the DX project.",
+      "check": [
+        "Whether package.xml or the metadata flag listed the type.",
+        "Metadata Coverage: the type may be unsupported for Metadata API."
+      ],
+      "do_not_assume": "Git automatically captures every Setup click."
+    }
+  ],
+  "production_notes": [
+    "Keep metadata releases and data migrations as separately planned, separately verified pipelines.",
+    "Source-driven teams review Git diffs of metadata, not production Setup as the only history.",
+    "No production deployment or production data extract is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "According to Understanding Metadata API, what does Salesforce metadata describe?",
+      "options": {
+        "A": "Schema, process, presentation, authorization, and general configuration of the org",
+        "B": "Only Account and Lead record values",
+        "C": "Only files stored in ContentVersion",
+        "D": "Only Apex governor limits"
+      },
+      "answer": "A",
+      "rationale": "The guide contrasts business data with metadata that describes schema, process, presentation, authorization, and general configuration.",
+      "distractor_explanations": {
+        "B": "Those values are business data.",
+        "C": "File bodies are data, not the metadata model.",
+        "D": "Governor limits are a runtime topic, not the metadata definition."
+      },
+      "concept": "Metadata definition",
+      "citation_ids": ["SF-META-INTRO"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In the Address example from Understanding Metadata API, what are City and Postal Code versus Chicago and 60106?",
+      "options": {
+        "A": "City and Postal Code are schema metadata; Chicago and 60106 are data",
+        "B": "Chicago and 60106 are metadata; City is business data",
+        "C": "Both are Metadata API deploy payloads only",
+        "D": "Both must travel in the same change set as Apex"
+      },
+      "answer": "A",
+      "rationale": "Field definitions are schema metadata; the corresponding values are data.",
+      "distractor_explanations": {
+        "B": "That reverses the example.",
+        "C": "Values are not customization XML.",
+        "D": "Apex is metadata; city values are not required on that payload."
+      },
+      "concept": "Schema vs values",
+      "citation_ids": ["SF-META-INTRO"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need to copy last week's Lead records to another org. Which statement matches Metadata API guidance?",
+      "options": {
+        "A": "Use SOAP API or REST API (or a data tool). Metadata API does not work directly with business data",
+        "B": "Retrieve Leads with project retrieve start because Leads are layout metadata",
+        "C": "Package.xml always includes all Lead rows",
+        "D": "Change sets are the only legal way to copy Lead rows"
+      },
+      "answer": "A",
+      "rationale": "Metadata API does not work directly with business data. Record CRUD uses SOAP or REST.",
+      "distractor_explanations": {
+        "B": "Retrieve moves metadata, not Lead rows.",
+        "C": "package.xml lists metadata types, not business rows.",
+        "D": "Change sets move metadata components, not a general-purpose data copy."
+      },
+      "concept": "API choice for records",
+      "citation_ids": ["SF-META-INTRO"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What is the source of truth in Salesforce DX source-driven development?",
+      "options": {
+        "A": "The version control system; source code and metadata exist outside the org",
+        "B": "Whatever is currently in production Setup",
+        "C": "The most recent Data Loader success file",
+        "D": "The scratch org, forever, even after it expires"
+      },
+      "answer": "A",
+      "rationale": "The DX guide states that instead of the org, the version control system is the source of truth.",
+      "distractor_explanations": {
+        "B": "That is org-as-truth, the model DX replaces.",
+        "C": "Success files are data-load evidence, not metadata truth.",
+        "D": "Scratch orgs are disposable deployments of metadata."
+      },
+      "concept": "Source-driven truth",
+      "citation_ids": ["SF-DX-INTRO"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What may a Salesforce DX project store besides org metadata?",
+      "options": {
+        "A": "Org templates, sample data, and the team's tests, in source control",
+        "B": "Only production Customer PII exports",
+        "C": "Only SOAP session IDs",
+        "D": "Nothing but destructiveChanges.xml"
+      },
+      "answer": "A",
+      "rationale": "Project Setup says a DX project provides structure for metadata, org templates, sample data, and tests stored in SCS.",
+      "distractor_explanations": {
+        "B": "Scratch-org guidance says not to add personal data.",
+        "C": "Secrets do not belong in the project.",
+        "D": "Destructive changes are a later deploy concern, not the project definition."
+      },
+      "concept": "DX project contents",
+      "citation_ids": ["SF-DX-PROJECT"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which movement style is described as better for intermediate development because it moves only changed metadata?",
+      "options": {
+        "A": "Source push and pull commands that use source tracking",
+        "B": "Bulk API for Accounts",
+        "C": "Anonymous Apex insert",
+        "D": "Exporting reports as CSV"
+      },
+      "answer": "A",
+      "rationale": "Understanding Metadata API describes source push/pull with source tracking for intermediary stages, versus deploy/retrieve for the broader model.",
+      "distractor_explanations": {
+        "B": "Bulk API is a data API.",
+        "C": "Anonymous Apex is not metadata retrieve.",
+        "D": "CSV export is data or report output, not source tracking."
+      },
+      "concept": "Push/pull vs deploy/retrieve",
+      "citation_ids": ["SF-META-INTRO"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why can metadata still be sensitive even though it is not Account rows?",
+      "options": {
+        "A": "Metadata can include PII such as custom object names and report names",
+        "B": "Metadata API always encrypts Git remotes",
+        "C": "Layouts cannot contain field names",
+        "D": "Apex classes cannot be retrieved"
+      },
+      "answer": "A",
+      "rationale": "Understanding Metadata API notes that while PII is usually in business data, metadata can also include PII such as custom object names and report names.",
+      "distractor_explanations": {
+        "B": "Git encryption is a repo-hosting concern, not an API guarantee.",
+        "C": "Layouts are presentation metadata and do name fields.",
+        "D": "Apex is retrievable metadata."
+      },
+      "concept": "PII in metadata",
+      "citation_ids": ["SF-META-INTRO"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A stakeholder wants one change set that includes a new object and last week's property records. What is the interview-ready split?",
+      "options": {
+        "A": "Object and related customizations via metadata; records via a data API after the schema exists",
+        "B": "Put the records in package.xml as CustomObject children",
+        "C": "Only Data Loader, because objects are data",
+        "D": "Only Metadata API, because records are configuration"
+      },
+      "answer": "A",
+      "rationale": "Customizations move with Metadata API. Business data moves with SOAP/REST/Bulk. Deploying schema does not insert the week's rows.",
+      "distractor_explanations": {
+        "B": "CustomObject XML is definition, not row storage.",
+        "C": "The object definition is metadata.",
+        "D": "Records are not Metadata API's business."
+      },
+      "concept": "Split pipeline",
+      "citation_ids": ["SF-META-INTRO"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You commit LAB_AirportConfig__mdt records next to Apex. Why is that different from committing Account rows?",
+      "options": {
+        "A": "Custom metadata type records are configuration on the metadata pipeline, not company Account business data",
+        "B": "CMDT records are always business data and forbidden in Git",
+        "C": "Apex cannot deploy unless Accounts are in the same commit",
+        "D": "Metadata API deletes Accounts when CMDT is present"
+      },
+      "answer": "A",
+      "rationale": "CMDT is configuration intended to be versioned and deployed as metadata. Accounts are business data and do not belong in that pipeline.",
+      "distractor_explanations": {
+        "B": "CMDT is meant to be source-driven configuration.",
+        "C": "Apex deploy does not require Account rows.",
+        "D": "No such documented coupling."
+      },
+      "concept": "CMDT vs accounts",
+      "citation_ids": ["SF-META-INTRO", "SF-DX-PROJECT"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "After retrieve, why manage the XML in a source-code control system?",
+      "options": {
+        "A": "deploy/retrieve exist so you can manage metadata changes in source control and later deploy to another org",
+        "B": "Source control stores Opportunity amounts more accurately than SQL",
+        "C": "Git replaces sharing rules",
+        "D": "Retrieve already deployed to production"
+      },
+      "answer": "A",
+      "rationale": "Deploying and Retrieving Metadata describes retrieving XML into a file system so you can manage changes in source-code control and deploy later.",
+      "distractor_explanations": {
+        "B": "Amounts are business data.",
+        "C": "Sharing is authorization metadata, not replaced by Git.",
+        "D": "Retrieve pulls from an org; it is not a production deploy."
+      },
+      "concept": "File-based source control",
+      "citation_ids": ["SF-META-FILE"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A Setup feature never appears after retrieve. What official check comes next?",
+      "options": {
+        "A": "Confirm the type is listed and check Metadata Coverage; some types are unsupported in Metadata API",
+        "B": "Insert the feature as an Account row",
+        "C": "Assume change sets ignore Metadata Coverage",
+        "D": "Convert the feature to a ContentVersion"
+      },
+      "answer": "A",
+      "rationale": "Unsupported metadata types cannot be retrieved or deployed with Metadata API and must be changed manually in each org. Coverage is the channel truth.",
+      "distractor_explanations": {
+        "B": "That confuses data with metadata.",
+        "C": "Change sets also have coverage limits.",
+        "D": "Files are not a metadata-type workaround."
+      },
+      "concept": "Unsupported types",
+      "citation_ids": ["SF-META-INTRO"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement correctly separates a DX project's sample data from production business data?",
+      "options": {
+        "A": "Sample data and tests may live in the project; do not add personal data to scratch orgs or treat sample CSV as a production migration",
+        "B": "All production Contacts should be committed nightly",
+        "C": "Sample data is metadata API CustomObject XML",
+        "D": "Scratch orgs are the production source of truth"
+      },
+      "answer": "A",
+      "rationale": "Project Setup allows sample data in the repo. Scratch-org documentation forbids personal data. Sample files are not the production data plan.",
+      "distractor_explanations": {
+        "B": "Production PII does not belong in Git as a habit.",
+        "C": "Sample rows are data files, not object definitions.",
+        "D": "Scratch orgs are disposable metadata deployments."
+      },
+      "concept": "Sample vs production data",
+      "citation_ids": ["SF-DX-PROJECT"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What does Salesforce metadata describe?",
+      "back": "Schema, process, presentation, authorization, and general configuration of the org."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "What is business data in the Metadata API contrast?",
+      "back": "Records that correspond to the company, such as an address, account, or product."
+    },
+    {
+      "id": "F3",
+      "category": "api",
+      "front": "Does Metadata API work directly with business data?",
+      "back": "No. Use SOAP API or REST API to create, retrieve, update, or delete records such as accounts or leads."
+    },
+    {
+      "id": "F4",
+      "category": "example",
+      "front": "Address Type / City fields vs Chicago / 60106?",
+      "back": "The fields are schema metadata. Chicago and 60106 are data values."
+    },
+    {
+      "id": "F5",
+      "category": "dx",
+      "front": "In Salesforce DX, what is the source of truth?",
+      "back": "The version control system. Source code and metadata exist outside the org."
+    },
+    {
+      "id": "F6",
+      "category": "dx",
+      "front": "What else may a DX project hold besides metadata?",
+      "back": "Org templates, sample data, and tests, stored in source control."
+    },
+    {
+      "id": "F7",
+      "category": "movement",
+      "front": "deploy/retrieve vs source push/pull?",
+      "back": "deploy/retrieve move the metadata model (often late-stage). Push/pull with source tracking move changed metadata during intermediate development."
+    },
+    {
+      "id": "F8",
+      "category": "boundary",
+      "front": "Does deploying a custom object insert its business rows?",
+      "back": "No. The object definition is metadata. Rows need a data API after the schema exists."
+    },
+    {
+      "id": "F9",
+      "category": "boundary",
+      "front": "Are custom metadata type records the same as Account rows?",
+      "back": "No. CMDT records are configuration on the metadata pipeline. Accounts are business data."
+    },
+    {
+      "id": "F10",
+      "category": "security",
+      "front": "Can metadata contain PII?",
+      "back": "Yes. The guide notes custom object names, report names, and similar metadata can include PII."
+    },
+    {
+      "id": "F11",
+      "category": "coverage",
+      "front": "What if a Setup feature never retrieves?",
+      "back": "Confirm the manifest listed it, then check Metadata Coverage. Unsupported types must be changed manually in each org."
+    },
+    {
+      "id": "F12",
+      "category": "scratch",
+      "front": "Personal data in scratch orgs?",
+      "back": "Do not add personal data. Use synthetic sample data for tests."
+    },
+    {
+      "id": "F13",
+      "category": "process",
+      "front": "What is process metadata, briefly?",
+      "back": "Metadata that describes what happens when a user takes an action such as Save—not the record that was saved."
+    },
+    {
+      "id": "F14",
+      "category": "presentation",
+      "front": "What is presentation metadata, briefly?",
+      "back": "Layout and display configuration of the org, such as how a tab or page is arranged."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Change set requested for object plus last week's rows. Split?",
+      "back": "Metadata channel for the object and related customizations. Data API for the rows after schema exists."
+    },
+    {
+      "id": "F16",
+      "category": "authorization",
+      "front": "Is a permission set metadata or business data?",
+      "back": "Authorization metadata. The users assigned to it are a separate concern from the permission-set definition."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is the difference between Salesforce metadata and business data?",
+      "answer_30_seconds": "Metadata describes schema, process, presentation, authorization, and configuration. Business data is records like accounts and products. Metadata API moves customizations; SOAP or REST move records.",
+      "answer_2_minutes": "I quote Understanding Metadata API. Field names are schema metadata; Chicago is a value. A Flow is process metadata; the Opportunity it updated is data. A layout is presentation; a permission set is authorization. I warn that metadata can still contain PII. I never say a change set copies last week's leads.",
+      "example": "LAB_Property__c and its layout are metadata; three demo LAB_Property rows are business data loaded after deploy.",
+      "tradeoffs": [
+        "One pipeline versus a split metadata-and-data release",
+        "CMDT configuration versus custom-object rows"
+      ],
+      "follow_ups": [
+        "Where do custom metadata type records sit?",
+        "Can metadata contain PII?"
+      ],
+      "weak_answer_warnings": [
+        "Calling everything in Setup 'data'",
+        "Claiming Metadata API exports Accounts"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What does source-driven development mean on Salesforce?",
+      "answer_30_seconds": "Source code and metadata live outside the org. The version control system is the source of truth. The org is a retrieve or deploy target, not the canonical copy.",
+      "answer_2_minutes": "Salesforce DX exists so teams stop treating production Setup as truth. You retrieve customizations into a DX project that also may hold sample data and tests, then commit. Later orgs are built from that commit. I separate sample data in the repo from production extracts. Git mechanics are a later topic; the idea here is where truth lives.",
+      "example": "A Flow retrieved from a sandbox, committed, and deployed to a second sandbox from Git rather than rebuilt by clicking.",
+      "tradeoffs": [
+        "Org-as-truth speed versus Git history and review",
+        "Sample data in repo versus production PII risk"
+      ],
+      "follow_ups": [
+        "What is a scratch org in this model?",
+        "What stays out of Git?"
+      ],
+      "weak_answer_warnings": [
+        "Saying the scratch org is permanently truth",
+        "Committing production Contacts as 'source'"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A PM wants one change set with a new object and last week's records. What do you say?",
+      "answer_30_seconds": "The object and related customizations are metadata. Last week's rows are business data. Metadata API will not copy those rows. We deploy schema first, then run a data load.",
+      "answer_2_minutes": "I write two workstreams. Metadata: retrieve object, fields, layout, permissions, automation into Git and deploy. Data: a documented insert/upsert after the object exists, with synthetic data in lower orgs. I refuse to put production PII in Git. If they only needed configuration flags, I would consider custom metadata types instead of business rows.",
+      "example": "LAB_Property__c metadata deploy succeeds; row count stays zero until Data Loader imports three LAB_ rows.",
+      "tradeoffs": [
+        "Speed of a single 'move' versus correctness",
+        "CMDT flags versus loading operational rows"
+      ],
+      "follow_ups": [
+        "What if the type is unsupported?",
+        "Who owns the data matching keys?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing that change sets move records"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "After a metadata deploy the object exists but demo records do not. Is the deploy broken?",
+      "answer_30_seconds": "Usually no. Deploying customization does not insert business data. Load the demo rows with a data API after schema exists.",
+      "answer_2_minutes": "I verify the deploy payload was metadata-only. I check we are looking at the same org. I then run the sample-data import from the DX project if that was the plan. I do not add personal data to scratch orgs. If someone expected CMDT records, I confirm those were actually in the metadata source, because CMDT is not the same as LAB_Property__c rows.",
+      "example": "Target sandbox shows LAB_Gate__c in Object Manager with zero records until the sample CSV is imported.",
+      "tradeoffs": [
+        "Failing the deploy versus running a second data job",
+        "CMDT versus custom-object demo rows"
+      ],
+      "follow_ups": [
+        "How would you prove the payload lacked records?",
+        "Where should sample CSV live?"
+      ],
+      "weak_answer_warnings": [
+        "Rerunning Metadata API until rows appear"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you put rows in Git, and when would you refuse?",
+      "answer_30_seconds": "I will version synthetic sample data and custom metadata type configuration. I refuse production PII and operational Account dumps in the metadata repo.",
+      "answer_2_minutes": "DX projects may include sample data and tests so scratch orgs and CI can boot. Scratch-org docs say not to add personal data. CMDT records are configuration and belong with metadata. Production migration is a data program with matching keys, volume, and privacy review—not a package.xml trick. I also remember metadata itself can contain PII in names.",
+      "example": "lab-sample-accounts.csv with LAB_ prefixes committed; production Contact export rejected in code review.",
+      "tradeoffs": [
+        "Convenient fixtures versus privacy",
+        "CMDT versus custom-object configuration"
+      ],
+      "follow_ups": [
+        "How do you mask sandbox data?",
+        "Who reviews report-name PII in Git?"
+      ],
+      "weak_answer_warnings": [
+        "Nightly production extracts into Git"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do deploy/retrieve differ from source push/pull?",
+      "answer_30_seconds": "deploy and retrieve move metadata via the file-based model, often for broader or later-stage promotion. Push and pull use source tracking to move changed metadata during intermediate development.",
+      "answer_2_minutes": "Understanding Metadata API describes both. Admins often use deploy/retrieve for the metadata model toward production. Developers use source tracking in scratch or sandbox orgs to sync only changes. Production typically does not offer source tracking the same way. Neither path moves Account rows. CLI details are the next lesson; the distinction here is full model versus changed metadata.",
+      "example": "Early feature work: pull a layout change from a scratch org. Release candidate: deploy the project directory to a UAT sandbox.",
+      "tradeoffs": [
+        "Granular tracking versus explicit manifests",
+        "Speed versus conflict detection"
+      ],
+      "follow_ups": [
+        "Does production allow source tracking?",
+        "When do you still need package.xml?"
+      ],
+      "weak_answer_warnings": [
+        "Using push/pull as a data migration tool"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "A type you configured in Setup never shows up in the repository. Walk the diagnosis.",
+      "answer_30_seconds": "First check whether the retrieve listed that metadata type. Then check Metadata Coverage. If the type is unsupported in Metadata API, plan a manual change in each org.",
+      "answer_2_minutes": "Missing files are often a manifest gap, not a platform bug. If Coverage shows no Metadata API support, Git cannot be truth for that feature and the release checklist must include a manual step. I do not invent a CustomObject to smuggle an unsupported feature. I also do not confuse 'not in package.xml' with 'unsupported.'",
+      "example": "A feature flagged unsupported on Metadata Coverage is added to a go-live runbook instead of the DX package directory.",
+      "tradeoffs": [
+        "Manual per-org steps versus changing the design to a supported type",
+        "Blocking the release versus documenting the gap"
+      ],
+      "follow_ups": [
+        "Do change sets and unlocked packages share coverage?",
+        "Who owns the manual step?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Git for an unsupported type"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "A Java developer says 'it's all just data in tables.' How do you teach the Salesforce split without the library metaphor?",
+      "answer_30_seconds": "I use the airport split: published procedures versus today's passengers. Then I map procedures to Metadata API and passengers to SOAP/REST, and I add that Git holds the procedures.",
+      "answer_2_minutes": "Relational intuition is not wrong about storage, but it hides the API split Salesforce documents. Custom object XML is not an export of rows. CMDT records look like rows and still travel as metadata. Metadata can contain PII. Source-driven development means we review procedure diffs in Git, not passenger dumps. I show one retrieve of CustomObject that lacks record values as proof.",
+      "example": "Retrieve LAB_Gate__c; the XML has fields and not the 'LAB_North' business row until a data export is run.",
+      "tradeoffs": [
+        "Database mental model versus platform API families",
+        "One tool versus two pipelines"
+      ],
+      "follow_ups": [
+        "Where does this analogy break?",
+        "What is process metadata on Save?"
+      ],
+      "weak_answer_warnings": [
+        "Labeled-drawer or library filler",
+        "Equating CMDT with Account"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,999 @@
+{
+  "topic_id": "ANA-005",
+  "slug": "access-performance-limits-and-common-missing-data-troub",
+  "title": "Access, performance, limits, and common “missing data” troubleshooting",
+  "track": "Reports and analytics",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ANA-004"
+  ],
+  "objectives": [
+    "Separate missing rows caused by sharing/FLS/folder access from missing rows caused by report type, filters, or the 2,000-row display cap.",
+    "Use official Reports and Dashboards limits when diagnosing timeouts, truncated charts, and export failures.",
+    "Explain that reports and dashboards still honor record access; a report type does not grant View All Data.",
+    "Give a repeatable troubleshooting order for “the report is missing data.”"
+  ],
+  "diagnostic_question": "A VP sees 2,000 Opportunities on a report an admin sees as 8,400, a dashboard widget totals less than the report, and a teammate sees zero rows. What do you check first, second, and never assume is 'a Salesforce bug'?",
+  "definition": "Report access, performance, and missing-data issues come from stacked layers: who can find the report (folders and permissions), which records they may see (sharing and FLS), which rows the report type and filters include, and platform limits such as 2,000 on-screen rows, 10-minute timeouts, and dashboard widgets calculating only 1,000 groupings. ([Limits overview](https://help.salesforce.com/s/articleView?id=sf.rd_reports_dashboards_limits_overview.htm); [Limits and allocations](https://help.salesforce.com/s/articleView?id=analytics.rd_reports_dashboards_limits.htm))",
+  "why_it_matters": "Interviewers watch whether you blame sharing before limits, and limits before 'the platform lost rows.' Admins with View All Data debug the wrong problem. Dashboards add running user and widget grouping caps. Missing data is usually design plus security plus a documented cap—not a random outage.",
+  "sixty_second_explanation": "Think of a radio telescope. Access is who is allowed to look through the eyepiece (folders, Run Reports, sharing, FLS). The dish can only print the first 2,000 stars on the postcard (on-screen rows). A dashboard widget only adds up the first 1,000 clusters. Clouds are filters and inner report types that hide stars that are still in the sky. Performance is how long the scan may run before the 10-minute timeout. If two astronomers disagree, you check whose badge they used, not whether the galaxy was deleted.",
+  "deeper_explanation": [
+    "Help tells you to know limits, limitations, and allocations, and to check technical requirements if Lightning reports feel slow. ([Limits overview](https://help.salesforce.com/s/articleView?id=sf.rd_reports_dashboards_limits_overview.htm))",
+    "On-screen reports display a maximum of 2,000 rows. Matrix details hide past that. Joined totals can be inaccurate past 2,000 when one block dominates. Default timeout is 10 minutes. Preview is 20 rows (summary/matrix) or 50 (tabular)—preview is not the run result. ([Limits](https://help.salesforce.com/s/articleView?id=analytics.rd_reports_dashboards_limits.htm))",
+    "Dashboard widgets calculate up to 1,000 groupings. Folder Editor is not Run Reports. Dynamic dashboards use each viewer's access; specified running user uses one user's access for everyone (ANA-004).",
+    "Report type inner joins and cross filters hide parents by design (ANA-001, ANA-003). Child filters on with-or-without types may leave parents. These are missing-data lookalikes.",
+    "FLS hides columns; sharing hides rows. A custom report type does not override org-wide defaults. Knowledge articles such as 'Report Does Not Display All Records' exist; treat UI steps as Needs verification in the current Help locale."
+  ],
+  "mental_model": {
+    "analogy": "A radio telescope: badges (access), postcard of 2,000 stars (row cap), 1,000-cluster adding machine (widget), clouds (filters/type), 10-minute scan window (timeout).",
+    "useful_mapping": [
+      "folder + Run Reports → who may approach the telescope",
+      "sharing / OWD → which stars that badge may see",
+      "FLS → which wavelengths (fields) appear",
+      "report type inner join → dish pointed only at systems that have planets",
+      "filters / cross filters → clouds and bag checks",
+      "2,000-row display → postcard truncation",
+      "1,000 widget groupings → dashboard adding machine",
+      "10-minute timeout → scan aborted"
+    ],
+    "where_it_breaks": [
+      "Telescopes do not have specified running users that make every visitor see one astronomer's sky.",
+      "Export/printable view can show more than the postcard; the analogy needs that footnote.",
+      "Technical network requirements are not weather.",
+      "CRM Analytics datasets (ANA-006) are a different observatory."
+    ]
+  },
+  "teach_back_prompt": "Walk a VP through missing-data layers using the radio telescope, in order: access, type/filters, then limits. Name two Help numbers.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Recite 2,000 rows, 1,000 widget groupings, 10-minute timeout."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Admin vs user vs dashboard: three different missing-data causes."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Inner CRT versus sharing versus row cap, without notes."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Export timeout guidance from Help (copy and filter)."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: troubleshooting order for missing data."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-LIMITS-OVERVIEW",
+      "title": "Report and Dashboard Limits, Limitations, Allocations, and Technical Requirements",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.rd_reports_dashboards_limits_overview.htm",
+      "supports": "Know limits and technical requirements when reports or dashboards are slow.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Overview article points to the detailed allocations page."
+    },
+    {
+      "source_id": "SF-HELP-RD-LIMITS",
+      "title": "Reports and Dashboards Limits and Allocations",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=analytics.rd_reports_dashboards_limits.htm",
+      "supports": "2,000-row display, timeouts, joined accuracy, widget 1,000 groupings, export timeout notes, chart group caps.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Numbers can change; reverify before quoting in a performance design review."
+    },
+    {
+      "source_id": "SF-HELP-FOLDER-EDITOR",
+      "title": "Editor Access to Report and Dashboard Folders",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.analytics_folder_editor.htm",
+      "supports": "Folder access is not the same as permission to run or change reports.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every sharing feature; record access is a neighboring security topic."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Folder and permissions",
+        "Sharing and FLS",
+        "Type and filters",
+        "2,000-row and 1,000-group caps",
+        "Timeouts and exports",
+        "Dashboard running user"
+      ],
+      "accessible_description": "Portrait troubleshooting map from access through report design through documented limits."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-LIMITS-OVERVIEW",
+        "SF-HELP-RD-LIMITS",
+        "SF-HELP-FOLDER-EDITOR"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Why a row is missing"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  User[Running user] --> Folder[Folder + Run Reports]\n  User --> Share[Sharing and FLS]\n  Share --> Type[Report type inner/outer]\n  Type --> Filt[Filters and cross filters]\n  Filt --> Cap[2,000-row display]\n  Cap --> Dash[Dashboard running user + 1,000 groupings]\n  Filt --> Time[10-minute timeout]",
+      "decision": "flowchart TD\n  Miss[Missing data?] --> Q1{Can an admin with View All Data see the rows?}\n  Q1 -->|No| Q2{Type, filter, or 2,000-row cap?}\n  Q2 -->|Type/filter| FixType[Fix CRT, cross filter, or field filters]\n  Q2 -->|Cap| Export[Filter, split, or export per Help]\n  Q1 -->|Yes, only some users miss them| Acc[Sharing, FLS, folder, or dashboard specified user]\n  Miss --> Q3{Dashboard totals differ from report?}\n  Q3 --> W[Widget 1,000 groupings or different running user]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Reports display a maximum of 2,000 rows. Default timeout is 10 minutes. Dashboard widgets calculate up to 1,000 groupings. Matrix details hide past 2,000 rows. Joined summaries can be inaccurate past 2,000 rows when one block dominates.",
+      "source_ids": ["SF-HELP-RD-LIMITS"],
+      "scope": "Display and performance limits",
+      "validation": "Reports and Dashboards Limits and Allocations.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "If reports or dashboards are slow, verify network and device technical requirements as well as the limits catalog.",
+      "source_ids": ["SF-HELP-LIMITS-OVERVIEW"],
+      "scope": "Performance orientation",
+      "validation": "Limits, Limitations, Allocations, and Technical Requirements overview.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Folder Editor access does not by itself grant the ability to change or even run folder contents; report permissions still apply.",
+      "source_ids": ["SF-HELP-FOLDER-EDITOR"],
+      "scope": "Access",
+      "validation": "Editor Access to Report and Dashboard Folders.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Lightning technical requirements and export timeout notes should be reread each release. Do not freeze unofficial 'index these three fields' lists without current Help.",
+  "unresolved_uncertainty": [
+    "Exact steps in Knowledge article 000385139 (Report Does Not Display All Records) should be opened in Help at interview time; this pack does not quote unverified click paths.",
+    "Which fields are indexed for a given custom object is org-specific; do not invent selectivity rules here (DATA track owns LDV)."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Missing data",
+      "telugu": "రిపోర్టులో రికార్డులు కనిపించకపోవడం — యాక్సెస్, ఫిల్టర్, లేదా లిమిట్ వల్ల."
+    },
+    {
+      "english": "Running user",
+      "telugu": "రిపోర్టు లేదా డాష్‌బోర్డ్ ఎవరి అనుమతులతో నడుస్తుందో."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Missing data is layered: folder and permissions, sharing and FLS, report type and filters, then Help caps—2,000 rows, 1,000 widget groupings, 10-minute timeout. Dashboards add running user. I never start with 'Salesforce lost the rows.'",
+    "two_minutes": "I reproduce as the complaining user and as an admin. If only the user misses rows, I check sharing, FLS, role, and whether a specified dashboard user is someone else. If both miss them, I check must-have related records, cross filters, and field filters. If the admin sees 8,400 and the UI shows 2,000, that is the display cap—export or filter. If the dashboard disagrees with the report, I check widget grouping cap and running user. Slow reports get filters and technical-requirement checks, not a random index rumor."
+  },
+  "terminology": [
+    {
+      "term": "missing data",
+      "plain": "Rows or fields the requester expected but the report or dashboard does not show.",
+      "precise": "Diagnose access, then type/filters, then documented limits—not a single cause.",
+      "example": "VP sees 2,000 rows; admin export shows 8,400.",
+      "non_example": "A field never placed on the custom report type (that is ANA-001, still in the order).",
+      "confusable_neighbor": "Deleted records in the Recycle Bin: possible, but not the first hypothesis.",
+      "boundary": "This lesson is the troubleshooting stack, not a full sharing-model course."
+    },
+    {
+      "term": "report access",
+      "plain": "Whether a user can find and run the report, and which records they may see.",
+      "precise": "Folder sharing plus user permissions such as Run Reports, plus record sharing and FLS.",
+      "example": "Viewer on the folder but no Run Reports: cannot run.",
+      "non_example": "API login access to an integration user.",
+      "confusable_neighbor": "Dashboard running user, which can differ from the person staring at the wall.",
+      "boundary": "Editor folder access is not sufficient by itself."
+    },
+    {
+      "term": "2,000-row display cap",
+      "plain": "The on-screen report stops listing at 2,000 rows.",
+      "precise": "Help: reports display a maximum of 2,000 rows. Export or Classic printable view for more.",
+      "example": "Filtered export after the UI truncates.",
+      "non_example": "Custom report type allocation of 300 in Enterprise.",
+      "confusable_neighbor": "Dashboard 1,000-grouping cap.",
+      "boundary": "Joined printable view 20,000 is Classic-only."
+    },
+    {
+      "term": "report timeout",
+      "plain": "The report run is killed for taking too long.",
+      "precise": "By default, reports time out after 10 minutes.",
+      "example": "Unfiltered Activities since 2014 hits timeout.",
+      "non_example": "A dashboard subscription that never sent because the dashboard is dynamic (ANA-004).",
+      "confusable_neighbor": "Export timeout: Help notes 10-minute export failures and splitting reports.",
+      "boundary": "Do not quote unofficial 'query row' Apex governors here; that is APEX-007."
+    },
+    {
+      "term": "widget grouping cap",
+      "plain": "A dashboard chart/table only calculates the first 1,000 groupings.",
+      "precise": "Aggregated totals reflect only those first 1,000 groupings.",
+      "example": "Chart of Amount by Owner in a huge org looks low versus the report.",
+      "non_example": "Five dashboard filters (a different cap).",
+      "confusable_neighbor": "Lightning report chart 2,000 groups note in the same limits article.",
+      "boundary": "Classic report charts: 250 groups in the same article."
+    },
+    {
+      "term": "running user (troubleshooting)",
+      "plain": "Whose access the dashboard used, which may not be the person looking.",
+      "precise": "Specified user can hide or reveal rows relative to the viewer. Dynamic uses the viewer.",
+      "example": "Specified as an intern with narrow sharing; VP sees almost nothing.",
+      "non_example": "The last person who edited a widget's color.",
+      "confusable_neighbor": "Report itself always runs as the person who clicks Run—unless you are on a dashboard.",
+      "boundary": "View All Data on a specified user leaks on shared dashboards."
+    },
+    {
+      "term": "field-level security (reports)",
+      "plain": "Hides columns the user cannot read, even if the report type includes them.",
+      "precise": "A missing column is often FLS or CRT layout; missing rows are more often sharing or filters.",
+      "example": "Amount blank/hidden for a user without Amount FLS.",
+      "non_example": "A bucket column the user deleted (ANA-003).",
+      "confusable_neighbor": "Page layout: does not control report columns.",
+      "boundary": "Confirm FLS in the user's profile/permission sets, not in your admin session only."
+    },
+    {
+      "term": "preview versus run",
+      "plain": "Builder preview is a tiny sample, not the full result.",
+      "precise": "Preview: 20 rows summary/matrix, 50 tabular. Run still caps at 2,000 displayed.",
+      "example": "Preview shows 20; stakeholders think the org has 20 Opportunities.",
+      "non_example": "Dashboard widget preview in the editor.",
+      "confusable_neighbor": "Printable view.",
+      "boundary": "Never use preview counts in an executive readout."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Reproduce as the user and as an admin",
+      "actor": "Admin",
+      "trigger": "Missing data ticket",
+      "before": "Only a screenshot",
+      "after": "Two run results compared",
+      "observe": "Same or different row counts",
+      "failure": "Debugging only as system administrator"
+    },
+    {
+      "step": 2,
+      "transition": "Check access if results differ by user",
+      "actor": "Admin",
+      "trigger": "Admin sees rows the user does not",
+      "before": "Unknown whether security is involved",
+      "after": "Folder, Run Reports, sharing, FLS, dashboard running user named",
+      "observe": "Login-as or a permission-set check on a sandbox clone",
+      "failure": "Changing the report type first"
+    },
+    {
+      "step": 3,
+      "transition": "Check type and filters if even the admin is missing rows",
+      "actor": "Admin",
+      "trigger": "Admin also cannot see expected parents",
+      "before": "Assumed sharing",
+      "after": "CRT relationship, cross filters, field filters reviewed",
+      "observe": "Removing one filter restores childless parents",
+      "failure": "Exporting production data to a laptop to 'see everything'"
+    },
+    {
+      "step": 4,
+      "transition": "Apply Help limits if counts exceed display or widgets disagree",
+      "actor": "Admin",
+      "trigger": "Admin sees more than 2,000 or dashboard totals differ",
+      "before": "Believed the UI was complete",
+      "after": "Filter, split, export, or fix running user / 1,000 groupings",
+      "observe": "Export row count versus on-screen 2,000",
+      "failure": "Creating a sixth dynamic dashboard to 'bypass' the cap"
+    }
+  ],
+  "when_to_use": [
+    "When users report missing data, truncated lists, or dashboard totals that disagree with the source report.",
+    "When you must distinguish sharing and FLS from report type, filters, and the 2,000-row display cap.",
+    "When a report times out or an export fails, using Help's 10-minute guidance rather than folklore.",
+    "When performance is blamed on Lightning without checking the technical-requirements article."
+  ],
+  "when_not_to_use": [
+    "Do not use this troubleshooting stack as a substitute for designing the report type, format, or filters correctly the first time (ANA-001–003).",
+    "Do not treat limits as a reason to grant View All Data so 'the numbers look right.'",
+    "Do not invent unofficial governor numbers from Apex to explain a report timeout.",
+    "Do not jump to CRM Analytics or Tableau before proving the core report is limited by a documented cap (ANA-006)."
+  ],
+  "configuration_or_code_location": [
+    "Run the report as the user; Setup → Users / sharing / FLS.",
+    "Report builder: filters, cross filters, show details.",
+    "Dashboard: View Dashboard As / running user.",
+    "Salesforce Help limits articles—not a blog post."
+  ],
+  "worked_example": {
+    "scenario": "West VP: on-screen Opportunity report shows 2,000 rows; she believes there are more. Her AE sees 40. A dashboard gauge is lower than the report subtotal. Sandbox with LAB_ Opportunities only.",
+    "inputs": [
+      "Admin can query 8,400 LAB_ Opportunities matching the filters",
+      "AE sharing is owner-only",
+      "Dashboard specified running user is the AE",
+      "Gauge groups by Owner in a large team"
+    ],
+    "decisions": [
+      {
+        "decision": "Treat 2,000 as the display cap, not missing CRM data.",
+        "because": "Help states reports display a maximum of 2,000 rows.",
+        "rejected": "Telling the VP Salesforce deleted Opportunities"
+      },
+      {
+        "decision": "AE's 40 rows are sharing, proven by admin versus AE runs.",
+        "because": "Different users, different access.",
+        "rejected": "Changing the report type first"
+      },
+      {
+        "decision": "Gauge mismatch: specified user is the AE, and/or widget 1,000 groupings.",
+        "because": "Dashboard running user and widget caps are documented.",
+        "rejected": "A sixth filter as the first move"
+      }
+    ],
+    "configuration_or_code": [
+      "Run report as admin, as VP, as AE; record three counts.",
+      "Export or filter by Close Date to show the VP the remainder.",
+      "Point the gauge at a specified Sales Ops user or switch the wall to dynamic if personalization is the real ask (ANA-004).",
+      "Filter Owners on the source report if groupings explode."
+    ],
+    "output": "A written diagnosis: cap + sharing + running user, with Help citations.",
+    "verification": [
+      "Admin on-screen count stops at 2,000 while export is higher.",
+      "AE count matches their owned LAB_ rows.",
+      "Gauge matches the report after running user and grouping filters align."
+    ],
+    "self_explanation": "I stacked access, then design, then limits. I did not grant View All Data to 'fix' the VP postcard."
+  },
+  "hands_on_lab": {
+    "environment": "Sandbox with two users and LAB_ records the second user cannot see; a summary report and a dashboard widget.",
+    "starting_state_checks": [
+      "Non-production org.",
+      "You can login as or compare two users."
+    ],
+    "steps": [
+      "Run the same report as admin and as a restricted user; note row counts.",
+      "Add a must-have related CRT or a WITHOUT cross filter and watch parents disappear even for the admin.",
+      "If you can seed more than 2,000 rows, observe on-screen truncation versus export (or document why the org cannot seed that many).",
+      "Compare a dashboard widget total to the report while changing specified running user."
+    ],
+    "guided_completion": [
+      "If admin and user match, stop blaming sharing.",
+      "If the widget disagrees, check running user and 1,000 groupings before rebuilding the report type."
+    ],
+    "independent_challenge": "Copy the 2,000-row, 1,000-grouping, and 10-minute timeout sentences from Help into lab notes.",
+    "evidence": [
+      "Table of three user counts.",
+      "One sentence citing the limits article."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete lab reports/dashboards.",
+      "Do not export real customer data."
+    ],
+    "limitations": "Some playgrounds cannot demonstrate the 2,000-row cap with volume; still cite Help."
+  },
+  "decision_table": [
+    {
+      "signal": "Admin sees the rows; the complaining user does not.",
+      "choose": "Inspect sharing, FLS, role, folder, Run Reports, and dashboard specified user.",
+      "not": "Widening the custom report type as the first change.",
+      "why": "Different users with different access is a security/folder problem until proven otherwise."
+    },
+    {
+      "signal": "Even the admin cannot see expected parent rows.",
+      "choose": "Inspect report type must-have related records, cross filters, and field filters.",
+      "not": "Granting View All Data to the VP to 'make reporting work.'",
+      "why": "Type and filters hide rows by design for every runner."
+    },
+    {
+      "signal": "On-screen count stops at 2,000 while you know more records match.",
+      "choose": "Treat it as the display cap; filter, split, or export per Help.",
+      "not": "A joined format hoping the cap vanishes.",
+      "why": "Reports display a maximum of 2,000 rows; joined has its own accuracy warning."
+    },
+    {
+      "signal": "Dashboard total is lower than the source report.",
+      "choose": "Compare running user and the 1,000-grouping widget cap.",
+      "not": "Deleting and recreating the custom report type first.",
+      "why": "Widgets calculate only the first 1,000 groupings; specified user can be a different person."
+    },
+    {
+      "signal": "Report or export runs until it fails around ten minutes.",
+      "choose": "Add filters, split the report, check technical requirements; Help documents 10-minute timeouts.",
+      "not": "Inventing an Apex heap-limit explanation for a report.",
+      "why": "The limits article states default 10-minute report timeout and export timeout guidance."
+    }
+  ],
+  "limitations": [
+    "Does not replace a full sharing-model course.",
+    "Does not list every indexed field or LDV pattern (DATA track).",
+    "Knowledge-article click paths are marked Needs verification.",
+    "Mobile flattening of groupings (ANA-002) can look like missing summary structure."
+  ],
+  "security_notes": [
+    "Never grant View All Data solely so a dashboard looks 'complete.'",
+    "Specified running users are a data-leak surface.",
+    "Do not email production exports from a missing-data ticket without a data policy."
+  ],
+  "common_mistakes": [
+    "Debugging only as admin.",
+    "Blaming sharing when the CRT is inner-join.",
+    "Treating 2,000 on-screen as the org's record count.",
+    "Ignoring dashboard running user.",
+    "Using preview counts in executive meetings."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "User sees fewer rows than admin.",
+      "check": [
+        "Sharing, role, territory, queues.",
+        "FLS for key fields used as filters (filtered-out by invisible values).",
+        "Folder and Run Reports.",
+        "Dashboard specified running user."
+      ],
+      "do_not_assume": "Records were deleted."
+    },
+    {
+      "symptom": "Admin also missing rows.",
+      "check": [
+        "Report type relationship.",
+        "Cross filters and field filters.",
+        "Date filters in the wrong timezone/relative range."
+      ],
+      "do_not_assume": "An index is 'broken.'"
+    },
+    {
+      "symptom": "Slow or timed-out report.",
+      "check": [
+        "10-minute default timeout.",
+        "Unfiltered huge objects.",
+        "Technical requirements article.",
+        "Bucket filter on an indexed column (Help: index gains lost)."
+      ],
+      "do_not_assume": "Lightning is globally down."
+    }
+  ],
+  "production_notes": [
+    "Write the three-count table (admin, user, export) in the ticket.",
+    "Cite Help limits instead of Slack folklore.",
+    "Sandbox first for CRT or filter experiments.",
+    "No production data extracts are authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "On-screen reports display a maximum of how many rows?",
+      "options": {
+        "A": "2,000",
+        "B": "1,000",
+        "C": "50",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "Help: reports display a maximum of 2,000 rows.",
+      "distractor_explanations": {
+        "B": "1,000 is the dashboard widget grouping cap.",
+        "C": "50 is tabular preview.",
+        "D": "There is a display cap."
+      },
+      "concept": "Row cap",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Default report timeout in Help?",
+      "options": {
+        "A": "10 minutes",
+        "B": "1 minute",
+        "C": "10 seconds",
+        "D": "No timeout in Lightning"
+      },
+      "answer": "A",
+      "rationale": "By default, reports time out after 10 minutes.",
+      "distractor_explanations": {
+        "B": "1 minute is the wait between dashboard refreshes, a different bullet.",
+        "C": "Not the cited default.",
+        "D": "Lightning still times out."
+      },
+      "concept": "Timeout",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Dashboard widget grouping calculation cap?",
+      "options": {
+        "A": "1,000 groupings; totals reflect only those",
+        "B": "2,000 groupings",
+        "C": "20 groupings",
+        "D": "5 groupings"
+      },
+      "answer": "A",
+      "rationale": "A dashboard widget can calculate up to 1,000 groupings.",
+      "distractor_explanations": {
+        "B": "2,000 is report row display.",
+        "C": "20 is field filters or preview-related numbers.",
+        "D": "5 is dashboard filters."
+      },
+      "concept": "Widget cap",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Admin sees rows; user does not. Best first layer?",
+      "options": {
+        "A": "Sharing, FLS, folder permissions, dashboard running user",
+        "B": "Create a new custom report type immediately",
+        "C": "Switch to joined format",
+        "D": "Subscribe to a dynamic dashboard"
+      },
+      "answer": "A",
+      "rationale": "User-specific absence is an access problem until proven otherwise.",
+      "distractor_explanations": {
+        "B": "Type changes affect everyone, including the admin.",
+        "C": "Format is not the first access check.",
+        "D": "Unrelated and often illegal (ANA-004)."
+      },
+      "concept": "Access first",
+      "citation_ids": ["SF-HELP-FOLDER-EDITOR"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Builder preview shows 20 rows on a summary report. What is true?",
+      "options": {
+        "A": "Preview is capped at 20 for summary/matrix; it is not the full run",
+        "B": "The org has exactly 20 records",
+        "C": "Dashboard widgets also preview 20 groupings",
+        "D": "Timeout already fired"
+      },
+      "answer": "A",
+      "rationale": "Preview shows a maximum of 20 rows for summary/matrix.",
+      "distractor_explanations": {
+        "B": "Preview is not a census.",
+        "C": "Widget cap is 1,000 groupings.",
+        "D": "Timeout is 10 minutes on the run."
+      },
+      "concept": "Preview",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "If Lightning reports feel slow, the overview Help also asks you to check:",
+      "options": {
+        "A": "Network and device technical requirements",
+        "B": "Whether Apex heap is 6 MB",
+        "C": "Whether the report type is global",
+        "D": "Whether buckets are named Library"
+      },
+      "answer": "A",
+      "rationale": "The overview article points to Lightning technical requirements for sluggish interactions.",
+      "distractor_explanations": {
+        "B": "Apex governors are not this article.",
+        "C": "Report types are not Apex global.",
+        "D": "Nonsense distractor."
+      },
+      "concept": "Technical requirements",
+      "citation_ids": ["SF-HELP-LIMITS-OVERVIEW"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Folder Editor but the user cannot run the report. Help-aligned explanation?",
+      "options": {
+        "A": "Editor does not determine access to contents; Run Reports (and similar) still required",
+        "B": "Editor always includes Modify All Data",
+        "C": "Standard folders always allow Editor",
+        "D": "The 2,000-row cap blocks running"
+      },
+      "answer": "A",
+      "rationale": "Editor access article: permissions on the reports themselves still apply.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "You cannot give Editor to standard report folders.",
+        "D": "The cap truncates display; it does not replace permissions."
+      },
+      "concept": "Folder vs permission",
+      "citation_ids": ["SF-HELP-FOLDER-EDITOR"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "On-screen 2,000; export 8,400. Interpretation?",
+      "options": {
+        "A": "Display cap, not proof that 6,400 rows were deleted",
+        "B": "Sharing deleted the extra rows for everyone",
+        "C": "Dynamic dashboards raise the cap",
+        "D": "Preview equals export"
+      },
+      "answer": "A",
+      "rationale": "The UI stops at 2,000; export is how Help tells you to see more.",
+      "distractor_explanations": {
+        "B": "Admin export would not show them if they were gone.",
+        "C": "Dashboards do not lift the report display cap.",
+        "D": "Preview is 20/50."
+      },
+      "concept": "Cap vs deletion",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Dashboard gauge lower than report. Two Help-backed suspects?",
+      "options": {
+        "A": "Specified running user differs, and/or widget only totals 1,000 groupings",
+        "B": "Joined reports always double totals",
+        "C": "Buckets multiply Amount by 20",
+        "D": "Folder Viewer hides half the rows from widgets only"
+      },
+      "answer": "A",
+      "rationale": "Running user (ANA-004) plus the 1,000-grouping widget rule.",
+      "distractor_explanations": {
+        "B": "Joined can be inaccurate past 2,000, but not 'always double.'",
+        "C": "False.",
+        "D": "Folder Viewer is not a half-row rule."
+      },
+      "concept": "Dashboard mismatch",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Export times out around 10 minutes. Help-style next step?",
+      "options": {
+        "A": "Copy the report, filter each half, export both",
+        "B": "Switch the report to global Apex",
+        "C": "Subscribe to a dynamic dashboard instead",
+        "D": "Remove all field-level security"
+      },
+      "answer": "A",
+      "rationale": "Limits article: if export times out, create a copy, filter each to half, export each.",
+      "distractor_explanations": {
+        "B": "Not a report setting.",
+        "C": "Illegal/unrelated (ANA-004).",
+        "D": "A security violation, not a performance design."
+      },
+      "concept": "Export timeout",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Missing column versus missing row—typical first checks?",
+      "options": {
+        "A": "Column: report type layout and FLS. Row: sharing, filters, type relationship, caps",
+        "B": "Both are always the 2,000-row cap",
+        "C": "Both are always dashboard subscriptions",
+        "D": "Columns are controlled by page layouts"
+      },
+      "answer": "A",
+      "rationale": "Different layers; page layouts do not own report columns.",
+      "distractor_explanations": {
+        "B": "Caps truncate lists, they do not hide a single field.",
+        "C": "Subscriptions email; they do not hide columns.",
+        "D": "ANA-001: page layouts are the wrong tool."
+      },
+      "concept": "Column vs row",
+      "citation_ids": ["SF-HELP-RD-LIMITS", "SF-HELP-FOLDER-EDITOR"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Report timeout versus Apex governor limit?",
+      "options": {
+        "A": "This lesson cites the reports 10-minute timeout from Help; Apex governors are a different topic",
+        "B": "They are the same 10-second CPU limit",
+        "C": "Reports use the heap limit only",
+        "D": "There are no report timeouts"
+      },
+      "answer": "A",
+      "rationale": "Keep report Help separate from APEX-007.",
+      "distractor_explanations": {
+        "B": "Wrong number and wrong product layer.",
+        "C": "Not how this Help article describes reports.",
+        "D": "Help documents a timeout."
+      },
+      "concept": "Boundary",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "limits",
+      "front": "On-screen report row cap?",
+      "back": "2,000 rows. Export or Classic printable view for more."
+    },
+    {
+      "id": "F2",
+      "category": "limits",
+      "front": "Default report timeout?",
+      "back": "By default, reports time out after 10 minutes."
+    },
+    {
+      "id": "F3",
+      "category": "limits",
+      "front": "Dashboard widget grouping cap?",
+      "back": "1,000 groupings; totals reflect only those."
+    },
+    {
+      "id": "F4",
+      "category": "access",
+      "front": "Admin sees rows, user does not. First layer?",
+      "back": "Sharing, FLS, folder, Run Reports, dashboard running user."
+    },
+    {
+      "id": "F5",
+      "category": "access",
+      "front": "Does folder Editor guarantee the user can run the report?",
+      "back": "No. Report permissions still apply."
+    },
+    {
+      "id": "F6",
+      "category": "design",
+      "front": "Admin also missing parents. Suspects?",
+      "back": "Must-have related records, cross filters, field filters."
+    },
+    {
+      "id": "F7",
+      "category": "limits",
+      "front": "Preview row caps?",
+      "back": "20 for summary/matrix preview; 50 for tabular preview."
+    },
+    {
+      "id": "F8",
+      "category": "performance",
+      "front": "Slow Lightning reports: besides limits, check?",
+      "back": "Network and device technical requirements in Help."
+    },
+    {
+      "id": "F9",
+      "category": "limits",
+      "front": "Export timeout workaround in Help?",
+      "back": "Copy the report, filter each half, export both."
+    },
+    {
+      "id": "F10",
+      "category": "dashboard",
+      "front": "Gauge lower than report. Check?",
+      "back": "Specified running user and the 1,000-grouping widget cap."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Missing column typical causes?",
+      "back": "Not on the report type, or blocked by FLS—not the page layout."
+    },
+    {
+      "id": "F12",
+      "category": "limits",
+      "front": "Matrix Show Details dead. Why?",
+      "back": "More than 2,000 rows: details stay hidden."
+    },
+    {
+      "id": "F13",
+      "category": "performance",
+      "front": "Bucket filter on a custom-indexed source column?",
+      "back": "Help: custom index performance gains are lost."
+    },
+    {
+      "id": "F14",
+      "category": "security",
+      "front": "Grant View All Data to fix a VP's 2,000-row postcard?",
+      "back": "No. That is a display cap, not a sharing fix, and it is a leak."
+    },
+    {
+      "id": "F15",
+      "category": "joined",
+      "front": "Joined totals past 2,000 rows?",
+      "back": "Can be inaccurate if one block dominates."
+    },
+    {
+      "id": "F16",
+      "category": "access",
+      "front": "Does a report type grant record access?",
+      "back": "No. Sharing and FLS still apply at run time."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you troubleshoot missing data on a report?",
+      "answer_30_seconds": "Reproduce as the user and as an admin. If only the user is missing rows, check access. If both are missing them, check type and filters. If counts exceed 2,000, cite the display cap. Dashboards add running user and 1,000 groupings.",
+      "answer_2_minutes": "I never start with 'Salesforce lost records.' I write three numbers: user, admin, export. Access includes folder, Run Reports, sharing, FLS, and specified running user. Design includes inner CRTs and cross filters. Limits include 2,000 rows, 10-minute timeout, widget groupings. I use Help, not a blog. I do not grant View All Data to pretty-up a postcard.",
+      "example": "VP 2,000 / AE 40 / export 8,400 diagnosed as cap plus sharing plus specified intern on the gauge.",
+      "tradeoffs": [
+        "Security tightness vs complete pictures",
+        "Filter vs export"
+      ],
+      "follow_ups": [
+        "Preview versus run?",
+        "Joined accuracy?"
+      ],
+      "weak_answer_warnings": [
+        "Only checking page layouts",
+        "No Help numbers"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Which Help numbers do you memorize for reports and dashboards?",
+      "answer_30_seconds": "2,000 on-screen rows, 10-minute timeout, 1,000 widget groupings, plus the earlier 20 filters / 5 formulas / 5 or 10 dynamic dashboards depending on edition.",
+      "answer_2_minutes": "I separate display from allocations. Display: 2,000 rows, matrix details hidden past that, preview 20/50. Performance: 10-minute timeout, export split guidance. Dashboards: 1,000 groupings, 25 widgets. I admit edition tables change and I re-open the limits article in the interview if they want Professional CRT counts. I do not mix Apex CPU time into this answer.",
+      "example": "Reciting 2,000 versus 1,000 when a gauge disagrees with a report.",
+      "tradeoffs": [
+        "Memorized numbers vs opening Help",
+        "Report cap vs widget cap"
+      ],
+      "follow_ups": [
+        "Classic chart 250 groups?",
+        "Joined printable 20,000?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing 5,000-row Lightning exceptions",
+        "Apex heap as the report timeout"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A VP sees 2,000 rows; finance export shows more. The VP wants View All Data.",
+      "answer_30_seconds": "I refuse View All Data as a display-cap workaround. I explain the 2,000-row UI limit and offer filtered reports, split reports, or a governed export.",
+      "answer_2_minutes": "I show her the Help sentence. I prove with an admin run that still stops at 2,000 on screen. I offer Close Date slices or a dashboard of summaries rather than a detail dump. If she also sees fewer rows than finance after export, then we talk sharing—not before. View All Data on a specified dashboard user would leak to everyone with folder access. That is a security incident waiting to happen, not a reporting feature.",
+      "example": "Quarterly slices replacing one all-time tabular dump.",
+      "tradeoffs": [
+        "Completeness vs least privilege",
+        "Export vs live UI"
+      ],
+      "follow_ups": [
+        "Would CRMA help? (ANA-006)",
+        "Printable view?"
+      ],
+      "weak_answer_warnings": [
+        "Granting View All Data immediately",
+        "Denying the cap exists"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Dashboard total is 1,000 Owners short of the report. Walk the diagnosis.",
+      "answer_30_seconds": "I check specified running user first, then the widget's 1,000-grouping cap. I filter the source report so groupings fit, or I change the chart grain.",
+      "answer_2_minutes": "If the dashboard runs as a user who cannot see some Opportunities, totals drop. If it runs as the VP but groups by a high-cardinality Owner, Help says aggregated totals only reflect the first 1,000 groupings. I do not 'fix' this with a custom report type. I filter, group by Region instead, or split dashboards. I also wait at least a minute between refreshes if they are hammering refresh.",
+      "example": "Amount by Owner in a 2,400-user org; switch to Amount by Region.",
+      "tradeoffs": [
+        "Grain vs completeness",
+        "Specified vs dynamic"
+      ],
+      "follow_ups": [
+        "Classic 250 chart groups?",
+        "Unsupported Report Type sort error?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming CRT first",
+        "Ignoring running user"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "User says Amount is missing from the report; you see it.",
+      "answer_30_seconds": "That is a column problem: FLS or they are on a different report. It is not the 2,000-row cap. I check their field-level security and whether they opened a clone without the column.",
+      "answer_2_minutes": "Missing columns and missing rows use different checklists. I login as the user. If Amount is absent in the builder, FLS or a different report type. If Amount is in the builder but blank, they may lack read FLS and the column still renders empty—Needs verification of exact blank-versus-hidden UI in Lightning. I do not start with dashboard subscriptions. I do not add Amount to a page layout as the fix.",
+      "example": "AE profile without Amount FLS; VP profile with it.",
+      "tradeoffs": [
+        "FLS tightness vs reporting",
+        "Two reports vs one permission set"
+      ],
+      "follow_ups": [
+        "CRT field layout versus FLS?",
+        "Encrypted fields?"
+      ],
+      "weak_answer_warnings": [
+        "Page layout as the answer",
+        "Row cap as the answer"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Report runs 10 minutes and fails. User wants you to 'index everything.'",
+      "answer_30_seconds": "I cite the default 10-minute timeout, add filters, split the report, check technical requirements. I do not invent an unofficial index shopping list in this topic.",
+      "answer_2_minutes": "Help already says reports time out after 10 minutes and that huge exports should be split. I look for unfiltered Activities or history objects, relative dates, and bucket filters on indexed columns that lose index gains. LDV indexing is a DATA-track conversation with current Help, not a guess. I also check whether they are on a weak network as the overview article asks. I will not grant View All Data to make it faster—that can make it slower.",
+      "example": "All-time Task report split into this year versus last year exports.",
+      "tradeoffs": [
+        "Split reports vs CRMA (later)",
+        "More filters vs completeness"
+      ],
+      "follow_ups": [
+        "External objects restrictions?",
+        "Search on long text only first 1,000 characters?"
+      ],
+      "weak_answer_warnings": [
+        "Fake index list",
+        "Apex heap explanation"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When do documented limits mean you should leave core reports?",
+      "answer_30_seconds": "When the business truly needs more than on-screen 2,000-row analysis, multi-cloud joins, or interactive exploration that widgets cannot do—then orient to CRM Analytics, Tableau, or Data Cloud (ANA-006), after proving the cap.",
+      "answer_2_minutes": "I first squeeze core reports: filters, summary instead of detail, dashboards of groupings, governed export. If they need datasets, SAQL, or enterprise BI across warehouses, I stop promising joined reports with five blocks. I will not pretend a dashboard of 25 widgets is a data warehouse. I also will not use CRMA to dodge sharing; access still exists there. This question is the bridge, not the CRMA implementation guide.",
+      "example": "After hitting 2,000 rows and 1,000 groupings, scheduling an orientation with analytics, not another CRT.",
+      "tradeoffs": [
+        "Core reports vs licensed analytics products",
+        "Export ops vs live exploration"
+      ],
+      "follow_ups": [
+        "What must you still fix in sharing?",
+        "Joined 5-block cap?"
+      ],
+      "weak_answer_warnings": [
+        "CRMA as the first answer to FLS",
+        "Ignoring Help caps"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach missing-data troubleshooting with the radio telescope and break it.",
+      "answer_30_seconds": "Badges are access, clouds are filters and inner types, the postcard is 2,000 stars, the adding machine is 1,000 dashboard groupings, the 10-minute scan is the timeout. The analogy breaks on specified running user and export showing more than the postcard.",
+      "answer_2_minutes": "I order the layers on a whiteboard. I add folder Editor is not Run Reports. I refuse a library story. I cite Help URLs. I finish by asking the interviewer whether their last ticket was access, design, or a cap—because mixing them wastes a day.",
+      "example": "Three-column board: Access | Design | Limits, with 2,000 / 1,000 / 10 written under Limits.",
+      "tradeoffs": [
+        "Story vs numbers",
+        "Admin reproduction vs user empathy"
+      ],
+      "follow_ups": [
+        "Where does the telescope break?",
+        "Preview trap?"
+      ],
+      "weak_answer_warnings": [
+        "No numbers",
+        "Starting with deleted data"
+      ]
+    }
+  ]
+}

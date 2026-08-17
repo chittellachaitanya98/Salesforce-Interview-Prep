@@ -1,0 +1,1017 @@
+{
+  "topic_id": "PROG-001",
+  "slug": "variables-constants-data-types-operators-expressions-an",
+  "title": "Variables, constants, data types, operators, expressions, and scope",
+  "track": "Programming foundations for Salesforce",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "FOUND-001"
+  ],
+  "objectives": [
+    "Name Apex variables, constants (final), data types, operators, expressions, and scope using Developer Guide meanings.",
+    "Choose a primitive type versus an sObject or collection type and say why compile-time type checking matters.",
+    "Predict null-default initialization, block scope, and case-insensitive names before running code.",
+    "Read an expression and say which operators bind first without inventing undocumented conversion rules."
+  ],
+  "diagnostic_question": "A teammate declares Integer qty; then writes if (qty > 0) and later static final Decimal TAX = 0.08; TAX = 0.09; in the same method. Before compiling, what fails, what is null, and which names are in scope after the inner block ends?",
+  "definition": "In Apex, every variable and expression has a data type (primitive, sObject, enum, or collection). Local variables use Java-style declarations; uninitialized variables are null. Constants are variables assigned at most once with final. An expression combines variables, operators, and method calls into one value. Scope starts at the declaration and runs to the end of that block. ([Data Types and Variables](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_datatypes_variables_intro.htm); [Variables](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_variables.htm); [Constants](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_constants.htm))",
+  "why_it_matters": "Interviewers fail candidates who treat Apex like loosely typed JavaScript, who forget variables start null, who mutate a final constant, or who reuse a name from an outer block. Wrong types also break formula-vs-Apex conversations: a Number field is not automatically an Apex Integer.",
+  "sixty_second_explanation": "Think of a restaurant mise-en-place station. A variable is a prep bowl you can refill. A constant is a sealed stock jar labeled final—you fill it once. The data type is the bowl size: Integer vs Decimal vs String. Operators are the utensils; an expression is one completed sauce that evaluates to a single taste. Scope is which station owns the bowl: an inner cutting board cannot rename a bowl already on the parent counter. Unfilled bowls are empty (null), not zero.",
+  "deeper_explanation": [
+    "The Apex Developer Guide groups data types, variables, enums, constants, expressions, operators, and assignment together. All variables and expressions have a type; type checking is enforced at compile time. ([Data Types](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_data_types.htm))",
+    "Primitive types include Blob, Boolean, Date, Datetime, Decimal, Double, ID, Integer, Long, Object, String, and Time. Apex primitives match SOAP API types except Decimal's higher precision in some cases. Uninitialized primitives are null, including Boolean—not false. ([Primitive Data Types](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_primitives.htm))",
+    "Local variables follow Java-style syntax and naming rules (letters, digits, underscore; start with a letter; max 255 characters; case-insensitive). You may declare several in one statement. Sub-blocks cannot redefine a name already used in a parent block; parallel blocks may reuse a name. ([Variables](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_variables.htm))",
+    "Constants use final and can be assigned at most once, in the declaration or in a static initializer for class constants. An expression evaluates to a single value from literals, operators, method calls, new objects, L-values, or inline SOQL/SOSL in brackets. Operator precedence is documented from grouping through assignment, including ?? then ?:. ([Constants](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_constants.htm); [Expressions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_expressions_understanding.htm); [Operator Precedence](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_expressions_operators_precedence.htm))"
+  ],
+  "mental_model": {
+    "analogy": "Restaurant mise-en-place: refillable bowls (variables), sealed stock jars (constants), bowl sizes (data types), utensils (operators), a finished sauce (expression), and station ownership (scope).",
+    "useful_mapping": [
+      "variable → a labeled prep bowl you may refill",
+      "constant / final → a sealed stock jar filled at most once",
+      "data type → bowl size and what may go in it",
+      "operator → a utensil that combines or compares ingredients",
+      "expression → one sauce that evaluates to a single taste",
+      "scope → the station that owns the bowl from declaration onward",
+      "null → an empty bowl, not a zero-count of product",
+      "compile-time type check → the expeditor rejecting a String in an Integer bowl"
+    ],
+    "where_it_breaks": [
+      "Kitchen bowls do not start empty the way Apex variables start null.",
+      "Apex names are case-insensitive; physical labels are not.",
+      "Assignment of sObjects is by reference: two bowls can point at the same pan.",
+      "This analogy does not encode governor limits, SOQL, or access modifiers (APEX-001)."
+    ]
+  },
+  "teach_back_prompt": "Using the mise-en-place station, explain variable versus final constant, why Integer qty; is null not 0, and why an inner block cannot redeclare a name from the outer method. Then name one place the kitchen analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: uninitialized Apex variables are null; final means assign at most once; list three primitive types."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given a method with an inner if-block, mark which variables are in scope on each line."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Write one expression using && and ?: and say which operator runs first from the precedence table."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Debug Integer i; if (i > 0) without notes: null comparison and type choice versus Decimal."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: variables, constants, types, operators, expressions, and scope with one Salesforce example."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-DT-VARS",
+      "title": "Data Types and Variables",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_datatypes_variables_intro.htm",
+      "supports": "Apex uses data types, variables, enums, constants, expressions, operators, and assignment statements together.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace the primitive-type table or precedence table."
+    },
+    {
+      "source_id": "SF-APEX-PRIMITIVES",
+      "title": "Primitive Data Types",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_primitives.htm",
+      "supports": "Primitive list; uninitialized variables are null; Boolean may be true, false, or null; Decimal scale notes.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Do not invent heap-size character counts for String; the guide defers to heap limits."
+    },
+    {
+      "source_id": "SF-APEX-VARIABLES",
+      "title": "Variables",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_variables.htm",
+      "supports": "Java-style locals, naming rules, null defaults, block scope, case-insensitive names.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "SOQL comparison semantics for strings belong with operators, not this page alone."
+    },
+    {
+      "source_id": "SF-APEX-CONSTANTS",
+      "title": "Constants",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_constants.htm",
+      "supports": "final means assign at most once; static initializer may assign a class constant.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not cover Custom Metadata as an org-level constant store."
+    },
+    {
+      "source_id": "SF-APEX-EXPR",
+      "title": "Expressions",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_expressions_understanding.htm",
+      "supports": "An expression evaluates to a single value from variables, operators, and method invocations.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Inline SOQL as an expression is introduced only; query design is APEX-003."
+    },
+    {
+      "source_id": "SF-APEX-PRECEDENCE",
+      "title": "Operator Precedence",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_expressions_operators_precedence.htm",
+      "supports": "Documented operator precedence including grouping, arithmetic, comparison, logical, ??, ?:, and assignment.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Precedence is not a complete operator-semantics catalog."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Type on every variable",
+        "null until assigned",
+        "final assigned once",
+        "Expression to one value",
+        "Block scope",
+        "Do not treat as JavaScript"
+      ],
+      "accessible_description": "Portrait map: Apex variables have types; they start null; final constants assign once; expressions evaluate to one value using operators; scope is the declaring block."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-DT-VARS",
+        "SF-APEX-PRIMITIVES",
+        "SF-APEX-VARIABLES",
+        "SF-APEX-CONSTANTS",
+        "SF-APEX-EXPR",
+        "SF-APEX-PRECEDENCE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "From declaration to expression result"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Decl[Declare typed variable] --> Init{Assigned?}\n  Init -->|No| Null[Value is null]\n  Init -->|Yes| Val[Holds typed value]\n  Val --> Expr[Expression: variables plus operators]\n  Expr --> Result[Single evaluated value]\n  Decl --> Scope[Scope from this line to end of block]\n  Final[final constant] --> Once[Assign at most once]",
+      "decision": "flowchart TD\n  Need[Need a named value?] --> Q1{Will it change after init?}\n  Q1 -->|No| Const[static final constant]\n  Q1 -->|Yes| Q2{What kind of data?}\n  Q2 -->|Whole number count| Int[Integer or Long]\n  Q2 -->|Money or scale| Dec[Decimal not Double]\n  Q2 -->|Yes or no| Bool[Boolean: remember null]\n  Q2 -->|Text| Str[String in single quotes]\n  Q2 -->|Record| Sobj[sObject type later APEX-002]\n  Q2 -->|Many values| Coll[Collection: PROG-004]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "In Apex, all variables and expressions have a data type such as sObject, primitive, or enum, and type checking is strictly enforced at compile time.",
+      "source_ids": ["SF-APEX-DT-VARS", "SF-APEX-PRIMITIVES"],
+      "scope": "Types",
+      "validation": "Data Types and Variables intro plus Data Types / Primitive Data Types pages.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "All Apex variables, whether class members or method variables, are initialized to null if not assigned. A Boolean may be true, false, or null.",
+      "source_ids": ["SF-APEX-PRIMITIVES", "SF-APEX-VARIABLES"],
+      "scope": "Initialization",
+      "validation": "Primitive Data Types and Variables null-initialization notes.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Apex constants are variables whose values do not change after being initialized once. The final keyword means the variable can be assigned at most once, in the declaration or via a static initializer for a class constant.",
+      "source_ids": ["SF-APEX-CONSTANTS"],
+      "scope": "Constants",
+      "validation": "Constants topic in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Variables take scope from the declaration point forward in the block. Sub-blocks cannot redefine a name already used in a parent block. An expression evaluates to a single value. Operators follow the documented precedence table.",
+      "source_ids": ["SF-APEX-VARIABLES", "SF-APEX-EXPR", "SF-APEX-PRECEDENCE"],
+      "scope": "Scope and expressions",
+      "validation": "Variables scope section, Expressions, and Operator Precedence.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Operator precedence includes the null-coalescing operator ?? above ternary ?:. Reverify the class API version if you rely on newer operators.",
+  "unresolved_uncertainty": [
+    "Exact Decimal hashCode behavior when scales differ is documented as a caution for Sets/Map keys; do not invent a numeric hash algorithm here."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Variable",
+      "telugu": "టైప్ ఉన్న పేరున్న గిన్నె; విలువ మారవచ్చు."
+    },
+    {
+      "english": "Constant (final)",
+      "telugu": "ఒక్కసారి మాత్రమే నింపే సీలు చేసిన జార్."
+    },
+    {
+      "english": "Scope",
+      "telugu": "ఆ పేరు ఏ బ్లాక్ లో కనిపిస్తుందో."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Apex is strongly typed. Variables start null, not zero or false. final constants assign once. Expressions evaluate to one value using operators. Scope is the declaring block; inner blocks cannot reuse an outer name.",
+    "two_minutes": "I pick a data type first: Integer for whole counts, Decimal for money, Boolean that might still be null, String in single quotes. I initialize before comparing. I use static final for values that must not change. I read operator precedence instead of guessing that && beats ?:. If a compile error says a name is already defined, I look at parent-block scope, not a missing import. Collections and sObject details wait for later topics."
+  },
+  "terminology": [
+    {
+      "term": "variable",
+      "plain": "A named, typed bowl that can hold a value and usually be reassigned.",
+      "precise": "A local or member identifier declared with a data type. Unassigned variables are null. Names are case-insensitive and follow the Variables guide rules.",
+      "example": "Integer labQty = 3; later labQty = 4;",
+      "non_example": "A custom object field on Account is schema metadata, not an Apex local variable.",
+      "confusable_neighbor": "Constant: a final variable that cannot be reassigned after init.",
+      "boundary": "This lesson covers declaration, null, and scope; access modifiers are APEX-001."
+    },
+    {
+      "term": "constant",
+      "plain": "A named value you fill at most once.",
+      "precise": "A variable declared final. It may be assigned in the declaration or, for a class constant, in a static initializer. After that, reassignment does not compile.",
+      "example": "static final Decimal LAB_TAX_RATE = 0.08;",
+      "non_example": "A Custom Metadata record is org configuration, not an Apex final variable.",
+      "confusable_neighbor": "Formula field: calculated display, not a code constant.",
+      "boundary": "Custom Metadata as deployable constants is DATA/DEVOPS, not this lesson."
+    },
+    {
+      "term": "data type",
+      "plain": "The kind of value a variable or expression is allowed to hold.",
+      "precise": "Every Apex variable and expression has a type such as primitive, sObject, enum, or collection. Assigning a String to an Integer is a compile error.",
+      "example": "Decimal labAmount = 19.99; not Integer for currency-like scale.",
+      "non_example": "A Salesforce field type Number is not automatically an Apex Integer.",
+      "confusable_neighbor": "sObject type such as Account: a data-model type, covered in APEX-002.",
+      "boundary": "Collection types are named here and chosen in PROG-004."
+    },
+    {
+      "term": "operator",
+      "plain": "A symbol that combines or compares values.",
+      "precise": "Operators follow documented precedence from grouping and unary through arithmetic, comparison, logical, ??, ?:, and assignment.",
+      "example": "Boolean ok = labQty != null && labQty > 0;",
+      "non_example": "A Flow Assignment element is not an Apex operator.",
+      "confusable_neighbor": "Method call: also part of an expression, but not an operator token.",
+      "boundary": "Do not memorize unofficial operator tables; use the Developer Guide precedence page."
+    },
+    {
+      "term": "expression",
+      "plain": "A recipe that cooks down to one value.",
+      "precise": "A construct of variables, operators, and method invocations that evaluates to a single value. Also includes literals, new objects, L-values, and bracketed SOQL/SOSL.",
+      "example": "Integer total = labQty * 2 + 1;",
+      "non_example": "A standalone if statement is control flow, not itself an expression result.",
+      "confusable_neighbor": "Assignment statement: places a value into an L-value; the right-hand side is an expression.",
+      "boundary": "Inline SOQL as an expression is syntax only; query design is APEX-003."
+    },
+    {
+      "term": "scope",
+      "plain": "Where a declared name is visible.",
+      "precise": "A variable is in scope from its declaration to the end of its block. Inner blocks cannot redeclare a parent-block name; parallel blocks may reuse a name.",
+      "example": "Integer a = 1; { Integer b = 2; } // a visible after; b is not",
+      "non_example": "Apex access modifiers (public/private) are who may call a member, not block scope.",
+      "confusable_neighbor": "Namespace: packaging visibility, not a curly-brace block.",
+      "boundary": "Member visibility is APEX-001; this lesson is block scope."
+    },
+    {
+      "term": "null",
+      "plain": "No value yet—an empty bowl, not zero.",
+      "precise": "The default for any unassigned Apex variable, including Boolean and Integer. You may also assign null to a primitive.",
+      "example": "Integer i; // i is null; i > 0 is not a safe 'greater than zero' story without a null check",
+      "non_example": "0 is a value. Empty String '' is a value. Neither is null.",
+      "confusable_neighbor": "Blank Number field on a record: database null vs Apex local null are related but not the same storage.",
+      "boundary": "Null-pointer exceptions in catch blocks are PROG-002."
+    },
+    {
+      "term": "primitive type",
+      "plain": "A built-in simple type such as Integer or String.",
+      "precise": "Apex primitives include Blob, Boolean, Date, Datetime, Decimal, Double, ID, Integer, Long, Object, String, and Time. They largely match SOAP API types, with Decimal as a higher-precision exception in some cases.",
+      "example": "Id labId = '001000000000001AAA'; Apex stores 18-character Ids.",
+      "non_example": "List<Integer> is a collection, not a primitive.",
+      "confusable_neighbor": "Object: the root type you can cast from, not a substitute for a precise primitive.",
+      "boundary": "AnyType and Currency special cases are database/SOQL-only per the primitives page."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Pick a type",
+      "actor": "Developer",
+      "trigger": "Need to hold a value in Apex",
+      "before": "Requirement is words, not a type",
+      "after": "Integer, Decimal, Boolean, String, Id, or a later sObject/collection",
+      "observe": "Declaration compiles; no String-into-Integer assignment",
+      "failure": "Using Double for money or assuming Number fields are Integer"
+    },
+    {
+      "step": 2,
+      "transition": "Initialize",
+      "actor": "Developer",
+      "trigger": "Variable declared",
+      "before": "Value is null",
+      "after": "Assigned a legal value, or a null check before use",
+      "observe": "Boolean and Integer nulls do not behave like false and 0",
+      "failure": "if (flag) when flag was never assigned"
+    },
+    {
+      "step": 3,
+      "transition": "Lock constants",
+      "actor": "Developer",
+      "trigger": "Value must not change",
+      "before": "Magic number in many methods",
+      "after": "static final named constant assigned once",
+      "observe": "Reassignment of the final name fails to compile",
+      "failure": "Treating a public static Integer as a constant"
+    },
+    {
+      "step": 4,
+      "transition": "Write expressions inside scope",
+      "actor": "Developer",
+      "trigger": "Need a computed value",
+      "before": "Operators guessed from JavaScript",
+      "after": "Expression using documented precedence; names only used in-scope",
+      "observe": "Inner block cannot redeclare an outer name",
+      "failure": "Redeclaring Integer i inside an if when i exists in the method"
+    }
+  ],
+  "when_to_use": [
+    "When declaring Apex variables and choosing data types before writing automation that will become a class.",
+    "When a compile error is about types, null, final constants, operators, expressions, or scope rather than SOQL.",
+    "When explaining why an uninitialized Integer or Boolean is null, not 0 or false.",
+    "When a review asks whether a magic number should be a final constant and whether an inner block reuses a name."
+  ],
+  "when_not_to_use": [
+    "Do not use this variables-and-types lesson as a substitute for collection choice (lists, sets, maps in PROG-004).",
+    "Do not treat data types and operators as a governor-limit catalog or SOQL design guide (APEX-007, APEX-003).",
+    "Do not lecture JavaScript let/const semantics as if they were Apex scope and final constants.",
+    "Do not use expression examples to justify editing production records or skipping sandbox compilation."
+  ],
+  "configuration_or_code_location": [
+    "Apex class or anonymous Apex in a disposable sandbox; Developer Console or VS Code problems pane.",
+    "Declaration line: Type name = value;",
+    "Class constants: static final near the top of the class.",
+    "Operator Precedence page when &&, ??, and ?: appear in one expression."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab class LAB_QuoteMath must tax a quantity times a unit price. Quantity is a whole count, money needs scale, tax rate must not change, and a helper block must not clash with the method's total variable. No production data.",
+    "inputs": [
+      "Integer quantity from a test method",
+      "Decimal unit price",
+      "Tax rate 0.08 that must stay fixed",
+      "A nested if that computes a discount flag"
+    ],
+    "decisions": [
+      {
+        "decision": "Use Integer for quantity and Decimal for money, not Double.",
+        "because": "Primitives guide: Integer is a 32-bit whole number; Decimal is arbitrary precision and used for currency-like scale.",
+        "rejected": "Double for the money field because it 'has a decimal point'"
+      },
+      {
+        "decision": "Declare static final Decimal LAB_TAX = 0.08.",
+        "because": "Constants are final and assigned at most once.",
+        "rejected": "A public static Decimal that tests can overwrite"
+      },
+      {
+        "decision": "Initialize locals before comparing; do not redeclare total in the inner if.",
+        "because": "Unassigned variables are null; inner blocks cannot reuse a parent name.",
+        "rejected": "Integer total inside the if when total already exists in the method"
+      }
+    ],
+    "configuration_or_code": [
+      "public class LAB_QuoteMath { static final Decimal LAB_TAX = 0.08; public static Decimal lineTotal(Integer qty, Decimal price) { if (qty == null || price == null) { return 0; } Decimal total = qty * price; Boolean discounted = false; if (qty > 10) { discounted = true; } if (discounted) { total = total * 0.9; } return (total * (1 + LAB_TAX)).setScale(2); } }",
+      "Anonymous Apex: System.assertEquals(0, LAB_QuoteMath.lineTotal(null, 10));",
+      "Attempt Integer total inside the if and confirm the compile error about the existing name."
+    ],
+    "output": "Null quantity returns 0; a quantity of 11 applies discount then tax using the final rate; inner block cannot redeclare total.",
+    "verification": [
+      "Unassigned Integer in a scratch method is null in a System.assertEquals(null, i) check.",
+      "Reassigning LAB_TAX fails to compile.",
+      "Inner Integer total fails to compile while Boolean discounted succeeds."
+    ],
+    "self_explanation": "I typed money as Decimal, locked tax with final, and treated null as empty rather than zero until I assigned it."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable Developer sandbox or scratch org; synthetic LAB_ Apex only.",
+    "starting_state_checks": [
+      "You can create Apex classes or run anonymous Apex.",
+      "No production data in assertions."
+    ],
+    "steps": [
+      "Create public class LAB_TypeLab with static final Integer LAB_MAX = 5 and a method that declares Integer n; then returns n.",
+      "From anonymous Apex or a test, assert the returned value is null, not 0.",
+      "Add an inner block that tries to declare Integer n again and capture the compile error.",
+      "Write Decimal a = 1.10; and Integer b = 2; then an expression a * b + 1 and print the result; add a comment citing operator precedence for * before +."
+    ],
+    "guided_completion": [
+      "If n printed as 0, you assigned it; the guide says unassigned variables are null.",
+      "If the inner Integer n compiled, it was not the same parent block."
+    ],
+    "independent_challenge": "Add a Boolean ready; and write the null-safe expression ready == true rather than if (ready) without initialization. Explain why.",
+    "evidence": [
+      "Compile output showing the inner-scope redeclare failure.",
+      "Assertion or debug line showing unassigned Integer is null."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_TypeLab from the sandbox.",
+      "Do not deploy the class to production."
+    ],
+    "limitations": "This lab does not prove Decimal scale in Map keys or SOQL bind behavior."
+  },
+  "decision_table": [
+    {
+      "signal": "A whole count that will not exceed Integer range, such as line quantity.",
+      "choose": "Integer variable, initialized before arithmetic.",
+      "not": "String that you later parse, or uninitialized Integer used in > comparisons.",
+      "why": "Integer is the 32-bit whole primitive; unassigned Integer is null, not 0."
+    },
+    {
+      "signal": "Money, tax, or a number whose scale must be preserved.",
+      "choose": "Decimal data type, optionally setScale in the expression result.",
+      "not": "Double just because it has a decimal point.",
+      "why": "The primitives guide treats Decimal as arbitrary precision; currency fields map to Decimal."
+    },
+    {
+      "signal": "A rate or limit that must not change after the class loads.",
+      "choose": "static final constant assigned once.",
+      "not": "A public static Integer that any test overwrites.",
+      "why": "final means assign at most once; that is the Developer Guide constant."
+    },
+    {
+      "signal": "A helper value needed only inside one if-block.",
+      "choose": "Declare a new name in that block, or reuse an outer variable without redeclaring it.",
+      "not": "Re-declare the outer method's variable name in the inner block.",
+      "why": "Sub-blocks cannot redefine a parent-block name; that is variable scope."
+    }
+  ],
+  "limitations": [
+    "Does not choose List versus Set versus Map.",
+    "Does not teach SOQL, DML, or governor numbers.",
+    "Does not replace formula-field or Flow resource types.",
+    "API version can add operators; reverify precedence for the class version."
+  ],
+  "security_notes": [
+    "Do not put secrets or session IDs in constants or debug strings.",
+    "Id values in examples must be fake 18-character shapes, not real customer Ids.",
+    "Type mismatches can hide injection if you concatenate Strings into queries later (APEX-015)."
+  ],
+  "common_mistakes": [
+    "Assuming Integer i; starts at 0.",
+    "Assuming Boolean flag; starts at false.",
+    "Using Double for currency.",
+    "Reassigning a final constant.",
+    "Redeclaring a variable in an inner block.",
+    "Treating Apex == on Strings as Java case-sensitive equals without reading operator notes."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "NullPointerException or unexpected false on a comparison you thought was numeric.",
+      "check": [
+        "Was the variable assigned?",
+        "Is it Boolean null rather than false?"
+      ],
+      "do_not_assume": "Apex initialized numbers to zero."
+    },
+    {
+      "symptom": "Compile error that a variable is already defined.",
+      "check": [
+        "An outer block already declared that name.",
+        "Rename the inner variable."
+      ],
+      "do_not_assume": "Apex allows shadowing like some JavaScript lets."
+    },
+    {
+      "symptom": "Compile error assigning a String to an Integer.",
+      "check": [
+        "Types are enforced at compile time.",
+        "Convert with documented methods, not implicit JS coercion."
+      ],
+      "do_not_assume": "Apex will coerce the String."
+    }
+  ],
+  "production_notes": [
+    "Compile in sandbox; this lesson does not authorize production anonymous Apex.",
+    "Prefer named final constants over scattered literals in packaged code.",
+    "Match class API version if you use newer operators such as ??."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "If you declare Integer qty; and never assign it, what is qty?",
+      "options": {
+        "A": "null",
+        "B": "0",
+        "C": "undefined, as in JavaScript",
+        "D": "It does not compile until assigned"
+      },
+      "answer": "A",
+      "rationale": "The primitives and variables guides state that unassigned Apex variables are initialized to null.",
+      "distractor_explanations": {
+        "B": "0 is a value; Apex does not default Integer to 0.",
+        "C": "Apex has null, not JavaScript undefined.",
+        "D": "Declaration without assignment is legal; the value is null."
+      },
+      "concept": "null initialization",
+      "citation_ids": ["SF-APEX-PRIMITIVES", "SF-APEX-VARIABLES"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does the final keyword mean on an Apex constant?",
+      "options": {
+        "A": "The variable can be assigned at most once",
+        "B": "The variable is visible in every namespace",
+        "C": "The variable is always Decimal",
+        "D": "The variable is stored in Custom Metadata"
+      },
+      "answer": "A",
+      "rationale": "Constants are variables assigned at most once; final encodes that rule.",
+      "distractor_explanations": {
+        "B": "That is an access-modifier concern, not final.",
+        "C": "final applies to many types.",
+        "D": "Custom Metadata is a different constant strategy."
+      },
+      "concept": "constants",
+      "citation_ids": ["SF-APEX-CONSTANTS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Why is Decimal usually preferred over Double for money in Apex?",
+      "options": {
+        "A": "Decimal is an arbitrary-precision number; currency fields use Decimal",
+        "B": "Double cannot store a decimal point",
+        "C": "Decimal is the only type that can be final",
+        "D": "Double is not an Apex primitive"
+      },
+      "answer": "A",
+      "rationale": "The primitives guide describes Decimal as arbitrary precision and notes currency fields are Decimal.",
+      "distractor_explanations": {
+        "B": "Double includes a decimal point; it is a 64-bit floating type.",
+        "C": "final is independent of type.",
+        "D": "Double is listed as a primitive."
+      },
+      "concept": "data types",
+      "citation_ids": ["SF-APEX-PRIMITIVES"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A method declares Integer total = 1; then inside if (true) { Integer total = 2; }. What happens?",
+      "options": {
+        "A": "Compile error: inner block cannot redefine a parent-block name",
+        "B": "Inner total shadows outer total, as in some JavaScript",
+        "C": "Both compile; Apex is case-sensitive so they differ",
+        "D": "Runtime exception only"
+      },
+      "answer": "A",
+      "rationale": "Variable scope: sub-blocks cannot redefine a name already used in a parent block.",
+      "distractor_explanations": {
+        "B": "Apex does not allow that shadowing pattern.",
+        "C": "Apex names are case-insensitive; this is still the same name.",
+        "D": "This fails at compile time."
+      },
+      "concept": "scope",
+      "citation_ids": ["SF-APEX-VARIABLES"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is an Apex expression?",
+      "options": {
+        "A": "A construct of variables, operators, and method invocations that evaluates to a single value",
+        "B": "Any line that ends with a semicolon",
+        "C": "Only a SOQL query",
+        "D": "A Flow formula"
+      },
+      "answer": "A",
+      "rationale": "The Expressions page defines an expression as evaluating to a single value from those parts.",
+      "distractor_explanations": {
+        "B": "if and class declarations are statements, not all expressions.",
+        "C": "Inline SOQL can be an expression, but it is not the only kind.",
+        "D": "Flow formulas are a different language."
+      },
+      "concept": "expressions",
+      "citation_ids": ["SF-APEX-EXPR"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "According to the primitives guide, which values can a Boolean variable hold?",
+      "options": {
+        "A": "true, false, or null",
+        "B": "Only true or false",
+        "C": "1 and 0",
+        "D": "Yes and No picklist values"
+      },
+      "answer": "A",
+      "rationale": "Boolean can be assigned true, false, or null.",
+      "distractor_explanations": {
+        "B": "Unassigned Boolean is null.",
+        "C": "Those are Integer values.",
+        "D": "Picklists are not the Boolean primitive."
+      },
+      "concept": "Boolean null",
+      "citation_ids": ["SF-APEX-PRIMITIVES"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "In a mixed expression with * and +, which operator binds first per the precedence table?",
+      "options": {
+        "A": "Multiplication * before addition +",
+        "B": "Left-to-right with + first because it appears first in the source",
+        "C": "Assignment = before *",
+        "D": "Ternary ?: before *"
+      },
+      "answer": "A",
+      "rationale": "Precedence lists * / above + -. Assignment and ternary are much later.",
+      "distractor_explanations": {
+        "B": "Precedence, not source order, decides * versus +.",
+        "C": "Assignment is near the bottom of the table.",
+        "D": "Ternary is below logical operators, far below *."
+      },
+      "concept": "operators",
+      "citation_ids": ["SF-APEX-PRECEDENCE"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A reviewer sees public static Integer TAX = 8; used as a tax rate. What should you recommend first?",
+      "options": {
+        "A": "static final Decimal (or Integer) constant assigned once",
+        "B": "A formula field on Account",
+        "C": "A JavaScript const in an LWC",
+        "D": "Leave it; static already means constant"
+      },
+      "answer": "A",
+      "rationale": "Apex constants use final and are assigned at most once. static alone is not immutability.",
+      "distractor_explanations": {
+        "B": "A formula is not an Apex class constant.",
+        "C": "LWC const is a different language and runtime.",
+        "D": "static is lifetime/sharing of the field, not final."
+      },
+      "concept": "constants",
+      "citation_ids": ["SF-APEX-CONSTANTS"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Foundation",
+      "prompt": "You assign a String literal to an Integer variable. What should you expect?",
+      "options": {
+        "A": "A compile-time type error",
+        "B": "Apex coerces the String like JavaScript",
+        "C": "The Integer becomes null",
+        "D": "A runtime governor exception"
+      },
+      "answer": "A",
+      "rationale": "Type checking is strictly enforced at compile time.",
+      "distractor_explanations": {
+        "B": "Apex is strongly typed, not JS coercion.",
+        "C": "The assignment does not compile.",
+        "D": "Governors are not the type checker."
+      },
+      "concept": "data types",
+      "citation_ids": ["SF-APEX-DT-VARS"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How does Apex variable scope differ from casually shadowing a let in an inner JavaScript block?",
+      "options": {
+        "A": "Apex inner blocks cannot redefine a parent-block variable name",
+        "B": "Apex has no blocks",
+        "C": "Apex variables are global to the org",
+        "D": "Apex requires var"
+      },
+      "answer": "A",
+      "rationale": "The Variables guide forbids redefining a parent-block name in a sub-block.",
+      "distractor_explanations": {
+        "B": "Apex uses curly-brace blocks.",
+        "C": "Scope is the block, not the org.",
+        "D": "Apex uses typed declarations, not var."
+      },
+      "concept": "scope",
+      "citation_ids": ["SF-APEX-VARIABLES"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Which statement best contrasts a variable with a final constant?",
+      "options": {
+        "A": "A variable may be reassigned; a final constant is assigned at most once",
+        "B": "Constants have no data type",
+        "C": "Variables cannot be Integer",
+        "D": "Constants are only allowed in triggers"
+      },
+      "answer": "A",
+      "rationale": "That is the Constants guide distinction.",
+      "distractor_explanations": {
+        "B": "Constants are typed variables.",
+        "C": "Integer is a common variable type.",
+        "D": "Class constants are typical."
+      },
+      "concept": "variables vs constants",
+      "citation_ids": ["SF-APEX-CONSTANTS", "SF-APEX-VARIABLES"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Boolean ready; is later used as if (ready). What is the programming-foundations issue?",
+      "options": {
+        "A": "ready is null, so the condition is not a clean true/false unless you assigned it",
+        "B": "if cannot use Boolean in Apex",
+        "C": "Boolean must be final",
+        "D": "ready defaults to true"
+      },
+      "answer": "A",
+      "rationale": "Unassigned Boolean is null. Relying on if (ready) without initialization is a null trap.",
+      "distractor_explanations": {
+        "B": "if uses Boolean conditions.",
+        "C": "Boolean locals need not be final.",
+        "D": "Default is null, not true."
+      },
+      "concept": "Boolean null",
+      "citation_ids": ["SF-APEX-PRIMITIVES"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "What is the default value of an unassigned Apex variable?",
+      "back": "null, including Integer and Boolean—not 0 or false."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "What does final mean on an Apex constant?",
+      "back": "The variable can be assigned at most once, in the declaration or a static initializer."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "Name four Apex primitive data types besides Integer.",
+      "back": "Examples: Boolean, String, Decimal, Id, Date, Datetime, Long, Double, Blob, Time."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "What is an Apex expression?",
+      "back": "Variables, operators, and method calls that evaluate to a single value."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "When does a local variable enter and leave scope?",
+      "back": "From its declaration to the end of that block; inner blocks cannot reuse the parent name."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "Integer vs Decimal for a tax amount?",
+      "back": "Use Decimal (arbitrary precision / currency-like). Integer is a 32-bit whole number."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "When should a rate be static final?",
+      "back": "When it must not change after initialization—Apex constants are assigned at most once."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Can an inner if-block declare Integer i if the method already has Integer i?",
+      "back": "No. Sub-blocks cannot redefine a parent-block variable name."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "Why not treat Apex like JavaScript for types?",
+      "back": "Apex type-checks at compile time; a String will not silently become an Integer."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "* versus + in 1 + 2 * 3: which operator first?",
+      "back": "Multiplication binds before addition per the operator precedence table."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "Are Apex variable names case-sensitive?",
+      "back": "No. Names are case-insensitive; Qty and qty are the same identifier."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Should secrets live in Apex constants?",
+      "back": "No. Do not store secrets or session IDs in code constants or debug output."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "Does this lesson set governor limits?",
+      "back": "No. Types and scope are not a governor catalog; that is a later Apex topic."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Integer qty; if (qty > 0) — what should you check first?",
+      "back": "qty is null until assigned; compare only after initialization or a null check."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Compile error: variable already defined. Likely cause?",
+      "back": "An inner block redeclared a name from the parent method scope."
+    },
+    {
+      "id": "F16",
+      "category": "terminology",
+      "front": "Boolean can be true, false, or what third value?",
+      "back": "null. Unassigned Boolean is null, not false."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain Apex variables, constants, data types, operators, expressions, and scope in one minute.",
+      "answer_30_seconds": "Apex is strongly typed. Variables start null. final constants assign once. Expressions evaluate to one value using operators. Scope is the declaring block.",
+      "answer_2_minutes": "I declare a data type first because compile-time checking rejects a String in an Integer. Unassigned Integer and Boolean are null, not 0 or false. I use static final for rates that must not change. I write expressions from variables and operators and I read precedence instead of guessing. Inner blocks cannot redeclare an outer name. Collections and sObjects wait for later lessons.",
+      "example": "Integer qty; is null; static final Decimal TAX = 0.08; cannot be reassigned; qty * price + 1 uses * before +.",
+      "tradeoffs": [
+        "Decimal scale vs Integer simplicity",
+        "Named constants vs magic numbers"
+      ],
+      "follow_ups": [
+        "What is Boolean's default?",
+        "Can inner blocks shadow?"
+      ],
+      "weak_answer_warnings": [
+        "Saying Apex is like JavaScript types",
+        "Claiming Integer defaults to 0"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why do interviewers care that uninitialized Apex variables are null?",
+      "answer_30_seconds": "Integer and Boolean start null, so comparisons and if (flag) do not mean 0 or false. That mismatch causes null bugs.",
+      "answer_2_minutes": "The primitives guide says all variables initialize to null. Candidates who come from Java primitives or from JavaScript falsy rules guess wrong. I initialize before arithmetic, or I null-check. I never tell a panel that Boolean defaults to false. I also distinguish null from empty String and from zero.",
+      "example": "Boolean ready; if (ready) is not a safe 'false until set' pattern because ready is null.",
+      "tradeoffs": [
+        "Verbose null checks vs guaranteed initialization"
+      ],
+      "follow_ups": [
+        "What about class member variables?",
+        "How is empty String different?"
+      ],
+      "weak_answer_warnings": [
+        "Confusing null with 0"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Design types for quantity, unit price, and a tax rate that must not change.",
+      "answer_30_seconds": "Integer quantity, Decimal price, static final Decimal tax. Initialize quantity before multiplying.",
+      "answer_2_minutes": "Quantity is a whole count so Integer (or Long if range needs it). Money uses Decimal because the guide calls out arbitrary precision and currency. The tax rate is a constant: final, assigned once. I would not use Double for money. I would not store tax in a public static Integer that tests mutate. Scope stays in the method except for the class-level final.",
+      "example": "LAB_QuoteMath with static final Decimal LAB_TAX = 0.08 and Decimal line totals.",
+      "tradeoffs": [
+        "Integer overflow vs Long",
+        "Hard-coded final vs Custom Metadata"
+      ],
+      "follow_ups": [
+        "When would you use Custom Metadata instead?",
+        "Why not Double?"
+      ],
+      "weak_answer_warnings": [
+        "Using String for money"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A junior redeclares Integer total inside an if, matching the method's total. What do you say in review?",
+      "answer_30_seconds": "Apex scope forbids redefining a parent-block name. Rename the inner variable or reuse the outer one.",
+      "answer_2_minutes": "I cite the Variables guide: scope starts at declaration; sub-blocks cannot reuse the parent name; parallel blocks may. This is not JavaScript let-shadowing. I would also check they did not expect case sensitivity (Total vs total). Then I ask whether they meant a new concept—if so, pick a new name like discountedTotal.",
+      "example": "Method Integer total = 0; if (qty > 10) { Integer total = 1; } fails to compile.",
+      "tradeoffs": [
+        "Reuse outer variable vs a clearly named inner result"
+      ],
+      "follow_ups": [
+        "What about two sibling if-blocks both declaring Integer i?",
+        "Are names case-sensitive?"
+      ],
+      "weak_answer_warnings": [
+        "Calling it a runtime exception"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Compile error: illegal assignment from String to Integer. Walk the diagnosis.",
+      "answer_30_seconds": "Apex type-checks at compile time. I find the String source and convert with a documented method or change the variable's data type.",
+      "answer_2_minutes": "I do not expect JavaScript coercion. I check quotes: Apex strings use single quotes. I check whether the right-hand side is an expression that actually returns String. If the business value is numeric text, I parse explicitly. If it should never have been String, I fix the declaration. I do not call this a governor limit.",
+      "example": "Integer n = '5'; fails; Integer n = 5; or Integer.valueOf('5') depending on the documented conversion you intend.",
+      "tradeoffs": [
+        "Change the type vs parse the String"
+      ],
+      "follow_ups": [
+        "What about Decimal.valueOf?",
+        "Are conversions in scope for this lesson?"
+      ],
+      "weak_answer_warnings": [
+        "Saying Apex will coerce it at runtime"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A constant TAX_RATE cannot be updated in a test. Is that a bug?",
+      "answer_30_seconds": "If it is final, assigning twice is forbidden. Tests should not mutate constants; use a parameter or metadata for values that must vary.",
+      "answer_2_minutes": "I confirm the declaration is static final. The Constants guide says assign at most once. If the business rate must change per org, final in code is the wrong tool—Custom Metadata is a different topic. If it must be fixed for the algorithm, the test should not reassign it. I separate 'cannot change in a test' from 'wrong access modifier'.",
+      "example": "static final Decimal LAB_TAX = 0.08; LAB_TAX = 0.09; does not compile.",
+      "tradeoffs": [
+        "Code constant vs configurable metadata"
+      ],
+      "follow_ups": [
+        "Static initializer assignment still allowed?",
+        "When is Custom Metadata better?"
+      ],
+      "weak_answer_warnings": [
+        "Calling final a Salesforce edition limit"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you avoid stuffing extra meaning into a String instead of a real data type?",
+      "answer_30_seconds": "When the value is a count, money, Boolean, or Id. A typed variable catches mistakes at compile time.",
+      "answer_2_minutes": "String is tempting because it holds anything. Interviewers want types: Integer for counts, Decimal for money, Id for record identifiers, Boolean for flags. Expressions then use operators that match the type. I mention that Id 15-character values are converted to 18. I do not use String concatenation as a substitute for Decimal arithmetic. Collections of mixed untyped values wait for later lessons.",
+      "example": "Id labAccountId versus String that happens to look like an Id and fails later in a query bind.",
+      "tradeoffs": [
+        "Compile-time safety vs flexible String payloads"
+      ],
+      "follow_ups": [
+        "When is String the right type?",
+        "What is the Id primitive rule for 15 vs 18?"
+      ],
+      "weak_answer_warnings": [
+        "Everything as String because JSON is text"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach variables versus constants versus scope without a generic catalog metaphor.",
+      "answer_30_seconds": "Use the mise-en-place station: refillable bowls, sealed stock jars, and which counter owns the bowl. Empty bowls are null.",
+      "answer_2_minutes": "A variable is a prep bowl you can refill. A final constant is a sealed jar filled once. The data type is the bowl size. Operators are utensils; an expression is one finished sauce. Scope is station ownership from the moment you set the bowl down. The analogy breaks because Apex names are case-insensitive, sObject assignment is by reference, and bowls in a kitchen do not default to mysteriously empty the way null works. I then write two lines of Apex to prove it.",
+      "example": "Show Integer i; System.assertEquals(null, i); and a final Decimal that cannot be reassigned.",
+      "tradeoffs": [
+        "Analogy speed vs showing real Apex"
+      ],
+      "follow_ups": [
+        "Where does the analogy break?",
+        "What is parallel-block reuse?"
+      ],
+      "weak_answer_warnings": [
+        "Falling back to a generic catalog metaphor"
+      ]
+    }
+  ]
+}

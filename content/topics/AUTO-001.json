@@ -1,0 +1,1040 @@
+{
+  "topic_id": "AUTO-001",
+  "slug": "automation-selection-formulas-validation-approvals-flow",
+  "title": "Automation selection: formulas, validation, approvals, Flow, and Apex",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-010"
+  ],
+  "objectives": [
+    "Choose formula, validation rule, approval process, Flow, or Apex from the business outcome rather than from habit.",
+    "Explain why a validation rule only blocks invalid saves and is not a substitute for field updates, related-record work, or human routing.",
+    "Contrast Flow with Apex, including when official guidance points to invocable Apex, Batch Apex, or CPU-intensive Apex as complementary tools.",
+    "Distinguish Flow Approval Processes from Classic Approval Processes using official Help wording, not folklore."
+  ],
+  "diagnostic_question": "A discount on Opportunity must be calculated, blocked if it exceeds policy, routed to a manager when it is large, and otherwise create a related Task. Before reading, which of formula, validation, approval, Flow, or Apex owns each piece, and what evidence would make you refuse a validation rule?",
+  "definition": "Automation selection is the choice among formula expressions, validation rules that block a save, approval processes that route a human decision, Flow Builder automations, and Apex as a complementary programmatic tool. Salesforce Help starts from the business challenge, asks whether Flow Builder can perform the task, and lists complementary tools such as Flow Approval Processes, Flow Orchestration, Batch Apex, and Apex for CPU-intensive work. ([Which automation tool](https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm); [Define Validation Rules](https://help.salesforce.com/s/articleView?id=sf.fields_defining_field_validation_rules.htm); [Classic Approval Processes](https://help.salesforce.com/s/articleView?id=platform.approvals_creating_approval_processes.htm))",
+  "why_it_matters": "Interviewers fail candidates who automate a blocked-save rule with Flow, or who write Apex for a same-record calculation a formula field already covers. The wrong tool also creates duplicate automation, untestable approvals, and save-order surprises. Naming formula versus validation versus approval versus Flow versus Apex is the first automation design skill.",
+  "sixty_second_explanation": "Treat the org like a restaurant kitchen. A formula is the recipe card that always shows the current calorie count—it never sends the plate back. A validation rule is the health inspector: if the expression is True, the plate cannot leave. An approval is the executive chef's signature on a special. Flow is the posted station card the line cooks follow. Apex is a custom-built appliance when no station card exists—Help cites CPU-intensive work and Batch Apex when scheduled Flow cannot cover the volume.",
+  "deeper_explanation": [
+    "Help's 'Get Started Automating a Business Task with a Flow' tells you to identify the challenge, then see whether Flow Builder can solve it: work with records, communicate or collect input, submit a record for approval, run another flow, reach external systems, call an invocable Apex action, or send outbound messages. Trigger choice (record-triggered, screen, autolaunched, schedule-triggered, platform event) is how the flow starts, not a substitute for formula or validation. ([Which automation tool](https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm))",
+    "A validation rule verifies that entered data meets your standards before the user can save. Its formula returns True or False; when True, the value is invalid and an error message displays. That is why 'why not a validation rule' is an interview staple: validation cannot create a Task, email a manager, or compute a display-only total. It only refuses the save. ([Define Validation Rules](https://help.salesforce.com/s/articleView?id=sf.fields_defining_field_validation_rules.htm))",
+    "Formula language is shared. Help's formula operators topic states that functions are available in formula fields, validation rules, approval processes, and (legacy) workflow rules unless otherwise specified. A formula field calculates a value; a validation formula decides whether the save is illegal. Do not collapse those two uses. ([Formula Operators and Functions](https://help.salesforce.com/s/articleView?id=sf.customize_functions.htm))",
+    "Classic Approval Processes are created with the standard wizard and are still documented for Enterprise, Performance, Unlimited, and Developer editions. Salesforce Help now flags Flow Approval Processes as a modern alternative: a flow-based interface, record-change triggers, Apex extensibility, detailed logging, and dynamic routing based on data and business rules. Classic processes are tied to a specific object with more limited condition support. Help states that neither Flow Approval Processes nor Classic consume automation credits or orchestration runs. ([Prepare Classic Approvals](https://help.salesforce.com/s/articleView?id=platform.approvals_prep_org.htm); [Create a Classic Approval Process](https://help.salesforce.com/s/articleView?id=platform.approvals_creating_approval_processes.htm))",
+    "Apex remains complementary, not the default. Help lists Batch Apex when you must operate on more records than scheduled-triggered flows allow (its example is updating 600,000 contacts) and Apex for CPU-intensive operations such as a highly complex discount. Flow can call a custom invocable Apex method. The Apex Developer Guide still defines Apex as a strongly typed server language for transaction control—use it when Flow cannot meet the need safely. ([Which automation tool](https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm); [Apex Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm))"
+  ],
+  "mental_model": {
+    "analogy": "A restaurant kitchen brigade: formula is the always-visible recipe card, validation is the inspector who rejects the plate, approval is the chef's signature on a special, Flow is the posted station card, Apex is a custom-built appliance.",
+    "useful_mapping": [
+      "formula field → recipe card that computes a value without blocking service",
+      "validation rule → inspector: True means the save is illegal",
+      "approval process → chef must sign before the special leaves the pass",
+      "Flow → sequenced station card (declarative automation)",
+      "invocable Apex inside Flow → a specialist appliance the station card can switch on",
+      "Batch Apex / CPU-heavy Apex → volume or compute the station card cannot cover",
+      "Flow Approval Processes → modern pass-the-special routing; Classic → older object-tied routing"
+    ],
+    "where_it_breaks": [
+      "A kitchen has one pass; Salesforce save order stacks validation, before-save Flow, after-save Flow, and Apex triggers (APEX-009 / AUTO-003).",
+      "Flow can submit a record for approval; approval is not only a separate product.",
+      "Edition, licenses, and API version change which complementary tools exist; Help's 600,000-contact Batch Apex figure is an example, not your org's limit.",
+      "The analogy does not encode governor limits or Flow Orchestration credit rules beyond Help's statement that Flow Approval Processes do not consume automation credits or orchestration runs."
+    ]
+  },
+  "teach_back_prompt": "Without using a drawer or catalog metaphor, walk a teammate through formula versus validation versus approval versus Flow versus Apex for a discount, then say when you would pick Flow Approval Processes instead of Classic.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: validation True means invalid save; formula computes; approval routes a person; Flow automates; Apex is complementary."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given five signals (block save, calculate, manager sign-off, related Task, 600k-row job), pick the tool."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain Flow Approval Processes versus Classic using Help's routing and trigger differences."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Answer 'Flow vs Apex' and 'why not a validation rule' without notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: kitchen-brigade mapping plus one place the analogy breaks."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-WHICH-TOOL",
+      "title": "Get Started Automating a Business Task with a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm",
+      "supports": "Flow capabilities, trigger types, complementary tools including Flow Approval Processes, Flow Orchestration, Batch Apex, and Apex for CPU-intensive work.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Complementary-tool examples (including the 600,000-contact Batch Apex illustration) are Help examples, not org-specific limits."
+    },
+    {
+      "source_id": "SF-HELP-VALIDATION",
+      "title": "Define Validation Rules",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.fields_defining_field_validation_rules.htm",
+      "supports": "Validation rules evaluate a formula to True/False before save and show an error when True (invalid).",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every validation consideration; review Validation Rule Considerations in Help before designing a rule."
+    },
+    {
+      "source_id": "SF-HELP-CLASSIC-APPROVAL",
+      "title": "Create a Classic Approval Process with the Standard Wizard",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.approvals_creating_approval_processes.htm",
+      "supports": "Classic Approval Processes are created with the standard wizard under Automate Your Business Processes with Salesforce Flow.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Wizard clicks and edition gates can change; confirm in the target org."
+    },
+    {
+      "source_id": "SF-HELP-FLOW-VS-CLASSIC-APPROVAL",
+      "title": "Prepare Your Org for Classic Approval Processes",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.approvals_prep_org.htm",
+      "supports": "Flow Approval Processes as a modern alternative to Classic: record-change trigger, Apex extensibility, logging, dynamic routing; Classic is object-tied; neither consumes automation credits or orchestration runs.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Availability of Flow Approval Processes is edition- and release-sensitive; confirm in the org before promising a migration."
+    },
+    {
+      "source_id": "SF-HELP-FORMULA-FUNCTIONS",
+      "title": "Formula Operators and Functions by Context",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.customize_functions.htm",
+      "supports": "The same formula operators and functions are used in formula fields, validation rules, and approval processes unless a function is documented as context-specific.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Some functions are context-specific (Help calls out VLOOKUP as validation-only)."
+    },
+    {
+      "source_id": "SF-APEX-DEVGUIDE",
+      "title": "Apex Developer Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm",
+      "supports": "Apex is a strongly typed, object-oriented language that runs on the Salesforce Platform server with transaction control and API calls.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace Help's complementary-tool table; governor numbers belong to APEX-007."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Formula computes",
+        "Validation blocks save",
+        "Approval routes a person",
+        "Flow automates",
+        "Apex complementary",
+        "Flow vs Classic approvals"
+      ],
+      "accessible_description": "Portrait map from formula and validation through approval, Flow, and complementary Apex, with Flow Approval Processes versus Classic called out."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-WHICH-TOOL",
+        "SF-HELP-VALIDATION",
+        "SF-HELP-FLOW-VS-CLASSIC-APPROVAL",
+        "SF-APEX-DEVGUIDE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Which automation tool owns this outcome?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Outcome[Business outcome] --> Formula[Formula field: compute a value]\n  Outcome --> Valid[Validation rule: block invalid save]\n  Outcome --> Appr[Approval: human routing]\n  Outcome --> Flow[Flow Builder: records, screens, submit approval, invocable Apex]\n  Outcome --> Apex[Apex complementary: CPU-heavy or Batch Apex volume]\n  Appr --> FAP[Flow Approval Processes]\n  Appr --> Classic[Classic Approval Processes]",
+      "decision": "flowchart TD\n  Need[Need automation?] --> Q1{Must the save be refused?}\n  Q1 -->|Yes, data is illegal| VR[Validation rule]\n  Q1 -->|No, just compute| Q2{Is it a calculated value with no side effects?}\n  Q2 -->|Yes| FF[Formula field]\n  Q2 -->|No| Q3{Does a person need to approve?}\n  Q3 -->|Yes| AP[Flow Approval Processes; Classic only if already in place]\n  Q3 -->|No| Q4{Can Flow Builder do the task?}\n  Q4 -->|Yes| FL[Record, screen, autolaunched, or scheduled Flow]\n  Q4 -->|CPU-heavy or beyond scheduled Flow volume| AX[Apex or Batch Apex]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "After identifying a business challenge, Salesforce Help asks whether Flow Builder can perform the task (records, communication, submit for approval, subflows, external systems, invocable Apex, outbound messages) and which trigger starts the automation.",
+      "source_ids": ["SF-HELP-WHICH-TOOL"],
+      "scope": "Flow-first selection",
+      "validation": "Get Started Automating a Business Task with a Flow.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "A validation rule evaluates a formula to True or False before save and displays an error when True because the value is invalid.",
+      "source_ids": ["SF-HELP-VALIDATION"],
+      "scope": "Validation rules",
+      "validation": "Define Validation Rules.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Formula operators and functions are used in formula fields, validation rules, and approval processes unless Help marks a function as context-specific.",
+      "source_ids": ["SF-HELP-FORMULA-FUNCTIONS"],
+      "scope": "Shared formula language",
+      "validation": "Formula Operators and Functions by Context.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Help presents Flow Approval Processes as a modern alternative to Classic Approval Processes: flow-based UI, record-change triggers, Apex extensibility, logging, dynamic routing; Classic is object-tied with more limited condition support. Neither consumes automation credits or orchestration runs.",
+      "source_ids": ["SF-HELP-FLOW-VS-CLASSIC-APPROVAL", "SF-HELP-CLASSIC-APPROVAL"],
+      "scope": "Approvals",
+      "validation": "Prepare Your Org for Classic Approval Processes and Create a Classic Approval Process.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Help lists complementary tools: Flow Approval Processes for multi-level approvals, Flow Orchestration to coordinate flows across teams, Batch Apex when more records than scheduled-triggered flows allow, and Apex for CPU-intensive operations. Apex is a strongly typed server language.",
+      "source_ids": ["SF-HELP-WHICH-TOOL", "SF-APEX-DEVGUIDE"],
+      "scope": "Flow vs Apex",
+      "validation": "Complementary Automation Tools table and Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Help now foregrounds Flow Approval Processes as a modern alternative to Classic. Process Builder support and updates were scheduled to end 31 December 2025; for new automations Help says create flows in Flow Builder. Reverify Flow Approval Process availability in the target org.",
+  "unresolved_uncertainty": [
+    "Exact edition, license, and permission gates for Flow Approval Processes versus Classic in a given org are Needs verification—confirm Setup availability before a migration interview answer.",
+    "Numeric scheduled-flow batch caps vary; Help's 600,000-contact Batch Apex example is illustrative, not a universal limit."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Validation rule",
+      "telugu": "సేవ్ కాకముందు డేటా తప్పు అయితే ఆపే నియమం."
+    },
+    {
+      "english": "Flow versus Apex",
+      "telugu": "ముందు Flow; Flow చేయలేనప్పుడు Apex లేదా Batch Apex."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I pick the tool from the outcome. A formula computes. A validation rule blocks an invalid save when its formula is True. An approval routes a person. Flow is the default automation. Apex is complementary for CPU-heavy work or Batch Apex volume scheduled Flow cannot cover.",
+    "two_minutes": "I start from Help: can Flow Builder do it—records, screens, submit for approval, invocable Apex? If I only need a calculated value, that is a formula field, not Flow. If the save must be refused, that is a validation rule, not a Flow field update. Multi-level human routing is Flow Approval Processes unless Classic is already the org standard. I reach for Apex when Help's complementary table applies: CPU-intensive logic or more records than scheduled-triggered Flow allows. I never treat Apex public/global visibility as this lesson."
+  },
+  "terminology": [
+    {
+      "term": "formula",
+      "plain": "An expression that calculates a value from fields and functions.",
+      "precise": "The same operator and function language is used in formula fields, validation rules, and approval processes unless Help marks a function as context-specific.",
+      "example": "A LAB_ Opportunity formula field that shows Discount_Percent__c from Amount and a custom cost field.",
+      "non_example": "A Flow Assignment that writes a number into a variable is not a formula field.",
+      "confusable_neighbor": "Validation rule: uses formula language to return True when the save is illegal, not to display a value.",
+      "boundary": "This lesson chooses when to use a formula; formula compile size belongs to later configuration topics."
+    },
+    {
+      "term": "validation rule",
+      "plain": "A save-time check that refuses the record when its formula is True.",
+      "precise": "Validation rules verify entered data against your standards before the user can save. The formula returns True or False; True means invalid and an error message displays.",
+      "example": "Block save of a LAB_ Opportunity when Discount_Percent__c is greater than 40.",
+      "non_example": "Creating a follow-up Task after a large discount is not a validation rule.",
+      "confusable_neighbor": "Flow Custom Error in a record-triggered flow: later AUTO topics; still not a substitute for understanding validation True = invalid.",
+      "boundary": "Validation Rule Considerations and every object-specific exception are out of scope; read Help before designing."
+    },
+    {
+      "term": "approval process",
+      "plain": "A configured path that asks a person to approve or reject a record.",
+      "precise": "Classic Approval Processes are created with the standard wizard. Flow Approval Processes are Help's modern alternative: flow-based, can trigger on record changes, support Apex extensibility and dynamic routing.",
+      "example": "Manager must approve a LAB_ PTO request or a discount above 20 percent.",
+      "non_example": "A validation error on Amount is not an approval.",
+      "confusable_neighbor": "Flow Orchestration: coordinates multiple flows and teams, not the same as an approval process.",
+      "boundary": "Step-by-step wizard clicks and email-approval setup are neighboring Help articles."
+    },
+    {
+      "term": "Flow",
+      "plain": "Declarative automation built in Flow Builder.",
+      "precise": "Help's starting automation product: work with records, communicate, submit for approval, run another flow, call invocable Apex, and start from record, screen, autolaunched, schedule, or platform-event triggers.",
+      "example": "After a LAB_ Contact is created, a record-triggered Flow sends a welcome email.",
+      "non_example": "A formula field that concatenates FirstName and LastName is not a Flow.",
+      "confusable_neighbor": "Apex: complementary code when Flow cannot meet CPU or volume needs.",
+      "boundary": "Flow types, before-save versus after-save, and elements are AUTO-002 through AUTO-006."
+    },
+    {
+      "term": "Apex",
+      "plain": "Salesforce's server-side programming language used when Flow is not enough.",
+      "precise": "A strongly typed, object-oriented language on the platform server. Help lists it for CPU-intensive operations and Batch Apex when scheduled-triggered Flow cannot cover the record volume; Flow can call invocable Apex.",
+      "example": "Batch Apex to update more LAB_ Contact rows than a scheduled Flow can process in one design.",
+      "non_example": "A before-save Flow field update on the same Opportunity is not a reason to write Apex.",
+      "confusable_neighbor": "Invocable Apex: a Flow action, not a replacement for choosing Flow first.",
+      "boundary": "Syntax, governors, and async job types are APEX topics."
+    },
+    {
+      "term": "Flow Approval Processes",
+      "plain": "The newer, flow-based way to route records for human approval.",
+      "precise": "Help describes them as a modern alternative to Classic: flexible flow UI, record-change triggers, Apex extensibility, logging, dynamic routing based on data and business rules. They do not consume automation credits or orchestration runs.",
+      "example": "Route a LAB_ employee PTO request through two management levels with data-driven routing.",
+      "non_example": "A validation rule that blocks a blank Reason field is not an approval process.",
+      "confusable_neighbor": "Classic Approval Processes: object-tied, more limited condition support.",
+      "boundary": "Org availability is Needs verification before promising a cutover."
+    },
+    {
+      "term": "Classic Approval Processes",
+      "plain": "The older wizard-built approval product tied to one object.",
+      "precise": "Created with the standard wizard. Help contrasts them with Flow Approval Processes: Classic is tied to specific objects and offers limited support for processes by using conditions.",
+      "example": "An existing Opportunity discount Classic process the org has not migrated.",
+      "non_example": "A screen Flow that collects a discount reason is not Classic approvals.",
+      "confusable_neighbor": "Flow Approval Processes: preferred modern alternative per Help.",
+      "boundary": "Page-layout Submit for Approval setup is in Prepare Your Org for Classic Approval Processes."
+    },
+    {
+      "term": "complementary automation tool",
+      "plain": "A product Help lists when Flow Builder is not the whole solution.",
+      "precise": "Help's complementary table includes Flow Approval Processes, Einstein Next Best Action, Flow Orchestration, Batch Apex, and Apex for CPU-intensive work.",
+      "example": "Choose Batch Apex when scheduled-triggered Flow cannot process the required record volume.",
+      "non_example": "Replacing a formula field with Apex because 'code is cleaner' is not a complementary-tool reason.",
+      "confusable_neighbor": "Trigger type inside Flow (record vs schedule) is still Flow, not a complementary product.",
+      "boundary": "Orchestration run credits and NBA setup are later topics."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name the outcome, not the tool",
+      "actor": "Admin + developer",
+      "trigger": "A request to 'automate this'",
+      "before": "Someone already said Flow or Apex",
+      "after": "Written outcome: compute, block save, route a person, or change records",
+      "observe": "One sentence that does not name a product",
+      "failure": "Starting in Flow Builder before the outcome is named"
+    },
+    {
+      "step": 2,
+      "transition": "Test formula and validation first",
+      "actor": "Admin",
+      "trigger": "Outcome is a value or a refused save",
+      "before": "Unclear whether data must be blocked",
+      "after": "Formula field for compute; validation rule if True must mean invalid",
+      "observe": "Sandbox save of a LAB_ record succeeds or shows the error message",
+      "failure": "Using Flow to display a calculation a formula field already covers"
+    },
+    {
+      "step": 3,
+      "transition": "Choose approval versus Flow versus Apex",
+      "actor": "Admin + developer",
+      "trigger": "Outcome needs routing or record work",
+      "before": "Human decision and automation mixed",
+      "after": "Flow Approval Processes or Classic for people; Flow Builder for automation; Apex only if Help's complementary cases apply",
+      "observe": "Written reason Flow cannot meet CPU or volume needs, if Apex is chosen",
+      "failure": "Apex for a welcome email a record-triggered Flow can send"
+    },
+    {
+      "step": 4,
+      "transition": "Keep metadata and data apart",
+      "actor": "Admin",
+      "trigger": "Ready to build",
+      "before": "Rule, Flow, and sample records mixed in conversation",
+      "after": "Deploy formula, validation, approval, or Flow as metadata; test with LAB_ records as data",
+      "observe": "Change set or retrieve of the rule/Flow versus a Data Loader row count",
+      "failure": "Treating a saved Opportunity as the automation definition"
+    }
+  ],
+  "when_to_use": [
+    "Use a formula field when you need a calculated value on the record and no save should be blocked by that calculation.",
+    "Use a validation rule when illegal data must be refused before save, because its formula returns True for invalid values.",
+    "Use a Flow Approval Process (or an existing Classic approval) when a person must approve or reject, not when a formula or validation can decide alone.",
+    "Use Flow Builder when the task is record work, a screen, submitting for approval, or calling invocable Apex, matching Help's Flow capability list.",
+    "Use Apex or Batch Apex only as Help's complementary tools: CPU-intensive operations, or more records than scheduled-triggered Flow allows."
+  ],
+  "when_not_to_use": [
+    "Do not use a validation rule to create related records, send email, or stamp a field—validation only blocks an invalid save.",
+    "Do not use a formula field as a substitute for an approval process when a manager must decide.",
+    "Do not use Flow to replace a simple formula calculation or a True/False validation that already enforces the standard.",
+    "Do not use Apex as the default when Flow Builder can work with records, screens, or invocable actions.",
+    "Do not use Classic Approval Processes for a greenfield design if Flow Approval Processes are available; Help calls Flow the modern alternative."
+  ],
+  "configuration_or_code_location": [
+    "Object manager → Validation Rules; Object manager → Fields for formula fields.",
+    "Setup → Approval Processes (Classic) and the Flow Approval Processes entry in the Automation app—confirm which is present in the org.",
+    "Setup → Flows / Automation app → Flow Builder.",
+    "Setup → Apex Classes only after a written reason Flow cannot meet the need."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox product team wants LAB_ Opportunity discounts handled without production data: show the discount percent, refuse saves above 40 percent, send large discounts to a manager, and create a follow-up Task when a discount is approved.",
+    "inputs": [
+      "LAB_ Opportunity with Amount and Discount_Percent__c",
+      "Policy: display percent, block above 40, manager approval above 20, Task after approval",
+      "No production aliases"
+    ],
+    "decisions": [
+      {
+        "decision": "Use a formula field for the displayed discount percent if it can be calculated from existing fields.",
+        "because": "A formula computes a value; it does not block save and does not route a person.",
+        "rejected": "Apex to calculate a simple percent"
+      },
+      {
+        "decision": "Use a validation rule that is True when Discount_Percent__c > 40.",
+        "because": "Help defines validation as refusing the save when the formula is True (invalid).",
+        "rejected": "An after-save Flow that tries to 'undo' the discount"
+      },
+      {
+        "decision": "Use a Flow Approval Process for manager routing above 20 percent if available; otherwise Classic.",
+        "because": "Help positions Flow Approval Processes as the modern alternative with dynamic routing; a validation rule cannot collect a human decision.",
+        "rejected": "A validation rule that tells the user to email their manager"
+      },
+      {
+        "decision": "Use Flow to create the follow-up Task; Apex only if the work becomes CPU-heavy or batch volume exceeds scheduled Flow.",
+        "because": "Help lists working with records as a Flow task and Apex as complementary.",
+        "rejected": "A trigger on every Opportunity update for the Task"
+      }
+    ],
+    "configuration_or_code": [
+      "Formula field LAB_Discount_Display__c using formula functions on Amount and cost fields.",
+      "Validation rule LAB_Discount_Cap with error when Discount_Percent__c > 40.",
+      "Flow Approval Process or Classic process for > 20 percent—Needs verification of which product is enabled.",
+      "Record-triggered or autolaunched Flow to Create Records for the Task after approval."
+    ],
+    "output": "Illegal discounts cannot save; legal large discounts wait on a person; Tasks are created by Flow, not by validation.",
+    "verification": [
+      "Save a LAB_ Opportunity at 45 percent discount and confirm the validation error appears.",
+      "Save at 25 percent and confirm an approval request is created, not a validation error.",
+      "After approval, confirm one LAB_ Task exists and no Apex class was required."
+    ],
+    "self_explanation": "I split compute, block, route, and record-create. Validation never created the Task. Apex stayed unused because Flow could work with records."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable Developer sandbox or scratch org; synthetic LAB_ fields and records only.",
+    "starting_state_checks": [
+      "You can create custom fields, validation rules, and flows.",
+      "No production Opportunity data is required."
+    ],
+    "steps": [
+      "Create a LAB_ percent or currency formula field on Opportunity or a LAB_ custom object.",
+      "Create a validation rule that is True for an illegal value and test the error on save.",
+      "In Setup, locate Classic Approval Processes and check whether Flow Approval Processes appear; write one sentence of difference from Help.",
+      "Sketch (do not need to activate) a Flow that would Create Records for a Task instead of using the validation rule for that work."
+    ],
+    "guided_completion": [
+      "If the validation rule updates a field, it is mis-designed; validation only errors.",
+      "If you opened Apex first, stop and write why Flow cannot do the Task create."
+    ],
+    "independent_challenge": "Add a second validation that should NOT exist—write why a formula or Flow owns that requirement instead.",
+    "evidence": [
+      "Screenshot of the validation error on a LAB_ record save.",
+      "Written sentence: Flow Approval Processes versus Classic from Help."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate the validation rule and delete LAB_ fields from the sandbox.",
+      "Do not deploy these rules to production."
+    ],
+    "limitations": "This lab does not migrate Classic approvals or prove Batch Apex volume."
+  },
+  "decision_table": [
+    {
+      "signal": "Users must see a calculated number and still be allowed to save.",
+      "choose": "A formula field using formula functions.",
+      "not": "A validation rule or an Apex trigger that only computes the same number.",
+      "why": "Formula fields calculate; validation True means invalid and blocks save."
+    },
+    {
+      "signal": "A discount above policy must never be stored.",
+      "choose": "A validation rule whose formula is True for the illegal discount.",
+      "not": "A Flow that updates the discount after save, or an approval that hopes the manager notices.",
+      "why": "Validation verifies data before the user can save."
+    },
+    {
+      "signal": "Two managers must review employee PTO before it is official.",
+      "choose": "Flow Approval Processes when available; Classic if that is the org's existing process.",
+      "not": "A validation rule that says 'ask your manager', or Flow Orchestration unless you are coordinating many flows and teams.",
+      "why": "Help lists multi-level approval as Flow Approval Processes and contrasts Classic as object-tied."
+    },
+    {
+      "signal": "After a Contact is created, send a welcome email and maybe create a Task.",
+      "choose": "A record-triggered Flow, which Help lists for communication and working with records.",
+      "not": "A validation rule (nothing is invalid) or Apex as the first tool.",
+      "why": "Help's Flow capability table covers communicate/notify and record work."
+    },
+    {
+      "signal": "You must update more contacts than scheduled-triggered Flow can handle, or compute a highly complex discount.",
+      "choose": "Batch Apex for the volume case, or Apex for CPU-intensive work, optionally invoked from Flow.",
+      "not": "A formula field, a validation rule, or another scheduled Flow you already know will not cover the volume.",
+      "why": "Help's complementary table names Batch Apex and Apex for those jobs."
+    }
+  ],
+  "limitations": [
+    "Does not teach before-save versus after-save (AUTO-003) or Flow element design (AUTO-006).",
+    "Does not enumerate governor limits or Batch Apex syntax.",
+    "Flow Approval Process availability is org- and release-specific.",
+    "Process Builder is out of scope for new work; Help says create new automations in Flow Builder."
+  ],
+  "security_notes": [
+    "Validation and formula run in the save path; they are not a substitute for CRUD, FLS, or sharing.",
+    "Approvals expose record data to approvers; confirm who can see the record.",
+    "Never log real customer discounts or PII in lab examples."
+  ],
+  "common_mistakes": [
+    "Using a validation rule to update fields or create Tasks.",
+    "Writing Apex for a same-record calculation a formula or before-save Flow can do.",
+    "Treating Flow Approval Processes and Classic as identical.",
+    "Using Flow Orchestration when the need is a single approval chain.",
+    "Saying Apex is 'always faster' than Flow without a CPU or volume reason."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Users are blocked on save but the business wanted a Task created.",
+      "check": [
+        "A validation rule is True; it will never create records.",
+        "Move record creation to Flow; keep validation only for illegal data."
+      ],
+      "do_not_assume": "The validation error message can do the Task work."
+    },
+    {
+      "symptom": "A simple percent is implemented in Apex and fails reviews.",
+      "check": [
+        "Whether a formula field already computes it.",
+        "Whether Help's complementary Apex reasons (CPU, Batch volume) apply."
+      ],
+      "do_not_assume": "Apex is required because a developer is on the team."
+    },
+    {
+      "symptom": "Approvers never see the request.",
+      "check": [
+        "Classic versus Flow Approval Process configuration and page-layout submit controls.",
+        "Whether you used a validation rule instead of an approval."
+      ],
+      "do_not_assume": "Email deliverability is the only cause."
+    }
+  ],
+  "production_notes": [
+    "Inventory existing Classic Approval Processes before adding Flow Approval Processes on the same object.",
+    "Document why Apex was chosen using Help's complementary reasons.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "According to Define Validation Rules, when does a validation rule display its error message?",
+      "options": {
+        "A": "When its formula returns True, meaning the value is invalid, before the user can save",
+        "B": "When its formula returns False, meaning the value is valid",
+        "C": "Only after a Flow has created a related record",
+        "D": "Only when Apex throws an unhandled exception"
+      },
+      "answer": "A",
+      "rationale": "Help states the formula returns True or False and the error displays when True due to an invalid value.",
+      "distractor_explanations": {
+        "B": "True is invalid, not False.",
+        "C": "Validation runs before save; it does not create records.",
+        "D": "Apex exceptions are a different mechanism."
+      },
+      "concept": "Validation True = invalid",
+      "citation_ids": ["SF-HELP-VALIDATION"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where does Help say the same formula functions are available, unless otherwise specified?",
+      "options": {
+        "A": "Formula fields, validation rules, and approval processes",
+        "B": "Only inside Apex classes",
+        "C": "Only in Lightning web components",
+        "D": "Only in Batch Apex"
+      },
+      "answer": "A",
+      "rationale": "Formula Operators and Functions by Context lists formula fields, validation rules, approval processes, and workflow rules unless otherwise specified.",
+      "distractor_explanations": {
+        "B": "Apex is a different language.",
+        "C": "LWC is client-side.",
+        "D": "Batch Apex is complementary code, not formula context."
+      },
+      "concept": "Shared formula language",
+      "citation_ids": ["SF-HELP-FORMULA-FUNCTIONS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A stakeholder wants a welcome email when a Contact is created. Which tool matches Help's Flow capability list?",
+      "options": {
+        "A": "A record-triggered Flow that communicates or notifies",
+        "B": "A validation rule on Email",
+        "C": "A formula field on Account",
+        "D": "Classic Approval Processes on Contact"
+      },
+      "answer": "A",
+      "rationale": "Help lists communicate/notify (including email) as a Flow task and record-created as a record-triggered start.",
+      "distractor_explanations": {
+        "B": "Validation blocks invalid saves; it does not send email.",
+        "C": "A formula computes a value; it does not send email.",
+        "D": "Approvals route a human decision, not a welcome email."
+      },
+      "concept": "Flow for communication",
+      "citation_ids": ["SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why is a validation rule the wrong tool to create a follow-up Task?",
+      "options": {
+        "A": "Validation only verifies data before save and errors when True; it does not work with records the way Flow does",
+        "B": "Validation rules can only run in Classic",
+        "C": "Tasks can only be created by Apex",
+        "D": "Validation rules cannot contain formulas"
+      },
+      "answer": "A",
+      "rationale": "Define Validation Rules limits the tool to verifying data before save. Help lists working with records as a Flow task.",
+      "distractor_explanations": {
+        "B": "Validation is available in Lightning Experience and Classic.",
+        "C": "Flow can create records.",
+        "D": "Validation rules are formula-based."
+      },
+      "concept": "Why not a validation rule",
+      "citation_ids": ["SF-HELP-VALIDATION", "SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Help describes Flow Approval Processes as a modern alternative to Classic. Which contrast is documented?",
+      "options": {
+        "A": "Flow Approval Processes can trigger on record changes and support dynamic routing; Classic is tied to specific objects with more limited condition support",
+        "B": "Classic never sends email",
+        "C": "Flow Approval Processes consume orchestration runs; Classic does not",
+        "D": "Classic can only approve Leads"
+      },
+      "answer": "A",
+      "rationale": "Prepare Your Org for Classic Approval Processes states those differences and that neither consumes automation credits or orchestration runs.",
+      "distractor_explanations": {
+        "B": "Classic has email approval options in neighboring Help.",
+        "C": "Help says neither consumes those credits/runs.",
+        "D": "Classic is not Lead-only."
+      },
+      "concept": "Flow vs Classic approvals",
+      "citation_ids": ["SF-HELP-FLOW-VS-CLASSIC-APPROVAL"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When does Help tell you to use Batch Apex as a complementary tool?",
+      "options": {
+        "A": "When you must operate on more records than scheduled-triggered flows allow",
+        "B": "Whenever a formula field exists on the object",
+        "C": "Instead of every record-triggered Flow",
+        "D": "To replace validation rules"
+      },
+      "answer": "A",
+      "rationale": "The complementary table uses updating more records than scheduled-triggered flows allow (Help's example: 600,000 contacts).",
+      "distractor_explanations": {
+        "B": "Formula fields are not a Batch Apex signal.",
+        "C": "Flow remains the default for ordinary record work.",
+        "D": "Validation is a different tool."
+      },
+      "concept": "Batch Apex complementary",
+      "citation_ids": ["SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When does Help tell you to use Apex for a CPU reason?",
+      "options": {
+        "A": "To perform CPU-intensive operations, such as a highly complex discount rate",
+        "B": "To display a simple formula percent",
+        "C": "To block an invalid save",
+        "D": "To collect a screen of user input"
+      },
+      "answer": "A",
+      "rationale": "Complementary Automation Tools lists Apex for CPU-intensive operations with a complex discount example.",
+      "distractor_explanations": {
+        "B": "That is a formula field.",
+        "C": "That is a validation rule.",
+        "D": "That is a screen Flow."
+      },
+      "concept": "Apex CPU-intensive",
+      "citation_ids": ["SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Flow needs a custom action no declarative element provides. What does Help list?",
+      "options": {
+        "A": "Call a custom invocable Apex method that uses the InvocableMethod annotation",
+        "B": "Convert the whole Flow into a validation rule",
+        "C": "Replace the Flow with a formula field",
+        "D": "Always rewrite as Batch Apex"
+      },
+      "answer": "A",
+      "rationale": "Help's Flow capability table includes calling a custom invocable action implemented in Apex.",
+      "distractor_explanations": {
+        "B": "Validation cannot implement custom actions.",
+        "C": "Formula fields calculate values.",
+        "D": "Batch Apex is a volume tool, not the default for one invocable action."
+      },
+      "concept": "Invocable Apex from Flow",
+      "citation_ids": ["SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "HR, Finance, and a hiring team must each run different automations in a hiring process. Which complementary tool does Help name?",
+      "options": {
+        "A": "Flow Orchestration",
+        "B": "A single validation rule on Position",
+        "C": "A formula field on Application",
+        "D": "Classic Approval Processes only"
+      },
+      "answer": "A",
+      "rationale": "Help lists coordinating multiple flows and assigning them to multiple teams as Flow Orchestration, with a hiring-process example.",
+      "distractor_explanations": {
+        "B": "Validation blocks saves; it does not coordinate teams.",
+        "C": "A formula computes a value.",
+        "D": "Approvals route records; orchestration coordinates flows and teams."
+      },
+      "concept": "Flow Orchestration",
+      "citation_ids": ["SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement matches the Apex Developer Guide in this selection lesson?",
+      "options": {
+        "A": "Apex is a strongly typed, object-oriented language that runs on the Salesforce Platform server",
+        "B": "Apex runs only in the browser next to LWC",
+        "C": "Apex replaces formula fields in every org",
+        "D": "Apex cannot be called from Flow"
+      },
+      "answer": "A",
+      "rationale": "The Developer Guide defines Apex as strongly typed server code. Help still treats it as complementary to Flow.",
+      "distractor_explanations": {
+        "B": "Apex is server-side.",
+        "C": "Formula fields remain the compute tool.",
+        "D": "Help lists invocable Apex as a Flow task."
+      },
+      "concept": "What Apex is",
+      "citation_ids": ["SF-APEX-DEVGUIDE", "SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A greenfield org needs manager approval of discounts and has no Classic processes. What does Help recommend you try?",
+      "options": {
+        "A": "Flow Approval Processes, described as a modern alternative to Classic",
+        "B": "A validation rule that names the manager in the error text",
+        "C": "A formula field that displays 'Needs approval'",
+        "D": "Batch Apex on every Opportunity update"
+      },
+      "answer": "A",
+      "rationale": "Prepare Your Org for Classic Approval Processes opens by telling you to try Flow Approval Processes as the modern alternative.",
+      "distractor_explanations": {
+        "B": "Error text is not routing.",
+        "C": "A formula does not collect a decision.",
+        "D": "Batch Apex is a volume tool."
+      },
+      "concept": "Prefer Flow Approval Processes",
+      "citation_ids": ["SF-HELP-FLOW-VS-CLASSIC-APPROVAL"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which split keeps automation metadata separate from business data?",
+      "options": {
+        "A": "Deploy the validation rule and Flow as metadata; insert LAB_ Opportunity rows as data to test them",
+        "B": "Treat each Opportunity row as the definition of the validation rule",
+        "C": "Store Apex classes as Account records",
+        "D": "Use a formula field to deploy a Flow"
+      },
+      "answer": "A",
+      "rationale": "Rules, Flows, and classes are configuration metadata. Records used to test them are business data.",
+      "distractor_explanations": {
+        "B": "Records are instances, not the rule definition.",
+        "C": "Apex is metadata, not Account data.",
+        "D": "Formula fields do not deploy Flows."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-HELP-WHICH-TOOL"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What does a validation rule do before save?",
+      "back": "It evaluates a formula to True/False and shows an error when True, because the value is invalid."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "Formula field versus validation rule?",
+      "back": "A formula field computes a value. A validation rule uses formula language to refuse an invalid save."
+    },
+    {
+      "id": "F3",
+      "category": "selection",
+      "front": "Why not a validation rule to create a Task?",
+      "back": "Validation only blocks invalid data. Creating records is a Flow (or Apex) job."
+    },
+    {
+      "id": "F4",
+      "category": "selection",
+      "front": "Default automation product in Help's getting-started article?",
+      "back": "Flow Builder: records, communication, submit for approval, subflows, invocable Apex, external systems."
+    },
+    {
+      "id": "F5",
+      "category": "approvals",
+      "front": "Flow Approval Processes versus Classic, in Help's words?",
+      "back": "Flow: modern, record-change trigger, dynamic routing, Apex extensibility. Classic: object-tied, limited conditions."
+    },
+    {
+      "id": "F6",
+      "category": "approvals",
+      "front": "Do Flow Approval Processes consume automation credits or orchestration runs?",
+      "back": "Help says they do not, and neither do Classic Approval Processes."
+    },
+    {
+      "id": "F7",
+      "category": "apex",
+      "front": "When is Batch Apex the complementary tool?",
+      "back": "When you must process more records than scheduled-triggered Flow allows."
+    },
+    {
+      "id": "F8",
+      "category": "apex",
+      "front": "When is Apex listed for CPU reasons?",
+      "back": "CPU-intensive operations, such as a highly complex discount rate."
+    },
+    {
+      "id": "F9",
+      "category": "flow",
+      "front": "How does Flow call custom code?",
+      "back": "A custom invocable action: an Apex method with InvocableMethod."
+    },
+    {
+      "id": "F10",
+      "category": "orchestration",
+      "front": "Hiring process across HR, Finance, and hiring team?",
+      "back": "Flow Orchestration coordinates multiple flows and teams—not a validation rule."
+    },
+    {
+      "id": "F11",
+      "category": "formula",
+      "front": "Where is formula language reused?",
+      "back": "Formula fields, validation rules, and approval processes, unless a function is context-specific."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "Block discounts above 40 percent from ever saving?",
+      "back": "Validation rule True when the discount is illegal—not Flow, not approval."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Manager must accept or reject a 25 percent discount?",
+      "back": "Approval process (prefer Flow Approval Processes). Not a formula. Not validation."
+    },
+    {
+      "id": "F14",
+      "category": "boundary",
+      "front": "Is Apex the default for a welcome email?",
+      "back": "No. Help lists communicate/notify as a Flow task on a record-created trigger."
+    },
+    {
+      "id": "F15",
+      "category": "boundary",
+      "front": "Kitchen-brigade mapping in one line?",
+      "back": "Formula = recipe card, validation = inspector, approval = chef signature, Flow = station card, Apex = custom appliance."
+    },
+    {
+      "id": "F16",
+      "category": "apex",
+      "front": "What is Apex, for this selection lesson?",
+      "back": "A strongly typed server language. Use it when Flow cannot meet CPU or Batch volume needs."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk through formula versus validation versus approval versus Flow versus Apex.",
+      "answer_30_seconds": "A formula computes a value. A validation rule blocks an invalid save when True. An approval routes a person. Flow is the default automation. Apex is complementary for CPU-heavy work or Batch Apex volume.",
+      "answer_2_minutes": "I start from the outcome. If I only need a calculated number, I use a formula field—the same function language Help documents for validation and approvals, but the tool is different. If the record must never save, that is a validation rule. If a human must decide, that is an approval process. Everything else I try in Flow Builder first: records, screens, submit for approval, invocable Apex. I pick Apex when Help's complementary table applies, not because a developer is available.",
+      "example": "LAB_ Opportunity: formula shows percent, validation blocks >40, Flow Approval Process for >20, Flow creates the Task.",
+      "tradeoffs": [
+        "Declarative speed versus Apex flexibility",
+        "Blocking a save versus routing a person"
+      ],
+      "follow_ups": [
+        "Where does before-save Flow fit?",
+        "When would you still keep Classic approvals?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Apex the default",
+        "Using validation to create records"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Flow versus Apex: how do you choose?",
+      "answer_30_seconds": "I ask whether Flow Builder can do the task. If yes, I stay in Flow, including invocable Apex as an action. I use Apex or Batch Apex when the work is CPU-intensive or exceeds scheduled Flow volume.",
+      "answer_2_minutes": "Help's getting-started article is Flow-first: identify the challenge, see if Flow can work with records, communicate, submit for approval, or call invocable Apex. Complementary tools are explicit: Batch Apex for more records than scheduled-triggered Flow allows, Apex for CPU-intensive operations. I do not recite unofficial governor numbers here. I also do not write Apex to replace a formula field or a validation rule.",
+      "example": "Welcome email on Contact create = record-triggered Flow. Recalculating 600,000 contacts = Batch Apex per Help's example class of problem.",
+      "tradeoffs": [
+        "Admin-owned Flow versus developer-owned Apex",
+        "Invocable Apex inside Flow versus a full trigger"
+      ],
+      "follow_ups": [
+        "What annotation does invocable Apex use?",
+        "Who owns the class after you call it from Flow?"
+      ],
+      "weak_answer_warnings": [
+        "Apex for every field update",
+        "Ignoring Batch Apex as the volume tool"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Why not a validation rule for this requirement?",
+      "answer_30_seconds": "If the requirement is not 'refuse illegal data before save,' validation is the wrong tool. True means invalid. Validation will not email, create a Task, or collect a manager decision.",
+      "answer_2_minutes": "I quote Help: validation verifies data before the user can save and errors when the formula is True. Interviewers plant traps: 'show an error and create a Task,' or 'make the manager approve.' The error is validation; the Task is Flow; the manager is an approval process. I also distinguish a formula field that merely displays a number—users can still save.",
+      "example": "Discount > 40 must not save = validation. Discount > 20 needs a manager = approval. After approval, create a Task = Flow.",
+      "tradeoffs": [
+        "Hard block versus human override",
+        "Error message UX versus approval UX"
+      ],
+      "follow_ups": [
+        "Can a record-triggered Flow also show a custom error?",
+        "What if the illegal value arrives from Data Loader?"
+      ],
+      "weak_answer_warnings": [
+        "Using Flow to undo an illegal save after it committed"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Flow Approval Processes versus Classic Approval Processes?",
+      "answer_30_seconds": "Help calls Flow Approval Processes the modern alternative: flow UI, record-change triggers, dynamic routing, Apex extensibility, logging. Classic is tied to an object with more limited conditions. Neither consumes automation credits or orchestration runs.",
+      "answer_2_minutes": "I would not invent UI clicks. I would check which product the org has. For greenfield, I try Flow Approval Processes. I keep Classic if it is already the standard and migration is not in scope. I do not confuse this with Flow Orchestration, which coordinates multiple flows and teams. I also do not say approvals consume orchestration runs—Help says they do not.",
+      "example": "Two-level LAB_ PTO approval with data-driven routing → Flow Approval Processes. Existing Opportunity Classic process still in production → do not dual-run without a plan.",
+      "tradeoffs": [
+        "Migration cost versus modern routing",
+        "Object-tied Classic versus dynamic Flow routing"
+      ],
+      "follow_ups": [
+        "How do users submit in Classic?",
+        "Does the org actually have Flow Approval Processes enabled?"
+      ],
+      "weak_answer_warnings": [
+        "Treating the two products as identical",
+        "Claiming credit consumption Help contradicts"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "A teammate wants Apex because 'Flow will not scale.' What do you ask?",
+      "answer_30_seconds": "I ask whether the need is CPU-intensive logic or more records than scheduled-triggered Flow allows. Those are Help's complementary Apex reasons. 'Scale' alone is not a design.",
+      "answer_2_minutes": "I separate record-triggered Flow (ordinary CRM volume) from scheduled-triggered Flow batch size. Help's complementary table uses Batch Apex when scheduled Flow cannot cover the volume, and Apex for CPU-intensive work such as a complex discount. I still prefer Flow plus invocable Apex when only one step is code. I mark unofficial numeric limits as Needs verification rather than inventing them.",
+      "example": "Nightly update of a documented huge Contact set → Batch Apex. Same-record status stamp → not Apex.",
+      "tradeoffs": [
+        "Scheduled Flow versus Batch Apex",
+        "Invocable Apex versus a trigger framework"
+      ],
+      "follow_ups": [
+        "What is the actual record count?",
+        "Is the operation CPU-heavy or just a field update?"
+      ],
+      "weak_answer_warnings": [
+        "Quoting unofficial governor numbers as Help"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do you keep automation metadata separate from the records it touches?",
+      "answer_30_seconds": "Formula fields, validation rules, approval processes, Flows, and Apex classes are metadata you deploy. Opportunity rows used to test them are business data.",
+      "answer_2_minutes": "I retrieve or change-set the rule and the Flow. I load LAB_ records with Data Loader or create them in the UI. Deploying a validation rule does not insert Opportunities. This is the same split as DATA-001. Interviews fail people who call the Flow 'the data' or the records 'the automation.'",
+      "example": "sfdx retrieve of the validation rule versus 10 LAB_ Opportunity inserts in a sandbox.",
+      "tradeoffs": [
+        "Metadata deploy versus data migrate",
+        "Sandbox tests versus production data"
+      ],
+      "follow_ups": [
+        "What is a destructive change?",
+        "Where do Flow interviews appear at runtime?"
+      ],
+      "weak_answer_warnings": [
+        "Calling saved records the definition of the rule"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Users see a validation error but the story was 'notify the manager.' Walk the diagnosis.",
+      "answer_30_seconds": "Someone implemented a validation rule. Notification is communication—Help lists that as Flow. Manager decision is an approval process. I split the story into block versus notify versus route.",
+      "answer_2_minutes": "I reproduce the save. If the formula is True, the platform is correctly refusing invalid data. If the business never wanted a hard block, I deactivate the rule in sandbox and replace notify with Flow email or Custom Notification, and replace a human decision with Flow Approval Processes. I do not add Apex to 'fix' a tool-choice error.",
+      "example": "LAB_ Opportunity validation on Discount_Percent__c > 20 when the story was manager approval at 20.",
+      "tradeoffs": [
+        "Hard block versus approval override",
+        "Email notify versus approval work item"
+      ],
+      "follow_ups": [
+        "Does Data Loader hit the same validation?",
+        "Who owns the error message text?"
+      ],
+      "weak_answer_warnings": [
+        "Adding a Flow that runs after a blocked save"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Use the kitchen-brigade analogy, then state where it breaks.",
+      "answer_30_seconds": "Formula is the recipe card, validation the inspector, approval the chef's signature, Flow the station card, Apex a custom appliance. It breaks because Salesforce save order stacks several of these on one save, unlike one kitchen pass.",
+      "answer_2_minutes": "I map each tool, then I break the analogy on purpose: Flow can submit for approval, so the station card can call the chef. Before-save and after-save Flow are different stations (AUTO-003). Help's complementary Batch Apex is about volume, which a restaurant analogy does not encode. I never use a labeled-drawer or generic catalog story.",
+      "example": "One LAB_ Opportunity save can run validation, a before-save Flow, and later after-save Flow—three 'stations' on one plate.",
+      "tradeoffs": [
+        "Teaching analogy versus save-order precision",
+        "Flow-first versus Apex-first culture"
+      ],
+      "follow_ups": [
+        "Where does order of execution live in the handbook?",
+        "Where does Flow Orchestration sit in the analogy?"
+      ],
+      "weak_answer_warnings": [
+        "Stopping at the analogy without naming Help's complementary Apex cases"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1002 @@
+{
+  "topic_id": "DQM-007",
+  "slug": "migration-planning-mapping-rehearsal-reconciliation-and",
+  "title": "Migration planning, mapping, rehearsal, reconciliation, and rollback",
+  "track": "Data management and quality",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 35,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DQM-006"
+  ],
+  "objectives": [
+    "Plan a record migration as sequenced loads (parents before children) with External IDs, not as a single unmapped CSV.",
+    "Treat field mapping as the contract that decides which columns land; unmapped Wizard fields are not imported.",
+    "Rehearse in a sandbox whose data shape you understand; Developer sandboxes may copy little or no record data.",
+    "Reconcile with counts and success/error files, and describe rollback as restore/undelete/reverse load—not a platform Undo Migration button."
+  ],
+  "diagnostic_question": "You must move LAB_ Accounts and Contacts from a legacy org into a sandbox, then production. What belongs in the migration plan, the mapping sheet, the rehearsal, the reconciliation, and the rollback—and what would you refuse to do first in production?",
+  "definition": "A data migration is a planned movement of business records: you sequence objects, map source columns to Salesforce fields, rehearse in a sandbox, reconcile counts and errors, and know how you would roll back. The Data Import Wizard and Data Loader are mapping-and-load tools, not a one-click migrate. Sandboxes isolate rehearsal from production. Backup and Recycle Bin restore are the realistic rollback paths. ([Import Data with the Data Import Wizard](https://help.salesforce.com/s/articleView?id=sf.import_with_data_import_wizard.htm); [When to Use a Sandbox](https://help.salesforce.com/s/articleView?id=platform.deploy_sandboxes_intro.htm); [Best practices to back up Salesforce data](https://help.salesforce.com/s/articleView?id=000334121))",
+  "why_it_matters": "Unrehearsed production loads create duplicates, broken lookups, and no way home. Interviewers listen for parent-before-child, External ID upsert, mapping evidence, sandbox limits, and honest rollback (a copy, not folklore). Deploying metadata is not migrating records.",
+  "sixty_second_explanation": "Think of an orchestra's opening night. Planning is the program order—strings (Accounts) before chorus (Contacts). Mapping is the score: which chair plays which part; unmapped notes never sound. Rehearsal is the dress rehearsal in an empty hall (sandbox), knowing a small hall may have no audience chairs copied. Reconciliation is comparing the recording to the score and the error list. Rollback is canceling opening night and restoring the previous program from the archive—not a magic 'undo concert' switch on the building.",
+  "deeper_explanation": [
+    "Planning: list objects, volumes, owners, quality gates (DQM-004), identity keys (DQM-003), and load verbs (DQM-002). Sequence parents before children. SOAP create() guidance for parent-then-child in one call still requires the parent first in the array when using External IDs as foreign keys. Org-to-org moves are customer-owned loads, not a hidden Salesforce 'copy all records' button—confirm the current migrate-org knowledge article in the org's Help. Tool choice remains Wizard versus Data Loader versus API/ETL (DQM-001).",
+    "Mapping: Wizard Help starts with prepare your data, then map fields; unmapped fields are not imported. Data Loader drag-and-drop maps persist for CLI reuse. A mapping workbook is project metadata you keep in the ticket; it is not a Salesforce object. If a target field does not exist, that is a metadata deploy first (shape), then a data load (instances).",
+    "Rehearsal: sandboxes are isolated copies for development, testing, and training without compromising production. Developer and Developer Pro refreshes copy configuration and only a small sample of records—or none of the business records you expected. Do not rehearse a million-row migration only in a Developer sandbox and call it proven. Full/Partial copies are the rehearsal halls that can hold production-like volume when licensed. ([When to Use a Sandbox](https://help.salesforce.com/s/articleView?id=platform.deploy_sandboxes_intro.htm); [What Data Is Copied to a Developer sandbox](https://help.salesforce.com/s/articleView?id=000387141))",
+    "Reconciliation and rollback: success/error CSVs, wizard job metrics, and row-count plus spot-check queries are the evidence. Help: back up before a major data project; restore order preserves relationships. Recycle Bin/undelete restores deletes, not overwrites. SOAP AllOrNoneHeader can roll back one API call if any row fails—it is not a multi-day migration undo. There is no official 'rollback migration' product assumed here; you reverse with delete/undelete, upsert of the pre-image, or a backup product restore."
+  ],
+  "mental_model": {
+    "analogy": "An orchestra opening night: plan = program order, mapping = the score, rehearsal = dress rehearsal in a sandbox hall, reconciliation = recording versus score, rollback = restore the previous program from the archive—not a building-wide undo switch.",
+    "useful_mapping": [
+      "Migration plan → printed program (object order, volumes, owners)",
+      "External ID → each musician's union number that survives venue changes",
+      "Field mapping → the score (unmapped notes never play)",
+      "Sandbox rehearsal → dress rehearsal in an isolated hall",
+      "Developer sandbox → a tiny hall that may have no audience chairs (records)",
+      "Success/error CSV → the recording engineer's take sheet",
+      "Reconciliation → compare recording to score and attendance counts",
+      "Backup extract → archive of last night's performance",
+      "AllOrNoneHeader → stop this one take if any chair misses",
+      "Production load → opening night after the dress rehearsal passes"
+    ],
+    "where_it_breaks": [
+      "AllOrNoneHeader is one API call, not the whole season.",
+      "A Developer sandbox may not contain the 'audience' (records) you assumed.",
+      "Metadata deploy is rebuilding the hall, not seating the audience.",
+      "There is no official Undo Concert button on production."
+    ]
+  },
+  "teach_back_prompt": "Walk planning, mapping, rehearsal, reconciliation, and rollback for an Account-then-Contact migration. Name one place the orchestra analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "List the five words in the title and one official artifact for each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given Accounts and Contacts, write the load order, match key, and rollback for a bad Contact file."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain why a Developer sandbox rehearsal can lie about volume."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a reconciliation that uses error.csv plus a count query."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: no Undo Migration button; what you actually do."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-IMPORT-WIZARD",
+      "title": "Import Data with the Data Import Wizard",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.import_with_data_import_wizard.htm",
+      "supports": "Prepare data first; map fields; unmapped fields are not imported; add/update modes; job metrics.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Wizard object coverage is not a full migration bus."
+    },
+    {
+      "source_id": "SF-HELP-SANDBOX",
+      "title": "When to Use a Sandbox",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.deploy_sandboxes_intro.htm",
+      "supports": "Sandboxes isolate development, testing, and training from production data and apps.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Sandbox type storage and copy contents vary by license."
+    },
+    {
+      "source_id": "SF-HELP-DEV-SANDBOX-DATA",
+      "title": "What Data Is Copied to a Salesforce Developer or Developer Pro Sandbox When Refreshed",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=000387141",
+      "supports": "Developer/Developer Pro copy configuration; business records generally are not copied (aside from internal users and a possible small sample).",
+      "release_or_version": "Knowledge article",
+      "last_verified": "2026-08-16",
+      "limits": "Partial/Full copy contents are a different sandbox type."
+    },
+    {
+      "source_id": "SF-HELP-BACKUP-BP",
+      "title": "Best practices to back up Salesforce data",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=000334121",
+      "supports": "Point-in-time backup before major data projects; restore from a copy you have; restore order for relationships.",
+      "release_or_version": "Knowledge article",
+      "last_verified": "2026-08-16",
+      "limits": "Not a one-click migration rollback product."
+    },
+    {
+      "source_id": "SF-DEV-DATALOADER-OPS",
+      "title": "Data Loader Command-Line Operations and Exit Codes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/loader_operations.htm",
+      "supports": "insert/update/upsert/delete/extract as the rehearsal and rollback verbs; upsert on custom External ID.",
+      "release_or_version": "Data Loader Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "CLI is Windows-only as documented."
+    },
+    {
+      "source_id": "SF-DEV-SOAP-CALLS",
+      "title": "API Call Basics",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/calls.htm",
+      "supports": "AllOrNoneHeader can roll back all changes in a supported call unless every record succeeds (API 20.0+).",
+      "release_or_version": "SOAP API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Per-call rollback, not a multi-object migration undo."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Wizard, sandbox, and backup Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Plan object order",
+        "Map every column",
+        "Rehearse in the right sandbox",
+        "Reconcile counts and errors",
+        "Rollback from a copy",
+        "Metadata is not data"
+      ],
+      "accessible_description": "Portrait map of migration: plan, map, rehearse in sandbox, reconcile, rollback from backup or Recycle Bin—not a platform undo."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-IMPORT-WIZARD",
+        "SF-HELP-SANDBOX",
+        "SF-HELP-BACKUP-BP",
+        "SF-DEV-DATALOADER-OPS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Plan → map → rehearse → reconcile → load → rollback path"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Plan[Migration plan: objects volumes keys] --> Meta[Deploy missing fields first]\n  Meta --> Map[Field mapping workbook]\n  Map --> Reh[Sandbox rehearsal]\n  Reh --> Rec[Reconcile counts and error CSVs]\n  Rec -->|Fail| Fix[Fix map or data; rerun rehearsal]\n  Rec -->|Pass| Bak[Point-in-time backup of target]\n  Bak --> Prod[Production load parents then children]\n  Prod --> Rec2[Reconcile again]\n  Rec2 -->|Bad delete| Und[Recycle Bin undelete]\n  Rec2 -->|Bad overwrite| Rest[Restore from backup pre-image]",
+      "decision": "flowchart TD\n  Need[Need to move records?] --> Q1{Target fields exist?}\n  Q1 -->|No| Meta[Metadata deploy first]\n  Q1 -->|Yes| Q2{Have External IDs and parent-first order?}\n  Q2 -->|No| Plan[Stop and plan keys and sequence]\n  Q2 -->|Yes| Q3{Rehearsed in a sandbox that can hold the volume?}\n  Q3 -->|Developer only tiny data| WrongHall[Do not call it proven]\n  Q3 -->|Yes and reconciled| Q4{Production backup taken?}\n  Q4 -->|No| Bak[Export or backup first]\n  Q4 -->|Yes| Load[Load with upsert; keep error files]\n  Load --> Q5{Need to undo?}\n  Q5 -->|Deletes in bin| Und[undelete]\n  Q5 -->|Overwrites| Rest[Reload pre-image]\n  Q5 -->|One API call failed closed| AON[AllOrNoneHeader already rolled that call back]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Prepare data before import, then map fields. Unmapped Data Import Wizard fields are not imported.",
+      "source_ids": ["SF-HELP-IMPORT-WIZARD"],
+      "scope": "Mapping",
+      "validation": "Import Data with the Data Import Wizard.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Sandboxes are isolated environments for development, testing, and training so operations there do not affect production.",
+      "source_ids": ["SF-HELP-SANDBOX"],
+      "scope": "Rehearsal environment",
+      "validation": "When to Use a Sandbox.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Developer and Developer Pro sandbox create/refresh copy configuration (and internal users); they do not copy ordinary business records the way a full rehearsal may need.",
+      "source_ids": ["SF-HELP-DEV-SANDBOX-DATA"],
+      "scope": "Sandbox data shape",
+      "validation": "What Data Is Copied to a Developer or Developer Pro Sandbox.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Take a point-in-time backup before a major data project. Restore from a copy you have, in an order that preserves relationships.",
+      "source_ids": ["SF-HELP-BACKUP-BP"],
+      "scope": "Rollback inputs",
+      "validation": "Best practices to back up Salesforce data.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Data Loader upsert matches a custom External ID. AllOrNoneHeader can roll back a supported SOAP call unless all records succeed—it is not a multi-day migration undo.",
+      "source_ids": ["SF-DEV-DATALOADER-OPS", "SF-DEV-SOAP-CALLS"],
+      "scope": "Retry and per-call rollback",
+      "validation": "Data Loader upsert; SOAP API Call Basics AllOrNoneHeader.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "No Summer '26 migration-product change claimed. Reverify sandbox-type copy contents and any org-to-org migration knowledge article in live Help.",
+  "unresolved_uncertainty": [
+    "The Help article 'Migrate data from one organization to another' (000384648) should be re-read at interview time for current supported paths; this pack does not invent a Salesforce-hosted clone of all records.",
+    "Partial and Full sandbox record-copy details are license-specific—Needs verification for the rehearsal hall you actually have."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Rehearsal",
+      "telugu": "Production ki mundu sandbox lo migration ni try cheyadam."
+    },
+    {
+      "english": "Reconciliation",
+      "telugu": "Source counts, success files, target queries ni compare cheyadam."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I plan object order and External IDs, map every column, rehearse in a sandbox that can hold the volume, reconcile counts and error files, and roll back from a backup or the Recycle Bin. There is no Undo Migration button. Metadata deploy is not the data move.",
+    "two_minutes": "Plan: parents first, keys, verbs, quality gates. Mapping: Wizard unmapped columns never land; Loader maps are artifacts. Rehearsal: sandboxes isolate; Developer sandboxes often lack business records. Reconciliation: success/error CSVs plus queries, not a green bar. Rollback: AllOrNone is one call; deletes may undelete; overwrites need the pre-image. I refuse opening night without a dress rehearsal and a copy of the current production score."
+  },
+  "terminology": [
+    {
+      "term": "migration planning",
+      "plain": "The written order of objects, keys, volumes, owners, and quality gates before anyone loads.",
+      "precise": "A plan names source, target, match keys (External ID), load verb, parent-before-child sequence, rehearsal org, backup, and rollback. It is not a CSV dropped on production.",
+      "example": "LAB_ Account upsert, then Contact upsert with Account External ID as the parent key.",
+      "non_example": "A single combined CSV with mixed objects and no keys.",
+      "confusable_neighbor": "Metadata deployment plan: moving fields and validation, not rows.",
+      "boundary": "Change-set/DevOps topics own metadata promotion mechanics."
+    },
+    {
+      "term": "mapping",
+      "plain": "Which source column becomes which Salesforce field.",
+      "precise": "Wizard maps automatically where it can; you must map the rest or those columns never import. Data Loader stores drag-and-drop maps. Missing target fields are a metadata gap first.",
+      "example": "ERP Customer_No → LAB_ERP_Id__c (External ID).",
+      "non_example": "Hoping Name mapping replaces an External ID.",
+      "confusable_neighbor": "Matching rule field mapping (DQM-003): how twins compare, not how a CSV lands.",
+      "boundary": "Transformation beyond column rename is ETL (DQM-001)."
+    },
+    {
+      "term": "rehearsal",
+      "plain": "Running the real mapping and volumes in a sandbox before production.",
+      "precise": "Sandboxes isolate testing from production. Developer/Developer Pro may not contain the business records you need; do not call that a volume rehearsal.",
+      "example": "Upsert 10,000 LAB_ Accounts in a partial-copy sandbox with the production map.",
+      "non_example": "Inserting 5 rows in a Developer sandbox and declaring a 2-million-row job safe.",
+      "confusable_neighbor": "Apex test methods: they prove code, not a business-data migration.",
+      "boundary": "Data Mask may be required before using production-like PII in a sandbox."
+    },
+    {
+      "term": "reconciliation",
+      "plain": "Proving the target matches the plan: counts, samples, and error files.",
+      "precise": "Compare source counts to success CSV counts plus explained errors. Spot-check External IDs and parent lookups. Wizard Recent Import Jobs / Bulk Data Load Jobs are metrics, not the whole proof.",
+      "example": "12,040 source Accounts; 12,031 success; 9 errors documented as missing required fields.",
+      "non_example": "A green progress bar with no files kept.",
+      "confusable_neighbor": "Duplicate job (DQM-003): finds twins, does not prove load completeness.",
+      "boundary": "Financial-grade hash reconciliation is a project standard, not a Salesforce object."
+    },
+    {
+      "term": "rollback",
+      "plain": "How you put the target back if the load is wrong.",
+      "precise": "No assumed Undo Migration product. Paths: AllOrNoneHeader on one SOAP call; undelete if you deleted; reload the pre-image from a backup if you overwrote; stop further waves. Restore order still matters.",
+      "example": "Keep the pre-load Account extract; upsert it back if Status__c was wrecked.",
+      "non_example": "Expecting Salesforce Support to rewind the org with no copy.",
+      "confusable_neighbor": "AllOrNoneHeader: per-call, not multi-day.",
+      "boundary": "hard_delete makes Recycle Bin rollback impossible (DQM-002/005)."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Write the plan",
+      "actor": "Admin + integration owner",
+      "trigger": "A 'just load the file' request",
+      "before": "No object order or keys",
+      "after": "Objects, External IDs, verbs, volumes, rehearsal org, backup, rollback",
+      "observe": "A one-page plan in the ticket",
+      "failure": "Production insert of children first"
+    },
+    {
+      "step": 2,
+      "transition": "Deploy shape, then map",
+      "actor": "Admin",
+      "trigger": "Plan lists fields the target lacks",
+      "before": "Mapping to missing fields",
+      "after": "Metadata in place; mapping workbook complete; unmapped columns listed as intentional",
+      "observe": "Every must-land column has a target API name",
+      "failure": "Loading first and 'adding fields later'"
+    },
+    {
+      "step": 3,
+      "transition": "Rehearse and reconcile",
+      "actor": "Admin",
+      "trigger": "Maps saved",
+      "before": "Unknown error rate",
+      "after": "Sandbox job with success/error files and count queries",
+      "observe": "Error rate below the plan's gate; lookups resolve",
+      "failure": "Calling a Developer sandbox with no records a volume test"
+    },
+    {
+      "step": 4,
+      "transition": "Backup, load, watch rollback",
+      "actor": "Admin",
+      "trigger": "Rehearsal passed",
+      "before": "No pre-image of production",
+      "after": "Point-in-time copy, production upsert, reconciliation, freeze if gates fail",
+      "observe": "Pre-image stored; production success counts match rehearsal math",
+      "failure": "Opening night without an archive of last night's show"
+    }
+  ],
+  "when_to_use": [
+    "When you must plan a migration with object order, External IDs, and parent-before-child loads.",
+    "When field mapping is the interview topic, including Wizard unmapped columns never landing.",
+    "When rehearsal must happen in a sandbox, and you need to say why a Developer sandbox can lie about volume.",
+    "When reconciliation needs success/error files and count queries, not a green progress bar.",
+    "When rollback must be described as backup restore, undelete, or reverse upsert—not an Undo Migration button."
+  ],
+  "when_not_to_use": [
+    "Do not treat a metadata deploy (fields, validation, Flow) as the record migration itself.",
+    "Do not rehearse only in a Developer sandbox that copied no business records and call the volume proven.",
+    "Do not use AllOrNoneHeader as if it rolled back yesterday's entire multi-object load.",
+    "Do not skip mapping and planning because 'we will upsert on Name.'",
+    "Do not run the first full rehearsal in production."
+  ],
+  "configuration_or_code_location": [
+    "Mapping workbook plus Data Loader .sdl / Wizard mapping page.",
+    "Sandbox create/refresh; confirm type and what record data it holds.",
+    "Data Export or Loader extract of the target before production waves.",
+    "Success/error CSV folder and count queries on External IDs."
+  ],
+  "worked_example": {
+    "scenario": "Move 8,000 LAB_ Accounts and 20,000 LAB_ Contacts from a legacy CSV export into a new sandbox, then—only after gates pass—into a production-like full sandbox. No live customer production cutover in this lesson.",
+    "inputs": [
+      "Account CSV with ERP key",
+      "Contact CSV with Account ERP key and Contact ERP key",
+      "Target fields LAB_ERP_Id__c on both objects",
+      "Developer sandbox available plus a larger sandbox if licensed"
+    ],
+    "decisions": [
+      {
+        "decision": "Deploy External ID fields first; map ERP keys; upsert Accounts, then Contacts.",
+        "because": "Shape before instances; upsert retries; parents before children.",
+        "rejected": "One combined CSV insert in production"
+      },
+      {
+        "decision": "Rehearse in the larger sandbox if the Developer copy has no business-like volume.",
+        "because": "Developer/Developer Pro often lack ordinary records; isolation is not the same as volume proof.",
+        "rejected": "Five-row Developer insert as the only rehearsal"
+      },
+      {
+        "decision": "Reconcile with success CSVs plus COUNT of External IDs; keep a pre-load extract as rollback.",
+        "because": "Help: backup before major data work; unmapped columns and error rows must be explained.",
+        "rejected": "Trusting the progress bar"
+      }
+    ],
+    "configuration_or_code": [
+      "Create LAB_ERP_Id__c External ID Unique on Account and Contact.",
+      "Data Loader upsert Account, then Contact with Account keyed by External ID.",
+      "Save maps, success/error files, and COUNT queries in the ticket."
+    ],
+    "output": "Account success count matches source minus documented errors; every Contact has a parent; rollback file is the pre-rehearsal extract.",
+    "verification": [
+      "A Contact whose Account ERP key was missing appears only in error.csv.",
+      "Rerun upsert does not double row counts.",
+      "No production org was used as the first hall."
+    ],
+    "self_explanation": "Plan, map, rehearse, reconcile, keep a rollback copy. I did not invent an undo button."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ Accounts and Contacts only.",
+    "starting_state_checks": [
+      "You know whether this sandbox is Developer-like (few records) or has copied data.",
+      "No production credentials in Data Loader."
+    ],
+    "steps": [
+      "Write a five-line plan: objects, keys, order, rehearsal org, rollback.",
+      "Create External IDs, map a 10-row Account file and a Contact file, upsert parents then children.",
+      "Leave one column unmapped and confirm it did not land (Wizard or Loader).",
+      "Export the Accounts (pre-image), update a field, then upsert the pre-image back as a rollback drill."
+    ],
+    "guided_completion": [
+      "If Contacts loaded first and failed lookups, you skipped parent-first planning.",
+      "If row counts doubled, the operation was insert, not upsert."
+    ],
+    "independent_challenge": "Write why AllOrNoneHeader would not undo tomorrow's second object wave.",
+    "evidence": [
+      "Plan plus success/error files with LAB_ names.",
+      "Written Developer-sandbox limitation sentence."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ rows.",
+      "Remove Loader login to any production alias."
+    ],
+    "limitations": "This lab cannot prove a million-row cutover."
+  },
+  "decision_table": [
+    {
+      "signal": "Target fields or External IDs do not exist yet.",
+      "choose": "Metadata deploy first, then mapping, then load.",
+      "not": "Load now and 'add fields later' while columns vanish as unmapped.",
+      "why": "Mapping needs a target field. Wizard unmapped columns never import."
+    },
+    {
+      "signal": "Accounts and Contacts must move and be retry-safe.",
+      "choose": "Plan Account upsert on External ID, then Contact upsert with the Account External ID as parent.",
+      "not": "Insert both as one mixed file on Name.",
+      "why": "Parents before children; upsert matches a custom External ID."
+    },
+    {
+      "signal": "Only a Developer sandbox is available and it has almost no records.",
+      "choose": "Use it for mapping/validation rehearsal; do not claim volume sign-off.",
+      "not": "Call five successful rows a million-row dress rehearsal.",
+      "why": "Developer/Developer Pro typically do not copy ordinary business records."
+    },
+    {
+      "signal": "Rehearsal error rate is above the gate, or lookups are blank.",
+      "choose": "Fix mapping or source data and re-rehearse; do not go to production.",
+      "not": "Load production and 'clean in place.'",
+      "why": "Sandboxes exist so production is not the first hall."
+    },
+    {
+      "signal": "Production load went wrong.",
+      "choose": "Stop waves. Undelete if you deleted. Reload the pre-image if you overwrote. Use AllOrNone only as the already-finished per-call behavior.",
+      "not": "Assume an Undo Migration button or Support rewind with no copy.",
+      "why": "Help: you restore from a copy you have; the bin does not store old field values."
+    }
+  ],
+  "limitations": [
+    "Does not provide a licensed Salesforce Backup runbook.",
+    "Does not replace DevOps metadata pipelines.",
+    "Does not invent org-to-org clone semantics beyond current Help.",
+    "Volume proof requires a sandbox that actually holds volume."
+  ],
+  "security_notes": [
+    "Migration files are full customer extracts—encrypt and limit access.",
+    "Mask PII in sandboxes when policy requires (Data Mask is neighboring).",
+    "Never point Data Loader at production for the first rehearsal."
+  ],
+  "common_mistakes": [
+    "Children before parents.",
+    "Insert instead of upsert on retries.",
+    "Unmapped columns discovered after go-live.",
+    "Developer sandbox as the only rehearsal.",
+    "No pre-image, therefore no overwrite rollback."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Contacts loaded without Accounts.",
+      "check": [
+        "Load order.",
+        "Account External ID mapped on the Contact file.",
+        "Account upsert success count."
+      ],
+      "do_not_assume": "Salesforce will create parents automatically from a child CSV."
+    },
+    {
+      "symptom": "Row counts doubled after 'the same' migration wave.",
+      "check": [
+        "Operation was insert.",
+        "External ID not unique or not mapped."
+      ],
+      "do_not_assume": "Rehearsal proved retry safety if you used insert there too."
+    },
+    {
+      "symptom": "Rehearsal looked fine; production timed out.",
+      "check": [
+        "Sandbox type and row counts versus production LDV (DQM-006).",
+        "Whether automation and duplicate rules were active in both halls."
+      ],
+      "do_not_assume": "A Developer sandbox is a volume twin."
+    }
+  ],
+  "production_notes": [
+    "No production cutover is authorized by this lesson.",
+    "Keep maps, extracts, and error files with the change ticket.",
+    "Freeze inbound integrations during the production window when the plan says so."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What happens to Data Import Wizard columns you do not map?",
+      "options": {
+        "A": "They are not imported",
+        "B": "They always become External IDs",
+        "C": "They deploy Apex",
+        "D": "They hard-delete the object"
+      },
+      "answer": "A",
+      "rationale": "Help: unmapped fields are not imported.",
+      "distractor_explanations": {
+        "B": "External ID is a field attribute you create.",
+        "C": "Metadata is separate.",
+        "D": "Mapping is not delete."
+      },
+      "concept": "Unmapped columns",
+      "citation_ids": ["SF-HELP-IMPORT-WIZARD"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Why rehearse a migration in a sandbox?",
+      "options": {
+        "A": "Sandboxes isolate testing so operations do not affect production",
+        "B": "Sandboxes automatically undo production",
+        "C": "Sandboxes are the Recycle Bin",
+        "D": "Sandboxes replace External IDs"
+      },
+      "answer": "A",
+      "rationale": "When to Use a Sandbox: isolated development, testing, and training.",
+      "distractor_explanations": {
+        "B": "No such automatic undo.",
+        "C": "Different feature.",
+        "D": "Keys are field attributes."
+      },
+      "concept": "Sandbox isolation",
+      "citation_ids": ["SF-HELP-SANDBOX"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Developer / Developer Pro sandbox refresh and ordinary records?",
+      "options": {
+        "A": "They copy configuration; they generally do not copy ordinary business records",
+        "B": "They always copy every production row",
+        "C": "They copy only Recycle Bin rows",
+        "D": "They cannot copy users or metadata"
+      },
+      "answer": "A",
+      "rationale": "The knowledge article: configuration is copied; ordinary records are not (aside from internal users / possible small sample).",
+      "distractor_explanations": {
+        "B": "That is closer to a full copy, not Developer.",
+        "C": "False.",
+        "D": "They do copy configuration and internal users."
+      },
+      "concept": "Developer sandbox data",
+      "citation_ids": ["SF-HELP-DEV-SANDBOX-DATA"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Retry-safe Account migration key?",
+      "options": {
+        "A": "Upsert on a custom External ID",
+        "B": "Insert on Name every wave",
+        "C": "Hard delete between waves",
+        "D": "A matching rule as the Loader key"
+      },
+      "answer": "A",
+      "rationale": "Data Loader upsert matches a custom external ID so retries update instead of duplicate.",
+      "distractor_explanations": {
+        "B": "Duplicates.",
+        "C": "Destroys rollback options.",
+        "D": "Matching is not the upsert key."
+      },
+      "concept": "Upsert key in a plan",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "AllOrNoneHeader rolls back what?",
+      "options": {
+        "A": "The supported SOAP call if any record in that call fails (API 20.0+)",
+        "B": "An entire multi-week migration automatically",
+        "C": "All sandboxes",
+        "D": "All matching rules"
+      },
+      "answer": "A",
+      "rationale": "Call basics: AllOrNoneHeader rolls back all changes unless all records in that call succeed.",
+      "distractor_explanations": {
+        "B": "Not a season-wide undo.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Per-call rollback",
+      "citation_ids": ["SF-DEV-SOAP-CALLS"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Production overwrite went wrong. Recycle Bin is empty. What do you need?",
+      "options": {
+        "A": "The pre-load backup copy to restore in relationship order",
+        "B": "undelete() of the overwritten field values",
+        "C": "A page layout",
+        "D": "A new matching rule"
+      },
+      "answer": "A",
+      "rationale": "Overwrites are not deletes. Help: restore from a copy you have.",
+      "distractor_explanations": {
+        "B": "The bin never got the old values.",
+        "C": "Metadata.",
+        "D": "Identity, not restore."
+      },
+      "concept": "Overwrite rollback",
+      "citation_ids": ["SF-HELP-BACKUP-BP"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Contacts fail because AccountId is blank after load. First planning defect?",
+      "options": {
+        "A": "Children loaded without a parent key or before parents existed",
+        "B": "Too many validation rules on User",
+        "C": "File storage was full of Apex",
+        "D": "The Recycle Bin was empty"
+      },
+      "answer": "A",
+      "rationale": "Migration planning sequences parents first and maps the parent External ID.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Parent first",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS", "SF-HELP-IMPORT-WIZARD"]
+    },
+    {
+      "id": "Q8",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Metadata deploy versus data migration?",
+      "options": {
+        "A": "Deploying fields/validation is shape; Wizard/Loader rows are instances",
+        "B": "They are the same operation",
+        "C": "Deploying a class inserts Accounts",
+        "D": "Mapping is a permission set"
+      },
+      "answer": "A",
+      "rationale": "The handbook split: configuration versus business records. Mapping needs the shape first.",
+      "distractor_explanations": {
+        "B": "Different pipelines.",
+        "C": "False.",
+        "D": "Mapping is column-to-field."
+      },
+      "concept": "Shape vs instances",
+      "citation_ids": ["SF-HELP-IMPORT-WIZARD", "SF-HELP-SANDBOX"]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What is reconciliation evidence after a Data Loader wave?",
+      "options": {
+        "A": "Success and error CSVs plus target count/spot-check queries",
+        "B": "A green progress bar only",
+        "C": "Deleting the maps",
+        "D": "Turning off Storage Usage"
+      },
+      "answer": "A",
+      "rationale": "Loader's documented receipts are success/error files; counts prove completeness.",
+      "distractor_explanations": {
+        "B": "Not evidence.",
+        "C": "You need maps for the next wave.",
+        "D": "Storage is not reconciliation."
+      },
+      "concept": "Reconciliation artifacts",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS", "SF-HELP-IMPORT-WIZARD"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Wizard Help's first import step?",
+      "options": {
+        "A": "Prepare your data for import and create a CSV—doing this first prevents errors and duplication",
+        "B": "Hard-delete production",
+        "C": "Skip mapping",
+        "D": "Load children first"
+      },
+      "answer": "A",
+      "rationale": "The wizard topic opens with prepare-your-data as the first step.",
+      "distractor_explanations": {
+        "B": "Opposite of rehearsal.",
+        "C": "Mapping is required for columns to land.",
+        "D": "Planning says parents first."
+      },
+      "concept": "Prepare first",
+      "citation_ids": ["SF-HELP-IMPORT-WIZARD"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You deleted a bad migrated batch and it is still in the Recycle Bin. Rollback path?",
+      "options": {
+        "A": "undelete / Recycle Bin restore to keep original Ids",
+        "B": "Insert replacements and claim they are the same records",
+        "C": "AllOrNoneHeader yesterday's call again",
+        "D": "A matching rule"
+      },
+      "answer": "A",
+      "rationale": "Deletes can return via undelete while in the bin. Insert mints new Ids.",
+      "distractor_explanations": {
+        "B": "New Ids break lookups.",
+        "C": "AllOrNone already finished with that call.",
+        "D": "Not a restore tool."
+      },
+      "concept": "Delete rollback",
+      "citation_ids": ["SF-HELP-BACKUP-BP"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "When is a migration rehearsal not volume-proven?",
+      "options": {
+        "A": "When it ran only in a Developer sandbox that copied no ordinary business records",
+        "B": "When it used the same maps and similar row counts in a full-copy sandbox",
+        "C": "When error files were empty and counts matched",
+        "D": "When parents loaded before children"
+      },
+      "answer": "A",
+      "rationale": "Developer sandboxes typically lack the record volume; isolation ≠ scale proof.",
+      "distractor_explanations": {
+        "B": "That is a real rehearsal hall when licensed.",
+        "C": "That is reconciliation success.",
+        "D": "That is correct planning."
+      },
+      "concept": "Wrong rehearsal hall",
+      "citation_ids": ["SF-HELP-DEV-SANDBOX-DATA", "SF-HELP-SANDBOX"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "plan",
+      "front": "Name the five migration title words.",
+      "back": "Planning, mapping, rehearsal, reconciliation, and rollback."
+    },
+    {
+      "id": "F2",
+      "category": "map",
+      "front": "Unmapped Wizard columns?",
+      "back": "They are not imported. Prepare data, then map what must land."
+    },
+    {
+      "id": "F3",
+      "category": "plan",
+      "front": "Accounts and Contacts: load order?",
+      "back": "Accounts (parents) first, then Contacts with a parent External ID."
+    },
+    {
+      "id": "F4",
+      "category": "key",
+      "front": "Retry-safe load verb?",
+      "back": "Upsert on a custom External ID, not insert of the same file."
+    },
+    {
+      "id": "F5",
+      "category": "rehearse",
+      "front": "Why use a sandbox?",
+      "back": "Isolated testing and training that does not affect production."
+    },
+    {
+      "id": "F6",
+      "category": "rehearse",
+      "front": "Developer sandbox limitation for rehearsal?",
+      "back": "It copies configuration, not ordinary business records—bad as the only volume test."
+    },
+    {
+      "id": "F7",
+      "category": "reconcile",
+      "front": "Reconciliation artifacts?",
+      "back": "Success/error CSVs plus count and spot-check queries on External IDs and lookups."
+    },
+    {
+      "id": "F8",
+      "category": "rollback",
+      "front": "Is there an Undo Migration button?",
+      "back": "No. Use backup pre-image, undelete, or reverse upsert. AllOrNone is per call."
+    },
+    {
+      "id": "F9",
+      "category": "rollback",
+      "front": "Overwrite versus delete rollback?",
+      "back": "Overwrites need a pre-image copy. Deletes may still be in the Recycle Bin."
+    },
+    {
+      "id": "F10",
+      "category": "meta",
+      "front": "Missing target field. First move?",
+      "back": "Deploy the field (metadata), then map, then load."
+    },
+    {
+      "id": "F11",
+      "category": "prepare",
+      "front": "Wizard Help's first step?",
+      "back": "Prepare the CSV first to prevent errors and duplication."
+    },
+    {
+      "id": "F12",
+      "category": "aon",
+      "front": "AllOrNoneHeader scope?",
+      "back": "One supported SOAP call: all rows or none. Not a multi-day migration undo."
+    },
+    {
+      "id": "F13",
+      "category": "backup",
+      "front": "Before the production wave?",
+      "back": "Point-in-time backup of the target; restore order later if needed."
+    },
+    {
+      "id": "F14",
+      "category": "double",
+      "front": "Counts doubled after wave two?",
+      "back": "Likely insert without External ID upsert. Reconciliation should have caught it in rehearsal."
+    },
+    {
+      "id": "F15",
+      "category": "boundary",
+      "front": "Is deploying validation the migration?",
+      "back": "No. That is shape. Rows are a separate mapped load."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk a Salesforce data migration using planning, mapping, rehearsal, reconciliation, and rollback.",
+      "answer_30_seconds": "Plan object order and External IDs. Map every column. Rehearse in a sandbox that can hold the volume. Reconcile with files and queries. Roll back from a copy or the Recycle Bin—not an undo button.",
+      "answer_2_minutes": "I start with shape versus instances: deploy fields first. I sequence parents before children and choose upsert. I keep maps as artifacts. I refuse a Developer-only volume sign-off. I keep success/error CSVs. I take a pre-image before production. If we fail, I stop waves and pick undelete versus pre-image reload. I mention AllOrNone only as per-call.",
+      "example": "LAB_ Account then Contact upsert in a partial-copy sandbox, then a gated production-like hall.",
+      "tradeoffs": [
+        "Wizard vs Loader vs ETL",
+        "Speed vs gates"
+      ],
+      "follow_ups": [
+        "What if the field is missing?",
+        "What if error rate is 8%?"
+      ],
+      "weak_answer_warnings": [
+        "Skipping rehearsal"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What is field mapping in a migration, officially?",
+      "answer_30_seconds": "Matching source columns to Salesforce fields. The Wizard maps what it can; unmapped columns never import. Data Loader stores drag-and-drop maps. Transformation beyond rename is ETL.",
+      "answer_2_minutes": "I show a workbook: source header, target API name, type, requiredness, External ID flag. I list intentional unmapped columns. I refuse Name as the upsert key. If the target field is absent, I stop for metadata. I keep the map with the error files for reconciliation.",
+      "example": "Customer_No → LAB_ERP_Id__c; Notes column intentionally unmapped.",
+      "tradeoffs": [
+        "Auto-map vs human review",
+        "Rename vs true transform"
+      ],
+      "follow_ups": [
+        "Add-and-update versus update-existing side effects?",
+        "Who owns the workbook?"
+      ],
+      "weak_answer_warnings": [
+        "Hoping leftover columns appear anyway"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A team rehearsed 20 rows in a Developer sandbox and wants to load two million in production tomorrow. Your answer?",
+      "answer_30_seconds": "That rehearsal proved mapping, not volume. Developer sandboxes typically do not copy ordinary business records. I need a hall that can hold production-like volume, plus LDV and automation enabled like production.",
+      "answer_2_minutes": "I cite the Developer sandbox copy article. I ask about duplicate rules, validation, and ownership assignment in both orgs. I ask for Bulk API settings and a backup. I will not bless opening night. If they have no full/partial sandbox, I say the risk out loud and shrink the first production wave—I still want a pre-image.",
+      "example": "20 LAB_ Accounts succeeded; production has 2 million with active duplicate rules.",
+      "tradeoffs": [
+        "Delay vs risk",
+        "Wave 0 sample in production vs wait for a fuller sandbox"
+      ],
+      "follow_ups": [
+        "What does a full copy include?",
+        "Data Mask?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing 20 rows prove two million"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "How do you reconcile a finished Account upsert wave?",
+      "answer_30_seconds": "Source count equals success rows plus explained error rows. Spot-check External IDs and a few field values. Keep the files. A green bar is not reconciliation.",
+      "answer_2_minutes": "I query COUNT and a few Ids. I open error.csv and classify: required, validation, duplicate, mapping. I check we did not insert extras (count should not grow on a rerun). I sample parent lookups before I start children. I store artifacts in the ticket. If gates fail, I do not start the next object.",
+      "example": "12,040 source; 12,031 success; 9 missing LastName; rerun upsert stays at 12,031.",
+      "tradeoffs": [
+        "Full hash vs sample",
+        "Block the next wave vs accept known errors"
+      ],
+      "follow_ups": [
+        "What if success file is missing?",
+        "DuplicateError on upsert?"
+      ],
+      "weak_answer_warnings": [
+        "Trusting only the UI checkmark"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "Design rollback for three failure modes: partial API call, bad delete, bad overwrite.",
+      "answer_30_seconds": "Partial call: AllOrNoneHeader if we set it. Bad delete: Recycle Bin/undelete. Bad overwrite: reload the pre-image from the backup we took. None of these is a season-wide undo button.",
+      "answer_2_minutes": "I write the mode in the plan before we load. I refuse hard_delete during cutover. I take extracts of every object in the wave. I restore parents first. I stop inbound integrations. I tell executives we cannot ask Salesforce to invent yesterday without a copy. I mention licensed Salesforce Backup only if the org has it.",
+      "example": "Pre-load Account extract upserted back after a bad Status__c map.",
+      "tradeoffs": [
+        "AllOrNone fail-closed vs partial success plus error file",
+        "Undelete speed vs backup completeness"
+      ],
+      "follow_ups": [
+        "What if hard_delete was used?",
+        "Merge during migration?"
+      ],
+      "weak_answer_warnings": [
+        "One rollback story for every failure mode"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Contact wave succeeds but AccountId is blank on many rows. Diagnose from the plan.",
+      "answer_30_seconds": "The parent key was unmapped, the Account upsert failed, or Contacts ran first. Check Account success counts and the Contact map for the Account External ID.",
+      "answer_2_minutes": "I do not start Opportunities. I open both error files. I verify LAB_ERP_Id__c on Account exists and was upserted. I check whether the Contact file used Salesforce Id instead of the External ID relationship. I fix the map and re-upsert Contacts only. I mention SOAP's parent-before-child array rule if they used a composite create.",
+      "example": "Contact column Parent_ERP mapped to Account.Name, not the External ID relationship.",
+      "tradeoffs": [
+        "Fix-forward upsert vs delete Contacts and reload",
+        "Wizard versus Loader for the child object"
+      ],
+      "follow_ups": [
+        "How do you relate without Salesforce Id?",
+        "Person accounts?"
+      ],
+      "weak_answer_warnings": [
+        "Mass-deleting Accounts to 'reset'"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "A PM says Salesforce will roll the org back if we mess up the weekend load. Respond.",
+      "answer_30_seconds": "I ask which backup product and which restore drill we have. I explain Recycle Bin, Export Service, and Loader copies. I will not promise a platform Undo Migration. If we have no pre-image, I vote no-go.",
+      "answer_2_minutes": "I stay factual. Help tells customers to keep copies and restore from them. Sandboxes do not rewind production. AllOrNone already ended with each call. I offer a smaller wave, a freeze window, and a written rollback owner. I refuse hard delete. I document the decision.",
+      "example": "Weekend Account overwrite with only a two-week-old weekly export and no extract last night—no-go.",
+      "tradeoffs": [
+        "Go/no-go vs executive pressure",
+        "Smaller waves vs one big bang"
+      ],
+      "follow_ups": [
+        "What is the minimum pre-image?",
+        "Who pages if reconciliation fails at 2 a.m.?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing Salesforce will rewind the org"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "Teach the orchestra analogy and where it breaks.",
+      "answer_30_seconds": "Plan is the program order, mapping is the score, rehearsal is the dress rehearsal, reconciliation is the take sheet, rollback is the archive—not an undo switch. It breaks because AllOrNone is one take, and a Developer hall may have no audience chairs.",
+      "answer_2_minutes": "I map External IDs to union numbers that survive venues. I map metadata deploy to rebuilding the hall. I break it: no official Undo Concert; Export Service is a recording, not a time machine; LDV timeouts are a different topic. I avoid library and drawer language.",
+      "example": "Teaching a PM why 20 chairs in a tiny hall do not prove a stadium show.",
+      "tradeoffs": [
+        "Story vs Help product names",
+        "One-take AllOrNone vs wave-based loads"
+      ],
+      "follow_ups": [
+        "State Developer sandbox limits without the analogy.",
+        "State unmapped-field behavior without the analogy."
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer analogy"
+      ]
+    }
+  ]
+}

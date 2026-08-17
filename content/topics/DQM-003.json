@@ -1,0 +1,1037 @@
+{
+  "topic_id": "DQM-003",
+  "slug": "external-ids-unique-fields-matching-rules-and-duplicate",
+  "title": "External IDs, unique fields, matching rules, and duplicate rules",
+  "track": "Data management and quality",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 35,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DQM-002"
+  ],
+  "objectives": [
+    "Define External ID and Unique using official custom-field attributes, including the shared 25-field cap.",
+    "Explain why upsert and API parent-child creates use External ID, not Name.",
+    "Separate matching rules (how records compare) from duplicate rules (what happens when they match).",
+    "Describe match keys as a performance pre-filter that narrows candidates before the matching equation."
+  ],
+  "diagnostic_question": "An ERP will upsert Accounts, two users keep creating the same Contact, and leadership wants a warning for sales but a block for service. Which of External ID, Unique, matching rules, and duplicate rules do you configure first, and what would you not combine blindly?",
+  "definition": "An External ID is a custom auto-number, email, number, or text field that stores an identifier from a system outside Salesforce and can be used to update or upsert via the API. Unique prevents duplicate values in that field (with case options on text). Matching rules define how records are compared; duplicate rules use those matching rules to warn, allow, or block. ([Custom Field Attributes](https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm); [Manage Duplicate Records](https://help.salesforce.com/s/articleView?id=sf.managing_duplicates_overview.htm))",
+  "why_it_matters": "Without an External ID, nightly upserts become inserts and duplicates explode. Unique is a hard database constraint; matching rules are fuzzy comparison. Interviewers fail candidates who treat duplicate rules as the same thing as Unique, or who upsert on Name.",
+  "sixty_second_explanation": "Think of passport control. External ID is the passport number issued by the traveler's home country—the other system. Unique means two travelers cannot hold the same passport number at this desk. A matching rule is how officers compare names, dates, and faces (exact or fuzzy). A duplicate rule is the policy: warn, let them through, or block the second person. Match keys are the first glance that narrows the line to the most likely look-alikes before the full comparison.",
+  "deeper_explanation": [
+    "Custom Field Attributes: for each object that can have custom fields, you can set up to 25 custom auto-number, email, number, or text fields as External IDs. An External ID holds record identifiers from a system outside Salesforce. You can use it to update or upsert records using the API. When using the API or the Data Import Wizard for custom objects and solutions, you can use this field to prevent duplicates by also marking the field Unique. Custom fields marked Unique count against the same 25 External ID field limit. Custom indexing that Salesforce performs automatically in the background does not count against that limit. External ID is not available for external objects in the same way; each external object already has an External ID standard field. ([Custom Field Attributes](https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm))",
+    "Unique, if checked, prevents duplicate field values. For text, you choose whether ABC and abc are duplicates (case-insensitive) or different (case-sensitive). Help notes single-byte and double-byte versions of some punctuation are treated as identical for uniqueness, and superscript characters are not treated as unique (ABC² and ABC2 are identical). Unique is a constraint, not a fuzzy matcher. ([Custom Field Attributes](https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm))",
+    "Duplicate management finds and handles duplicates using matching rules plus duplicate rules. Duplicate rules and duplicate jobs specify matching rules that determine how duplicates are identified. Duplicate sets and reports list what was found. You can customize the UI (block versus warn, different rules per profile) and the comparison logic (custom fields, field mapping, matching criteria). Permissions: View Setup and Configuration to view rules; Customize Application to create, edit, activate, or deactivate them. ([Manage Duplicate Records](https://help.salesforce.com/s/articleView?id=sf.managing_duplicates_overview.htm))",
+    "Matching rules apply criteria and matching methods (normalization, match keys, algorithms). When a matching rule runs, it applies match key formulas first, narrowing to the 100 most likely duplicate records, then applies the matching equation only to those candidates. That is a performance design, not a promise that the 101st look-alike will be found. ([Things to Know About Matching Rules](https://help.salesforce.com/s/articleView?id=sales.matching_rules_overview.htm))"
+  ],
+  "mental_model": {
+    "analogy": "Passport control: External ID = home-country passport number, Unique = no two identical numbers at this desk, matching rule = how officers compare faces and names, duplicate rule = warn versus block, match keys = first glance that shortens the line.",
+    "useful_mapping": [
+      "External ID → passport number from the other country/system",
+      "Unique → this desk will not file two identical numbers",
+      "Case-sensitive Unique → ABC and abc are different passports",
+      "matching rule → comparison method (exact/fuzzy, which fields)",
+      "match keys → first-pass shortlist (documented as the 100 most likely)",
+      "duplicate rule → policy when a match is found (alert, allow, block, report)",
+      "duplicate job → sweep of records already in the hall, not only new arrivals",
+      "upsert → 'if this passport exists, update that traveler; else enroll'"
+    ],
+    "where_it_breaks": [
+      "Unique is exact on one field; matching rules can be fuzzy across several fields.",
+      "Match keys can miss a duplicate that is not in the top 100 candidates.",
+      "External ID does not by itself block UI duplicates unless Unique or a duplicate rule also applies.",
+      "The analogy does not encode encryption, deterministic matching, or Experience Cloud users."
+    ]
+  },
+  "teach_back_prompt": "Explain External ID versus Unique versus matching rules versus duplicate rules to a BA, then name one place the passport-control analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Define External ID, Unique, matching rule, and duplicate rule in one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given upsert, UI twins, and a back-book sweep, pick the feature for each."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain the 25-field cap and that Unique counts against External ID limits."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a duplicate that matching missed because of match-key shortlisting."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: block versus warn, and why Unique is not a matching rule."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-FIELD-ATTR",
+      "title": "Custom Field Attributes",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm",
+      "supports": "External ID (up to 25 auto-number/email/number/text), upsert/update via API, Unique including case options, Unique counts against the 25 External ID limit, auto-indexing excluded from that cap.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "External objects have a different standard External ID field; do not mix that model into this lesson's custom-field cap."
+    },
+    {
+      "source_id": "SF-HELP-DUP-MANAGE",
+      "title": "Manage Duplicate Records",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.managing_duplicates_overview.htm",
+      "supports": "Matching rules identify; duplicate rules and jobs specify those matching rules and handle duplicates; customization of block/warn and comparison logic; required permissions.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Available objects and standard rules vary by org; reverify Setup → Duplicate Rules."
+    },
+    {
+      "source_id": "SF-HELP-MATCHING",
+      "title": "Things to Know About Matching Rules",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sales.matching_rules_overview.htm",
+      "supports": "Matching criteria, methods, algorithms, match keys, normalization; match keys narrow to the 100 most likely records before the matching equation.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Algorithm details are neighboring deep-dives; do not invent unofficial match scores."
+    },
+    {
+      "source_id": "SF-HELP-DUP-RULES",
+      "title": "Things to Know About Duplicate Rules",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sales.duplicate_rules_overview.htm",
+      "supports": "Duplicate-rule behavior and considerations when customizing rules that consume matching rules.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "UI labels (alert/block) can vary; confirm the live Setup page."
+    },
+    {
+      "source_id": "SF-DEV-DATALOADER-OPS",
+      "title": "Data Loader Command-Line Operations and Exit Codes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/loader_operations.htm",
+      "supports": "Upsert matches a custom external ID field—the operational reason External ID exists.",
+      "release_or_version": "Data Loader Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define matching rules."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help Custom Field Attributes and Duplicate Management",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "External ID is a foreign key from another system",
+        "Unique is an exact constraint",
+        "25-field shared cap",
+        "Matching compares",
+        "Duplicate rules act",
+        "Match keys shortlist 100"
+      ],
+      "accessible_description": "Portrait map: External ID and Unique as field attributes; matching rules compare; duplicate rules decide block or warn; match keys pre-filter candidates."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-FIELD-ATTR",
+        "SF-HELP-DUP-MANAGE",
+        "SF-HELP-MATCHING",
+        "SF-DEV-DATALOADER-OPS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Constraint versus comparison versus policy"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Other[Other system key] --> Ext[External ID field]\n  Ext --> Ups[API or Data Loader upsert]\n  Ext --> Uniq[Optional Unique attribute]\n  Uniq --> Cap[Counts toward 25 External ID fields]\n  New[New or edited record] --> DR[Duplicate rule]\n  DR --> MR[Matching rule]\n  MR --> Keys[Match keys shortlist]\n  Keys --> Eq[Matching equation on likely rows]\n  Eq --> Act[Alert allow or block]\n  Job[Duplicate job] --> MR",
+      "decision": "flowchart TD\n  Need[Need fewer duplicates?] --> Q1{Need a stable integration key for upsert?}\n  Q1 -->|Yes| Ext[External ID plus Unique if the key must be one-to-one]\n  Q1 -->|No UI twins| Q2{Need fuzzy compare across fields?}\n  Q2 -->|Yes| MR[Matching rule]\n  MR --> Q3{What should the user or API do?}\n  Q3 -->|Warn or block or report| DR[Duplicate rule using that matching rule]\n  Q3 -->|Sweep existing rows| Job[Duplicate job]\n  Q2 -->|Exact one field only| Uniq[Unique attribute without calling it a matching rule]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "You can mark up to 25 custom auto-number, email, number, or text fields per eligible object as External IDs. Those fields store identifiers from a system outside Salesforce and can be used to update or upsert via the API.",
+      "source_ids": [
+        "SF-HELP-FIELD-ATTR"
+      ],
+      "scope": "External ID attribute",
+      "validation": "Custom Field Attributes — External ID paragraph.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Unique prevents duplicate field values, with case-sensitive or case-insensitive options on text. Custom fields marked Unique count against the object's 25 External ID field limit. Automatic background custom indexing does not count against that limit.",
+      "source_ids": [
+        "SF-HELP-FIELD-ATTR"
+      ],
+      "scope": "Unique attribute and shared cap",
+      "validation": "Custom Field Attributes — Unique and External ID notes.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Duplicate rules and duplicate jobs specify matching rules that determine how duplicates are identified. Matching rules compare; duplicate rules handle (for example block versus warn) and can vary by profile.",
+      "source_ids": [
+        "SF-HELP-DUP-MANAGE",
+        "SF-HELP-DUP-RULES"
+      ],
+      "scope": "Duplicate management split",
+      "validation": "Manage Duplicate Records process description.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "When a matching rule runs, match keys perform a preliminary comparison that narrows matches to the 100 most likely duplicate records; the matching equation then runs only on those candidates.",
+      "source_ids": [
+        "SF-HELP-MATCHING"
+      ],
+      "scope": "Match keys",
+      "validation": "Things to Know About Matching Rules — How Match Keys Are Generated.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Data Loader upsert updates existing records that match a custom external ID and inserts records without matches.",
+      "source_ids": [
+        "SF-DEV-DATALOADER-OPS"
+      ],
+      "scope": "Why External ID exists operationally",
+      "validation": "Data Loader upsert operation description.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify standard matching rules and encryption notes (deterministic encryption for matching) on the live Help pages; this pack does not claim a Summer '26 behavior change beyond current Help wording.",
+  "unresolved_uncertainty": [
+    "Exact standard matching-rule field lists and which objects support duplicate rules in a given edition need Setup verification.",
+    "Whether a specific upsert is blocked by a duplicate rule depends on that rule's create/edit and API settings—confirm in the org rather than assuming APIs bypass rules."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "External ID",
+      "telugu": "Inko system icchina identity number field; upsert ki vadataru."
+    },
+    {
+      "english": "Matching rule",
+      "telugu": "Rendu records okate person aa ani ela compare cheyalo cheppe niyamam."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "External ID stores the other system's key for upsert. Unique is an exact no-duplicates constraint and counts toward the 25 External ID fields. Matching rules compare records, including fuzzy methods. Duplicate rules decide warn, allow, or block using those matching rules.",
+    "two_minutes": "I split constraint, comparison, and policy. Integration: External ID, usually Unique so upsert cannot collide. UI twins: matching rule plus duplicate rule, maybe different actions per profile. Existing mess: duplicate job, not only save-time rules. I mention match keys shortlist about 100 candidates so I do not promise perfect recall. I never say Unique is a matching rule, and I never upsert on Name."
+  },
+  "terminology": [
+    {
+      "term": "External ID",
+      "plain": "A field that stores the other system's record key so APIs can find the row without a Salesforce Id.",
+      "precise": "Up to 25 custom auto-number, email, number, or text External ID fields per eligible object. Used to update or upsert via the API (and can help Wizard/API duplicate prevention when also Unique).",
+      "example": "LAB_ERP_Id__c on Account, used by Data Loader upsert.",
+      "non_example": "Account Name, which is not an External ID unless you misuse it.",
+      "confusable_neighbor": "Salesforce Id: the platform's own primary key, not the vendor key.",
+      "boundary": "External objects' standard External ID field is a different model."
+    },
+    {
+      "term": "Unique",
+      "plain": "A field setting that rejects a second row with the same value.",
+      "precise": "Prevents duplicate field values. Text can be case-sensitive or not. Unique custom fields count against the 25 External ID limit even if you did not also tick External ID.",
+      "example": "LAB_ERP_Id__c Unique so two Accounts cannot share an ERP key.",
+      "non_example": "A matching rule on First Name + Last Name + Email, which can be fuzzy and is not a Unique checkbox.",
+      "confusable_neighbor": "Duplicate rule: policy after a match, not a single-field database uniqueness constraint.",
+      "boundary": "Help's character-normalization notes (single-byte vs double-byte, superscripts) matter for messy imports."
+    },
+    {
+      "term": "matching rule",
+      "plain": "The definition of how two records are compared.",
+      "precise": "Applies matching criteria, methods, algorithms, normalization, and match keys. Standard rules ship with predefined criteria; custom rules let you choose fields and methods.",
+      "example": "Standard Contact matching on name and email versus a custom rule that includes LAB_MemberId__c.",
+      "non_example": "The Unique checkbox on one field.",
+      "confusable_neighbor": "duplicate rule: consumes a matching rule and decides the user/API outcome.",
+      "boundary": "Encryption: matching on Shield fields needs deterministic encryption (neighboring security topic)."
+    },
+    {
+      "term": "match key",
+      "plain": "A first-pass fingerprint that shortlists likely duplicates before the full compare.",
+      "precise": "Help: match keys increase duplicate-rule performance by a preliminary comparison that narrows to the 100 most likely duplicate records; then the matching equation runs on those rows.",
+      "example": "Normalized email/name keys that pull 100 candidates before fuzzy scoring.",
+      "non_example": "The 25 External ID field limit, which is unrelated to match keys.",
+      "confusable_neighbor": "External ID: an integration key, not a matching-rule match key.",
+      "boundary": "A duplicate outside the shortlist can be missed—say so in interviews."
+    },
+    {
+      "term": "duplicate rule",
+      "plain": "The policy for what happens when a matching rule finds a duplicate.",
+      "precise": "Duplicate rules specify matching rules and how to handle matches (Help examples: block create, warn, vary by profile). They are metadata you activate in Setup.",
+      "example": "Sales profile sees an alert; integration user is blocked on Account create.",
+      "non_example": "A validation rule that checks a single amount field (DQM-004).",
+      "confusable_neighbor": "duplicate job: finds existing duplicates using matching rules, not only on save.",
+      "boundary": "Merge of the resulting sets is a neighboring user action, not this lesson's full merge topic."
+    },
+    {
+      "term": "duplicate job",
+      "plain": "A sweep that looks for duplicates already stored, not just the record being saved.",
+      "precise": "Help lists duplicate jobs alongside duplicate rules as the things that specify matching rules and produce duplicate sets and reports.",
+      "example": "Run a Contact duplicate job after a Wizard import to list pairs.",
+      "non_example": "A nightly upsert, which is a load operation (DQM-002).",
+      "confusable_neighbor": "duplicate rule: real-time (or save-time) handling.",
+      "boundary": "Job volume and object support: Needs verification in the org."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide constraint versus comparison",
+      "actor": "Admin + integration owner",
+      "trigger": "Duplicates or upsert failures appear",
+      "before": "One 'dedupe' checkbox imagined",
+      "after": "External ID/Unique for keys; matching + duplicate rules for people-shaped twins",
+      "observe": "Written split on the ticket",
+      "failure": "Ticking Unique on FirstName"
+    },
+    {
+      "step": 2,
+      "transition": "Create the integration field",
+      "actor": "Admin",
+      "trigger": "An external system has a stable key",
+      "before": "Only Salesforce Id exists",
+      "after": "Custom External ID, usually Unique, type text/number/email/auto-number, within the 25-field cap",
+      "observe": "Field attributes show External ID; upsert maps that column",
+      "failure": "Using Name as the upsert key"
+    },
+    {
+      "step": 3,
+      "transition": "Author matching then policy",
+      "actor": "Admin",
+      "trigger": "UI or API creates twins that Unique cannot see",
+      "before": "No comparison logic",
+      "after": "Matching rule activated; duplicate rule references it and sets alert/block; optional duplicate job",
+      "observe": "Test users see the intended action; API error is DuplicateError when blocked",
+      "failure": "Activating a duplicate rule with no matching rule"
+    },
+    {
+      "step": 4,
+      "transition": "Rehearse match-key limits",
+      "actor": "Admin",
+      "trigger": "A known twin is not flagged",
+      "before": "Assumption that matching is exhaustive",
+      "after": "Understood shortlist of 100 likely rows; criteria or keys adjusted, or a job used",
+      "observe": "Documented miss with a hypothesis, not a guess at unofficial scores",
+      "failure": "Promising 100% duplicate detection"
+    }
+  ],
+  "when_to_use": [
+    "When an integration must upsert on External IDs instead of Salesforce Ids or Name.",
+    "When Unique fields are required so two records cannot share the same integration key, and you must count that toward the 25 External ID fields.",
+    "When matching rules should define fuzzy or multi-field comparison and duplicate rules should warn or block.",
+    "When a duplicate job must sweep existing records after an import, not only intercept the next save.",
+    "When an interviewer asks how match keys narrow candidates before the matching equation."
+  ],
+  "when_not_to_use": [
+    "Do not use Unique as a substitute for matching rules when the business needs fuzzy name-and-email comparison.",
+    "Do not use a duplicate rule as the External ID for Data Loader upsert—the upsert key is a field attribute.",
+    "Do not mark every text field External ID; the object cap is 25 and Unique shares that budget.",
+    "Do not promise matching rules will find every possible twin; match keys shortlist the 100 most likely records.",
+    "Do not test duplicate rules by creating real customer twins in production."
+  ],
+  "configuration_or_code_location": [
+    "Object Manager → Fields → External ID and Unique checkboxes on an eligible custom field.",
+    "Setup → Matching Rules; Setup → Duplicate Rules (Customize Application to edit).",
+    "Duplicate jobs / duplicate reports and Potential Duplicates UI as licensed in the org.",
+    "Data Loader upsert mapping to the External ID API name."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox ERP upserts LAB_ Accounts. Sales users also type Accounts that match on name and billing city. Service must be blocked from saving those twins; sales may continue after a warning. After a Wizard import, existing twins must be listed. No production data.",
+    "inputs": [
+      "ERP key column",
+      "Standard or custom Account matching on name/address",
+      "Two profiles: LAB_Sales and LAB_Service",
+      "A 200-row imported Account file that likely contains twins"
+    ],
+    "decisions": [
+      {
+        "decision": "Create LAB_ERP_Id__c as External ID and Unique (text, case-sensitive if ERP is case-sensitive).",
+        "because": "Help: External ID is for outside identifiers and upsert; Unique prevents key collisions and counts toward the 25-field cap.",
+        "rejected": "Upsert on Account Name"
+      },
+      {
+        "decision": "Activate a matching rule, then two duplicate rules (or conditions) so service is blocked and sales is warned.",
+        "because": "Help: customize handling, including blocking versus warning and different behavior by profile.",
+        "rejected": "Unique on Account Name"
+      },
+      {
+        "decision": "Run a duplicate job after the Wizard import.",
+        "because": "Save-time duplicate rules do not automatically clean rows already loaded; jobs specify matching rules for existing sets.",
+        "rejected": "Rerunning insert to 'trigger matching'"
+      }
+    ],
+    "configuration_or_code": [
+      "Field: LAB_ERP_Id__c External ID + Unique.",
+      "Data Loader upsert Accounts on that field.",
+      "Setup Matching Rules / Duplicate Rules; test both profiles; run a duplicate job on Account."
+    ],
+    "output": "ERP retries update the same Account Id. Service create of a twin is blocked. Sales sees an alert. Duplicate report lists imported pairs.",
+    "verification": [
+      "Second upsert of the same ERP key does not create a second Account.",
+      "A Unique collision on LAB_ERP_Id__c fails the row even if duplicate rules are off.",
+      "A fuzzy name twin is handled by the duplicate rule, not by Unique on Name."
+    ],
+    "self_explanation": "The integration key was a field attribute. People-shaped twins were matching plus policy. The job cleaned history."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ Accounts/Contacts only.",
+    "starting_state_checks": [
+      "You can create custom fields and open Duplicate Rules in Setup.",
+      "No production emails in test records."
+    ],
+    "steps": [
+      "Create LAB_ERP_Id__c as External ID + Unique on Account.",
+      "Insert one Account with ERP key A1; upsert the same key with a changed name; confirm one row.",
+      "Review an active matching rule and its duplicate rule; create two LAB_ Contacts that should match and note warn versus block.",
+      "Write one sentence on match keys narrowing to 100 likely records."
+    ],
+    "guided_completion": [
+      "If upsert created a second Account, External ID was not mapped or not unique.",
+      "If Unique failed the fuzzy name pair, you used the wrong tool."
+    ],
+    "independent_challenge": "Explain why ticking Unique on a field you did not mark External ID still consumes External ID budget.",
+    "evidence": [
+      "Field attribute screenshot with LAB_ in the name.",
+      "Written External ID versus matching-rule distinction."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate experimental duplicate rules if they block other labs.",
+      "Delete LAB_ records."
+    ],
+    "limitations": "Standard rule coverage and job availability vary by org."
+  },
+  "decision_table": [
+    {
+      "signal": "An external system has a stable key and will retry loads.",
+      "choose": "Custom External ID, usually Unique, and upsert on that field.",
+      "not": "Insert plus hope, or upsert on Name.",
+      "why": "Help defines External ID for outside identifiers and API upsert; Data Loader upsert matches a custom external ID."
+    },
+    {
+      "signal": "Two records must never share one exact field value, including via API.",
+      "choose": "Unique (and count it against the 25 External ID fields).",
+      "not": "A matching rule alone, which is comparison rather than a uniqueness constraint.",
+      "why": "Unique prevents duplicate field values; matching rules do not replace that constraint."
+    },
+    {
+      "signal": "Users create people-shaped twins that differ by typo or extra space.",
+      "choose": "Matching rule plus duplicate rule (warn or block, optionally by profile).",
+      "not": "Unique on FirstName.",
+      "why": "Duplicate management is matching (how) plus duplicate rules (what to do)."
+    },
+    {
+      "signal": "A bulk import already landed possible twins.",
+      "choose": "Duplicate job (and reports/sets) using the matching rule.",
+      "not": "Only a save-time duplicate rule going forward.",
+      "why": "Help lists jobs as the path that specifies matching rules for duplicates already found."
+    },
+    {
+      "signal": "A known twin is not flagged and you are asked if matching is broken.",
+      "choose": "Inspect match keys and the 100-candidate shortlist, then criteria—not unofficial scores.",
+      "not": "A promise that every possible pair is evaluated with the full equation.",
+      "why": "Help states match keys narrow to the 100 most likely records before the matching equation."
+    }
+  ],
+  "limitations": [
+    "Does not teach merge UI clicks or Person Account special cases in depth.",
+    "Does not replace validation-rule strategy (DQM-004).",
+    "Encryption and matching is a Shield neighboring topic.",
+    "Object and edition coverage for duplicate rules must be verified in Setup."
+  ],
+  "security_notes": [
+    "External IDs can be predictable; do not store secrets in them.",
+    "Duplicate rules that allow create still expose potential PII on the alert—minimize fields shown.",
+    "Never build labs on real customer identities."
+  ],
+  "common_mistakes": [
+    "Upserting on Name.",
+    "Calling Unique a matching rule.",
+    "Ignoring that Unique consumes External ID budget.",
+    "Expecting save-time duplicate rules to clean yesterday's import.",
+    "Promising matching finds every duplicate despite match-key shortlisting."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Upsert created a second Account with the same vendor key.",
+      "check": [
+        "Field is External ID and mapped.",
+        "Unique is set if collisions must fail closed.",
+        "Operation was upsert, not insert (DQM-002)."
+      ],
+      "do_not_assume": "Name matching ran automatically."
+    },
+    {
+      "symptom": "Users still save obvious twins.",
+      "check": [
+        "Matching rule and duplicate rule are active.",
+        "Action is alert versus block.",
+        "The user's profile is in scope."
+      ],
+      "do_not_assume": "External ID alone blocks UI twins on name."
+    },
+    {
+      "symptom": "A pair you can see is not in the duplicate report.",
+      "check": [
+        "Match-key shortlist (100 most likely).",
+        "Normalization and field criteria.",
+        "Whether you ran a duplicate job on the right object."
+      ],
+      "do_not_assume": "The matching equation always scored every row in the object."
+    }
+  ],
+  "production_notes": [
+    "Activate matching/duplicate rules in sandbox with LAB_ data before production.",
+    "Budget the 25 External ID fields; Unique shares that budget.",
+    "This lesson does not authorize production duplicate-rule experiments on live customers."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which field types can be External IDs on a typical custom field?",
+      "options": {
+        "A": "Custom auto-number, email, number, or text — up to 25 per eligible object",
+        "B": "Any formula field, unlimited",
+        "C": "Only long text area",
+        "D": "Only Salesforce Id"
+      },
+      "answer": "A",
+      "rationale": "Custom Field Attributes: up to 25 custom auto-number, email, number, or text fields as External IDs.",
+      "distractor_explanations": {
+        "B": "Formulas are not in that External ID type list.",
+        "C": "Long text is not listed.",
+        "D": "Id is the platform key, not an External ID attribute you tick."
+      },
+      "concept": "External ID types",
+      "citation_ids": [
+        "SF-HELP-FIELD-ATTR"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is an External ID field for, per Help?",
+      "options": {
+        "A": "Record identifiers from a system outside Salesforce, usable to update or upsert via the API",
+        "B": "Storing the user's password",
+        "C": "Choosing a report chart type",
+        "D": "Enabling MFA"
+      },
+      "answer": "A",
+      "rationale": "Help's External ID paragraph is exactly that definition.",
+      "distractor_explanations": {
+        "B": "Never store secrets there.",
+        "C": "Reports are unrelated.",
+        "D": "MFA is identity, not a field attribute."
+      },
+      "concept": "External ID purpose",
+      "citation_ids": [
+        "SF-HELP-FIELD-ATTR"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A custom field is Unique but not External ID. What happens to the 25 External ID budget?",
+      "options": {
+        "A": "The Unique field still counts against the 25 External ID fields",
+        "B": "It never counts unless External ID is also checked",
+        "C": "It consumes 25 slots by itself",
+        "D": "It removes the cap"
+      },
+      "answer": "A",
+      "rationale": "Help: custom fields marked Unique count against an object's limit of 25 External ID fields.",
+      "distractor_explanations": {
+        "B": "The Unique note says they count.",
+        "C": "It counts as one of the 25, not all 25.",
+        "D": "The cap remains."
+      },
+      "concept": "Shared 25-field cap",
+      "citation_ids": [
+        "SF-HELP-FIELD-ATTR"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Data Loader upsert matches which field kind?",
+      "options": {
+        "A": "A custom external ID field",
+        "B": "Any matching rule",
+        "C": "The Recycle Bin",
+        "D": "A permission set"
+      },
+      "answer": "A",
+      "rationale": "Data Loader upsert: existing records with a matching custom external ID are updated.",
+      "distractor_explanations": {
+        "B": "Matching rules are duplicate management, not the upsert key.",
+        "C": "Recycle Bin is delete/undelete.",
+        "D": "Permission sets are authorization."
+      },
+      "concept": "upsert key",
+      "citation_ids": [
+        "SF-DEV-DATALOADER-OPS"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Matching rules versus duplicate rules?",
+      "options": {
+        "A": "Matching rules identify how records compare; duplicate rules specify those matching rules and how to handle matches",
+        "B": "They are identical Setup nodes",
+        "C": "Duplicate rules create External IDs",
+        "D": "Matching rules hard-delete records"
+      },
+      "answer": "A",
+      "rationale": "Manage Duplicate Records: matching rules determine how duplicates are identified; duplicate rules/jobs specify those matching rules and handle results.",
+      "distractor_explanations": {
+        "B": "They are separate metadata types.",
+        "C": "External ID is a field attribute.",
+        "D": "Matching does not hard-delete."
+      },
+      "concept": "How vs what",
+      "citation_ids": [
+        "SF-HELP-DUP-MANAGE"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What do match keys do in a matching rule?",
+      "options": {
+        "A": "Preliminary comparison that narrows to the 100 most likely duplicate records before the matching equation",
+        "B": "Create 100 External ID fields",
+        "C": "Bypass Unique",
+        "D": "Export the Recycle Bin"
+      },
+      "answer": "A",
+      "rationale": "Matching Rules Help describes that exact shortlist behavior.",
+      "distractor_explanations": {
+        "B": "Unrelated to the 25-field cap.",
+        "C": "Unique still enforces exact values.",
+        "D": "Not an export feature."
+      },
+      "concept": "Match keys",
+      "citation_ids": [
+        "SF-HELP-MATCHING"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You want sales warned and service blocked on the same Contact match. Official lever?",
+      "options": {
+        "A": "Customize duplicate rules, including different behavior for different user profiles",
+        "B": "Two External ID fields named Warn and Block",
+        "C": "Turn off Unique",
+        "D": "Use hard_delete"
+      },
+      "answer": "A",
+      "rationale": "Help: customize handling—for example block instead of warn, or run different duplicate rules for different profiles.",
+      "distractor_explanations": {
+        "B": "External ID is not a profile policy.",
+        "C": "Unique is a constraint, not a warn/block UI.",
+        "D": "Hard delete is DQM-002."
+      },
+      "concept": "Profile-specific duplicate rules",
+      "citation_ids": [
+        "SF-HELP-DUP-MANAGE"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A Wizard import already created possible Contact twins. What does Help point you to besides save-time rules?",
+      "options": {
+        "A": "Duplicate jobs (and the sets/reports they produce) that specify matching rules",
+        "B": "Changing API versions on Apex classes",
+        "C": "Disabling field-level security",
+        "D": "extract_all only"
+      },
+      "answer": "A",
+      "rationale": "Duplicate jobs specify matching rules and list duplicates already found.",
+      "distractor_explanations": {
+        "B": "Apex API version is unrelated.",
+        "C": "FLS is not dedupe.",
+        "D": "Export does not match records."
+      },
+      "concept": "Duplicate jobs",
+      "citation_ids": [
+        "SF-HELP-DUP-MANAGE"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Unique on a text field: ABC versus abc?",
+      "options": {
+        "A": "You choose whether they are duplicates (case-insensitive) or different (case-sensitive)",
+        "B": "They are always different, no option",
+        "C": "They are always duplicates, no option",
+        "D": "Unique cannot apply to text"
+      },
+      "answer": "A",
+      "rationale": "Help documents the Treat ABC and abc as duplicate vs different options.",
+      "distractor_explanations": {
+        "B": "There is a case-insensitive option.",
+        "C": "There is a case-sensitive option.",
+        "D": "Text is an allowed Unique type."
+      },
+      "concept": "Unique case",
+      "citation_ids": [
+        "SF-HELP-FIELD-ATTR"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement is true about Unique versus matching rules?",
+      "options": {
+        "A": "Unique is an exact field constraint; matching rules can use fuzzy methods across fields",
+        "B": "They are the same metadata",
+        "C": "Matching rules replace External ID for Data Loader upsert",
+        "D": "Unique always shortlists 100 records"
+      },
+      "answer": "A",
+      "rationale": "Field attributes versus matching methods/algorithms are different subsystems.",
+      "distractor_explanations": {
+        "B": "Different Setup objects.",
+        "C": "Upsert needs a custom external ID field.",
+        "D": "That is match keys, not Unique."
+      },
+      "concept": "Constraint vs compare",
+      "citation_ids": [
+        "SF-HELP-FIELD-ATTR",
+        "SF-HELP-MATCHING"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Who can create and activate duplicate and matching rules?",
+      "options": {
+        "A": "Users with Customize Application (viewing rules needs View Setup and Configuration)",
+        "B": "Any user with Read on Account",
+        "C": "Only users with Bulk API Hard Delete",
+        "D": "Guest users"
+      },
+      "answer": "A",
+      "rationale": "Manage Duplicate Records lists those two permissions.",
+      "distractor_explanations": {
+        "B": "Object Read is not Setup customize.",
+        "C": "That permission is for hard delete.",
+        "D": "Guests do not author rules."
+      },
+      "concept": "Permissions",
+      "citation_ids": [
+        "SF-HELP-DUP-MANAGE"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Automatic background custom indexing and the External ID limit?",
+      "options": {
+        "A": "That automatic indexing does not count against External ID limits",
+        "B": "Each auto-index consumes 25 External IDs",
+        "C": "Auto-index deletes Unique",
+        "D": "Auto-index is a duplicate rule"
+      },
+      "answer": "A",
+      "rationale": "Help: custom indexing that occurs automatically in the background does not count against External ID limits.",
+      "distractor_explanations": {
+        "B": "It is excluded from the cap.",
+        "C": "Unrelated.",
+        "D": "Indexing is not duplicate management."
+      },
+      "concept": "Auto-index vs cap",
+      "citation_ids": [
+        "SF-HELP-FIELD-ATTR"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "external",
+      "front": "What does an External ID store?",
+      "back": "A record identifier from a system outside Salesforce, used to update or upsert via the API."
+    },
+    {
+      "id": "F2",
+      "category": "external",
+      "front": "External ID type and count limit?",
+      "back": "Up to 25 custom auto-number, email, number, or text fields per eligible object."
+    },
+    {
+      "id": "F3",
+      "category": "unique",
+      "front": "Does Unique count toward External ID limits?",
+      "back": "Yes. Custom fields marked Unique count against the 25 External ID fields."
+    },
+    {
+      "id": "F4",
+      "category": "unique",
+      "front": "Unique versus a matching rule?",
+      "back": "Unique is an exact field constraint. A matching rule compares records and can be fuzzy."
+    },
+    {
+      "id": "F5",
+      "category": "upsert",
+      "front": "What does Data Loader upsert match?",
+      "back": "A custom external ID field—not Name, not a matching rule."
+    },
+    {
+      "id": "F6",
+      "category": "matching",
+      "front": "What do matching rules decide?",
+      "back": "How records are compared: criteria, methods, algorithms, normalization, match keys."
+    },
+    {
+      "id": "F7",
+      "category": "duplicate",
+      "front": "What do duplicate rules decide?",
+      "back": "Which matching rules to use and how to handle a match (for example warn or block, possibly by profile)."
+    },
+    {
+      "id": "F8",
+      "category": "keys",
+      "front": "Match keys shortlist how many likely rows?",
+      "back": "Help: the 100 most likely duplicate records, then the matching equation runs on those."
+    },
+    {
+      "id": "F9",
+      "category": "jobs",
+      "front": "When do you need a duplicate job?",
+      "back": "To find duplicates already stored, using matching rules—not only on the next save."
+    },
+    {
+      "id": "F10",
+      "category": "case",
+      "front": "ABC vs abc on a Unique text field?",
+      "back": "You choose case-insensitive (duplicates) or case-sensitive (different values)."
+    },
+    {
+      "id": "F11",
+      "category": "index",
+      "front": "Do automatic background custom indexes consume External ID slots?",
+      "back": "No. Help says that automatic indexing does not count against External ID limits."
+    },
+    {
+      "id": "F12",
+      "category": "perms",
+      "front": "Permission to edit matching/duplicate rules?",
+      "back": "Customize Application. Viewing them needs View Setup and Configuration."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "ERP retries must update the same Account. Field?",
+      "back": "External ID (usually Unique) and upsert—not insert on Name."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Sales warn, service block, same match. Feature?",
+      "back": "Duplicate rules customized per profile, consuming the same matching rule."
+    },
+    {
+      "id": "F15",
+      "category": "boundary",
+      "front": "Does External ID alone block UI name twins?",
+      "back": "No. That is matching plus a duplicate rule, unless you also constrain a field with Unique."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is an External ID, and why do integrations care?",
+      "answer_30_seconds": "A custom auto-number, email, number, or text field—up to 25 per object—that stores the other system's key so API or Data Loader upsert can find the row without a Salesforce Id.",
+      "answer_2_minutes": "I quote Custom Field Attributes: outside identifier, update/upsert via API. I usually also mark Unique so two Accounts cannot share the ERP key, and I mention Unique consumes the same 25-field budget. I never upsert on Name. I distinguish Salesforce Id (platform) from External ID (vendor). External objects' standard External ID is a different model; I do not mix it in unless asked.",
+      "example": "LAB_ERP_Id__c on Account; nightly upsert updates the same Id.",
+      "tradeoffs": [
+        "Unique fail-closed vs allowing key reuse",
+        "Spending the 25-field budget"
+      ],
+      "follow_ups": [
+        "What types are allowed?",
+        "Does auto-indexing consume the cap?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Name an External ID"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Unique versus matching rules versus duplicate rules?",
+      "answer_30_seconds": "Unique is an exact field constraint. Matching rules define how records compare, including fuzzy methods. Duplicate rules use matching rules and decide warn, allow, or block.",
+      "answer_2_minutes": "I draw three boxes: constraint, comparison, policy. Unique counts toward External ID limits. Matching has criteria, methods, match keys. Duplicate rules can differ by profile. A duplicate job uses matching rules on data already stored. I refuse 'we turned on Unique on LastName' as a fuzzy-dedupe strategy.",
+      "example": "Unique on LAB_ERP_Id__c; matching on name+email; sales warned, service blocked.",
+      "tradeoffs": [
+        "Exact keys vs fuzzy people",
+        "Warn vs block vs job-only"
+      ],
+      "follow_ups": [
+        "What are match keys?",
+        "Who can activate rules?"
+      ],
+      "weak_answer_warnings": [
+        "Treating all three as one checkbox"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Upsert created a second Account with the same ERP key. Diagnose.",
+      "answer_30_seconds": "The field was not External ID, not mapped, the job was insert, or Unique was off and the match missed. Fix the field attributes and the operation, then merge or delete the extra LAB_ row in sandbox.",
+      "answer_2_minutes": "I inspect the field, the mapping, and process.operation. Data Loader upsert only matches a custom external ID. Duplicate rules might have allowed the second row if Unique was off. I do not 'fix' it by matching on Name going forward. After the field is correct, I plan a one-time cleanup (DQM-002 delete/merge) and a duplicate job to list leftovers.",
+      "example": "CSV column ERP_KEY mapped to Account Number instead of LAB_ERP_Id__c.",
+      "tradeoffs": [
+        "Cleanup merge vs delete",
+        "Fail-closed Unique vs late matching"
+      ],
+      "follow_ups": [
+        "Would Unique have blocked the second row?",
+        "How do you prevent the next load?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Salesforce Id generation"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A pair of Contacts looks identical but no duplicate alert fired. What official limit do you mention?",
+      "answer_30_seconds": "Match keys first shortlist the 100 most likely records; the matching equation runs on that set. A twin outside the shortlist can be missed. Then I check if rules are active and in-profile.",
+      "answer_2_minutes": "I do not invent a match score. I walk Help's two-stage design: keys, then equation. I look at normalization, selected fields, and whether we needed a custom matching rule. I consider a duplicate job for existing rows. I also check the action is alert versus silent allow. I never promise 100% detection.",
+      "example": "Two LAB_ Contacts with swapped emails that did not share a match key.",
+      "tradeoffs": [
+        "Performance shortlist vs recall",
+        "Standard vs custom matching rule"
+      ],
+      "follow_ups": [
+        "When do you add a custom field to the matching rule?",
+        "Does Unique help this pair?"
+      ],
+      "weak_answer_warnings": [
+        "Promising exhaustive pairwise compare"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "How would you let sales proceed on a duplicate and stop service?",
+      "answer_30_seconds": "One matching rule, then duplicate-rule handling customized by profile—Help explicitly lists different rules or actions for different profiles, including block versus warn.",
+      "answer_2_minutes": "I keep comparison logic in the matching rule so both teams share a definition of 'same person.' Policy lives in duplicate rules. I test both profiles in sandbox. I mention API users as a third persona: blocking them may be correct for UI twins but must not break a legitimate External ID upsert—Needs verification of the rule's operation and user-scope settings in that org.",
+      "example": "LAB_Sales alert; LAB_Service block on Contact create.",
+      "tradeoffs": [
+        "Data quality vs sales speed",
+        "API integration user vs human profiles"
+      ],
+      "follow_ups": [
+        "Where do duplicate jobs fit?",
+        "What permission edits the rules?"
+      ],
+      "weak_answer_warnings": [
+        "Two different matching definitions of the same person"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "You are out of External ID slots but need another Unique email. What do you recall from Help?",
+      "answer_30_seconds": "Unique custom fields count against the 25 External ID fields. I audit unused External ID and Unique flags before adding another. Automatic background indexes do not consume that cap.",
+      "answer_2_minutes": "I list fields with External ID or Unique. I drop unused flags. I do not confuse platform auto-indexes with this budget. If we truly need more integration keys, I escalate—I do not invent a higher unofficial cap. I also ask whether the new email should be a matching-rule field instead of Unique.",
+      "example": "Twelve leftover Unique checkboxes on unused LAB_ fields blocking a new ERP key.",
+      "tradeoffs": [
+        "Constraint vs matching-rule field",
+        "Retiring old integration keys"
+      ],
+      "follow_ups": [
+        "Which types can be External ID?",
+        "Do auto-indexes count?"
+      ],
+      "weak_answer_warnings": [
+        "Saying the cap is unlimited"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "Why not just make Account Name Unique and skip External ID?",
+      "answer_30_seconds": "Names collide and change. External ID is the outside system's identifier for upsert. Unique on Name would block legitimate same-name accounts and still would not give the ERP a stable key.",
+      "answer_2_minutes": "I separate human labels from integration keys. Unique on Name is the wrong constraint for companies that share names. Matching rules handle people-shaped similarity. Upsert documented against a custom external ID. If they want no two Accounts with the same ERP key, Unique belongs on that External ID field, which also spends the 25-field budget honestly.",
+      "example": "Two 'Acme' customers in different cities; one ERP key each.",
+      "tradeoffs": [
+        "Human-readable Name vs stable vendor key",
+        "Unique fail-closed vs fuzzy matching"
+      ],
+      "follow_ups": [
+        "Case-sensitive Unique?",
+        "Wizard plus Unique?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to Unique on Name as the integration strategy"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "Teach the passport-control analogy and where it breaks.",
+      "answer_30_seconds": "External ID is the home-country passport number, Unique is no two identical numbers, matching is how officers compare faces, duplicate rules are warn versus block. It breaks because match keys only shortlist about 100 travelers, so a twin can be missed.",
+      "answer_2_minutes": "I map upsert to 'update this passport holder or enroll.' I map duplicate jobs to a sweep of people already in the hall. I break the analogy: Unique is not fuzzy; matching is not a database unique index; External ID alone does not stop UI name twins; encryption can disable matching unless deterministic. I avoid library or drawer language.",
+      "example": "Teaching a BA why sales can be warned while the ERP upsert uses a passport number field.",
+      "tradeoffs": [
+        "Story vs Help precision",
+        "Recall vs performance shortlist"
+      ],
+      "follow_ups": [
+        "State the 25-field cap without the analogy.",
+        "State the 100-candidate note without the analogy."
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer analogy"
+      ]
+    }
+  ]
+}

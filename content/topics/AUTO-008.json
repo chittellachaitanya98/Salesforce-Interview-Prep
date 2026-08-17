@@ -1,0 +1,1007 @@
+{
+  "topic_id": "AUTO-008",
+  "slug": "fault-paths-transactions-rollback-logging-and-error-han",
+  "title": "Fault paths, transactions, rollback, logging, and error handling",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AUTO-007"
+  ],
+  "objectives": [
+    "Add a fault path to Flow elements that can fail, and surface Fault Message to a user or admin.",
+    "Explain that a Flow interview runs inside a platform transaction and that unhandled faults can fail the save.",
+    "Use Roll Back Records on a fault path when pending record changes must not remain.",
+    "Choose logging (email with Fault Message versus a custom log) without claiming unofficial objects are required."
+  ],
+  "diagnostic_question": "Create Records in a screen Flow fails a required field. What does the user see with no fault path, what do you add on the fault path, and when would you also Roll Back Records?",
+  "definition": "A fault path is the connector Salesforce Help tells you to add on elements that interact with the database so you can change default failure behavior. The interview exposes Fault Message. The interview runs in a transaction: pending DML commits or rolls back together unless a pause starts a new transaction. Roll Back Records on a fault path cancels pending record changes. Logging is how you retain Fault Message for support. ([Build a Flow](https://help.salesforce.com/s/articleView?id=sf.flow_build.htm); [How Flows Run in Transactions](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_transaction.htm))",
+  "why_it_matters": "Unhandled faults show a generic failure and can block the user’s save. Interviewers listen for fault paths on Create/Update/Delete, Fault Message, transaction boundaries, and Roll Back Records—not only a try/catch speech from Apex.",
+  "sixty_second_explanation": "Think of a restaurant ticket rail. The whole ticket is the transaction: either the kitchen finishes the plate or the ticket is killed. A fault path is the expo window when the fryer fails—you still tell the diner (screen) or the chef (email) using Fault Message. Roll Back Records dumps unfinished plates so you do not serve a half-cooked order. Logging is writing the incident on the ticket stub so tonight’s manager can see it.",
+  "deeper_explanation": [
+    "Help: if a Flow contains an element that interacts with the Salesforce database—such as Update Records or Submit for Approval—it can fail. Modify default behavior by adding fault paths to all elements that can fail. ([Build a Flow](https://help.salesforce.com/s/articleView?id=sf.flow_build.htm))",
+    "Official examples add a fault path from the element’s menu (Add Fault Path). Screen Flows show Fault Message on a Screen. Record-triggered examples Send Email with Running Flow Interview → Fault Message. ([Required fields example](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_required_fields.htm); [Bulkified processing](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm))",
+    "How Flows Run in Transactions explains that Flow work participates in platform transactions. Screen, Wait/pause, and some local actions can end a transaction so earlier DML is already committed when the interview resumes—Needs verification of the exact element list on the current transaction Help page for your API version. ([Transactions](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_transaction.htm))",
+    "Release notes document a Roll Back Records element so a fault path can roll back pending record changes in the current transaction instead of leaving partial DML. It does not undo work already committed in a prior transaction after a pause. ([Roll Back Records](https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_builder_roll_back_records.htm))",
+    "Unhandled fault in a record-triggered Flow can fail the triggering save. Handling the fault lets the interview continue on that path; whether the save succeeds then depends on whether you rolled back and what the remaining path does. Do not invent that every handled fault always commits."
+  ],
+  "mental_model": {
+    "analogy": "A restaurant ticket rail: the ticket is the transaction, the expo window is the fault path, Fault Message is what you tell the diner or chef, Roll Back Records dumps unfinished plates, logging is the incident stub.",
+    "useful_mapping": [
+      "transaction → the whole ticket that succeeds or is killed together",
+      "Create/Update/Delete → stations that can fail",
+      "fault path → expo window instead of a silent kitchen crash",
+      "Fault Message → the spoken reason (burned, 86’d ingredient)",
+      "Roll Back Records → dump unfinished plates in this ticket",
+      "pause/Wait → ticket already sent; a new ticket starts on resume",
+      "email or log row → manager’s incident stub (still business data)"
+    ],
+    "where_it_breaks": [
+      "Apex Savepoints are not Flow Roll Back Records; do not mix the APIs.",
+      "A committed transaction after a Screen/Wait cannot be dumped by later Roll Back Records.",
+      "Email on the fault path can itself fail; that needs its own fault strategy.",
+      "The analogy does not encode governor limits or bulk DML (AUTO-007)."
+    ]
+  },
+  "teach_back_prompt": "Using the ticket rail, explain fault path versus unhandled fault, then state when Roll Back Records cannot undo a Create Records that already committed after a pause.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Name three elements that need a fault path and what Fault Message is."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Screen Flow vs record-triggered Flow: what goes on the fault path?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "When does Roll Back Records help, and when is the DML already committed?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose: user sees an unhandled fault after Create Records, no fault connector on the canvas."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: transactions, fault paths, rollback, and logging without Apex jargon only."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-FLOW-FAIL",
+      "title": "Build a Flow — Customize What Happens When a Flow Fails",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_build.htm",
+      "supports": "Database-interacting elements can fail; add fault paths to change default failure behavior.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Hub page; element picker labels vary."
+    },
+    {
+      "source_id": "SF-HELP-FAULT-SCREEN",
+      "title": "Creating Records with Required Field Validation Example",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_required_fields.htm",
+      "supports": "Add Fault Path on Create Records; Screen shows Fault Message from Running Flow Interview; reconnect so the user can retry.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Screen Flow pattern; record-triggered Flows cannot show that Screen to the triggering user the same way."
+    },
+    {
+      "source_id": "SF-HELP-FAULT-EMAIL",
+      "title": "Bulkified Record Processing to Avoid CPU Limits Example — Add Error Handling",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm",
+      "supports": "Record-triggered fault path: Send Email including Fault Message.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Hard-coded recipient addresses in the example are not a production paging design."
+    },
+    {
+      "source_id": "SF-HELP-TXN",
+      "title": "How Flows Run in Transactions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_concepts_transaction.htm",
+      "supports": "Flow interviews participate in transactions; some elements end a transaction so later work is a new unit of work.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Confirm the current page’s list of transaction-ending elements for the API version; do not invent pause rules."
+    },
+    {
+      "source_id": "SF-HELP-ROLLBACK",
+      "title": "Roll Back Pending Record Changes When a Flow Element Fails (release note)",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=release-notes.rn_automate_flow_builder_roll_back_records.htm",
+      "supports": "Roll Back Records on a fault path rolls back pending record changes in the current transaction.",
+      "release_or_version": "Release notes (feature introduced earlier; still cited Summer '26)",
+      "last_verified": "2026-08-16",
+      "limits": "Does not roll back committed work from a previous transaction after a pause."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help fault-path examples over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "elements that can fail",
+        "fault path",
+        "Fault Message",
+        "transaction",
+        "Roll Back Records",
+        "logging"
+      ],
+      "accessible_description": "Portrait map: database elements can fail; a fault path handles Fault Message; the interview is in a transaction; Roll Back Records clears pending DML; logging keeps the message for support."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-FLOW-FAIL",
+        "SF-HELP-TXN",
+        "SF-HELP-ROLLBACK"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Fault path inside a Flow transaction"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Start[Flow interview] --> Txn[Current transaction]\n  Txn --> DML[Create Update Delete or Submit for Approval]\n  DML -->|success| Next[Next element]\n  DML -->|fail| Fault[Fault path]\n  Fault --> Msg[Fault Message]\n  Fault --> RB{Roll Back Records?}\n  RB -->|yes| Undo[Pending DML undone in this transaction]\n  RB -->|no| Continue[Interview continues; pending DML may still commit]\n  Msg --> Log[Screen or email or log record]\n  Next --> Pause{Screen or Wait?}\n  Pause -->|yes| Commit[Transaction can end; new transaction later]\n  Pause -->|no| More[Same transaction continues]",
+      "decision": "flowchart TD\n  Fail[Element can fail] --> Q1{Did you add a fault path?}\n  Q1 -->|No| Unhandled[Unhandled fault: generic error; save may fail]\n  Q1 -->|Yes| Q2{Screen Flow with a user present?}\n  Q2 -->|Yes| Screen[Screen showing Fault Message; optional retry connector]\n  Q2 -->|Record-triggered| Email[Send Email or Create log record with Fault Message]\n  Screen --> Q3{Partial DML in this transaction must not remain?}\n  Email --> Q3\n  Q3 -->|Yes still pending| Roll[Roll Back Records on the fault path]\n  Q3 -->|Already committed after pause| TooLate[Cannot roll back prior transaction; compensate or reverse with new DML]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Elements that interact with the Salesforce database can fail; add fault paths to change default failure behavior.",
+      "source_ids": ["SF-HELP-FLOW-FAIL"],
+      "scope": "Fault paths",
+      "validation": "Build a Flow: Customize What Happens When a Flow Fails.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "On a fault path, Running Flow Interview Fault Message can be shown on a Screen or included in an email.",
+      "source_ids": ["SF-HELP-FAULT-SCREEN", "SF-HELP-FAULT-EMAIL"],
+      "scope": "Fault Message",
+      "validation": "Official Create Contact and Closed Won Task examples.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Flow interviews run in transactions; some elements can end a transaction so later work is a new unit of work.",
+      "source_ids": ["SF-HELP-TXN"],
+      "scope": "Transactions",
+      "validation": "How Flows Run in Transactions.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Roll Back Records on a fault path rolls back pending record changes in the current transaction.",
+      "source_ids": ["SF-HELP-ROLLBACK"],
+      "scope": "Rollback",
+      "validation": "Roll Back Records release note / element.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify How Flows Run in Transactions and Roll Back Records element availability for Summer '26 / API 67.0.",
+  "unresolved_uncertainty": [
+    "Exact list of transaction-ending elements for API 67.0: Needs verification on the current transaction Help page.",
+    "Whether a handled fault without Roll Back Records always commits prior DML in a record-triggered save: Needs verification against current transaction Help; do not guess."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "fault path",
+      "telugu": "డేటాబేస్ అంశం ఫెయిల్ అయినప్పుడు ఫ్లో వెళ్ళే లోపం మార్గం."
+    },
+    {
+      "english": "Roll Back Records",
+      "telugu": "ఈ ట్రాన్సాక్షన్‌లో పెండింగ్ రికార్డ్ మార్పులను రద్దు చేసే అంశం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Database elements can fail. I add a fault path and use Fault Message. The interview is in a transaction. If pending DML must not remain, I Roll Back Records on that path. After a pause, earlier DML may already be committed.",
+    "two_minutes": "I start from Help: add fault paths to elements that hit the database. Screen Flows show Fault Message and may loop back. Record-triggered Flows email Fault Message because there is no user Screen. I explain transactions: the triggering save and the Flow often share one unit of work until a Screen or Wait ends it. Roll Back Records only affects pending changes in the current transaction. Logging is keeping Fault Message somewhere support can read—email in the official example, or a custom object if the org standard says so, which is data, not Flow metadata."
+  },
+  "terminology": [
+    {
+      "term": "fault path",
+      "plain": "The extra connector on a Flow element that runs when that element fails.",
+      "precise": "Added via Add Fault Path on elements that can fail, including Create/Update/Delete and Submit for Approval. Changes default unhandled-fault behavior.",
+      "example": "Create Records → fault path → Screen with Fault Message.",
+      "non_example": "A Decision element’s default outcome is not a fault path.",
+      "confusable_neighbor": "Fault connector vs the success connector to the next happy-path element.",
+      "boundary": "Apex catch blocks are not Flow fault paths."
+    },
+    {
+      "term": "Fault Message",
+      "plain": "The platform text describing why the element failed.",
+      "precise": "Available from Running Flow Interview as Fault Message in official Screen and email examples.",
+      "example": "Email body: the Flow had an error. Here's the error: {Fault Message}.",
+      "non_example": "A custom label you typed as 'Error' with no platform fault text.",
+      "confusable_neighbor": "Validation-rule error on the record: may appear in Fault Message but is not authored as Flow copy.",
+      "boundary": "Do not log secrets that might appear in overly verbose messages."
+    },
+    {
+      "term": "transaction",
+      "plain": "The unit of work that commits or rolls back together.",
+      "precise": "How Flows Run in Transactions: the interview participates in a platform transaction. Some elements end it.",
+      "example": "Record-triggered Create Records in the same save as the Opportunity update until a pause.",
+      "non_example": "Two Debug runs are two interviews, not one transaction.",
+      "confusable_neighbor": "Flow interview: one execution; it may span more than one transaction if it pauses.",
+      "boundary": "Governor limits apply per transaction; AUTO-007 owns bulk DML placement."
+    },
+    {
+      "term": "Roll Back Records",
+      "plain": "A Flow element that undoes pending record changes in the current transaction.",
+      "precise": "Placed on a fault path to roll back pending DML. Cannot undo a prior transaction after a Wait/Screen commit.",
+      "example": "Create Account succeeds, Create Contact fails, Roll Back Records on the Contact fault path.",
+      "non_example": "Delete Records of the Account as a compensating action after a committed pause.",
+      "confusable_neighbor": "Apex Database.rollback(savepoint): related idea, different tool.",
+      "boundary": "Availability and exact pending-vs-committed rules: cite current Help."
+    },
+    {
+      "term": "unhandled fault",
+      "plain": "The element failed and there is no fault path, so the interview errors out.",
+      "precise": "Users often see a generic ‘unhandled fault has occurred in this flow’ style message. Record-triggered unhandled faults can fail the save.",
+      "example": "Create Records with no fault connector during a required-field miss.",
+      "non_example": "A Decision routing to an error Screen on purpose without a database failure.",
+      "confusable_neighbor": "Handled fault: interview continues on the fault path.",
+      "boundary": "Exact user-facing wording can vary by experience; do not memorize one Classic string as universal."
+    },
+    {
+      "term": "error logging",
+      "plain": "Keeping Fault Message where an admin can find it after the interview ends.",
+      "precise": "Official record-triggered example uses Send Email with Fault Message. A custom log object is an org pattern, not a required Salesforce object.",
+      "example": "Email to the automation owner with Flow API name and Fault Message.",
+      "non_example": "Debug in Flow Builder in production as the only ‘log’.",
+      "confusable_neighbor": "Debug logs (Setup): different from a Flow-designed fault email.",
+      "boundary": "Creating a log record is DML and can itself fail."
+    },
+    {
+      "term": "pause / Wait",
+      "plain": "The interview stops and may continue later, often in a new transaction.",
+      "precise": "Transaction Help: certain elements end the current transaction. After commit, Roll Back Records cannot undo that work.",
+      "example": "Screen Flow Create Records, then a Screen; the Create may already be committed when the user clicks Next later.",
+      "non_example": "A Decision is not a pause.",
+      "confusable_neighbor": "Scheduled path on a record-triggered Flow: later interview/path, not the same as a Screen pause.",
+      "boundary": "Confirm which elements end transactions on the current Help page."
+    },
+    {
+      "term": "pending record changes",
+      "plain": "DML that has run in this transaction but is not committed yet.",
+      "precise": "What Roll Back Records targets. Once the transaction commits, changes are real rows (business data).",
+      "example": "Two Create Records in one path before any Screen: both pending until commit or rollback.",
+      "non_example": "A Task created yesterday by a finished interview.",
+      "confusable_neighbor": "Assignment to a record variable: in-memory, not pending DML until Create/Update/Delete runs.",
+      "boundary": "AUTO-007 collections are in-memory until the DML element."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Identify failing elements",
+      "actor": "Admin",
+      "trigger": "Flow has Get/Create/Update/Delete, actions, or Submit for Approval",
+      "before": "Only success connectors",
+      "after": "Every database-interacting element listed for a fault path",
+      "observe": "Canvas shows a fault connector from those elements",
+      "failure": "Only adding a fault path to the last Screen"
+    },
+    {
+      "step": 2,
+      "transition": "Handle Fault Message",
+      "actor": "Admin",
+      "trigger": "Fault path added",
+      "before": "Silent or generic unhandled fault",
+      "after": "Screen (interactive) or email/log (background) includes Fault Message",
+      "observe": "Debug forces a failure and shows the fault path",
+      "failure": "Empty Display Text that does not include Fault Message"
+    },
+    {
+      "step": 3,
+      "transition": "Decide rollback",
+      "actor": "Admin",
+      "trigger": "Earlier DML in the same transaction",
+      "before": "Partial rows might remain",
+      "after": "Roll Back Records on the fault path if pending changes must not remain",
+      "observe": "After a forced fail, related pending inserts are gone",
+      "failure": "Expecting rollback of a Create that committed after a Screen"
+    },
+    {
+      "step": 4,
+      "transition": "Leave an operational trail",
+      "actor": "Admin / support",
+      "trigger": "Background Flow can fail with no user",
+      "before": "Only the user’s generic error",
+      "after": "Email or log record with Flow name and Fault Message",
+      "observe": "A test failure produces a message you can search",
+      "failure": "Hard-coding a personal inbox as the only production alert with no owner rotation"
+    }
+  ],
+  "when_to_use": [
+    "When a Flow’s Create, Update, Delete, or Submit for Approval can fail and you must add a fault path.",
+    "When you need to show or email Fault Message instead of an unhandled fault.",
+    "When pending DML in the current transaction must Roll Back Records on the fault path.",
+    "When explaining how a pause or Screen can end a transaction so later rollback cannot undo it.",
+    "When designing error logging for a record-triggered Flow that has no user Screen."
+  ],
+  "when_not_to_use": [
+    "Do not use a fault path as a substitute for bulk-safe Get/Create/Update/Delete (AUTO-007).",
+    "Do not treat Roll Back Records as Apex Database.rollback without citing the Flow element.",
+    "Do not skip fault paths because Debug never failed with happy-path data.",
+    "Do not log real customer secrets from Fault Message into an unsecured Chatter post.",
+    "Do not claim every handled fault always saves the triggering record without verifying transaction Help."
+  ],
+  "configuration_or_code_location": [
+    "Flow Builder element menu: Add Fault Path.",
+    "Running Flow Interview → Fault Message on Screen text templates or email body.",
+    "Roll Back Records element on the fault path.",
+    "How Flows Run in Transactions Help for pause/commit rules."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox screen Flow creates a LAB_ Contact. Required Email can be blank if a tester bypasses the Screen component. Need a retry path, not an unhandled fault. No production data.",
+    "inputs": [
+      "Screen Flow Create Records on Contact",
+      "Email marked required on the object but optional on an early Screen draft",
+      "Admin email for a second experiment on a record-triggered copy"
+    ],
+    "decisions": [
+      {
+        "decision": "Add Fault Path on Create Records with a Screen that includes Fault Message and a connector back to the input Screen.",
+        "because": "Official required-fields example uses that retry pattern.",
+        "rejected": "Leave Create Records without a fault path"
+      },
+      {
+        "decision": "If a prior Create Account in the same path must not remain when Contact fails, add Roll Back Records on the Contact fault path.",
+        "because": "Pending Account insert is still in this transaction before a pause.",
+        "rejected": "Assume Salesforce always undoes the Account automatically"
+      },
+      {
+        "decision": "Do not rely on Roll Back Records after a Wait to undo the Account.",
+        "because": "A new transaction may have committed the Account.",
+        "rejected": "Pause then rollback as a cleanup strategy"
+      }
+    ],
+    "configuration_or_code": [
+      "Create Records: Contact from Screen inputs.",
+      "Add Fault Path → Screen with Critical message + Fault Message resource.",
+      "Connect fault Screen back to the first Screen for retry.",
+      "Optional: Roll Back Records before the error Screen if an earlier Create is pending."
+    ],
+    "output": "Tester sees the platform Fault Message, retries, and does not get only a generic unhandled fault.",
+    "verification": [
+      "Debug with blank Email follows the fault connector, not the success Screen.",
+      "Fault Message text appears on the error Screen.",
+      "If Roll Back Records is used, the pending Account is not in the org after the fault."
+    ],
+    "self_explanation": "I copied the official Screen fault pattern and only used Roll Back Records for pending work in the same transaction."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ Contact/Account only.",
+    "starting_state_checks": [
+      "You can create Screen Flows.",
+      "Email is required on Contact in this org or you can force another Create failure."
+    ],
+    "steps": [
+      "Build a Screen Flow that Create Records a LAB_ Contact.",
+      "Add Fault Path with a Screen that displays Fault Message.",
+      "Debug a failing create and confirm the fault path runs.",
+      "Add Roll Back Records only if you also Create an Account earlier in the same transaction, then confirm it does not remain after the fault."
+    ],
+    "guided_completion": [
+      "If there is no fault connector, you are testing unhandled fault, not handling.",
+      "If you paused after Create Account, rollback may be too late."
+    ],
+    "independent_challenge": "Copy the pattern to a record-triggered Flow using Send Email with Fault Message instead of a Screen.",
+    "evidence": [
+      "Debug screenshot of the fault path and Fault Message.",
+      "Notes on whether Roll Back Records was needed."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Contacts/Accounts created during happy-path tests.",
+      "Deactivate the Flow."
+    ],
+    "limitations": "Email deliverability and org-wide email relays can block the record-triggered notify path."
+  },
+  "decision_table": [
+    {
+      "signal": "Screen Flow Create Records can fail a required field while the user is still in the interview.",
+      "choose": "Fault path to a Screen that shows Fault Message and offers retry.",
+      "not": "No fault path, hoping the generic unhandled fault is enough UX.",
+      "why": "Official required-fields example uses Add Fault Path plus Fault Message on a Screen."
+    },
+    {
+      "signal": "Record-triggered Create Records can fail and nobody is on a Screen.",
+      "choose": "Fault path with Send Email (or a log record) including Fault Message.",
+      "not": "A Screen element on a record-triggered background Flow as the only alert.",
+      "why": "Official bulkify example emails Fault Message to an admin."
+    },
+    {
+      "signal": "Create Account then Create Contact in one path; Contact fails; Account must not remain.",
+      "choose": "Roll Back Records on the Contact fault path while still in the same transaction.",
+      "not": "A Wait element then Roll Back Records to undo the Account.",
+      "why": "Rollback targets pending changes; a pause can commit a prior transaction."
+    },
+    {
+      "signal": "You need an audit row of the failure for compliance.",
+      "choose": "Create a log record on the fault path, with its own fault strategy, using Fault Message.",
+      "not": "Assume Send Email is a durable audit store.",
+      "why": "Email is the Help example for notify; a log object is data you design, and that Create can fail too."
+    },
+    {
+      "signal": "Unhandled fault appears on save after a new after-save Flow.",
+      "choose": "Open the Flow, find database elements without fault connectors, Debug the failing input.",
+      "not": "Immediately convert the Flow to Apex to 'get try/catch'.",
+      "why": "Help’s first remediation is adding fault paths to failing database elements."
+    }
+  ],
+  "limitations": [
+    "Does not replace bulk-safe DML placement (AUTO-007).",
+    "Does not set execution context (AUTO-009).",
+    "Email on a fault path is not a guaranteed audit archive.",
+    "Transaction-ending element list must be rechecked on current Help."
+  ],
+  "security_notes": [
+    "Fault Message can contain field values; do not email it to a public distribution list.",
+    "Log objects need sharing so only admins see failures.",
+    "Never include session IDs or passwords in custom error text."
+  ],
+  "common_mistakes": [
+    "No fault path on Create/Update/Delete.",
+    "Fault Screen that does not include Fault Message.",
+    "Expecting Roll Back Records to undo committed work after a pause.",
+    "Using a Screen as the only handler on a record-triggered Flow.",
+    "Creating a log record on the fault path with no fault path of its own."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Unhandled fault has occurred in this flow.",
+      "check": [
+        "Which element is last in Debug before the error",
+        "Whether that element has a fault connector"
+      ],
+      "do_not_assume": "The Flow metadata failed to save."
+    },
+    {
+      "symptom": "Fault path runs but the Account created earlier is still there.",
+      "check": [
+        "Whether a Screen or Wait committed a prior transaction",
+        "Whether Roll Back Records is actually on this fault path"
+      ],
+      "do_not_assume": "Roll Back Records always deletes historical rows."
+    },
+    {
+      "symptom": "Admin never receives the fault email.",
+      "check": [
+        "Deliverability, recipient address, and whether the email action itself faulted",
+        "Sandbox email relays"
+      ],
+      "do_not_assume": "The Flow did not fail."
+    }
+  ],
+  "production_notes": [
+    "Name a support owner for fault emails; do not use a personal inbox only.",
+    "Rehearse one forced failure in sandbox before activation.",
+    "Paused interviews plus later faults need a compensation plan, not only Roll Back Records."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Why does Help tell you to add fault paths?",
+      "options": {
+        "A": "Database-interacting elements can fail; fault paths change default failure behavior",
+        "B": "Fault paths make before-save Flows able to Create Records",
+        "C": "Fault paths replace Get Records",
+        "D": "Fault paths are required only on Decision elements"
+      },
+      "answer": "A",
+      "rationale": "Build a Flow: elements that interact with the database can fail; add fault paths.",
+      "distractor_explanations": {
+        "B": "before-save element limits are unchanged.",
+        "C": "Get Records is a data element; fault paths handle failures.",
+        "D": "Decisions are not the primary database-fail case Help cites."
+      },
+      "concept": "Why fault paths",
+      "citation_ids": ["SF-HELP-FLOW-FAIL"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In the official Create Contact example, what does the fault Screen show?",
+      "options": {
+        "A": "Fault Message from Running Flow Interview",
+        "B": "Only a blank Screen with no text",
+        "C": "The Apex stack trace only",
+        "D": "A Workflow Rule error"
+      },
+      "answer": "A",
+      "rationale": "The example inserts Fault Message into the error Screen content.",
+      "distractor_explanations": {
+        "B": "The example is explicit about showing the error.",
+        "C": "This is a Flow example, not an Apex test log.",
+        "D": "Workflow Rules are AUTO-012."
+      },
+      "concept": "Fault Message on Screen",
+      "citation_ids": ["SF-HELP-FAULT-SCREEN"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Record-triggered Task Create fails. Best official-style handler?",
+      "options": {
+        "A": "Fault path Send Email including Fault Message",
+        "B": "A Screen asking the triggering user to retry mid-save",
+        "C": "Delete the Flow definition",
+        "D": "Get Records inside the Loop"
+      },
+      "answer": "A",
+      "rationale": "Bulkify Help’s error handling is Send Email with Fault Message on the Create Records fault path.",
+      "distractor_explanations": {
+        "B": "Record-triggered after-save is not a user Screen interview.",
+        "C": "You fix handling; you do not delete metadata as the first step.",
+        "D": "That is AUTO-007 anti-pattern, not error handling."
+      },
+      "concept": "Background fault notify",
+      "citation_ids": ["SF-HELP-FAULT-EMAIL"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What does Roll Back Records undo?",
+      "options": {
+        "A": "Pending record changes in the current transaction",
+        "B": "Every record the org ever created",
+        "C": "Committed work from a finished transaction after a Wait",
+        "D": "The Flow’s metadata versions"
+      },
+      "answer": "A",
+      "rationale": "Release note: roll back pending record changes when an element fails.",
+      "distractor_explanations": {
+        "B": "Rollback is transaction-scoped.",
+        "C": "Committed prior transactions are not pending.",
+        "D": "Versions are metadata (AUTO-013)."
+      },
+      "concept": "Pending vs committed",
+      "citation_ids": ["SF-HELP-ROLLBACK"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What Help topic explains that Flow work participates in a unit of work that commits or rolls back together?",
+      "options": {
+        "A": "How Flows Run in Transactions",
+        "B": "Apex Class Definition",
+        "C": "Report Types",
+        "D": "Person Accounts"
+      },
+      "answer": "A",
+      "rationale": "platform.flow_concepts_transaction.htm is the transaction topic.",
+      "distractor_explanations": {
+        "B": "Apex classes are APEX-001.",
+        "C": "Analytics track.",
+        "D": "Data model, not Flow transactions."
+      },
+      "concept": "Transactions topic",
+      "citation_ids": ["SF-HELP-TXN"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Create Records has no fault connector and the user sees a generic flow fault. What was missing?",
+      "options": {
+        "A": "A fault path on the failing database element",
+        "B": "A second Get Records inside a Loop",
+        "C": "Making the Flow global",
+        "D": "A Workflow outbound message"
+      },
+      "answer": "A",
+      "rationale": "Without a fault path the failure is unhandled.",
+      "distractor_explanations": {
+        "B": "Worsens bulk design.",
+        "C": "global is Apex, not Flow interviews.",
+        "D": "Legacy AUTO-012."
+      },
+      "concept": "Unhandled fault",
+      "citation_ids": ["SF-HELP-FLOW-FAIL"]
+    },
+    {
+      "id": "Q7",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Screen fault handling versus record-triggered fault handling in official examples?",
+      "options": {
+        "A": "Screen shows Fault Message to the user; record-triggered emails Fault Message",
+        "B": "Both must use Apex try/catch",
+        "C": "Record-triggered Flows cannot have fault paths",
+        "D": "Screens cannot display Fault Message"
+      },
+      "answer": "A",
+      "rationale": "Required-fields example vs bulkify email example.",
+      "distractor_explanations": {
+        "B": "These are declarative examples.",
+        "C": "The bulkify example adds a fault path.",
+        "D": "The Screen example does display it."
+      },
+      "concept": "Interactive vs background",
+      "citation_ids": ["SF-HELP-FAULT-SCREEN", "SF-HELP-FAULT-EMAIL"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You pause the Flow after Create Account. Later Create Contact fails. Roll Back Records on that later fault path?",
+      "options": {
+        "A": "May not undo the Account if that Create already committed in a prior transaction",
+        "B": "Always deletes the Account regardless of pause",
+        "C": "Deletes Flow metadata",
+        "D": "Converts the Flow to before-save"
+      },
+      "answer": "A",
+      "rationale": "Rollback is pending changes in the current transaction; pauses can end transactions.",
+      "distractor_explanations": {
+        "B": "Overstates rollback.",
+        "C": "Data vs metadata.",
+        "D": "Unrelated."
+      },
+      "concept": "Pause vs rollback",
+      "citation_ids": ["SF-HELP-TXN", "SF-HELP-ROLLBACK"]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "The official Screen example reconnects the fault Screen to the first Screen. Why?",
+      "options": {
+        "A": "So the user can fix inputs and retry Create Records",
+        "B": "To skip required fields forever",
+        "C": "To activate a second Flow version automatically",
+        "D": "To run the Flow in system context"
+      },
+      "answer": "A",
+      "rationale": "Help: if the user can fix the error, connect back to the first Screen.",
+      "distractor_explanations": {
+        "B": "Retry is not skip-required.",
+        "C": "Versioning is AUTO-013.",
+        "D": "Context is AUTO-009."
+      },
+      "concept": "Retry connector",
+      "citation_ids": ["SF-HELP-FAULT-SCREEN"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Assignment versus Create Records when talking about rollback?",
+      "options": {
+        "A": "Assignment is in-memory; Create Records is DML that can become pending record changes",
+        "B": "Assignment is DML and Create Records is not",
+        "C": "Both always commit immediately even mid-transaction",
+        "D": "Neither can fail"
+      },
+      "answer": "A",
+      "rationale": "Pending record changes come from database elements, not Assignment.",
+      "distractor_explanations": {
+        "B": "Reversed.",
+        "C": "Transactions exist so DML can still be pending.",
+        "D": "Create Records can fail; that is why fault paths exist."
+      },
+      "concept": "In-memory vs DML",
+      "citation_ids": ["SF-HELP-ROLLBACK", "SF-HELP-FLOW-FAIL"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A custom error-log object Create on the fault path also fails. What should you plan?",
+      "options": {
+        "A": "A fault path on that Create too, plus a non-DML notify such as email",
+        "B": "Ignore it; log Creates cannot fail",
+        "C": "Put the log Create inside a Loop of all Accounts",
+        "D": "Use before-save to Create the log on another object"
+      },
+      "answer": "A",
+      "rationale": "Logging Create is still database interaction and can fail; Help still wants fault paths on such elements.",
+      "distractor_explanations": {
+        "B": "Any Create can fail.",
+        "C": "AUTO-007 anti-pattern.",
+        "D": "before-save cannot Create related logs."
+      },
+      "concept": "Logging can fail",
+      "citation_ids": ["SF-HELP-FLOW-FAIL"]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Submit for Approval is cited next to Update Records as an element that can fail. What does that imply?",
+      "options": {
+        "A": "Add a fault path to that action, not only to Create/Update/Delete",
+        "B": "Approvals never fail",
+        "C": "Fault paths are illegal on actions",
+        "D": "You must use Workflow Rules instead"
+      },
+      "answer": "A",
+      "rationale": "Help lists Update Records or Submit for Approval as examples of failing database interaction.",
+      "distractor_explanations": {
+        "B": "They can fail.",
+        "C": "Actions are in scope for fault paths.",
+        "D": "AUTO-012 legacy."
+      },
+      "concept": "Actions can fault",
+      "citation_ids": ["SF-HELP-FLOW-FAIL"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is a Flow fault path?",
+      "back": "The connector that runs when a database-interacting element fails, instead of an unhandled fault."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "What is Fault Message?",
+      "back": "Platform text from Running Flow Interview describing the failure, used on Screens or in email."
+    },
+    {
+      "id": "F3",
+      "category": "transaction",
+      "front": "What is a Flow transaction in this lesson?",
+      "back": "The unit of work that commits or rolls back together, described in How Flows Run in Transactions."
+    },
+    {
+      "id": "F4",
+      "category": "rollback",
+      "front": "What does Roll Back Records undo?",
+      "back": "Pending record changes in the current transaction, typically on a fault path."
+    },
+    {
+      "id": "F5",
+      "category": "rollback",
+      "front": "When can Roll Back Records not undo a Create?",
+      "back": "When that Create already committed in a prior transaction after a pause or Screen."
+    },
+    {
+      "id": "F6",
+      "category": "pattern",
+      "front": "Screen Flow official fault pattern?",
+      "back": "Add Fault Path, Screen with Fault Message, optional connector back to the input Screen."
+    },
+    {
+      "id": "F7",
+      "category": "pattern",
+      "front": "Record-triggered official fault pattern?",
+      "back": "Add Fault Path and Send Email whose body includes Fault Message."
+    },
+    {
+      "id": "F8",
+      "category": "anti-pattern",
+      "front": "What is an unhandled fault?",
+      "back": "The element failed with no fault path, so the interview errors out and may fail the save."
+    },
+    {
+      "id": "F9",
+      "category": "logging",
+      "front": "Is a custom log object required by Salesforce?",
+      "back": "No. Help’s example emails Fault Message. A log object is an org pattern and is business data."
+    },
+    {
+      "id": "F10",
+      "category": "compare",
+      "front": "Assignment vs pending DML?",
+      "back": "Assignment is in-memory. Create/Update/Delete create pending record changes until commit or rollback."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Is a Flow fault path an Apex catch block?",
+      "back": "No. It is a Flow connector on a failing element. Apex rollback APIs are a different tool."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "Submit for Approval can fail. What do you add?",
+      "back": "A fault path on that action, same idea as Update Records."
+    },
+    {
+      "id": "F13",
+      "category": "transaction",
+      "front": "Why do pause/Wait matter for rollback?",
+      "back": "They can end the current transaction, so later Roll Back Records cannot undo committed work."
+    },
+    {
+      "id": "F14",
+      "category": "ops",
+      "front": "Fault email never arrives. First checks?",
+      "back": "Deliverability, recipient, and whether the email action itself faulted with no handler."
+    },
+    {
+      "id": "F15",
+      "category": "boundary",
+      "front": "Does a fault path make DML-in-Loop bulk-safe?",
+      "back": "No. Fault handling is AUTO-008; collection DML after the Loop is AUTO-007."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is a fault path, and what do you put on it?",
+      "answer_30_seconds": "A connector for when a database element fails. I show or email Fault Message. In background Flows I notify an owner. I add Roll Back Records if pending DML must not remain.",
+      "answer_2_minutes": "Help says elements that hit the database can fail and that fault paths change the default. I add them on Create/Update/Delete and actions like Submit for Approval. Screen Flows follow the Contact example: error Screen plus retry. Record-triggered Flows follow the Task example: email Fault Message. I do not call that Apex try/catch.",
+      "example": "LAB_ Contact Create Records faults to a Screen with Fault Message.",
+      "tradeoffs": [
+        "User-visible Screen vs admin email",
+        "Rollback vs compensating DML"
+      ],
+      "follow_ups": [
+        "What if the email action fails?",
+        "Where is Fault Message selected?"
+      ],
+      "weak_answer_warnings": [
+        "Saying Flow cannot handle errors"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do Flow transactions affect error handling?",
+      "answer_30_seconds": "The interview runs in a transaction. Pending DML commits or rolls back together until something ends the transaction. Roll Back Records only sees pending work in the current transaction.",
+      "answer_2_minutes": "I cite How Flows Run in Transactions. Record-triggered work often shares the save. A Screen or Wait can end a transaction—I reverify the element list on the current page. After commit, a later fault cannot Roll Back Records the earlier Create. That is when I design compensating Delete/Update, which is a new DML with its own fault path.",
+      "example": "Create Account, Screen, Create Contact fails: Account may already be committed.",
+      "tradeoffs": [
+        "One transaction vs paused interviews",
+        "Rollback vs compensation"
+      ],
+      "follow_ups": [
+        "What ends a transaction?",
+        "How does this interact with bulk DML?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming Flow has no transactions"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Users report an unhandled fault after a new after-save Flow. Walk the diagnosis.",
+      "answer_30_seconds": "Open Debug with the failing record, find the last database element, and check for a missing fault connector. Read Fault Message once you add a path or from the error email.",
+      "answer_2_minutes": "I do not start by rewriting in Apex. I reproduce in sandbox Debug, inspect Create/Update/Delete and actions. Missing fault path means unhandled fault. Then I look at AUTO-007: DML in a Loop can also blow the transaction. I add handling, LAB_ data only, then a bulk test. Production remains change-controlled (AUTO-013).",
+      "example": "Create Records of Tasks failed a validation rule; no fault path on the canvas.",
+      "tradeoffs": [
+        "Fix handling vs fix the validation",
+        "Email volume vs log object"
+      ],
+      "follow_ups": [
+        "How do you find which Flow faulted?",
+        "What does the user-facing message look like?"
+      ],
+      "weak_answer_warnings": [
+        "Deactivating all Flows on the object as step one"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Create Account then Create Contact in one Screen Flow. Contact fails. Product wants no orphan Account. What do you do?",
+      "answer_30_seconds": "If both Creates are still in the same transaction, put Roll Back Records on the Contact fault path. If a Screen sat between them, the Account may already be committed—compensate with Delete/Update, do not trust later rollback.",
+      "answer_2_minutes": "I draw the canvas and mark transaction boundaries. No Screen between the two Creates: pending Account is rollback-eligible. Screen between them: I cite transaction Help and design an explicit compensating path with its own fault handling. I still show Fault Message so the user can retry Contact without silently keeping a half-finished ticket.",
+      "example": "LAB_ Account + Contact; fault Screen after Roll Back Records when there was no pause.",
+      "tradeoffs": [
+        "One transaction vs better UX with a Screen in the middle",
+        "Rollback vs compensating Delete"
+      ],
+      "follow_ups": [
+        "Where do you place Roll Back Records relative to the error Screen?",
+        "What if Delete of the Account is blocked by a child?"
+      ],
+      "weak_answer_warnings": [
+        "Always Roll Back Records after every Screen"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "How do you log Flow errors without pretending Salesforce ships a required log object?",
+      "answer_30_seconds": "The official background example emails Fault Message. If the org wants a searchable log, I Create a custom object row on the fault path and give that Create its own fault path, usually back to email.",
+      "answer_2_minutes": "I separate notify from audit. Email is Help’s pattern and is not an archive. A log object is metadata plus business data rows. That Create is DML and can fail—especially if the original failure was a governor or validation issue. I never log secrets. I do not put the log Create inside a Loop of unrelated records.",
+      "example": "LAB_Flow_Error__c row with Flow API name and Fault Message, email if that Create faults.",
+      "tradeoffs": [
+        "Email vs custom object",
+        "Log DML vs avoiding extra DML in a failing transaction"
+      ],
+      "follow_ups": [
+        "Should logging be in a new transaction?",
+        "Who can see log records?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing a standard Salesforce Error Log object"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "The fault path runs, but Roll Back Records does not remove the Account. Why?",
+      "answer_30_seconds": "The Account Create likely committed already—pause, Screen, or a prior transaction—or Roll Back Records is not on this path. Rollback only clears pending changes.",
+      "answer_2_minutes": "I check Debug timestamps versus Screen elements. I confirm the rollback element is on the same fault connector as the failing DML. I look for a Wait. I explain pending versus committed in ticket-rail language. Then I design compensation if the row is real data.",
+      "example": "Create Account, Screen ‘confirm’, Create Contact faults; Account remains.",
+      "tradeoffs": [
+        "UX Screens vs atomic creates",
+        "Compensation complexity"
+      ],
+      "follow_ups": [
+        "How would you demonstrate pending vs committed in Debug?",
+        "Would you combine Account and Contact in one Create using a different model?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Roll Back Records broken without checking pauses"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Should every Get Records have a fault path?",
+      "answer_30_seconds": "Get Records can fail; Help’s ‘elements that can fail’ is broader than DML. I still prioritize Create/Update/Delete and actions first. Empty Get results are often a Decision, not a fault.",
+      "answer_2_minutes": "I distinguish zero rows (business Decision: collection is empty) from a query exception (fault). I do not treat ‘no team members’ as a fault; I Decision out. I do add fault paths where Help calls out database interaction that can fail, especially DML and Submit for Approval. I reverify Get Records fault behavior on current element Help rather than inventing that Get never faults.",
+      "example": "Empty team-member collection goes to End; Create Records still has a fault path.",
+      "tradeoffs": [
+        "Fault vs Decision for empty collections",
+        "Coverage of every element vs the ones that fail in UAT"
+      ],
+      "follow_ups": [
+        "What does Get Records return when nothing matches?",
+        "Can filters on Update Records fault?"
+      ],
+      "weak_answer_warnings": [
+        "Using a fault path as the empty-collection branch"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "A Java developer asks for try/catch in Flow. How do you teach the Salesforce equivalent?",
+      "answer_30_seconds": "Flow does not use try/catch syntax. The equivalent is a fault path plus Fault Message, and Roll Back Records for pending DML in this transaction—not Java catch.",
+      "answer_2_minutes": "I map try to the happy connector and catch to Add Fault Path. I show Fault Message as the exception message. I warn that pause/commit is not Java method scope. I mention Apex when they truly need savepoints and catch, which is a later programming topic. I keep the ticket-rail analogy and state where it breaks: committed work after a Screen.",
+      "example": "They look for a catch block on Create Records; you show Add Fault Path on the element.",
+      "tradeoffs": [
+        "Declarative fault paths vs Apex try/catch",
+        "User-facing retry vs failing the save"
+      ],
+      "follow_ups": [
+        "When do you move this to Apex?",
+        "How does bulkification change fault frequency?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing a Flow try/catch element"
+      ]
+    }
+  ]
+}

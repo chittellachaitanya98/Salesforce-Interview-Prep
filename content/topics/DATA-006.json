@@ -1,0 +1,1057 @@
+{
+  "topic_id": "DATA-006",
+  "slug": "formula-fields-and-cross-object-formulas",
+  "title": "Formula fields and cross-object formulas",
+  "track": "Data model and configuration",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-005"
+  ],
+  "objectives": [
+    "Define a formula field as a custom field whose value is calculated from other fields, with a chosen return type.",
+    "Use a cross-object formula to read fields on a related parent through lookup or master-detail, instead of stamping a stored copy.",
+    "State the official maximum of 10 unique relationships per object across formula fields, rules, and lookup filters.",
+    "Refuse formula fields that should be roll-up summaries, validation rules, or editable stored fields."
+  ],
+  "diagnostic_question": "Users want Property's city on every inspection, a count of inspections on the property, and a block if city is blank. Which of those is a formula field, which is not, and why?",
+  "definition": "A formula field is a custom field that calculates a value from other fields or expressions and stores a return type such as text, number, currency, percent, date, date/time, or checkbox. A cross-object formula references fields on a related parent through a lookup or master-detail relationship. Salesforce allows a maximum of 10 unique relationships per object in cross-object formulas, cumulative across formula fields, rules, and lookup filters. You cannot reference cross-object formulas in roll-up summary fields. ([Tips for Building Cross-Object Formulas](https://help.salesforce.com/s/articleView?id=platform.fields_creating_cross_object_notes.htm); [Formula Field Limits and Restrictions](https://help.salesforce.com/s/articleView?id=sf.formula_field_limits.htm); [Formula Operators and Functions](https://developer.salesforce.com/docs/atlas.en-us.usefulFormulaFields.meta/usefulFormulaFields/customize_functions.htm))",
+  "why_it_matters": "Teams stamp parent city into a text field and then wonder why it goes stale. A formula field is the calculated display. Interviewers also listen for the 10 unique-relationship limit and for not using a formula to count children—that is a roll-up or automation alternative.",
+  "sixty_second_explanation": "Think of a store receipt reprint. The line-item prices are stored fields. The reprint total is calculated every time you look—you do not pencil it in. A cross-object formula is reading the store name from the receipt header. You get ten unique header walks per object across formulas, rules, and lookup filters. You cannot feed that reprint formula into a roll-up tally on the header.",
+  "deeper_explanation": [
+    "Formula fields are a custom field data type (DATA-002). You choose a return type. Users do not type the value; the platform calculates it from referenced fields and functions. Formula operators and functions are shared with validation rules and other formula contexts, with some functions limited by context. ([Formula Operators and Functions](https://developer.salesforce.com/docs/atlas.en-us.usefulFormulaFields.meta/usefulFormulaFields/customize_functions.htm); [Custom Field Attributes](https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm))",
+    "Cross-object formulas walk lookup or master-detail relationships to parent fields. Two formulas on Opportunity that both reference Account count as one unique relationship (Opportunity to Account). The maximum of 10 unique relationships per object is cumulative across formula fields, rules, and lookup filters. ([Tips for Building Cross-Object Formulas](https://help.salesforce.com/s/articleView?id=platform.fields_creating_cross_object_notes.htm))",
+    "You cannot reference cross-object formulas in roll-up summary fields. You cannot directly reference some parent aggregate fields (for example GrandTotal on Quote) in formula fields; Help suggests roll-up summaries to aggregate children instead. Polymorphic fields such as Case Owner require an object type qualifier. ([Tips for Building Cross-Object Formulas](https://help.salesforce.com/s/articleView?id=platform.fields_creating_cross_object_notes.htm); [Formula Field Limits and Restrictions](https://help.salesforce.com/s/articleView?id=sf.formula_field_limits.htm))",
+    "Compile-size and other numeric formula limits exist and are release-sensitive—Needs verification of the current compile-size number in Formula Field Limits before quoting it. Activity merge-field restrictions and Profile.Name list-view quirks are documented in the cross-object tips; do not invent extra ones.",
+    "A formula field is not a validation rule (DATA-010), not a roll-up of children (DATA-007), and not an editable stored field. It is a good selective-denormalization alternative (DATA-005) because the platform is the writer."
+  ],
+  "mental_model": {
+    "analogy": "A store receipt reprint: stored line prices are typed fields; the reprint total and store header name are calculated when you look, not penciled in.",
+    "useful_mapping": [
+      "formula field → reprint line that recalculates",
+      "return type → currency, text, checkbox, and so on of that reprint",
+      "cross-object formula → reading the store name from the header",
+      "unique relationship → one header walk, even if two formulas read two header fields",
+      "10 unique relationships → ten header walks per object across formulas, rules, and lookup filters",
+      "stored stamp → penciling the store name on every line (goes stale)",
+      "roll-up → tallying lines onto the header (not a formula on the line)"
+    ],
+    "where_it_breaks": [
+      "Formula compile size is not a paper receipt limit; look up current Help before quoting a number.",
+      "Formulas do not query arbitrary child sets; that is roll-up or automation.",
+      "Polymorphic Owner walks need a type qualifier the receipt analogy does not show.",
+      "Formula values are not always stored columns you can index like a custom text field—Needs verification of current index/filter behavior for your use case."
+    ]
+  },
+  "teach_back_prompt": "Explain a formula field versus a stored custom field, then a cross-object formula versus a roll-up, and state the 10 unique-relationship rule.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Define formula field and cross-object formula from memory."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given city-on-inspection, count-on-property, and required-city, pick tools."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain the 10 unique-relationship cumulative limit with an Opportunity-Account example."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Why a roll-up cannot reference a cross-object formula."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: formula vs stamp vs roll-up vs validation."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-XOBJ",
+      "title": "Tips for Building Cross-Object Formulas",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.fields_creating_cross_object_notes.htm",
+      "supports": "Maximum of 10 unique relationships per object, cumulative across formula fields, rules, and lookup filters; cannot reference cross-object formulas in roll-up summary fields; polymorphic Owner notes.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-FLIMITS",
+      "title": "Formula Field Limits and Restrictions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.formula_field_limits.htm",
+      "supports": "Formula field restrictions including record-type default vs formula spanning; cannot directly reference some parent aggregates; consider roll-up summaries for child aggregates.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-DEV-FUNCS",
+      "title": "Formula Operators and Functions by Context",
+      "type": "Official Salesforce Developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.usefulFormulaFields.meta/usefulFormulaFields/customize_functions.htm",
+      "supports": "Operators and functions used in formula fields and other formula contexts.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-FIELDATTR",
+      "title": "Custom Field Attributes",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm",
+      "supports": "Formulas attribute on custom formula fields; data type / return type framing.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Formula field return type",
+        "Calculated not typed",
+        "Cross-object walk",
+        "10 unique relationships",
+        "Not a roll-up",
+        "Not a validation rule"
+      ],
+      "accessible_description": "Formula fields calculate a return type; cross-object walks use unique relationships with a 10-relationship cumulative cap; roll-ups and validation are different tools."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-XOBJ",
+        "SF-HELP-FLIMITS",
+        "SF-DEV-FUNCS",
+        "SF-HELP-FIELDATTR"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Child formula → parent fields via relationship; parent roll-up is a different field type"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  FF[Formula field on object] --> RT[Return type]\n  FF --> Same[Same-object fields]\n  FF --> XO[Cross-object parent fields]\n  XO --> Rel[Lookup or master-detail walk]\n  Rel --> Cap[Max 10 unique relationships per object]\n  Cap --> Also[Counts formula fields rules lookup filters]",
+      "decision": "flowchart TD\n  Need[Need a value] --> Q1{Should users edit it?}\n  Q1 -->|Yes| Stored[Stored custom field DATA-002]\n  Q1 -->|No calculated| Q2{From children?}\n  Q2 -->|Yes| RU[Roll-up or alternative DATA-007]\n  Q2 -->|From this row or parents| Q3{Block a save?}\n  Q3 -->|Yes| VR[Validation rule DATA-010]\n  Q3 -->|Display or reuse| FF[Formula field]\n  FF --> Q4{Need parent fields?}\n  Q4 -->|Yes| XO[Cross-object formula if under 10 unique rels]\n  Q4 -->|No| Same[Same-object formula]",
+      "sequence": "sequenceDiagram\n  participant User\n  participant Inspection\n  participant Property\n  User->>Inspection: Open record\n  Inspection->>Property: Cross-object formula reads City\n  Property-->>Inspection: Calculated text displayed"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A formula field is a custom field with a formula and a return type. Users do not enter the value; the platform calculates it from referenced fields and functions.",
+      "source_ids": [
+        "SF-HELP-FIELDATTR",
+        "SF-DEV-FUNCS"
+      ],
+      "scope": "Formula field",
+      "validation": "Custom Field Attributes plus Formula Operators and Functions.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Salesforce allows a maximum of 10 unique relationships per object in cross-object formulas. The limit is cumulative across formula fields, rules, and lookup filters. Two Opportunity formulas that both reference Account count as one unique relationship.",
+      "source_ids": [
+        "SF-HELP-XOBJ",
+        "SF-HELP-FLIMITS"
+      ],
+      "scope": "10 unique relationships",
+      "validation": "Cross-object tips with the Opportunity-Account example.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "You cannot reference cross-object formulas in roll-up summary fields. Formula fields also cannot directly reference some parent aggregate fields; Help points to roll-up summaries for aggregating children.",
+      "source_ids": [
+        "SF-HELP-XOBJ",
+        "SF-HELP-FLIMITS"
+      ],
+      "scope": "Formula vs roll-up",
+      "validation": "Both Help articles state the roll-up / aggregate boundary.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Cross-object formulas can reference related records through lookup or master-detail. Default-value formulas for a record type are narrower than formula fields and rules, which may span related records.",
+      "source_ids": [
+        "SF-HELP-FLIMITS",
+        "SF-HELP-XOBJ"
+      ],
+      "scope": "Spanning vs defaults",
+      "validation": "Formula Field Limits record-type default note plus cross-object tips.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Formula compile-size numbers and function availability are release-sensitive. Reverify Formula Field Limits for Summer '26 before quoting compile size.",
+  "unresolved_uncertainty": [
+    "Current formula compile-size and statement-size numbers are Needs verification in Formula Field Limits Help.",
+    "Whether a given formula field is stored or indexed for large-data filters is Needs verification for the specific field and org."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Formula field",
+      "telugu": "A calculated custom field users do not type."
+    },
+    {
+      "english": "Cross-object formula",
+      "telugu": "A formula that reads a related parent field."
+    },
+    {
+      "english": "Unique relationship",
+      "telugu": "One parent walk, even if several formulas use it."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "A formula field calculates a return type from other fields. A cross-object formula reads a parent through lookup or master-detail. You get 10 unique relationships per object across formulas, rules, and lookup filters. Formulas do not count children; roll-ups do. Do not stamp parent city in text.",
+    "two_minutes": "I pick formula when the value should always match its inputs. I walk Account.BillingCity from Inspection via the property relationship if we are under the unique-relationship cap. I refuse formula for child counts and for blocking saves—that is roll-up or validation. I mention polymorphic Owner needs a type. I do not quote compile size unless I have the current Help number."
+  },
+  "terminology": [
+    {
+      "term": "formula field",
+      "plain": "A calculated custom field.",
+      "precise": "A custom field whose value is defined by a formula and a return type. Users do not type it.",
+      "example": "LAB_AmountAfterDiscount__c Currency formula on Opportunity.",
+      "non_example": "A Number field users edit.",
+      "confusable_neighbor": "Default value formula: fills a stored field on create; not the same as a formula field.",
+      "boundary": "Functions are shared with other formula contexts."
+    },
+    {
+      "term": "return type",
+      "plain": "The data type of the calculated result.",
+      "precise": "Chosen when you create the formula field: text, number, currency, percent, date, date/time, or checkbox, as the type catalog allows.",
+      "example": "Checkbox formula ISBLANK(City).",
+      "non_example": "The types of the input fields if they differ from the return.",
+      "confusable_neighbor": "Roll-up type COUNT/SUM: a different field type (DATA-007).",
+      "boundary": "Return type drives reporting, same as DATA-002."
+    },
+    {
+      "term": "cross-object formula",
+      "plain": "A formula that reads a related parent.",
+      "precise": "References merge fields on records related through lookup or master-detail.",
+      "example": "Inspection formula Property__r.City__c.",
+      "non_example": "A stored City__c stamp on Inspection.",
+      "confusable_neighbor": "Related list: children, opposite direction.",
+      "boundary": "Counts toward unique relationships."
+    },
+    {
+      "term": "unique relationship",
+      "plain": "One parent walk, however many fields you read.",
+      "precise": "Two Opportunity formulas referencing two Account fields still count as one unique relationship (Opportunity to Account).",
+      "example": "Account.Name and Account.Industry in two Opportunity formulas = one relationship.",
+      "non_example": "Ten different parent objects referenced = ten relationships.",
+      "confusable_neighbor": "Lookup filter: also consumes the same cumulative cap.",
+      "boundary": "Maximum 10 per object across formulas, rules, and lookup filters."
+    },
+    {
+      "term": "merge field",
+      "plain": "The field token you insert into a formula.",
+      "precise": "A reference such as Account.Name or Property__r.City__c used in the formula editor.",
+      "example": "Property__r.Name in a text formula.",
+      "non_example": "A page-layout field just sitting on the layout.",
+      "confusable_neighbor": "API name: the merge field uses the API name.",
+      "boundary": "Polymorphic merges may need a type qualifier."
+    },
+    {
+      "term": "spanning formula",
+      "plain": "Another name for walking related records.",
+      "precise": "Formula Field Limits: formula fields and rules can reference related records through lookup or master-detail; record-type default-value formulas cannot span the same way.",
+      "example": "Opportunity validation formula reading Account fields.",
+      "non_example": "Record-type default that tries to read another object—restricted.",
+      "confusable_neighbor": "Roll-up: aggregates children, does not span upward.",
+      "boundary": "Keep defaults vs formula fields distinct."
+    },
+    {
+      "term": "polymorphic relationship",
+      "plain": "A relationship that can point at more than one object type.",
+      "precise": "Case Owner can be User or Group; Owner.Email without a type qualifier errors: specify an object type.",
+      "example": "Owner:User.FirstName in a Case formula.",
+      "non_example": "Account.Name on Opportunity, which is not polymorphic.",
+      "confusable_neighbor": "Lookup to a single object: ordinary cross-object.",
+      "boundary": "Visualforce Owner references have extra documented limits."
+    },
+    {
+      "term": "formula function",
+      "plain": "A named operation in the formula language.",
+      "precise": "Operators and functions documented by context; most work in formula fields, validation rules, and other formula sites unless specified.",
+      "example": "TEXT(), ISBLANK(), AND() in a formula field.",
+      "non_example": "Apex methods.",
+      "confusable_neighbor": "VLOOKUP: Help says it is only available in validation rules, not formula fields.",
+      "boundary": "Do not invent unofficial functions."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide calculated vs stored vs child aggregate vs save-block",
+      "actor": "Admin",
+      "trigger": "A value is requested",
+      "before": "Tool unclear",
+      "after": "Formula vs stored field vs roll-up vs validation",
+      "observe": "Written choice with return type",
+      "failure": "Stamping parent city in Text"
+    },
+    {
+      "step": 2,
+      "transition": "Create the formula field",
+      "actor": "Admin",
+      "trigger": "Formula chosen",
+      "before": "No field",
+      "after": "Custom field type Formula, return type, expression",
+      "observe": "Check syntax in sandbox",
+      "failure": "Return type Text when you needed Number"
+    },
+    {
+      "step": 3,
+      "transition": "Add cross-object walks carefully",
+      "actor": "Admin",
+      "trigger": "Need parent fields",
+      "before": "Unknown unique-relationship count",
+      "after": "Reuse existing parent walks; stay at or under 10 unique relationships",
+      "observe": "Count distinct related objects already used in formulas, rules, filters",
+      "failure": "Walking ten new objects on one child"
+    },
+    {
+      "step": 4,
+      "transition": "Prove it is not a roll-up input",
+      "actor": "Admin",
+      "trigger": "Someone wants to roll up the formula",
+      "before": "Risk of unsupported reference",
+      "after": "Do not reference cross-object formulas in roll-up summary fields",
+      "observe": "Roll-up editor rejects the field or Help warning",
+      "failure": "Building a roll-up on a spanning formula"
+    }
+  ],
+  "when_to_use": [
+    "When a value should always be calculated from other fields on the same object and users must not edit it.",
+    "When a child record should display a parent field through a cross-object formula instead of a stored stamp.",
+    "When you need a reusable calculated value in reports, list views, or other formulas on that object.",
+    "When explaining the 10 unique-relationship cap across formula fields, rules, and lookup filters.",
+    "When refusing a text copy of Account.BillingCity on a child object."
+  ],
+  "when_not_to_use": [
+    "Do not use a formula field to count or sum child records—that is a roll-up summary or an alternative (DATA-007).",
+    "Do not use a formula field to block a save; that is a validation rule (DATA-010).",
+    "Do not use a formula field when users must type and later edit the value (DATA-002 stored field).",
+    "Do not reference a cross-object formula inside a roll-up summary field.",
+    "Do not add new parent walks after you are already at 10 unique relationships on the object."
+  ],
+  "configuration_or_code_location": [
+    "Object Manager → Fields & Relationships → New → Formula → return type → editor.",
+    "Insert Field to walk related objects; check syntax.",
+    "Field-level security and layouts still apply to formula fields.",
+    "Formula Field Limits and Cross-Object Tips when compile or relationship errors appear."
+  ],
+  "worked_example": {
+    "scenario": "LAB_Inspection__c looks up LAB_Property__c. Inspectors need the property city on the inspection record and in a report. They also asked for a count of inspections on the property and a hard stop if city is blank on the property. Sandbox only.",
+    "inputs": [
+      "Lookup from inspection to property",
+      "City field on property",
+      "Report on inspections",
+      "No production data"
+    ],
+    "decisions": [
+      {
+        "decision": "LAB_PropertyCity__c Text formula on Inspection: Property__r.LAB_City__c.",
+        "because": "Cross-object formula reads the parent; no stale stamp.",
+        "rejected": "Stored LAB_PropertyCity__c text on Inspection"
+      },
+      {
+        "decision": "Refuse a formula on Property that 'counts' inspections.",
+        "because": "Formulas do not aggregate children; that is roll-up or alternative.",
+        "rejected": "A formula pretending to query children"
+      },
+      {
+        "decision": "Blank city on Property is a validation rule on Property, not a formula field on Inspection.",
+        "because": "Formulas display; validation rules block saves.",
+        "rejected": "A checkbox formula as the only control"
+      }
+    ],
+    "configuration_or_code": [
+      "Create the formula field; return type Text; insert Property__r.LAB_City__c.",
+      "Add to inspection layout and a list view.",
+      "Confirm unique relationships used: Inspection to Property is one walk."
+    ],
+    "output": "Inspection shows live property city; count and requiredness deferred to the correct tools.",
+    "verification": [
+      "Change property city; reopen inspection and see the new value without editing inspection.",
+      "Formula field is not editable on the layout.",
+      "No new stored city field on inspection."
+    ],
+    "self_explanation": "I used a cross-object formula as the writer, and I did not pretend a formula can roll up or validate."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ objects.",
+    "starting_state_checks": [
+      "Inspection has a lookup or MD to Property.",
+      "Property has a city field."
+    ],
+    "steps": [
+      "Create LAB_PropertyCity__c formula on Inspection spanning Property city.",
+      "Create two properties with different cities and an inspection on each.",
+      "Change one city and confirm the inspection formula updates.",
+      "Write one sentence why a count of inspections is not this field type."
+    ],
+    "guided_completion": [
+      "If the formula is editable, it is not a formula field.",
+      "If you created a text field, delete it and use Formula type."
+    ],
+    "independent_challenge": "Add a checkbox formula that is true when property city is blank, and explain why that still does not block save.",
+    "evidence": [
+      "Before/after city change on the inspection.",
+      "Field type screenshot showing Formula."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ formula fields and records.",
+      "Do not deploy."
+    ],
+    "limitations": "Does not prove compile-size limits or roll-up interactions."
+  },
+  "decision_table": [
+    {
+      "signal": "Display a parent field on the child and keep it automatically correct.",
+      "choose": "Cross-object formula field on the child.",
+      "not": "Stored text stamp updated 'when someone remembers'.",
+      "why": "The platform recalculates the formula; stamps go stale (DATA-005)."
+    },
+    {
+      "signal": "Count or sum child records on the parent.",
+      "choose": "Roll-up summary or a DATA-007 alternative, not a formula field on the parent.",
+      "not": "A formula that pretends to query children.",
+      "why": "Help points child aggregates to roll-up summaries; formulas do not replace that."
+    },
+    {
+      "signal": "Stop a save when a condition is true.",
+      "choose": "Validation rule (DATA-010).",
+      "not": "A formula field that only displays a warning checkbox.",
+      "why": "Formula fields do not block DML; validation rules do."
+    },
+    {
+      "signal": "Users must type a one-off override amount.",
+      "choose": "Stored Number or Currency field, maybe plus a separate formula that uses it.",
+      "not": "A formula field they cannot edit.",
+      "why": "Formulas are calculated, not handwritten overrides."
+    },
+    {
+      "signal": "The object already uses 10 unique relationships in formulas, rules, and lookup filters.",
+      "choose": "Reuse an existing walk or move logic; do not add an 11th unique relationship.",
+      "not": "Another cross-object formula to a new parent object.",
+      "why": "The 10 unique-relationship cap is cumulative."
+    }
+  ],
+  "limitations": [
+    "Compile-size numbers are not quoted here; look them up.",
+    "Does not teach every formula function.",
+    "Does not replace roll-up, validation, or Flow.",
+    "Polymorphic and activity merge-field cases are only introduced."
+  ],
+  "security_notes": [
+    "Formula fields still honor field-level security on the formula field; referenced field visibility can affect what users see—confirm current FLS behavior for spanning fields in the target org.",
+    "Do not put secrets in formula expressions.",
+    "Default-value formulas can run even when FLS hides a stored field (DATA-002); that is a different feature."
+  ],
+  "common_mistakes": [
+    "Stamping parent fields as text instead of a cross-object formula.",
+    "Using a formula to count children.",
+    "Using a formula to block saves.",
+    "Adding an 11th unique relationship walk.",
+    "Putting a cross-object formula into a roll-up summary."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Error about specifying an object type for Owner.",
+      "check": [
+        "Owner is polymorphic.",
+        "Use a typed qualifier such as Owner:User.Field."
+      ],
+      "do_not_assume": "The email field does not exist."
+    },
+    {
+      "symptom": "Cannot add another spanning reference.",
+      "check": [
+        "Unique relationships already used by formulas, rules, and lookup filters.",
+        "Whether you can reuse an existing walk."
+      ],
+      "do_not_assume": "The formula editor is broken."
+    },
+    {
+      "symptom": "Roll-up cannot see your formula.",
+      "check": [
+        "The formula is cross-object.",
+        "Help forbids referencing cross-object formulas in roll-ups."
+      ],
+      "do_not_assume": "You picked the wrong summary operation only."
+    }
+  ],
+  "production_notes": [
+    "Add formula fields in sandbox; they are metadata. Existing rows calculate when viewed or recalculated—Needs verification of mass-recalc behavior for your field.",
+    "Watch unique-relationship budgets on busy objects such as Opportunity.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is a formula field?",
+      "options": {
+        "A": "A custom field whose value is calculated from a formula and a return type",
+        "B": "A stored field users type on every save",
+        "C": "A related list",
+        "D": "A named credential"
+      },
+      "answer": "A",
+      "rationale": "Formula fields calculate from expressions; attributes include the formula text.",
+      "distractor_explanations": {
+        "B": "Users do not type formula values.",
+        "C": "Related lists are presentation of children.",
+        "D": "Named credentials are DATA-012."
+      },
+      "concept": "Formula field",
+      "citation_ids": [
+        "SF-HELP-FIELDATTR",
+        "SF-DEV-FUNCS"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Maximum unique relationships per object in cross-object formulas?",
+      "options": {
+        "A": "10, cumulative across formula fields, rules, and lookup filters",
+        "B": "2, formulas only",
+        "C": "Unlimited",
+        "D": "10 per formula field independently"
+      },
+      "answer": "A",
+      "rationale": "Help states a maximum of 10 unique relationships per object, cumulative across those features.",
+      "distractor_explanations": {
+        "B": "It is 10, and not only formulas.",
+        "C": "There is a documented maximum.",
+        "D": "The cap is per object, not per field."
+      },
+      "concept": "10 unique relationships",
+      "citation_ids": [
+        "SF-HELP-XOBJ",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Two Opportunity formulas reference two different Account fields. How many unique relationships?",
+      "options": {
+        "A": "One (Opportunity to Account)",
+        "B": "Two",
+        "C": "Zero",
+        "D": "Ten"
+      },
+      "answer": "A",
+      "rationale": "The Help example: two Account fields still one unique relationship.",
+      "distractor_explanations": {
+        "B": "Fields on the same parent do not each count as a new relationship.",
+        "C": "A walk exists.",
+        "D": "Ten is the cap, not this count."
+      },
+      "concept": "Unique relationship example",
+      "citation_ids": [
+        "SF-HELP-XOBJ",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Can you reference cross-object formulas in roll-up summary fields?",
+      "options": {
+        "A": "No",
+        "B": "Yes, always",
+        "C": "Yes, if the roll-up is COUNT",
+        "D": "Yes, on standard objects only"
+      },
+      "answer": "A",
+      "rationale": "Cross-object tips: you cannot reference cross-object formulas in roll-up summary fields.",
+      "distractor_explanations": {
+        "B": "It is forbidden in that article.",
+        "C": "Operation type does not lift the ban.",
+        "D": "No standard-object exception is stated there."
+      },
+      "concept": "No XO in roll-up",
+      "citation_ids": [
+        "SF-HELP-XOBJ",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Best way to show Property city on Inspection?",
+      "options": {
+        "A": "A cross-object formula on Inspection",
+        "B": "A text field users retype",
+        "C": "A roll-up summary on Inspection",
+        "D": "A validation rule with no field"
+      },
+      "answer": "A",
+      "rationale": "Cross-object formula reads the parent city and stays current.",
+      "distractor_explanations": {
+        "B": "Stamps go stale.",
+        "C": "Roll-ups aggregate children on a master, not parent city on a child.",
+        "D": "Validation does not display city."
+      },
+      "concept": "City on child",
+      "citation_ids": [
+        "SF-HELP-XOBJ",
+        "SF-HELP-FIELDATTR"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Users want a count of inspections on Property. Formula field?",
+      "options": {
+        "A": "No. Child aggregates belong to roll-up summaries or alternatives",
+        "B": "Yes. Use COUNT() in a formula field on Property",
+        "C": "Yes. Use VLOOKUP in a formula field",
+        "D": "Yes. Use a checkbox formula"
+      },
+      "answer": "A",
+      "rationale": "Help tells you to consider roll-up summaries to aggregate values from child records.",
+      "distractor_explanations": {
+        "B": "Formula fields do not offer a child COUNT like roll-ups.",
+        "C": "VLOOKUP is a validation-rule function, not a child counter.",
+        "D": "A checkbox is not a count."
+      },
+      "concept": "Not a child count",
+      "citation_ids": [
+        "SF-HELP-FLIMITS",
+        "SF-HELP-XOBJ"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "A formula checkbox shows city is blank. Does that block save?",
+      "options": {
+        "A": "No. Use a validation rule to block save",
+        "B": "Yes. Checkbox formulas always block DML",
+        "C": "Yes, if the return type is Text",
+        "D": "Yes, if the field is on the layout"
+      },
+      "answer": "A",
+      "rationale": "Formula fields display values; validation rules block saves.",
+      "distractor_explanations": {
+        "B": "They do not block DML.",
+        "C": "Return type does not convert a formula into validation.",
+        "D": "Layout placement does not block save."
+      },
+      "concept": "Formula vs validation",
+      "citation_ids": [
+        "SF-DEV-FUNCS",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Record-type default-value formulas versus formula fields spanning related records?",
+      "options": {
+        "A": "Defaults for a record type can only reference fields for that record type; formula fields and rules may span lookup or master-detail",
+        "B": "Defaults can span anything; formula fields cannot",
+        "C": "Neither can ever span",
+        "D": "Both are the same feature"
+      },
+      "answer": "A",
+      "rationale": "Formula Field Limits draws that distinction.",
+      "distractor_explanations": {
+        "B": "That reverses the Help statement.",
+        "C": "Formula fields can span.",
+        "D": "They are different."
+      },
+      "concept": "Defaults vs spanning",
+      "citation_ids": [
+        "SF-HELP-FLIMITS",
+        "SF-HELP-XOBJ"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Case formula uses Owner.Email and errors to specify an object type. Why?",
+      "options": {
+        "A": "Owner is polymorphic (User or Group) and needs a type qualifier",
+        "B": "Email fields cannot be in formulas",
+        "C": "Case cannot have formula fields",
+        "D": "You exceeded 10 unique relationships with one field"
+      },
+      "answer": "A",
+      "rationale": "Cross-object tips describe the Owner polymorphic error.",
+      "distractor_explanations": {
+        "B": "Email can be referenced when the walk is valid.",
+        "C": "Case can have formula fields.",
+        "D": "One Owner walk is not 10 relationships."
+      },
+      "concept": "Polymorphic Owner",
+      "citation_ids": [
+        "SF-HELP-XOBJ",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do you set the formula expression on a custom field?",
+      "options": {
+        "A": "The Formulas attribute of a custom formula field",
+        "B": "Named credentials",
+        "C": "Compact layouts only",
+        "D": "JunctionIdList"
+      },
+      "answer": "A",
+      "rationale": "Custom Field Attributes lists Formulas for custom formula fields.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Layouts present fields.",
+        "D": "JunctionIdList is a relationship API type."
+      },
+      "concept": "Formula attribute",
+      "citation_ids": [
+        "SF-HELP-FIELDATTR",
+        "SF-DEV-FUNCS"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Opportunity already has 10 unique relationship walks used by formulas and lookup filters. Can you add a new parent object walk?",
+      "options": {
+        "A": "Not without removing or reusing a walk; the cap is 10 per object",
+        "B": "Yes, each new field gets 10 more",
+        "C": "Yes, if the new field is a checkbox",
+        "D": "Yes, if you use Classic"
+      },
+      "answer": "A",
+      "rationale": "The maximum is per object and already consumed.",
+      "distractor_explanations": {
+        "B": "The cap is not per field.",
+        "C": "Return type does not raise the cap.",
+        "D": "UI does not lift the documented cap."
+      },
+      "concept": "Cap exhausted",
+      "citation_ids": [
+        "SF-HELP-XOBJ",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "VLOOKUP in a formula field on Account?",
+      "options": {
+        "A": "VLOOKUP is documented as available in validation rules, not as a general formula-field child lookup",
+        "B": "VLOOKUP is the official way to count children",
+        "C": "VLOOKUP replaces master-detail",
+        "D": "VLOOKUP is required on every formula field"
+      },
+      "answer": "A",
+      "rationale": "Help describes VLOOKUP as a validation-rule function looking up a custom object.",
+      "distractor_explanations": {
+        "B": "It is not a roll-up.",
+        "C": "It does not replace relationships.",
+        "D": "It is not required."
+      },
+      "concept": "VLOOKUP context",
+      "citation_ids": [
+        "SF-DEV-FUNCS",
+        "SF-HELP-FLIMITS"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is a formula field?",
+      "back": "A custom field calculated from a formula and a return type; users do not type it."
+    },
+    {
+      "id": "F2",
+      "category": "xo",
+      "front": "What is a cross-object formula?",
+      "back": "A formula that reads fields on a related parent through lookup or master-detail."
+    },
+    {
+      "id": "F3",
+      "category": "cap",
+      "front": "Unique relationship maximum?",
+      "back": "10 per object, cumulative across formula fields, rules, and lookup filters."
+    },
+    {
+      "id": "F4",
+      "category": "cap",
+      "front": "Two Account fields on Opportunity formulas count as?",
+      "back": "One unique relationship (Opportunity to Account)."
+    },
+    {
+      "id": "F5",
+      "category": "rollup",
+      "front": "Cross-object formula inside a roll-up?",
+      "back": "Not allowed. Help says you cannot reference cross-object formulas in roll-up summary fields."
+    },
+    {
+      "id": "F6",
+      "category": "children",
+      "front": "Count children with a formula field?",
+      "back": "No. Use a roll-up summary or another alternative."
+    },
+    {
+      "id": "F7",
+      "category": "validation",
+      "front": "Does a formula field block save?",
+      "back": "No. Use a validation rule."
+    },
+    {
+      "id": "F8",
+      "category": "stamp",
+      "front": "Parent city as text on the child?",
+      "back": "Prefer a cross-object formula so it does not go stale."
+    },
+    {
+      "id": "F9",
+      "category": "poly",
+      "front": "Owner.Email on Case errors?",
+      "back": "Owner is polymorphic; specify an object type."
+    },
+    {
+      "id": "F10",
+      "category": "default",
+      "front": "Record-type default formulas span parents?",
+      "back": "They can only reference fields for that record type, unlike formula fields and rules."
+    },
+    {
+      "id": "F11",
+      "category": "return",
+      "front": "Why return type matters?",
+      "back": "It is the data type of the calculated result for reports and filters."
+    },
+    {
+      "id": "F12",
+      "category": "functions",
+      "front": "Are all functions in every context?",
+      "back": "Most are, unless Help marks a function as context-specific (for example VLOOKUP in validation)."
+    },
+    {
+      "id": "F13",
+      "category": "compile",
+      "front": "Quote compile size from memory?",
+      "back": "No. Look up current Formula Field Limits; mark unverified numbers."
+    },
+    {
+      "id": "F14",
+      "category": "fls",
+      "front": "Do formula fields skip FLS entirely?",
+      "back": "The formula field still has FLS; spanning visibility is org-sensitive—verify."
+    },
+    {
+      "id": "F15",
+      "category": "grain",
+      "front": "Formula vs roll-up direction?",
+      "back": "Formula typically walks to parents; roll-up aggregates children on the master."
+    },
+    {
+      "id": "F16",
+      "category": "type",
+      "front": "Formula is which DATA-002 idea?",
+      "back": "A custom field data type whose value is calculated, not typed."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is a formula field, and when do you use a cross-object formula?",
+      "answer_30_seconds": "A formula field calculates a return type from other fields. A cross-object formula reads a parent through lookup or master-detail so you do not stamp a stale copy.",
+      "answer_2_minutes": "I contrast stored fields, formulas, roll-ups, and validation. I mention the 10 unique-relationship cap that also counts rules and lookup filters. I give the Opportunity-Account example where two fields are still one relationship. I do not quote compile size without current Help.",
+      "example": "LAB_PropertyCity__c formula on Inspection reading Property__r.LAB_City__c.",
+      "tradeoffs": [
+        "Formula vs stored stamp",
+        "Parent walk vs child aggregate"
+      ],
+      "follow_ups": [
+        "What counts as a unique relationship?",
+        "Can roll-ups use that formula?"
+      ],
+      "weak_answer_warnings": [
+        "Calling every calculated value a roll-up"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "Show Account industry on Opportunity without a text field. How?",
+      "answer_30_seconds": "A cross-object formula on Opportunity referencing Account.Industry. That is one unique relationship to Account, even if another formula already reads Account.Name.",
+      "answer_2_minutes": "I refuse Opportunity.IndustryCopy__c text. I check how many unique walks Opportunity already uses. I set return type Text. I add FLS and the layout. I note list views and reports can use the formula. I do not use this to block saves.",
+      "example": "Opportunity formula LAB_AccountIndustry__c = Account.Industry.",
+      "tradeoffs": [
+        "Reuse Account walk vs new parent walk",
+        "Formula vs Flow stamp"
+      ],
+      "follow_ups": [
+        "What if we need Industry on a roll-up?",
+        "What if Account is blank?"
+      ],
+      "weak_answer_warnings": [
+        "Creating a text field updated by workflow thinking"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "They want a formula on Account that counts open cases. Your answer?",
+      "answer_30_seconds": "A formula field cannot aggregate children. Use a roll-up summary if the relationship is master-detail, or a DATA-007 alternative if it is lookup.",
+      "answer_2_minutes": "I explain direction: formulas walk up; roll-ups tally down. I mention Help forbids putting cross-object formulas into roll-ups, which is the opposite mistake. I do not invent a COUNT() child function in a formula field. I also refuse VLOOKUP as a case counter.",
+      "example": "Rejected Account.OpenCaseCount__c formula; proposed roll-up or Flow/Apex alternative.",
+      "tradeoffs": [
+        "MD roll-up vs lookup alternative",
+        "Report summary vs stored count"
+      ],
+      "follow_ups": [
+        "What if Case is lookup to Account?",
+        "Will a report snapshot do?"
+      ],
+      "weak_answer_warnings": [
+        "Writing a formula that 'queries' cases"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "foundational",
+      "question": "Explain the 10 unique-relationship limit.",
+      "answer_30_seconds": "Each object may use at most 10 unique relationships in cross-object formulas. The cap is cumulative across formula fields, rules, and lookup filters. Multiple fields on the same parent count as one relationship.",
+      "answer_2_minutes": "I use the Opportunity-Account Help example. I audit existing formulas, validation rules, and lookup filters before adding a new parent walk. If we are at 10, I reuse a walk or move logic. I do not say 10 per field.",
+      "example": "Opportunity already spans Account and several custom lookups; a new walk is rejected until we free a relationship.",
+      "tradeoffs": [
+        "Reuse a walk vs new object",
+        "Move a rule to Flow—tradeoff"
+      ],
+      "follow_ups": [
+        "Do approval rules count? The article says rules—confirm type.",
+        "Do workflow rules still count in this org?"
+      ],
+      "weak_answer_warnings": [
+        "Treating the cap as 10 formula fields"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A roll-up cannot use your inspection city formula. Why?",
+      "answer_30_seconds": "If that formula is cross-object, Help says you cannot reference cross-object formulas in roll-up summary fields.",
+      "answer_2_minutes": "I check whether LAB_PropertyCity__c spans Property. If yes, the roll-up must aggregate a stored or same-object field instead. I do not change the roll-up operation from SUM to MAX expecting the ban to lift. I might store city on the child only if we accept denormalization with a writer—usually we keep the formula for display and roll up something else.",
+      "example": "Roll-up on Property cannot SUM a spanning city formula on Inspection.",
+      "tradeoffs": [
+        "Display formula vs roll-up input",
+        "Stamp city to roll it up vs do not roll up city"
+      ],
+      "follow_ups": [
+        "Can a same-object formula be rolled up? Needs verification.",
+        "Is city even numeric?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the roll-up filter only"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "design",
+      "question": "Formula field versus validation rule versus stored field—how do you choose?",
+      "answer_30_seconds": "Stored if users edit it. Formula if it must always match inputs. Validation if a save must fail. The title words matter: a formula field is a field, not an error message.",
+      "answer_2_minutes": "I use the city example: display city with a formula; require city with a validation rule on the object that owns city; do not make inspectors type city. I mention default-value formulas are another stored-field feature and do not span like formula fields. I keep Flow out unless the others cannot do it.",
+      "example": "Property validation requires city; Inspection formula displays it; no stored copy.",
+      "tradeoffs": [
+        "Display vs enforce vs edit",
+        "Default value vs formula field"
+      ],
+      "follow_ups": [
+        "When does Flow win?",
+        "When is a checkbox formula useful?"
+      ],
+      "weak_answer_warnings": [
+        "Using one formula field for all three jobs"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "A Case formula on Owner.Email asks you to specify an object type. What do you do?",
+      "answer_30_seconds": "Owner is polymorphic. Qualify the merge field with an object type, such as Owner:User.Email, instead of Owner.Email.",
+      "answer_2_minutes": "I cite the cross-object tips error. I do not remove the email field from User. I check whether the owner can be a queue/group and whether the formula should use a different field if queues matter. Visualforce Owner references have extra documented limits I will not invent beyond that note.",
+      "example": "Case formula uses Owner:User.FirstName after Owner.Email failed compile.",
+      "tradeoffs": [
+        "User owner vs queue owner",
+        "Formula vs a custom lookup to User"
+      ],
+      "follow_ups": [
+        "What is a polymorphic relationship?",
+        "Can you span activity-related contacts?"
+      ],
+      "weak_answer_warnings": [
+        "Deleting the formula and stamping Email as text"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "foundational",
+      "question": "How do formula fields support schema design without denormalizing badly?",
+      "answer_30_seconds": "A cross-object formula lets the child display a parent fact while the source of truth stays on the parent. That is calculated display, not a second stored truth.",
+      "answer_2_minutes": "DATA-005 said stamp only with a writer. The platform is the writer for a formula field. I still watch the 10 unique-relationship budget and I still refuse formulas that try to aggregate children. I mention compile-size as Needs verification rather than a memorized number.",
+      "example": "Inspection shows property city via formula; city remains a field on Property.",
+      "tradeoffs": [
+        "Formula writer vs Flow writer",
+        "Unique-relationship budget vs more stamps"
+      ],
+      "follow_ups": [
+        "When is a stored stamp still required?",
+        "Does the formula count toward skew?"
+      ],
+      "weak_answer_warnings": [
+        "Calling every formula a denormalized stored field"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1030 @@
+{
+  "topic_id": "DQM-002",
+  "slug": "insert-update-upsert-delete-undelete-export-and-hard-de",
+  "title": "Insert, update, upsert, delete, undelete, export, and hard delete",
+  "track": "Data management and quality",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 35,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DQM-001"
+  ],
+  "objectives": [
+    "Define insert, update, upsert, delete, undelete, export, and hard delete using Data Loader and SOAP API official meanings.",
+    "Choose Salesforce Id versus a custom External ID as the match key, and explain why insert is not update.",
+    "Contrast delete (Recycle Bin) with hard_delete (no Recycle Bin) and name the Bulk API setting that enables hard delete in Data Loader.",
+    "Pick extract versus extract_all (or query versus queryAll) when export must include soft-deleted rows."
+  ],
+  "diagnostic_question": "A sandbox CSV has vendor keys but no Salesforce Ids. Another file has Ids for a field fix. A third file should remove lab rows, and a fourth must restore them. Which operations—insert, update, upsert, delete, undelete, export, hard delete—do you choose, and what would you refuse?",
+  "definition": "Insert (SOAP create) adds new records. Update changes existing records matched by Salesforce Id. Upsert inserts or updates using a custom External ID. Delete moves matching Ids to the Recycle Bin; undelete restores them; hard_delete removes them without the Recycle Bin. Export (extract) writes records out; extract_all includes soft-deleted rows. ([Data Loader operations](https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/loader_operations.htm); [SOAP API call basics](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/calls.htm))",
+  "why_it_matters": "The wrong verb duplicates rows, overwrites the wrong records, or makes data unrecoverable. Interviewers listen for Id versus External ID, Recycle Bin versus hard delete, and whether export included deleted rows. Treating upsert as 'update but magic' is a common fail.",
+  "sixty_second_explanation": "Think of a hotel front desk. Insert is a new check-in with no existing reservation. Update is changing a stay you already identified by the hotel's own confirmation number (Salesforce Id). Upsert is 'if this passport/reservation code from the partner hotel exists, change that stay; otherwise check them in.' Delete is checkout into a short-term luggage hold (Recycle Bin). Undelete is pulling the bag back. Hard delete shreds the bag. Export is printing the guest list; export-all includes guests still in the hold.",
+  "deeper_explanation": [
+    "The Data Loader Guide lists command-line operations in lowercase: insert loads new records; update updates existing records with matching ID fields; upsert updates rows that match a custom external ID and inserts the rest; delete moves matching IDs to the Recycle Bin; hard_delete deletes matching IDs without storing them in the Recycle Bin; extract exports via SOQL without soft-deleted rows; extract_all includes existing and soft-deleted records. ([Data Loader operations](https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/loader_operations.htm))",
+    "SOAP API call basics group create, update, upsert, delete, and undelete as the data-changing calls (create is the insert analog). update() requires the Salesforce Id of each record; you cannot update the primary key Id itself, but you can update foreign keys such as OwnerId. upsert() returns whether each row was created or updated. ([SOAP API calls](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/calls.htm); [update()](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_update.htm); [UpsertResult](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_upsert_upsertresult.htm))",
+    "undelete() restores undeletable records from the Recycle Bin, including some cascade-deleted children when the parent is undeleted. Records deleted by merge can be undeleted, but reparenting of children cannot be undone. Confirm the object's undeletable flag via describe. queryAll() (and Data Loader extract_all) is how you find soft-deleted Ids. ([undelete()](https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_undelete.htm))",
+    "Configure Data Loader: Use Bulk API or Use Bulk API 2.0 to insert, update, upsert, delete, and hard-delete asynchronously. You can hard-delete only with Bulk API enabled; hard-deleted records cannot be recovered from the Recycle Bin. Bulk API Hard Delete is a permission, not on the standard System Administrator profile by default—Needs verification of the exact permission-set steps in the target org. ([Configure Data Loader](https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/configuring_the_data_loader.htm))"
+  ],
+  "mental_model": {
+    "analogy": "A hotel front desk: insert = new check-in, update = change a stay by hotel confirmation (Id), upsert = match a partner reservation code, delete = luggage hold, undelete = retrieve the bag, hard delete = shred, export = guest list.",
+    "useful_mapping": [
+      "Salesforce Id → hotel confirmation number issued by this hotel",
+      "External ID → partner reservation or passport code from another system",
+      "insert / create() → new check-in, no existing confirmation",
+      "update() → change the stay you already identified by Id",
+      "upsert() → insert or update based on the partner code",
+      "delete → checkout into the luggage hold (Recycle Bin)",
+      "undelete() → retrieve from the hold",
+      "hard_delete → shred; the hold never sees it",
+      "extract → guest list of current stays",
+      "extract_all / queryAll → guest list plus bags still in the hold"
+    ],
+    "where_it_breaks": [
+      "Cascade delete/undelete is not a hotel policy; children can vanish and return with the parent.",
+      "Merge reparenting cannot be undone even if you undelete—the analogy has no merge.",
+      "Hard delete also requires Bulk API plus permission, not just a shredder button on SOAP delete.",
+      "The analogy does not encode validation rules, duplicate rules, or sharing."
+    ]
+  },
+  "teach_back_prompt": "Teach insert versus update versus upsert using Id versus External ID, then explain delete versus hard delete versus undelete. Name one place the hotel-desk analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Write insert, update, upsert, delete, undelete, export, and hard delete in one line each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given files with only External IDs, only Salesforce Ids, or neither, pick the operation."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain extract versus extract_all and when you need undelete instead of insert."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a 'duplicates after load' incident caused by insert instead of upsert."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: Recycle Bin versus hard_delete, including Bulk API."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-DEV-DATALOADER-OPS",
+      "title": "Data Loader Command-Line Operations and Exit Codes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/loader_operations.htm",
+      "supports": "insert, update, upsert (custom external ID), delete (Recycle Bin), hard_delete (no Recycle Bin), extract, extract_all.",
+      "release_or_version": "Data Loader Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "CLI edition notes in this article; UI operations follow the same verbs."
+    },
+    {
+      "source_id": "SF-DEV-DATALOADER-CFG",
+      "title": "Configure Data Loader",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/configuring_the_data_loader.htm",
+      "supports": "Bulk API / Bulk API 2.0 for insert, update, upsert, delete, hard-delete; hard-deleted records cannot be recovered from the Recycle Bin.",
+      "release_or_version": "Data Loader Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Permission to hard delete is documented in Help knowledge articles; confirm in the org."
+    },
+    {
+      "source_id": "SF-DEV-SOAP-CALLS",
+      "title": "API Call Basics",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/calls.htm",
+      "supports": "create, update, upsert, delete, undelete as SOAP data calls; queryAll related to deleted rows; AllOrNoneHeader on those calls from API 20.0.",
+      "release_or_version": "SOAP API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "REST/Bulk verb names differ; map them rather than inventing SOAP-only limits."
+    },
+    {
+      "source_id": "SF-DEV-SOAP-UPDATE",
+      "title": "update()",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_update.htm",
+      "supports": "update() changes existing records; primary key Id is not updatable; OwnerId as a foreign key can be updated; External ID can set a parent in one step.",
+      "release_or_version": "SOAP API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "SOAP array size (for example 200) is versioned; do not treat it as a Data Loader file cap."
+    },
+    {
+      "source_id": "SF-DEV-SOAP-UNDELETE",
+      "title": "undelete()",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_undelete.htm",
+      "supports": "Restores Recycle Bin records; cascade undelete of cascade-deleted children; merge reparenting cannot be undone; use queryAll to find deleted Ids; check undeletable on describe.",
+      "release_or_version": "SOAP API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Not every object is undeletable (example: AccountTeamMember in the guide)."
+    },
+    {
+      "source_id": "SF-DEV-SOAP-UPSERT-RESULT",
+      "title": "UpsertResult",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_calls_upsert_upsertresult.htm",
+      "supports": "created true/false distinguishes insert versus update outcomes; duplicate rules can return DuplicateError on upsert.",
+      "release_or_version": "SOAP API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Duplicate-rule behavior is DQM-003."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Data Loader Guide and SOAP API Developer Guide",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "insert needs no Id",
+        "update needs Id",
+        "upsert needs External ID",
+        "delete vs hard delete",
+        "undelete from Recycle Bin",
+        "extract vs extract_all"
+      ],
+      "accessible_description": "Portrait map of seven operations: insert, update, upsert, delete, undelete, export, hard delete, with Id versus External ID and Recycle Bin versus permanent delete."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-DEV-DATALOADER-OPS",
+        "SF-DEV-DATALOADER-CFG",
+        "SF-DEV-SOAP-CALLS",
+        "SF-DEV-SOAP-UNDELETE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Which DML verb owns this file?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  File[CSV or API payload] --> Key{Match key present?}\n  Key -->|None: new rows| Ins[insert / create]\n  Key -->|Salesforce Id| Upd[update]\n  Key -->|Custom External ID| Ups[upsert insert or update]\n  Key -->|Id for removal| DelPath{Need Recycle Bin?}\n  DelPath -->|Yes| Del[delete]\n  DelPath -->|No permanent| Hard[hard_delete via Bulk API]\n  Del --> Bin[Recycle Bin]\n  Bin --> Und[undelete]\n  File --> Exp{Include soft-deleted?}\n  Exp -->|No| Ext[extract / query]\n  Exp -->|Yes| ExtAll[extract_all / queryAll]",
+      "decision": "flowchart TD\n  Need[Need a data operation?] --> Q1{Rows already in Salesforce?}\n  Q1 -->|No| Ins[insert]\n  Q1 -->|Some unknown mix vendor keys| Ups[upsert on External ID]\n  Q1 -->|Yes known Ids field fix| Upd[update]\n  Q1 -->|Yes remove| Q2{Must be recoverable?}\n  Q2 -->|Yes| Del[delete then maybe undelete]\n  Q2 -->|No and permissioned| Hard[hard_delete]\n  Need2[Need a file out] --> Q3{Need deleted rows too?}\n  Q3 -->|No| Ext[extract]\n  Q3 -->|Yes| ExtAll[extract_all]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Data Loader insert loads new records; update matches Salesforce ID fields; upsert matches a custom external ID (update hits, insert misses); delete sends matching IDs to the Recycle Bin; hard_delete does not store them in the Recycle Bin.",
+      "source_ids": ["SF-DEV-DATALOADER-OPS"],
+      "scope": "Loader verbs",
+      "validation": "Data Loader Command-Line Operations table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "extract excludes soft-deleted records; extract_all includes existing and soft-deleted records.",
+      "source_ids": ["SF-DEV-DATALOADER-OPS"],
+      "scope": "Export",
+      "validation": "extract vs extract_all rows in the same operations table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Hard delete in Data Loader requires Use Bulk API or Use Bulk API 2.0. Hard-deleted records cannot be recovered from the Recycle Bin.",
+      "source_ids": ["SF-DEV-DATALOADER-CFG"],
+      "scope": "Hard delete",
+      "validation": "Configure Data Loader Bulk API settings.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "SOAP update() updates existing records identified by Id; primary key Ids are not updatable. undelete() restores Recycle Bin records; cascade-deleted children can return with the parent; merge reparenting cannot be undone.",
+      "source_ids": ["SF-DEV-SOAP-UPDATE", "SF-DEV-SOAP-UNDELETE", "SF-DEV-SOAP-CALLS"],
+      "scope": "SOAP update and undelete",
+      "validation": "SOAP update() and undelete() developer guide topics.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "UpsertResult.created is true when upsert inserted a row and false when it updated. Active duplicate rules can attach DuplicateError on upsert.",
+      "source_ids": ["SF-DEV-SOAP-UPSERT-RESULT"],
+      "scope": "Upsert outcomes",
+      "validation": "UpsertResult properties.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Data Loader Guide Summer '26 documents Bulk API 2.0 hard-delete alongside Bulk API. Reverify the installed Data Loader version.",
+  "unresolved_uncertainty": [
+    "Exact Bulk API Hard Delete permission-set clicks and whether a given profile includes it must be verified in the org (Help knowledge 000328731).",
+    "SOAP create()/update() maximum records per call is versioned; do not quote a number as a Data Loader CSV limit."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "upsert",
+      "telugu": "ఎక్స్‌టర్నల్ ID సరిపోతే అప్‌డేట్, లేకపోతే కొత్త రికార్డు ఇన్‌సర్ట్."
+    },
+    {
+      "english": "hard delete",
+      "telugu": "రీసైకిల్ బిన్‌లో పెట్టకుండా శాశ్వతంగా తొలగించడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Insert creates. Update needs Salesforce Id. Upsert uses a custom External ID to insert or update. Delete goes to the Recycle Bin; undelete restores; hard delete skips the bin and needs Bulk API. Export with extract_all if you need soft-deleted rows.",
+    "two_minutes": "I ask what key is in the file. No key: insert, and I accept I cannot safely retry without creating duplicates. Id present: update. Vendor key on an External ID field: upsert, and I read created versus updated on the result. Removal: delete if we may undelete; hard_delete only with Bulk API and permission, knowing the Recycle Bin will not save us. For export I choose extract versus extract_all the same way I choose query versus queryAll. I never call upsert 'an update that inserts Ids.'"
+  },
+  "terminology": [
+    {
+      "term": "insert",
+      "plain": "Create brand-new records; do not match existing rows.",
+      "precise": "Data Loader insert loads data as new records. SOAP create() is the analogous call. Retrying the same file without a unique key duplicates rows.",
+      "example": "Insert 50 LAB_ Contact rows that never existed in the sandbox.",
+      "non_example": "Sending those rows again with insert after a partial success—that creates duplicates.",
+      "confusable_neighbor": "upsert: will update when the External ID already exists.",
+      "boundary": "Wizard 'add new records' is the same intent with a different UI (DQM-001)."
+    },
+    {
+      "term": "update",
+      "plain": "Change records you already identified by Salesforce Id.",
+      "precise": "Data Loader update matches ID fields. SOAP update() cannot change the primary key Id; it can change foreign keys such as OwnerId.",
+      "example": "Update LAB_ Invoice__c.Status__c where the CSV has Id from a prior export.",
+      "non_example": "A file with only vendor keys and no Id—that is upsert or a failed update.",
+      "confusable_neighbor": "upsert: External ID match, not Salesforce Id.",
+      "boundary": "Null-value behavior differs between SOAP Data Loader and Bulk API (#N/A) as documented in Bulk API behavior."
+    },
+    {
+      "term": "upsert",
+      "plain": "Insert if the External ID is new; update if it already exists.",
+      "precise": "Data Loader upsert matches a custom external ID field. UpsertResult.created tells you which path ran. Duplicate rules can still block an upsert.",
+      "example": "Upsert LAB_ Account on LAB_ERP_Id__c from the ERP extract.",
+      "non_example": "Matching on Name because 'names are unique enough'—Name is not the documented upsert key.",
+      "confusable_neighbor": "update: requires Salesforce Id.",
+      "boundary": "How you create the External ID field is DQM-003."
+    },
+    {
+      "term": "delete",
+      "plain": "Remove records into the Recycle Bin so they can be undeleted.",
+      "precise": "Data Loader delete matches ID fields and moves rows to the Recycle Bin. SOAP delete() is the analogous call; cascade-deleted children follow the parent.",
+      "example": "Delete LAB_ demo Contacts by Id after a sandbox rehearsal.",
+      "non_example": "hard_delete, which skips the Recycle Bin.",
+      "confusable_neighbor": "Mass Delete Records in Setup (DQM-005) uses the same Recycle Bin idea with a different UI.",
+      "boundary": "Retention length of the Recycle Bin is DQM-005."
+    },
+    {
+      "term": "undelete",
+      "plain": "Restore records from the Recycle Bin.",
+      "precise": "SOAP undelete() restores undeletable records, including cascade-deleted children when the parent returns. Use queryAll/extract_all to find Ids. Merge reparenting cannot be undone.",
+      "example": "queryAll LAB_ Accounts deleted today, then undelete those Ids.",
+      "non_example": "Inserting the same rows again, which creates new Ids instead of restoring the old ones.",
+      "confusable_neighbor": "insert after a delete: new records, broken lookups.",
+      "boundary": "Not every object is undeletable; check describe."
+    },
+    {
+      "term": "hard delete",
+      "plain": "Permanently delete without the Recycle Bin.",
+      "precise": "Data Loader hard_delete matches IDs and does not store rows in the Recycle Bin. Configure Data Loader requires Bulk API or Bulk API 2.0. Records cannot be recovered from the Recycle Bin.",
+      "example": "hard_delete LAB_ junk rows in a disposable sandbox after a failed rehearsal, with Bulk API on.",
+      "non_example": "A normal delete you hope nobody undeletes.",
+      "confusable_neighbor": "delete: recoverable via undelete while in the bin.",
+      "boundary": "Permission and license gates: Needs verification in the org; do not assume System Administrator has Bulk API Hard Delete."
+    },
+    {
+      "term": "export / extract",
+      "plain": "Write records out to a CSV or data source.",
+      "precise": "extract uses SOQL and excludes soft-deleted records. extract_all includes existing and soft-deleted records. SOAP query versus queryAll is the same split.",
+      "example": "extract LAB_ Invoice__c Id and Status__c before an update.",
+      "non_example": "A report subscription that is not a Loader extract (neighboring analytics).",
+      "confusable_neighbor": "Weekly Data Export Service (DQM-005 backup).",
+      "boundary": "Data Loader does not support exporting attachments; Help points to weekly export for that workaround."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Identify the match key",
+      "actor": "Admin",
+      "trigger": "A CSV or integration payload arrives",
+      "before": "Unknown whether rows are new or existing",
+      "after": "None / Salesforce Id / External ID classified",
+      "observe": "Header row lists Id, an External ID API name, or neither",
+      "failure": "Inserting because the file 'looks new'"
+    },
+    {
+      "step": 2,
+      "transition": "Choose the verb",
+      "actor": "Admin",
+      "trigger": "Key classified",
+      "before": "Operation unset",
+      "after": "insert, update, upsert, delete, undelete, extract, extract_all, or hard_delete",
+      "observe": "process.operation or Data Loader wizard step matches the key",
+      "failure": "Update without Id; upsert without External ID"
+    },
+    {
+      "step": 3,
+      "transition": "Choose recoverability",
+      "actor": "Admin + security reviewer",
+      "trigger": "Operation is a delete",
+      "before": "Delete versus hard delete undecided",
+      "after": "delete if undelete must remain possible; hard_delete only with Bulk API and permission",
+      "observe": "Bulk API checkbox and permission documented in the ticket",
+      "failure": "hard_delete because it 'sounds cleaner'"
+    },
+    {
+      "step": 4,
+      "transition": "Verify with receipts",
+      "actor": "Admin",
+      "trigger": "Job completes",
+      "before": "Unknown created versus updated versus errors",
+      "after": "Success/error CSVs or UpsertResult.created inspected; row counts explained",
+      "observe": "No unexpected inserts after an update; Recycle Bin contains delete tests",
+      "failure": "Rerunning insert to 'finish the errors'"
+    }
+  ],
+  "when_to_use": [
+    "When you must pick insert, update, or upsert based on whether the file has Salesforce Ids, External IDs, or neither.",
+    "When a stakeholder says 'reload the data' and you need to refuse insert if those rows already exist.",
+    "When delete versus hard delete versus undelete is the interview question, including Bulk API for hard_delete.",
+    "When export must include or exclude soft-deleted records (extract versus extract_all / queryAll).",
+    "When diagnosing duplicates after a Data Loader job by checking the operation verb, not only the CSV."
+  ],
+  "when_not_to_use": [
+    "Do not use insert as a generic synonym for any Data Loader job that includes update, upsert, delete, or export.",
+    "Do not use hard delete when undelete or Recycle Bin recovery is still a requirement.",
+    "Do not use this operations lesson to design External ID fields or duplicate rules (DQM-003) beyond naming them as upsert keys.",
+    "Do not use undelete to reverse a merge's reparenting—the SOAP undelete topic says that cannot be undone.",
+    "Do not hard-delete production data as a lab; use a disposable sandbox and LAB_ rows."
+  ],
+  "configuration_or_code_location": [
+    "Data Loader operation radio buttons or process.operation (lowercase): insert, update, upsert, delete, hard_delete, extract, extract_all.",
+    "Data Loader Settings: Use Bulk API / Use Bulk API 2.0 for hard delete.",
+    "SOAP: create, update, upsert, delete, undelete; query versus queryAll.",
+    "Recycle Bin in the Salesforce UI to confirm delete versus missing hard-deleted rows."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox must load LAB_ accounts from ERP (vendor keys, no Salesforce Ids), fix Status__c on invoices that were just exported (Ids present), remove 20 demo contacts with a chance to restore, and later purge junk rows that must not return. No production data.",
+    "inputs": [
+      "ERP CSV with LAB_ERP_Id__c populated",
+      "Invoice export CSV with Id and Status__c",
+      "Demo Contact Id list",
+      "Junk custom-object Id list"
+    ],
+    "decisions": [
+      {
+        "decision": "Upsert Accounts on LAB_ERP_Id__c.",
+        "because": "No Salesforce Id; External ID is the documented upsert match; retry will update instead of duplicate.",
+        "rejected": "Insert every night"
+      },
+      {
+        "decision": "Update invoices by Id.",
+        "because": "The export already supplied Salesforce Ids; update matches ID fields.",
+        "rejected": "Upsert on Name"
+      },
+      {
+        "decision": "Delete demo Contacts, then undelete one as a test.",
+        "because": "We need Recycle Bin recoverability. hard_delete would block undelete.",
+        "rejected": "hard_delete for the demo set"
+      },
+      {
+        "decision": "hard_delete junk rows only after Bulk API is enabled and the sandbox is disposable.",
+        "because": "Configure Data Loader requires Bulk API for hard delete; Recycle Bin will not save those rows.",
+        "rejected": "SOAP delete labeled 'hard' in a spreadsheet"
+      }
+    ],
+    "configuration_or_code": [
+      "Ensure LAB_ERP_Id__c is an External ID (DQM-003) before upsert.",
+      "Data Loader: upsert Accounts; update Invoice__c; delete Contacts; Settings → Use Bulk API → hard_delete junk.",
+      "queryAll deleted Contacts and undelete one Id."
+    ],
+    "output": "Account upsert shows a mix of created true/false; invoices change without new Ids; one Contact returns from the Recycle Bin; junk rows are absent from the bin.",
+    "verification": [
+      "Rerunning the ERP file does not increase Account count.",
+      "Undeleted Contact keeps its original Id.",
+      "hard_deleted Ids do not appear in Recycle Bin search."
+    ],
+    "self_explanation": "The match key picked the verb. Recoverability picked delete versus hard delete."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ records only.",
+    "starting_state_checks": [
+      "You can create and delete LAB_ Contact rows.",
+      "Data Loader or Workbench/API access is available, or you simulate with UI plus Recycle Bin for delete/undelete only."
+    ],
+    "steps": [
+      "Insert two LAB_ Contacts. Export them (extract) and confirm Ids.",
+      "Update one Contact by Id. Insert the same two rows again without Ids and observe duplicates.",
+      "Delete one duplicate into the Recycle Bin and undelete it.",
+      "Write one sentence: what Bulk API setting hard_delete would have required, and why you did not use it on a record you needed to undelete."
+    ],
+    "guided_completion": [
+      "If undelete created a new Id, you inserted instead of undeleted.",
+      "If update failed, the CSV likely lacked Id."
+    ],
+    "independent_challenge": "Explain when extract_all would show the deleted Contact and extract would not.",
+    "evidence": [
+      "Before/after row counts with LAB_ names.",
+      "Written insert-versus-upsert distinction."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete remaining LAB_ Contacts (soft delete).",
+      "Do not enable hard delete in production."
+    ],
+    "limitations": "UI-only orgs can still practice delete/undelete; upsert/hard_delete need Loader or API."
+  },
+  "decision_table": [
+    {
+      "signal": "File has no Salesforce Id and rows must be created once.",
+      "choose": "insert / SOAP create.",
+      "not": "update, which needs Id, or a second insert of the same file after success.",
+      "why": "Insert always creates new records; retries duplicate unless a unique key exists."
+    },
+    {
+      "signal": "File has Salesforce Ids from a prior export and you are fixing fields.",
+      "choose": "update.",
+      "not": "upsert on Name, or insert of the same Ids.",
+      "why": "Data Loader update matches ID fields; SOAP update() cannot rewrite the primary key."
+    },
+    {
+      "signal": "File has a vendor key on a custom External ID; mix of new and existing.",
+      "choose": "upsert on that External ID.",
+      "not": "insert for 'the new ones' guessed by eye.",
+      "why": "Official upsert matches a custom external ID and inserts the rest; UpsertResult.created reports the path."
+    },
+    {
+      "signal": "Rows must go away but might need to come back this week.",
+      "choose": "delete, then undelete if needed (queryAll/extract_all to find Ids).",
+      "not": "hard_delete, or insert of copies that mint new Ids.",
+      "why": "delete uses the Recycle Bin; undelete restores; insert would break lookups."
+    },
+    {
+      "signal": "Rows must never return; sandbox purge; Bulk API available.",
+      "choose": "hard_delete with Use Bulk API or Bulk API 2.0.",
+      "not": "A SOAP delete you relabel as permanent.",
+      "why": "The Data Loader Guide ties hard_delete to Bulk API and states the Recycle Bin will not hold those records."
+    },
+    {
+      "signal": "You must export including records already in the Recycle Bin.",
+      "choose": "extract_all or SOAP queryAll.",
+      "not": "extract/query, which skip soft-deleted rows.",
+      "why": "The operations table states extract excludes soft-deleted records and extract_all includes them."
+    }
+  ],
+  "limitations": [
+    "Does not design External ID or unique field metadata (DQM-003).",
+    "Does not cover mass transfer or backup products (DQM-005).",
+    "Does not list every SOAP header or Bulk batch size.",
+    "Attachment export limitations belong to Data Loader Help, not this verb chart."
+  ],
+  "security_notes": [
+    "Hard delete is irreversible relative to the Recycle Bin; treat permission as sensitive.",
+    "update of OwnerId is a sharing event, not just a field paint.",
+    "Never hard-delete production customer data in this lesson."
+  ],
+  "common_mistakes": [
+    "Inserting a file that was already inserted.",
+    "Calling upsert an update that uses Name.",
+    "Expecting undelete after hard_delete.",
+    "Using extract to find deleted Ids.",
+    "Assuming System Administrator can hard-delete without the Bulk API Hard Delete permission."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Row count doubled after 'the same' Data Loader job.",
+      "check": [
+        "Operation was insert, not upsert/update.",
+        "External ID was not mapped or not unique."
+      ],
+      "do_not_assume": "Salesforce created copies as a platform bug."
+    },
+    {
+      "symptom": "Update fails with missing Id.",
+      "check": [
+        "CSV has Id from extract.",
+        "You did not mean upsert on an External ID."
+      ],
+      "do_not_assume": "Name can substitute for Id."
+    },
+    {
+      "symptom": "Cannot undelete; Recycle Bin is empty.",
+      "check": [
+        "Job was hard_delete with Bulk API.",
+        "Retention expired (DQM-005) or object is not undeletable."
+      ],
+      "do_not_assume": "undelete can reverse a merge's reparenting."
+    }
+  ],
+  "production_notes": [
+    "Export (extract) before bulk update or delete.",
+    "Prefer delete over hard_delete until recoverability is explicitly waived.",
+    "This lesson does not authorize production hard delete."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Data Loader update matches records using which key?",
+      "options": {
+        "A": "Matching ID fields (Salesforce Id)",
+        "B": "Record Name only",
+        "C": "The owner's email only",
+        "D": "A report folder name"
+      },
+      "answer": "A",
+      "rationale": "The operations table: update updates existing records with matching ID fields.",
+      "distractor_explanations": {
+        "B": "Name is not the update match key.",
+        "C": "Owner email is not the documented match.",
+        "D": "Folders are metadata navigation."
+      },
+      "concept": "update key",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Data Loader upsert matches which kind of field?",
+      "options": {
+        "A": "A custom external ID field",
+        "B": "Any formula field",
+        "C": "The standard Id only, never External ID",
+        "D": "A dashboard component id"
+      },
+      "answer": "A",
+      "rationale": "Upsert updates records with a matching custom external ID and inserts the rest.",
+      "distractor_explanations": {
+        "B": "Formulas are not the upsert key.",
+        "C": "That describes update, not upsert.",
+        "D": "Dashboards are unrelated."
+      },
+      "concept": "upsert key",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do records go after Data Loader delete?",
+      "options": {
+        "A": "The Recycle Bin",
+        "B": "A permanent archive object named Deleted__c",
+        "C": "The metadata API",
+        "D": "They are always hard-deleted"
+      },
+      "answer": "A",
+      "rationale": "delete moves matching IDs to the Recycle Bin.",
+      "distractor_explanations": {
+        "B": "There is no such standard archive object in this topic.",
+        "C": "Metadata API is not delete.",
+        "D": "hard_delete is a different operation."
+      },
+      "concept": "delete Recycle Bin",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What does Data Loader hard_delete skip?",
+      "options": {
+        "A": "Storing the records in the Recycle Bin",
+        "B": "The need for matching ID fields",
+        "C": "All validation rules forever",
+        "D": "The need for any permission"
+      },
+      "answer": "A",
+      "rationale": "hard_delete deletes matching IDs without first storing them in the Recycle Bin.",
+      "distractor_explanations": {
+        "B": "It still matches ID fields.",
+        "C": "Validation is not waived by the verb name.",
+        "D": "Hard delete has permission implications."
+      },
+      "concept": "hard_delete",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which Data Loader setting is documented for hard-delete?",
+      "options": {
+        "A": "Use Bulk API or Use Bulk API 2.0",
+        "B": "Insert null values only",
+        "C": "A Data Import Wizard checkbox",
+        "D": "Disable all sharing"
+      },
+      "answer": "A",
+      "rationale": "Configure Data Loader: hard delete is available when Bulk API / Bulk API 2.0 is used; records cannot be recovered from the Recycle Bin.",
+      "distractor_explanations": {
+        "B": "Null handling is a different setting.",
+        "C": "The wizard is not the hard-delete client.",
+        "D": "Sharing is not that switch."
+      },
+      "concept": "Bulk API hard delete",
+      "citation_ids": ["SF-DEV-DATALOADER-CFG"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "extract versus extract_all?",
+      "options": {
+        "A": "extract excludes soft-deleted records; extract_all includes them",
+        "B": "extract_all only exports metadata",
+        "C": "extract always hard-deletes after export",
+        "D": "They are identical"
+      },
+      "answer": "A",
+      "rationale": "The operations table states this split explicitly.",
+      "distractor_explanations": {
+        "B": "Both export record data.",
+        "C": "Export is not delete.",
+        "D": "They differ on soft-deleted rows."
+      },
+      "concept": "extract_all",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "SOAP update() and the primary key Id?",
+      "options": {
+        "A": "Client applications cannot update the primary key Id",
+        "B": "You should always overwrite Id to merge records",
+        "C": "Id is optional on update",
+        "D": "update() only works on Name"
+      },
+      "answer": "A",
+      "rationale": "The update() topic: clients cannot update primary keys; they can update foreign keys such as OwnerId.",
+      "distractor_explanations": {
+        "B": "Merging is a different call.",
+        "C": "update identifies records by Id.",
+        "D": "Name is a field, not the match key."
+      },
+      "concept": "Id not updatable",
+      "citation_ids": ["SF-DEV-SOAP-UPDATE"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You deleted an Account and want the cascade-deleted Contacts back with it. Which call is documented for that pattern?",
+      "options": {
+        "A": "undelete() of the Account, which undeletes cascade-deleted records",
+        "B": "insert of new Contacts with new Ids",
+        "C": "hard_delete of the Account first",
+        "D": "extract without Ids"
+      },
+      "answer": "A",
+      "rationale": "undelete() documents that because delete cascade-deletes children, undelete undeletes those cascade-deleted records.",
+      "distractor_explanations": {
+        "B": "New Ids break relationships.",
+        "C": "Hard delete removes Recycle Bin recovery.",
+        "D": "Export does not restore."
+      },
+      "concept": "cascade undelete",
+      "citation_ids": ["SF-DEV-SOAP-UNDELETE"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A merge reparented child records. You undelete a losing record. What cannot be undone per undelete()?",
+      "options": {
+        "A": "The child reparenting",
+        "B": "The existence of Salesforce Ids",
+        "C": "All validation rules in the org",
+        "D": "The user's password"
+      },
+      "answer": "A",
+      "rationale": "You can undelete records deleted as a result of a merge, but child reparenting cannot be undone.",
+      "distractor_explanations": {
+        "B": "Ids still exist.",
+        "C": "Validation is unrelated.",
+        "D": "Passwords are unrelated."
+      },
+      "concept": "merge undelete limit",
+      "citation_ids": ["SF-DEV-SOAP-UNDELETE"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "UpsertResult.created = false means?",
+      "options": {
+        "A": "The record was updated, not inserted",
+        "B": "The call hard-deleted the row",
+        "C": "The External ID field was ignored",
+        "D": "extract_all ran"
+      },
+      "answer": "A",
+      "rationale": "created indicates whether the record was created (true) or updated (false).",
+      "distractor_explanations": {
+        "B": "Upsert is not hard delete.",
+        "C": "False means a match was updated.",
+        "D": "Export is a different operation."
+      },
+      "concept": "UpsertResult.created",
+      "citation_ids": ["SF-DEV-SOAP-UPSERT-RESULT"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How do you find Ids of soft-deleted records before undelete?",
+      "options": {
+        "A": "queryAll() or Data Loader extract_all",
+        "B": "A normal query/extract only",
+        "C": "The Data Import Wizard export",
+        "D": "Changing the user's profile"
+      },
+      "answer": "A",
+      "rationale": "undelete() tells you to identify deleted records using queryAll(); extract_all is the Loader equivalent.",
+      "distractor_explanations": {
+        "B": "query/extract skip soft-deleted rows.",
+        "C": "The wizard is not that export.",
+        "D": "Profiles do not list deleted Ids."
+      },
+      "concept": "queryAll",
+      "citation_ids": ["SF-DEV-SOAP-UNDELETE", "SF-DEV-DATALOADER-OPS"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which operation should you refuse if the CSV has only vendor keys and you must not create duplicates on retry?",
+      "options": {
+        "A": "insert of the full file every night",
+        "B": "upsert on the External ID",
+        "C": "update after a one-time export of Ids",
+        "D": "extract for a backup"
+      },
+      "answer": "A",
+      "rationale": "Insert always creates. Upsert or a later update-by-Id is the retry-safe path.",
+      "distractor_explanations": {
+        "B": "That is the intended retry path.",
+        "C": "Valid once Ids exist.",
+        "D": "Export is not a load verb."
+      },
+      "concept": "insert retry risk",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "insert",
+      "front": "What does Data Loader insert do?",
+      "back": "Loads rows as new records. It does not match existing Ids or External IDs."
+    },
+    {
+      "id": "F2",
+      "category": "update",
+      "front": "What key does update require?",
+      "back": "Matching Salesforce ID fields. SOAP update() cannot change the primary key Id."
+    },
+    {
+      "id": "F3",
+      "category": "upsert",
+      "front": "What does upsert match?",
+      "back": "A custom external ID: update on match, insert otherwise."
+    },
+    {
+      "id": "F4",
+      "category": "delete",
+      "front": "delete versus hard_delete?",
+      "back": "delete uses the Recycle Bin. hard_delete does not store records there."
+    },
+    {
+      "id": "F5",
+      "category": "undelete",
+      "front": "What does undelete() restore?",
+      "back": "Undeletable Recycle Bin records, including cascade-deleted children when the parent is undeleted."
+    },
+    {
+      "id": "F6",
+      "category": "export",
+      "front": "extract versus extract_all?",
+      "back": "extract skips soft-deleted rows. extract_all includes existing and soft-deleted records."
+    },
+    {
+      "id": "F7",
+      "category": "hard delete",
+      "front": "Which Data Loader setting enables hard delete?",
+      "back": "Use Bulk API or Use Bulk API 2.0. Recover from Recycle Bin is not available."
+    },
+    {
+      "id": "F8",
+      "category": "soap",
+      "front": "SOAP analog of insert?",
+      "back": "create(). Call basics also list update, upsert, delete, and undelete."
+    },
+    {
+      "id": "F9",
+      "category": "upsert",
+      "front": "UpsertResult.created = true means?",
+      "back": "That row was inserted. false means it was updated."
+    },
+    {
+      "id": "F10",
+      "category": "undelete",
+      "front": "Merge plus undelete limitation?",
+      "back": "You may undelete the losing record, but child reparenting cannot be undone."
+    },
+    {
+      "id": "F11",
+      "category": "update",
+      "front": "Can update change OwnerId?",
+      "back": "Yes as a foreign key. You cannot update the record's own primary key Id."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "File has vendor keys, mix of new and old. Operation?",
+      "back": "upsert on the External ID—not insert of the whole file."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Need deleted Ids for undelete. Query type?",
+      "back": "queryAll or extract_all, not ordinary query/extract."
+    },
+    {
+      "id": "F14",
+      "category": "risk",
+      "front": "Why is rerunning insert dangerous?",
+      "back": "Insert always creates new records, so retries duplicate data."
+    },
+    {
+      "id": "F15",
+      "category": "boundary",
+      "front": "Is Name the official upsert key?",
+      "back": "No. Data Loader upsert is documented against a custom external ID field."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain insert, update, and upsert in Salesforce data loads.",
+      "answer_30_seconds": "Insert creates new records. Update changes rows matched by Salesforce Id. Upsert matches a custom External ID: update hits, insert misses. Name is not that key.",
+      "answer_2_minutes": "I look at the file headers. No key: insert, and I plan for the duplicate risk on retry. Id from extract: update, and I remember SOAP will not let me rewrite Id. Vendor key: upsert, then I read created versus updated. I mention duplicate rules can still fail an upsert. I do not say upsert is 'smart update on Name.'",
+      "example": "ERP LAB_ERP_Id__c upsert versus invoice Status__c update by Id.",
+      "tradeoffs": [
+        "Insert simplicity vs duplicate risk",
+        "Update precision vs needing an export first"
+      ],
+      "follow_ups": [
+        "What if two rows share an External ID?",
+        "When is insert still correct?"
+      ],
+      "weak_answer_warnings": [
+        "Upsert on Name"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Delete versus hard delete versus undelete?",
+      "answer_30_seconds": "Delete sends Ids to the Recycle Bin. Undelete restores undeletable rows, often with cascade-deleted children. Hard delete skips the bin, needs Bulk API in Data Loader, and cannot be undeleted from the Recycle Bin.",
+      "answer_2_minutes": "I treat recoverability as a requirement. If we might restore, I delete and I know to queryAll/extract_all for Ids. If the object is not undeletable, I say so from describe. Hard delete is a deliberate purge with Bulk API and permission—not a SOAP delete with a scary label. Merge reparenting is a separate trap: undelete will not put children back under the loser.",
+      "example": "Sandbox demo Contacts deleted then undeleted; junk rows hard-deleted after Bulk API is on.",
+      "tradeoffs": [
+        "Recoverability vs storage cleanup",
+        "Permissioned hard delete vs accidental permanence"
+      ],
+      "follow_ups": [
+        "Does System Administrator have Bulk API Hard Delete by default?",
+        "What does cascade undelete do?"
+      ],
+      "weak_answer_warnings": [
+        "Equating delete with hard delete"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A nightly insert doubled Account rows. What do you look at first?",
+      "answer_30_seconds": "The operation was insert, so every run created new records. Switch to upsert on an External ID or update by Id after an export, and stop rerunning insert.",
+      "answer_2_minutes": "I inspect success CSVs and created timestamps. If Ids are new each night, it is insert. I check whether an External ID exists and is unique (DQM-003). I do not 'fix' it with hard delete in production on day one; I freeze the job, export, and design upsert. I mention duplicate rules may have been off, which is why both copies saved.",
+      "example": "Vendor file without Salesforce Id loaded with insert seven nights in a row.",
+      "tradeoffs": [
+        "Cleanup delete vs merge",
+        "Immediate upsert vs modeling the External ID"
+      ],
+      "follow_ups": [
+        "How would UpsertResult.created look after the fix?",
+        "Would extract_all help find the extras?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Salesforce Id generation"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "You must restore Contacts deleted with an Account yesterday. Walk the official path.",
+      "answer_30_seconds": "If it was a Recycle Bin delete, undelete the Account; cascade-deleted Contacts should return. Find Ids with queryAll. If it was hard_delete, Recycle Bin restore will not work.",
+      "answer_2_minutes": "I confirm the operation. delete plus cascade is the undelete() story. I check undeletable on describe so I do not promise AccountTeamMember-style objects. I will not insert replacement Contacts if we need the original Ids. If someone merged accounts, I warn that reparenting cannot be undone even after undelete. Retention expiry is DQM-005.",
+      "example": "Sandbox Account delete cascade; undelete Account Id; Contacts reappear with original Ids.",
+      "tradeoffs": [
+        "Undelete vs rebuild",
+        "Parent-first restore order"
+      ],
+      "follow_ups": [
+        "How do you get the deleted Ids?",
+        "What if Bulk API hard delete was used?"
+      ],
+      "weak_answer_warnings": [
+        "Inserting new Contacts as 'restore'"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you choose extract_all instead of extract?",
+      "answer_30_seconds": "When the export must include soft-deleted records, for example to build an undelete list or to audit what is in the Recycle Bin. extract skips those rows.",
+      "answer_2_minutes": "I map extract to query and extract_all to queryAll. Backup-before-update usually wants live rows (extract). Recovery design wants the bin (extract_all). I do not use extract_all as a substitute for a real backup product (DQM-005). I also mention Data Loader attachment export is not supported—that is a different Help note.",
+      "example": "extract_all LAB_ Contact Id, IsDeleted, LastModifiedDate after a mass delete rehearsal.",
+      "tradeoffs": [
+        "Live dataset vs including junk in the bin",
+        "Loader extract vs weekly export"
+      ],
+      "follow_ups": [
+        "Is IsDeleted in a normal query?",
+        "Hard-deleted rows?"
+      ],
+      "weak_answer_warnings": [
+        "Saying extract always includes deleted rows"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Hard delete is missing in Data Loader. What do you check?",
+      "answer_30_seconds": "Whether Use Bulk API or Use Bulk API 2.0 is enabled. Hard delete is documented with those settings. Then check the Bulk API Hard Delete permission—not assumed on standard System Administrator.",
+      "answer_2_minutes": "I open Settings before I hunt for a SOAP operation named hard_delete. The operations table lists hard_delete, but Configure Data Loader ties recoverability and bulk together. I still ask why we are not using delete. I will not 'enable it in production to test.' Needs verification of the exact permission-set UI in that org.",
+      "example": "Sandbox Data Loader with Bulk API off: hard delete unavailable or fails; enabling Bulk API plus a permission set unblocks a LAB_ purge.",
+      "tradeoffs": [
+        "SOAP features vs bulk hard delete",
+        "Speed of purge vs recoverability"
+      ],
+      "follow_ups": [
+        "Can you undelete afterward?",
+        "What CSV key does hard_delete use?"
+      ],
+      "weak_answer_warnings": [
+        "Telling them to use the Wizard hard-delete mode"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "A developer wants to update Account Id values to match the ERP. How do you respond?",
+      "answer_30_seconds": "You cannot update the primary key Id. Store the ERP key in an External ID and upsert or relate with that field. Id is Salesforce-issued.",
+      "answer_2_minutes": "I cite update(): primary keys are not updatable; foreign keys like OwnerId are. The integration key belongs on a custom External ID (DQM-003). If they need parent-child in one call, the SOAP guides show External ID as a foreign key. Trying to overwrite Id is a merge/reparent design, not an update.",
+      "example": "LAB_ERP_Id__c as External ID; upsert Account; never a column named Id with ERP numbers.",
+      "tradeoffs": [
+        "Salesforce Id stability vs vendor key",
+        "upsert vs update-after-export"
+      ],
+      "follow_ups": [
+        "How do you relate a child in one create() call?",
+        "What if two ERP keys collide?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to update Id"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "Use the hotel-desk analogy, then break it.",
+      "answer_30_seconds": "Insert is a new check-in, update uses this hotel's confirmation (Id), upsert uses a partner code, delete is the luggage hold, hard delete shreds, export is the guest list. It breaks on cascade delete and merge reparenting.",
+      "answer_2_minutes": "I walk Id versus External ID as two different confirmation systems. I add extract_all as including guests in the hold. Then I break it: children can vanish with a parent; undelete may bring them back; merge will not put children back; Bulk API permission is not a hotel rule. I finish with receipts: success/error CSVs and UpsertResult.created.",
+      "example": "Teaching a BA why rerunning insert mints new confirmation numbers.",
+      "tradeoffs": [
+        "Memorable story vs SOAP precision",
+        "Recoverability vs purge"
+      ],
+      "follow_ups": [
+        "Where does Bulk API enter the story?",
+        "Where does duplicate-rule DuplicateError enter?"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer analogy"
+      ]
+    }
+  ]
+}

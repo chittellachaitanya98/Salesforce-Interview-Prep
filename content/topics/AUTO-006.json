@@ -1,0 +1,1046 @@
+{
+  "topic_id": "AUTO-006",
+  "slug": "decisions-assignments-loops-collections-subflows-and-tr",
+  "title": "Decisions, assignments, loops, collections, subflows, and transforms",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AUTO-005"
+  ],
+  "objectives": [
+    "Use a Decision element to branch on conditions instead of stuffing logic into a validation rule or Apex if/else by default.",
+    "Use Assignment to set variables and to add record variables to collections, including consecutive assignment rows.",
+    "Loop collections and keep DML outside the loop by building a collection, matching Help's bulkification example.",
+    "Call a subflow to remove repetition and use Transform to join collections, without treating those as formula fields or approval steps."
+  ],
+  "diagnostic_question": "An after-save Flow gets Opportunity team members and must create a Task per member when the team is not empty. Before reading, where do Decision, Loop, Assignment, collection, and a single Create Records go—and why not DML inside the loop or a validation rule?",
+  "definition": "Inside a Flow, Decision elements branch on conditions, Assignment elements set variables (including adding to collections), Loop elements iterate a collection, subflows run another flow to reduce repetition, and Transform can join collections. Help's bulkification example combines Decision, Loop, Assignment, and a single Create Records after the loop so DML is not inside the loop. ([Assignment Element](https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_assignment.htm); [Bulkified Record Processing](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm); [Transform Element](https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_transform.htm); [Which automation tool](https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm))",
+  "why_it_matters": "Interviewers listen for 'never DML inside a loop' and for Decision versus validation versus Apex. Assignment is how you build collections; it is not a formula field. Subflow is how you reuse an autolaunched Flow, not an approval process.",
+  "sixty_second_explanation": "Think of a corporate mailroom. A Decision is the routing bins (domestic vs overnight). Assignment is stamping the envelope and dropping it into a mailbag (collection). A Loop walks each envelope in the bag. Transform merges two trays of addresses into one. A subflow is sending the bag to another department's posted procedure. Validation is the inspector who refuses an illegal parcel at the dock—not a bin. A formula is the printed postage chart. Approval is a manager's signature. Apex is a custom sorting machine when the mailroom cards cannot keep up.",
+  "deeper_explanation": [
+    "Assignment Element: set values in variables, including collection, record, record collection, and global variables. Specify variable, operator, and value. Multiple rows run consecutively in listed order. To update a record variable and add it to a collection, use Assignment on a Loop's For Each path, then Create Records outside the loop. Add operator adds the record variable to the collection. Fault paths can assign an error message into a variable for a Screen. ([Assignment Element](https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_assignment.htm))",
+    "Bulkified Record Processing: never perform DML inside loops; collect records during the loop, then one Create/Update/Delete after. Use a Decision to skip work when a collection is empty. Loop first-to-last through team members. Assignment builds each Task record variable, then Assignment Add to TasksToCreate. After the loop, one Create Records from the collection. This after-save example is for related Tasks, not a validation rule. ([Bulkified Record Processing](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm))",
+    "Which-tool: run another flow in the current interview to reduce repetition—Autolaunched or Screen depending on the child. Subflow input variable API names can be up to 40 characters. Disabling input on a child variable can break the parent. ([Which automation tool](https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm); [Flow Variable Considerations](https://help.salesforce.com/s/articleView?id=sf.flow_considerations_feature_variable.htm))",
+    "Transform Element Help exists to transform and join collections (for example combining external and Salesforce orders into one structure for a data table). Do not treat Transform as a formula field on the object or as Apex. Confirm current GA/beta status in the org if the picker differs. ([Transform Element](https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_transform.htm))",
+    "Decision is not a validation rule: a Decision routes the interview; a validation rule refuses a save when True. Complex screen validation may use Decision (AUTO-004). Apex if/else is complementary when CPU or volume exceeds Flow, not the default branch."
+  ],
+  "mental_model": {
+    "analogy": "A corporate mailroom: Decision = routing bins, Assignment = stamp plus drop into the bag, Loop = process each envelope, collection = the mailbag, Transform = merge two address trays, subflow = another department's procedure.",
+    "useful_mapping": [
+      "Decision → which bin the envelope takes",
+      "Assignment Equals → stamp a field on the current envelope",
+      "Assignment Add → drop the envelope into the mailbag collection",
+      "Loop → walk the bag first item to last",
+      "Create Records after the loop → one trip to the loading dock (one DML)",
+      "subflow → send the bag to another posted procedure",
+      "Transform → reformat two trays into one"
+    ],
+    "where_it_breaks": [
+      "Governor limits are not a mailbag size you can see (APEX-007 / AUTO-007).",
+      "Validation happens at the dock before some of this mailroom even runs.",
+      "Transform GA/beta and join features are release-sensitive.",
+      "Apex remains the custom sorter for CPU-heavy or Batch volume work."
+    ]
+  },
+  "teach_back_prompt": "Walk a teammate through Decision, Assignment, Loop, collection, subflow, and Transform on the Opportunity-team Task example, and say why DML inside the loop, a validation rule, or Apex-first is wrong.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: Decision branches; Assignment sets and Add-to-collection; Loop then DML after."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Five signals: empty collection, per-item stamp, reuse logic, join two collections, illegal save."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Redraw Help's bulkification after diagram without notes."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a CPU error caused by Create Records inside a loop."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: mailroom mapping plus subflow 40-character names."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-ASSIGNMENT",
+      "title": "Assignment Element",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_assignment.htm",
+      "supports": "Set variables; consecutive rows; Add record variable to collection on Loop For Each; Create Records after loop; fault-path assignment.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Operators depend on data type; see Flow Operators in Assignment Elements."
+    },
+    {
+      "source_id": "SF-HELP-BULK-FLOW",
+      "title": "Bulkified Record Processing to Avoid CPU Limits Example",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm",
+      "supports": "Never DML in loops; Decision if no team members; Loop; Assignment build; Assignment Add; Create Records after loop.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "CPU milliseconds on that page belong to APEX-007; do not treat as this lesson's facts."
+    },
+    {
+      "source_id": "SF-HELP-TRANSFORM",
+      "title": "Transform Element",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_ref_elements_transform.htm",
+      "supports": "Transform/join collections in Flow.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "GA/beta and capabilities can change; confirm in the org."
+    },
+    {
+      "source_id": "SF-HELP-WHICH-TOOL",
+      "title": "Get Started Automating a Business Task with a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm",
+      "supports": "Run another flow to reduce repetition; complementary Apex still applies.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define Assignment operators."
+    },
+    {
+      "source_id": "SF-HELP-FLOW-VARS",
+      "title": "Flow Variable Considerations",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_considerations_feature_variable.htm",
+      "supports": "Subflow input API names up to 40 characters; input/output breakage.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Not an element catalog."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Decision",
+        "Assignment",
+        "Loop",
+        "Collection",
+        "Subflow",
+        "Transform / no DML in loop"
+      ],
+      "accessible_description": "Portrait of Flow logic elements and bulk-safe collection pattern versus validation and Apex."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-ASSIGNMENT",
+        "SF-HELP-BULK-FLOW",
+        "SF-HELP-TRANSFORM"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Loop then one DML"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Get[Get Records collection] --> Dec{Decision: collection empty?}\n  Dec -->|Yes| End[End]\n  Dec -->|No| Loop[Loop first to last]\n  Loop --> Asg[Assignment: set record variable]\n  Asg --> Add[Assignment Add to collection]\n  Add --> Loop\n  Loop --> Create[Create Records once after loop]\n  Parent[Parent Flow] --> Sub[Subflow]\n  Join[Transform join collections] --> Table[Screen data table]",
+      "decision": "flowchart TD\n  Need[Need logic in Flow?] --> Q1{Refuse illegal save on all channels?}\n  Q1 -->|Yes| VR[Validation rule]\n  Q1 -->|Branch the interview| Dec[Decision element]\n  Need --> Q2{Set a variable or build a collection?}\n  Q2 -->|Yes| Asg[Assignment]\n  Need --> Q3{Many items?}\n  Q3 -->|Yes| Loop[Loop then DML after]\n  Q3 -->|DML inside loop| No[Do not; bulkify]\n  Need --> Q4{Reuse the same steps?}\n  Q4 -->|Yes| Sub[Subflow]\n  Q4 -->|Join collections| Xf[Transform]\n  Q4 -->|CPU/volume| Apex[Complementary Apex]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Assignment sets variables including collections; multiple rows assign consecutively; on a Loop For Each path you set a record variable then Add it to a record collection and Create Records after the loop.",
+      "source_ids": [
+        "SF-HELP-ASSIGNMENT"
+      ],
+      "scope": "Assignment",
+      "validation": "Assignment Element.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Never perform DML inside loops. Use a Decision when the collection is empty, Loop the collection, Assignment to build records, Assignment to Add to a collection, then one Create Records after the loop.",
+      "source_ids": [
+        "SF-HELP-BULK-FLOW"
+      ],
+      "scope": "Bulkification",
+      "validation": "Bulkified Record Processing example.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A flow can run another flow in the same interview to reduce repetition (subflow). Subflow input API names can be up to 40 characters.",
+      "source_ids": [
+        "SF-HELP-WHICH-TOOL",
+        "SF-HELP-FLOW-VARS"
+      ],
+      "scope": "Subflow",
+      "validation": "Which-tool and Variable Considerations.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "The Transform element can join source collections into a target collection for use later in the flow, such as a screen data table.",
+      "source_ids": [
+        "SF-HELP-TRANSFORM"
+      ],
+      "scope": "Transform",
+      "validation": "Transform Element Help.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Transform collection-join features have moved from beta toward GA across releases; confirm the element in the target org. Bulkification guidance remains: no DML in loops.",
+  "unresolved_uncertainty": [
+    "Exact Transform operators and GA/beta label Need verification in the org.",
+    "Numeric CPU limits in the bulkification article belong to APEX-007."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Assignment",
+      "telugu": "వేరియబుల్‌కు విలువ పెట్టే లేదా కలెక్షన్‌లో చేర్చే ఎలిమెంట్."
+    },
+    {
+      "english": "Loop",
+      "telugu": "కలెక్షన్‌లోని ప్రతి అంశాన్ని తిరిగి చూసే ఎలిమెంట్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Decision branches. Assignment stamps variables and Add drops records into a collection. Loop walks the collection. DML stays after the loop. Subflow reuses another flow. Transform joins collections. Validation is not a Decision. Apex is complementary, not the default if/else.",
+    "two_minutes": "I draw Help's after-save Task example: Get team members, Decision if empty, Loop, Assignment to build each Task, Assignment Add to a collection, one Create Records. I never put Create Records inside the loop. I extract repeated steps to an autolaunched subflow with input names at or under 40 characters. I use a validation rule only when the save must be refused, and Apex only for CPU or Batch volume."
+  },
+  "terminology": [
+    {
+      "term": "Decision element",
+      "plain": "A branch in the interview based on conditions.",
+      "precise": "Define conditions in a Decision; paths run when criteria match. Help also uses Decision to skip work when a collection is empty and for complex screen validation logic.",
+      "example": "Decision: team member collection is empty → end.",
+      "non_example": "Validation rule: True means illegal save, not an interview branch.",
+      "confusable_neighbor": "If/else in Apex: complementary, not the default.",
+      "boundary": "Wait conditions are a different element."
+    },
+    {
+      "term": "Assignment element",
+      "plain": "The element that writes values into variables.",
+      "precise": "Variable, operator, value; multiple rows consecutive. Add operator appends a record variable to a collection on a Loop path.",
+      "example": "Set TaskRecord.Subject, then Add TaskRecord to TasksToCreate.",
+      "non_example": "A formula field on Opportunity.",
+      "confusable_neighbor": "Update Records: DML, not in-memory assignment.",
+      "boundary": "Operators depend on data type."
+    },
+    {
+      "term": "Loop element",
+      "plain": "Iterates a collection first-to-last or last-to-first.",
+      "precise": "For Each path processes the current item. After Last is where bulk DML belongs.",
+      "example": "Loop Opportunity Team Members first item to last item.",
+      "non_example": "A scheduled Flow batch is not this Loop element.",
+      "confusable_neighbor": "Apex for-loop: similar idea, different language.",
+      "boundary": "Do not put Create Records on For Each."
+    },
+    {
+      "term": "collection",
+      "plain": "A variable that holds multiple values or records.",
+      "precise": "Record collection variables hold many Salesforce records for later DML. Assignment Add builds them in memory.",
+      "example": "TasksToCreate record collection.",
+      "non_example": "A formula returning one number.",
+      "confusable_neighbor": "Record variable: one record.",
+      "boundary": "App Builder cannot pass collections (AUTO-002)."
+    },
+    {
+      "term": "subflow",
+      "plain": "An element that runs another flow in the same interview.",
+      "precise": "Reduces repetition. Child is often autolaunched (no screens) when the parent is record-triggered. Input API names up to 40 characters.",
+      "example": "Parent after-save calls LAB_BuildFollowUpTasks autolaunched child.",
+      "non_example": "Approval process step.",
+      "confusable_neighbor": "Invocable Apex: code action, not a flow.",
+      "boundary": "Disabling child inputs breaks the parent."
+    },
+    {
+      "term": "Transform element",
+      "plain": "An element that maps or joins collections into a target structure.",
+      "precise": "Help describes joining source collections into one target collection, for example orders from an external system plus Salesforce orders for a data table.",
+      "example": "Join NetSuite and Salesforce order collections for a screen table.",
+      "non_example": "A formula field.",
+      "confusable_neighbor": "Assignment Add: manual collection build, not Transform.",
+      "boundary": "Confirm GA in the org."
+    },
+    {
+      "term": "bulkification",
+      "plain": "Designing the Flow so one DML handles many records instead of DML per loop iteration.",
+      "precise": "Help: never DML inside loops; collect, then one Create Records after. Design for bulk from the start because record-triggered flows can process multiple records.",
+      "example": "20 Closed Won Opportunities still create Tasks with DML after each interview's loop, not per team member inside the loop.",
+      "non_example": "A validation rule.",
+      "confusable_neighbor": "Apex bulkification: sibling concept in APEX-007/010.",
+      "boundary": "AUTO-007 continues Get/Create/Update/Delete."
+    },
+    {
+      "term": "For Each path",
+      "plain": "The Loop path that runs for the current collection item.",
+      "precise": "Put Assignment here to stamp the current item and Add to a collection. Do not put Create Records here.",
+      "example": "Build TaskRecord from Current Item from Loop.",
+      "non_example": "After Last path: where Create Records goes.",
+      "confusable_neighbor": "Decision paths: different element.",
+      "boundary": "Current item is not $Record unless you mapped it."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Branch with Decision",
+      "actor": "Admin",
+      "trigger": "Need different paths",
+      "before": "Nested undocumented hacks",
+      "after": "Decision outcomes named for business cases",
+      "observe": "Empty collection takes the End path",
+      "failure": "Using a validation rule to branch after save"
+    },
+    {
+      "step": 2,
+      "transition": "Assign in memory",
+      "actor": "Admin",
+      "trigger": "Need to set variables or build a collection",
+      "before": "Updating records one-by-one",
+      "after": "Assignment rows then Add to collection",
+      "observe": "Debug shows collection size growing",
+      "failure": "Create Records on every Assignment"
+    },
+    {
+      "step": 3,
+      "transition": "Loop then DML",
+      "actor": "Admin",
+      "trigger": "Many related records",
+      "before": "DML inside For Each",
+      "after": "Loop → Assignment → Add → Create Records after Last",
+      "observe": "One Create Records element after the loop",
+      "failure": "Apex for-loop with insert inside as the first design"
+    },
+    {
+      "step": 4,
+      "transition": "Reuse with subflow / Transform",
+      "actor": "Admin",
+      "trigger": "Repeated steps or two collections",
+      "before": "Copy-paste canvases",
+      "after": "Subflow with short input names; Transform to join",
+      "observe": "Child debug plus parent",
+      "failure": "Approval process used as a subroutine"
+    }
+  ],
+  "when_to_use": [
+    "Use a Decision element when the Flow interview must branch, including skipping work when a collection is empty—not when a validation rule must refuse the save.",
+    "Use Assignment to set variables and to Add record variables to a collection inside a Loop.",
+    "Use a Loop plus one Create/Update/Delete after Last when many related records must be written, matching Help's bulkification example.",
+    "Use a subflow when another Flow should run in this interview to reduce repetition, with input API names at or under 40 characters.",
+    "Use Transform when you must join collections; use Apex only if CPU or Batch volume exceeds what these elements can do."
+  ],
+  "when_not_to_use": [
+    "Do not put Create Records, Update Records, or Delete Records inside a Loop's For Each path.",
+    "Do not use a Decision element as a substitute for a validation rule that must block illegal data on every channel.",
+    "Do not use Assignment as a substitute for a formula field that should always calculate on the record without an interview.",
+    "Do not use a subflow as a substitute for an approval process when a person must approve.",
+    "Do not start in Apex if/else for Help's Opportunity-team Task pattern that Decision, Loop, and Assignment already cover."
+  ],
+  "configuration_or_code_location": [
+    "Flow Builder toolbox: Decision, Assignment, Loop, Subflow, Transform.",
+    "Assignment: Add Assignment rows; operator Add for collections.",
+    "Loop: Collection Variable, Direction First item to last item; After Last connector.",
+    "Subflow: referenced flow must be active; input names ≤ 40 characters."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox after-save Flow on LAB_ Opportunity Closed Won: Get Opportunity Team Members, skip if none, otherwise create one follow-up Task per member in a bulk-safe way. No production data.",
+    "inputs": [
+      "After-save Actions and Related Records",
+      "Team member collection",
+      "One Task per member"
+    ],
+    "decisions": [
+      {
+        "decision": "Decision when Get Records returns no members.",
+        "because": "Help adds a Decision to avoid processing an empty collection.",
+        "rejected": "Looping anyway"
+      },
+      {
+        "decision": "Loop members; Assignment to build TaskRecord; Assignment Add to TasksToCreate.",
+        "because": "Assignment Help and bulkification example use in-memory collection build.",
+        "rejected": "Create Records inside For Each"
+      },
+      {
+        "decision": "Single Create Records after Last from the collection.",
+        "because": "Never DML inside loops.",
+        "rejected": "Apex for-loop inserts as the first design"
+      }
+    ],
+    "configuration_or_code": [
+      "Get Records Opportunity Team Members.",
+      "Decision HasMembers.",
+      "Loop → Assignment Subject/Owner/WhatId → Assignment Add → Create Records Multiple from TasksToCreate."
+    ],
+    "output": "Five members produce five Tasks with one Create Records after the loop, not five DML elements inside it.",
+    "verification": [
+      "Debug one Closed Won with three LAB_ team members: collection size 3, one Create Records.",
+      "Empty team takes the Decision end path; no Tasks.",
+      "No Create Records sits on the For Each path."
+    ],
+    "self_explanation": "I bulkified with Assignment Add. I did not use validation or Apex for this related-record pattern."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ Opportunity or custom object with a child collection.",
+    "starting_state_checks": [
+      "You can create an after-save Flow",
+      "You have a related list to Get Records"
+    ],
+    "steps": [
+      "Create an after-save Flow with Get Records into a collection.",
+      "Add a Decision for empty collection.",
+      "Add Loop, Assignment to a record variable, Assignment Add to a collection, Create Records after the loop.",
+      "Intentionally place a Create Records inside the loop in a copy, then remove it and write why Help forbids it."
+    ],
+    "guided_completion": [
+      "If Create Records is on For Each, move it after Last.",
+      "If you opened Apex first, write why this pattern is Flow."
+    ],
+    "independent_challenge": "Extract the Task-build steps into an autolaunched subflow with an input name under 40 characters.",
+    "evidence": [
+      "Debug showing collection size and one DML after loop",
+      "Screenshot that For Each has no Create Records"
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate LAB_ flows",
+      "Do not deploy to production"
+    ],
+    "limitations": "Does not prove Transform join against an external system."
+  },
+  "decision_table": [
+    {
+      "signal": "Team member collection might be empty.",
+      "choose": "Decision element that ends when empty.",
+      "not": "Looping and hitting DML anyway, or a validation rule.",
+      "why": "Help adds a Decision to avoid processing when there are no team members."
+    },
+    {
+      "signal": "Each team member needs a Task built in memory.",
+      "choose": "Assignment to a Task record variable, then Assignment Add to a collection.",
+      "not": "Create Records on every For Each iteration.",
+      "why": "Assignment Help: set the record variable then Add to the collection on the Loop path."
+    },
+    {
+      "signal": "All Tasks must be inserted.",
+      "choose": "One Create Records after Last from the record collection.",
+      "not": "DML inside the loop, or Apex insert-in-loop as the first design.",
+      "why": "Never perform DML operations inside loops."
+    },
+    {
+      "signal": "The same Task-build steps are copied on two canvases.",
+      "choose": "Autolaunched subflow with input API names ≤ 40 characters.",
+      "not": "An approval process, or a formula field.",
+      "why": "Which-tool: run another flow to reduce repetition."
+    },
+    {
+      "signal": "Two collections must become one table on a screen.",
+      "choose": "Transform element to join collections.",
+      "not": "A validation rule, or manual Apex as the default.",
+      "why": "Transform Help: combine source collections into one target collection."
+    }
+  ],
+  "limitations": [
+    "Get/Create/Update/Delete field-level design continues in AUTO-007.",
+    "Fault paths and rollback are AUTO-008.",
+    "Transform feature flags are org-specific.",
+    "Does not list every Assignment operator."
+  ],
+  "security_notes": [
+    "Loops over Get Records still respect running-user access unless run context says otherwise (later lessons).",
+    "Do not dump real customer collections into debug logs.",
+    "Subflow inputs are a contract; do not pass secrets in names or URLs."
+  ],
+  "common_mistakes": [
+    "Create Records inside a Loop.",
+    "Using Decision as a validation rule.",
+    "Using Assignment instead of a formula field for always-on calculate.",
+    "Subflow input names longer than 40 characters.",
+    "Apex if/else for the team-member Task pattern."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "APEX_CPU_TIME_LIMIT_EXCEEDED on a Flow with a loop.",
+      "check": [
+        "Create/Update/Delete inside For Each",
+        "Move DML after Last; use collections"
+      ],
+      "do_not_assume": "Apex is the only fix; Help's example is a Flow refactor."
+    },
+    {
+      "symptom": "No Tasks created and no error.",
+      "check": [
+        "Decision took the empty path",
+        "Entry conditions on the after-save Flow"
+      ],
+      "do_not_assume": "Assignment failed silently without debug."
+    },
+    {
+      "symptom": "Parent cannot pass a variable into the subflow.",
+      "check": [
+        "Child input enabled",
+        "API name length ≤ 40",
+        "Types match"
+      ],
+      "do_not_assume": "Subflows cannot receive collections."
+    }
+  ],
+  "production_notes": [
+    "Review every Loop for DML before activating.",
+    "Extract repeated logic to subflows with stable input names.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Help's bulkification principle for DML and loops?",
+      "options": {
+        "A": "Never perform DML operations inside loops; collect, then DML after the loop",
+        "B": "Always Create Records inside For Each",
+        "C": "Replace loops with validation rules",
+        "D": "DML is illegal in Flow"
+      },
+      "answer": "A",
+      "rationale": "Never perform DML inside loops; one DML after the loop completes.",
+      "distractor_explanations": {
+        "B": "That is the inefficient pattern.",
+        "C": "Validation is a different tool.",
+        "D": "DML after the loop is required."
+      },
+      "concept": "No DML in loop",
+      "citation_ids": [
+        "SF-HELP-BULK-FLOW"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Assignment rows in one element run how?",
+      "options": {
+        "A": "Consecutively in the order listed",
+        "B": "In random order",
+        "C": "Only the last row",
+        "D": "Only in Apex"
+      },
+      "answer": "A",
+      "rationale": "Variable assignments are made consecutively in the order they're listed.",
+      "distractor_explanations": {
+        "B": "Order is defined.",
+        "C": "All listed rows run.",
+        "D": "Assignment is a Flow element."
+      },
+      "concept": "Consecutive",
+      "citation_ids": [
+        "SF-HELP-ASSIGNMENT"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How do you add a record variable to a collection in a Loop?",
+      "options": {
+        "A": "Assignment with operator Add, value the record variable",
+        "B": "A validation rule",
+        "C": "A formula field",
+        "D": "An approval step"
+      },
+      "answer": "A",
+      "rationale": "Assignment example: Variable NewOpportunities, Operator Add, Value NewOpportunity.",
+      "distractor_explanations": {
+        "B": "Validation blocks saves.",
+        "C": "Formula computes on the record.",
+        "D": "Approvals route people."
+      },
+      "concept": "Add operator",
+      "citation_ids": [
+        "SF-HELP-ASSIGNMENT"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why add a Decision before looping team members?",
+      "options": {
+        "A": "To avoid processing when there are no team members",
+        "B": "To replace Create Records",
+        "C": "To create a formula field",
+        "D": "To start Batch Apex automatically"
+      },
+      "answer": "A",
+      "rationale": "Help: Add a Decision to check for team members.",
+      "distractor_explanations": {
+        "B": "Create Records still happens after Last.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Empty check",
+      "citation_ids": [
+        "SF-HELP-BULK-FLOW"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where does Create Records go in the bulkified pattern?",
+      "options": {
+        "A": "After the loop ends, using the record collection",
+        "B": "On every For Each path",
+        "C": "Inside a validation rule",
+        "D": "Only in a screen choice"
+      },
+      "answer": "A",
+      "rationale": "After the loop completes, a single Create Records creates all tasks from the collection.",
+      "distractor_explanations": {
+        "B": "That is the anti-pattern.",
+        "C": "Validation is not DML.",
+        "D": "Unrelated."
+      },
+      "concept": "After Last",
+      "citation_ids": [
+        "SF-HELP-BULK-FLOW"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Subflow input API name length cap?",
+      "options": {
+        "A": "Up to 40 characters",
+        "B": "Unlimited",
+        "C": "8 characters",
+        "D": "Subflows cannot have inputs"
+      },
+      "answer": "A",
+      "rationale": "When you pass a variable to a subflow input, the variable API name can be up to 40 characters.",
+      "distractor_explanations": {
+        "B": "There is a cap.",
+        "C": "Too small.",
+        "D": "Inputs exist."
+      },
+      "concept": "40 chars",
+      "citation_ids": [
+        "SF-HELP-FLOW-VARS"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Why run another flow from a flow?",
+      "options": {
+        "A": "To reduce repetition within the main flow",
+        "B": "To replace all validation rules",
+        "C": "To avoid Assignment",
+        "D": "To disable $Record"
+      },
+      "answer": "A",
+      "rationale": "Which-tool: run another flow to reduce repetition; Autolaunched or Screen.",
+      "distractor_explanations": {
+        "B": "Validation is separate.",
+        "C": "Child still uses Assignment.",
+        "D": "Unrelated."
+      },
+      "concept": "Subflow purpose",
+      "citation_ids": [
+        "SF-HELP-WHICH-TOOL"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Transform element is documented to do what with collections?",
+      "options": {
+        "A": "Join source collections into a target collection",
+        "B": "Replace approval processes",
+        "C": "Block illegal saves",
+        "D": "Compile Apex"
+      },
+      "answer": "A",
+      "rationale": "Join collections with Transform into one target collection.",
+      "distractor_explanations": {
+        "B": "Approvals are separate.",
+        "C": "That is validation.",
+        "D": "Not Apex compile."
+      },
+      "concept": "Transform join",
+      "citation_ids": [
+        "SF-HELP-TRANSFORM"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Illegal discount must never save. Decision or validation?",
+      "options": {
+        "A": "Validation rule whose formula is True when invalid",
+        "B": "A Decision after the save as the only gate",
+        "C": "Assignment Add",
+        "D": "Transform"
+      },
+      "answer": "A",
+      "rationale": "Validation refuses the save. Decision only branches an interview that already started.",
+      "distractor_explanations": {
+        "B": "Too late for a hard block on all channels.",
+        "C": "In-memory.",
+        "D": "Joins collections."
+      },
+      "concept": "Validation vs Decision",
+      "citation_ids": [
+        "SF-HELP-BULK-FLOW"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Always-on percent on the Opportunity with no Flow. Tool?",
+      "options": {
+        "A": "A formula field, not an Assignment in a Flow that never runs",
+        "B": "A Loop",
+        "C": "A platform event",
+        "D": "Batch Apex first"
+      },
+      "answer": "A",
+      "rationale": "AUTO-001/002: formula computes without an interview. Assignment needs a running Flow.",
+      "distractor_explanations": {
+        "B": "Loop needs a collection.",
+        "C": "Wrong start.",
+        "D": "Volume tool."
+      },
+      "concept": "Formula vs Assignment",
+      "citation_ids": [
+        "SF-HELP-ASSIGNMENT"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Help's Closed Won Task example uses which Start optimization?",
+      "options": {
+        "A": "Actions and Related Records (after-save)",
+        "B": "Fast Field Updates only",
+        "C": "A screen choice",
+        "D": "Classic approval"
+      },
+      "answer": "A",
+      "rationale": "Bulkification example: after-save Opportunity flow, Optimize Actions and Related Records.",
+      "distractor_explanations": {
+        "B": "Before-save cannot create related Tasks.",
+        "C": "Background.",
+        "D": "Not an approval."
+      },
+      "concept": "After-save",
+      "citation_ids": [
+        "SF-HELP-BULK-FLOW"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "When is Apex the right branch instead of Decision/Loop?",
+      "options": {
+        "A": "CPU-intensive work or more records than scheduled Flow allows—Help's complementary cases",
+        "B": "Any collection of three team members",
+        "C": "Any formula display",
+        "D": "Any approval"
+      },
+      "answer": "A",
+      "rationale": "Complementary Apex/Batch Apex, not the default for the documented Flow pattern.",
+      "distractor_explanations": {
+        "B": "Flow bulkification covers that.",
+        "C": "Formula field.",
+        "D": "Approval process."
+      },
+      "concept": "Apex complementary",
+      "citation_ids": [
+        "SF-HELP-WHICH-TOOL"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "decision",
+      "front": "Decision vs validation rule?",
+      "back": "Decision branches the interview. Validation refuses an invalid save when True."
+    },
+    {
+      "id": "F2",
+      "category": "assign",
+      "front": "What does Assignment do?",
+      "back": "Sets variables, including adding a record variable to a collection."
+    },
+    {
+      "id": "F3",
+      "category": "assign",
+      "front": "Multiple Assignment rows?",
+      "back": "They run consecutively in listed order."
+    },
+    {
+      "id": "F4",
+      "category": "loop",
+      "front": "DML inside a Loop?",
+      "back": "Never. Collect in the loop, DML after Last."
+    },
+    {
+      "id": "F5",
+      "category": "loop",
+      "front": "Empty team collection?",
+      "back": "Decision first so you do not process when there are no members."
+    },
+    {
+      "id": "F6",
+      "category": "coll",
+      "front": "How to fill TasksToCreate?",
+      "back": "Assignment Add of the Task record variable on For Each."
+    },
+    {
+      "id": "F7",
+      "category": "dml",
+      "front": "Where is Create Records in the example?",
+      "back": "After the loop, from the record collection, How Many = Multiple."
+    },
+    {
+      "id": "F8",
+      "category": "sub",
+      "front": "Why a subflow?",
+      "back": "Run another flow in this interview to reduce repetition."
+    },
+    {
+      "id": "F9",
+      "category": "sub",
+      "front": "Subflow input name cap?",
+      "back": "API name up to 40 characters when passing a variable to the input."
+    },
+    {
+      "id": "F10",
+      "category": "xf",
+      "front": "Transform in one line?",
+      "back": "Join or map source collections into a target collection."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Assignment vs formula field?",
+      "back": "Assignment needs a running interview. A formula field always calculates on the record."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "Subflow vs approval?",
+      "back": "Subflow reuses a flow. Approval routes a person."
+    },
+    {
+      "id": "F13",
+      "category": "apex",
+      "front": "Apex instead of Loop/Assignment?",
+      "back": "Only for complementary CPU or Batch volume, not the team-member Task pattern."
+    },
+    {
+      "id": "F14",
+      "category": "cpu",
+      "front": "CPU limit on a looping Flow?",
+      "back": "Look for DML inside For Each and bulkify per Help."
+    },
+    {
+      "id": "F15",
+      "category": "path",
+      "front": "For Each vs After Last?",
+      "back": "For Each stamps the current item. After Last is the bulk DML."
+    },
+    {
+      "id": "F16",
+      "category": "analogy",
+      "front": "Mailroom one-liner?",
+      "back": "Decision=bins, Assignment=stamp and bag, Loop=each envelope, Transform=merge trays, subflow=other department."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk Decision, Assignment, Loop, and collection for Closed Won Tasks.",
+      "answer_30_seconds": "Get members, Decision if empty, Loop, Assignment to build each Task, Assignment Add to a collection, one Create Records after the loop.",
+      "answer_2_minutes": "I cite Help's bulkification example and Assignment's Add-to-collection pattern. I never put DML on For Each. I do not use a validation rule to create Tasks or Apex as the first design. After-save is the Start optimization because these are related records.",
+      "example": "Three LAB_ team members → three Tasks, one Create Records.",
+      "tradeoffs": [
+        "In-memory vs DML",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "What if 200 members?",
+        "Fault path?"
+      ],
+      "weak_answer_warnings": [
+        "Create Records inside the loop"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Assignment versus a formula field?",
+      "answer_30_seconds": "Assignment writes a Flow variable during the interview, including collections. A formula field always calculates on the record without a Flow run.",
+      "answer_2_minutes": "If the percent should show even when no Flow runs, that is a formula. If I am building Task records in a loop, that is Assignment. Validation is neither—it blocks saves. Apex properties are a different language (APEX-001).",
+      "example": "TaskRecord.Subject Equals 'Follow up' versus a formula on Opportunity.",
+      "tradeoffs": [
+        "Interview vs record compute",
+        "Add vs formula"
+      ],
+      "follow_ups": [
+        "Global variables in Assignment?",
+        "Percentage /100 gotcha?"
+      ],
+      "weak_answer_warnings": [
+        "Using Flow Assignment as always-on calculate"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "CPU timeout; Create Records is inside a Loop. Fix?",
+      "answer_30_seconds": "Move DML after Last. Use Assignment to build a collection, then one Create Records. That is Help's refactor, not an automatic Apex rewrite.",
+      "answer_2_minutes": "I also add a Decision for empty collections and entry conditions. I only take Batch Apex if volume exceeds scheduled Flow, which is a different problem. I do not use a validation rule to 'reduce CPU'.",
+      "example": "Closed Won Flow creating Tasks per member inside For Each.",
+      "tradeoffs": [
+        "Bulkify vs Apex",
+        "Entry conditions"
+      ],
+      "follow_ups": [
+        "Does after-save async path change this?",
+        "How do you test bulk?"
+      ],
+      "weak_answer_warnings": [
+        "Rewriting in Apex immediately"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Two Flows copy the same Task-build steps. What do you extract?",
+      "answer_30_seconds": "An autolaunched subflow, because which-tool says run another flow to reduce repetition. Keep input API names at or under 40 characters.",
+      "answer_2_minutes": "The child cannot have screens if the parent is record-triggered in the usual pattern. I do not extract to an approval process. I do not disable inputs the parent still sets.",
+      "example": "LAB_BuildFollowUpTasks called from two after-save parents.",
+      "tradeoffs": [
+        "Subflow vs invocable Apex",
+        "Name length"
+      ],
+      "follow_ups": [
+        "Active child required?",
+        "Can record-triggered call screen subflow?"
+      ],
+      "weak_answer_warnings": [
+        "Copy-paste forever"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When is a Decision the wrong tool?",
+      "answer_30_seconds": "When illegal data must never save—that is a validation rule. When a person must approve—that is an approval. When you only need always-on calculate—that is a formula. When CPU/volume exceeds Flow—Apex.",
+      "answer_2_minutes": "Decision is an interview branch, including empty-collection skips and complex screen checks. I will not hide a hard data rule in a Decision after the save.",
+      "example": "Amount < 0 must fail Data Loader: validation, not Decision.",
+      "tradeoffs": [
+        "Branch vs block",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "Custom Error vs validation?",
+        "Multiple Decision outcomes?"
+      ],
+      "weak_answer_warnings": [
+        "Decision as the only data-quality gate"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "What is Transform for in this lesson?",
+      "answer_30_seconds": "Joining or mapping collections into a target collection, for example mixing external and Salesforce orders for a screen table. It is not a formula field and not Apex.",
+      "answer_2_minutes": "I confirm the element is available in the org because Help has described it across beta/GA. If Transform is missing, Assignment Add is the manual mailbag. I still bulkify DML.",
+      "example": "Join two LAB_ order collections for a data table.",
+      "tradeoffs": [
+        "Transform vs Assignment Add",
+        "Declarative vs Apex"
+      ],
+      "follow_ups": [
+        "Is it GA here?",
+        "Can it replace Get Records?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Transform a validation rule"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Parent Flow cannot set the subflow input. Checks?",
+      "answer_30_seconds": "Child Available for Input, API name length ≤ 40, data types match, referenced flow active. Disabling input on an existing variable can break the parent.",
+      "answer_2_minutes": "I do not jump to Apex. I do not replace the subflow with an approval. Record collections are allowed as Flow resources even when App Builder cannot pass them.",
+      "example": "LAB_VeryLongInputNameExceedsFortyChars failure.",
+      "tradeoffs": [
+        "Name vs type",
+        "Active version"
+      ],
+      "follow_ups": [
+        "Flow override inputs?",
+        "Output back to parent?"
+      ],
+      "weak_answer_warnings": [
+        "Rewriting the child in Apex"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Mailroom analogy, then break it.",
+      "answer_30_seconds": "Decision is bins, Assignment stamps and bags, Loop walks envelopes, Transform merges trays, subflow is another department. It breaks on governors you cannot see and on validation that happens at the dock before the mailroom.",
+      "answer_2_minutes": "Formula is the postage chart, approval a manager signature, Apex a custom sorter for CPU/volume. No labeled-drawer story. DML inside the loop is sending a truck per envelope.",
+      "example": "Create Records on For Each as the broken analogy.",
+      "tradeoffs": [
+        "Teaching vs bulk",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "Where does AUTO-007 start?",
+        "Fault path as returned mail?"
+      ],
+      "weak_answer_warnings": [
+        "Stopping at the analogy"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1022 @@
+{
+  "topic_id": "ARCH-007",
+  "slug": "event-driven-architecture-and-eventual-consistency",
+  "title": "Event-driven architecture and eventual consistency",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-006"
+  ],
+  "objectives": [
+    "Define event-driven architecture on Salesforce using producers, consumers, channels, and the event bus.",
+    "Choose Platform Events, Change Data Capture, or Pub/Sub API from official decision-guide criteria, not habit.",
+    "Explain eventual consistency: subscribers run asynchronously and may not see the same committed state the publisher just wrote.",
+    "Select Publish Immediately versus Publish After Commit and name the race that each choice creates."
+  ],
+  "diagnostic_question": "A warehouse system must hear that a LAB_Order__c shipped, then look up the committed order row. Before you design, would you use Change Data Capture, a custom platform event, or a synchronous API call—and which publish behavior would you refuse?",
+  "definition": "Event-driven architecture on Salesforce is a publish/subscribe model: producers emit event messages onto a channel, the event bus stores them in a time-ordered log, and consumers subscribe without a direct call to the producer. Eventual consistency is the expected gap until subscribers process those messages and related records become visible. ([Event-Driven Software Architecture](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_intro_architecture.htm); [Event-Driven Architecture Decision Guide](https://architect.salesforce.com/docs/architect/decision-guides/guide/event-driven.html))",
+  "why_it_matters": "Interviewers fail candidates who treat a platform event like a request/reply API or who assume the subscriber can query a row the publisher has not committed. Wrong publish behavior causes missing records, duplicate side effects, or trigger loops. The Architecture Center prefers Platform Events and Change Data Capture for new work and Pub/Sub API for new subscribe/publish clients.",
+  "sixty_second_explanation": "Treat the org like an airport: the gate agent posts a flight-status message after the passenger list is sealed, not while the jetway is still moving. Downstream airports (subscribers) update their boards on their own clocks. That delay is eventual consistency. Change Data Capture is the official 'this record changed' tape. A custom platform event is a custom announcement with fields you define. Do not make a passenger wait at the counter for every airport to reply—that is request/reply, not event-driven architecture.",
+  "deeper_explanation": [
+    "The Platform Events Developer Guide defines an event-driven (message-driven) architecture as producers, consumers, and channels. An event is a meaningful state change; an event message carries the data; the event bus is a multitenant publish-subscribe store with a time-ordered log and Replay ID durability inside a retention window. ([Event-Driven Software Architecture](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_intro_architecture.htm))",
+    "The Event-Driven Architecture Decision Guide says use event-driven patterns for near real-time notifications, fan-out, and resilience when systems may be offline. Do not use them when a human must wait for a synchronous response, or when source data changes so rarely that batch sync is enough. Prefer Platform Events and Change Data Capture over PushTopic or generic events for new implementations. Prefer Pub/Sub API for new publish/subscribe clients instead of building on Streaming API. ([Event-Driven Architecture Decision Guide](https://architect.salesforce.com/docs/architect/decision-guides/guide/event-driven.html))",
+    "Change Data Capture publishes create, update, delete, and undelete of Salesforce records with a predefined payload. Custom platform events carry user-defined fields and can be published from Apex, Flow, or APIs. Both can be consumed via Apex, Flow, LWC, Pub/Sub API, or Event Relay to Amazon EventBridge. Replay windows and payload size limits are versioned—reverify the current tables; do not memorize unofficial numbers in an interview. ([Event-Driven Architecture Decision Guide](https://architect.salesforce.com/docs/architect/decision-guides/guide/event-driven.html); [Pub/Sub API](https://developer.salesforce.com/docs/platform/pub-sub-api/guide/intro.html))",
+    "Publish Immediately emits the message when EventBus.publish runs, even if the Lightning Platform transaction later rolls back. Publish After Commit waits for a successful commit so a subscriber that looks up related records is more likely to find them. The guide flags Publish Immediately as useful for logging that must survive rollback, and dangerous when subscribers re-enter the same records and cause row locks. That mismatch is the core eventual-consistency interview. ([Decoupled Publishing](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_considerations_decoupled_processes.htm); [Event-Driven Architecture Decision Guide](https://architect.salesforce.com/docs/architect/decision-guides/guide/event-driven.html))"
+  ],
+  "mental_model": {
+    "analogy": "Airport flight-status boards: the gate posts a departure after the passenger list is sealed; other airports update independently; Replay ID is the sequence number on the ATIS feed.",
+    "useful_mapping": [
+      "event → a meaningful flight-status change (order shipped, case closed)",
+      "event message → the ATIS payload with fields the subscribers need",
+      "producer → the gate agent (Apex, Flow, API, or CDC from DML)",
+      "event bus / channel → the ATIS stream, time-ordered with Replay ID",
+      "consumer → another airport's board (Apex trigger, Flow, Pub/Sub client)",
+      "Publish After Commit → post only after the passenger list is sealed",
+      "Publish Immediately → post even if the flight is later cancelled (logging)",
+      "eventual consistency → boards catch up; they are not a live cockpit instrument"
+    ],
+    "where_it_breaks": [
+      "A real ATIS is not a Salesforce governor-limited bus; event allocations still apply.",
+      "CDC payload shape is predefined; you cannot add custom 'gate remarks' the way a platform event can.",
+      "Pub/Sub API publish behavior notes differ from Apex EventBus.publish—do not assume they share every transaction rule.",
+      "The analogy does not encode MuleSoft ESB choice, Event Relay AWS-only limits, or exact retention days."
+    ]
+  },
+  "teach_back_prompt": "Without using a library or labeled-drawer metaphor, explain event-driven architecture versus a REST call, then say when Publish Immediately would lie to a subscriber that queries a LAB_Order__c row.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: producer, bus, consumer, and why eventual consistency is expected."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given CDC vs custom platform event vs request/reply, pick one and name the rejected option."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Walk Publish Immediately versus Publish After Commit with a subscriber that queries the new record."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose a missing-record subscriber and a trigger-loop publish without opening notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: event-driven architecture, eventual consistency, Pub/Sub API preference, one anti-pattern."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-ARCH-EDA",
+      "title": "Event-Driven Architecture Decision Guide",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/decision-guides/guide/event-driven.html",
+      "supports": "When to use EDA; PE vs CDC vs Pub/Sub API; PushTopic not for new work; Publish Immediately lock/race warning; replay and payload tables.",
+      "release_or_version": "Architecture Center / Summer '26 review",
+      "last_verified": "2026-08-16",
+      "limits": "Tool tables and retention days are versioned; reverify before quoting a number."
+    },
+    {
+      "source_id": "SF-PE-ARCH",
+      "title": "Event-Driven Software Architecture",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_intro_architecture.htm",
+      "supports": "Producer, consumer, channel, event bus, Replay ID, time-ordered event log.",
+      "release_or_version": "Platform Events Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Defines the model; does not choose PE versus CDC for a given payload."
+    },
+    {
+      "source_id": "SF-PE-DECOUPLE",
+      "title": "Decoupled Publishing and Subscription",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_considerations_decoupled_processes.htm",
+      "supports": "Publish Immediately can arrive before related DML commits; Publish After Commit waits for commit.",
+      "release_or_version": "Platform Events Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Pub/Sub API publish-behavior notes may differ; confirm that guide when the client is gRPC."
+    },
+    {
+      "source_id": "SF-CDC-INTRO",
+      "title": "Change Data Capture Developer Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.change_data_capture.meta/change_data_capture/cdc_intro.htm",
+      "supports": "CDC publishes committed record create/update/delete/undelete for selected objects.",
+      "release_or_version": "Change Data Capture Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Object enablement, enrichment, and allocation are org- and edition-sensitive."
+    },
+    {
+      "source_id": "SF-PUBSUB",
+      "title": "Pub/Sub API Developer Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/pub-sub-api/guide/intro.html",
+      "supports": "Single gRPC API to publish and subscribe to platform events, CDC, and real-time event monitoring events.",
+      "release_or_version": "Pub/Sub API",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace in-org Apex or Flow subscribers."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Architecture Center and Platform Events Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Producer channel consumer",
+        "Event bus Replay ID",
+        "CDC vs platform event",
+        "Publish After Commit",
+        "Eventual consistency gap",
+        "When not request/reply"
+      ],
+      "accessible_description": "Portrait map of Salesforce event-driven architecture: producers publish to the event bus; CDC or custom platform events fan out to subscribers; Publish After Commit ties the message to committed data; eventual consistency is the subscriber lag."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-ARCH-EDA",
+        "SF-PE-ARCH",
+        "SF-PE-DECOUPLE",
+        "SF-CDC-INTRO"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "When a subscriber may still miss the row"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Change[Meaningful state change] --> Producer[Producer: Apex Flow API or CDC]\n  Producer --> Bus[Event bus channel + Replay ID]\n  Bus --> SubA[Apex or Flow subscriber]\n  Bus --> SubB[Pub/Sub API client]\n  Bus --> SubC[Event Relay optional]\n  SubA --> Lag[Eventual consistency: async processing]\n  SubB --> Lag",
+      "decision": "flowchart TD\n  Need[Need to notify others?] --> Q1{Must a human wait for the answer now?}\n  Q1 -->|Yes| Sync[Request/reply API or UI path: not EDA]\n  Q1 -->|No| Q2{Is the payload just committed record CRUD?}\n  Q2 -->|Yes| CDC[Change Data Capture]\n  Q2 -->|Custom business event| PE[Custom platform event]\n  PE --> Q3{Must subscriber see committed rows?}\n  Q3 -->|Yes| After[Publish After Commit]\n  Q3 -->|Log even on rollback| Imm[Publish Immediately: watch row locks]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "An event-driven architecture consists of event producers, consumers, and channels; Salesforce stores messages on a time-ordered event bus with Replay ID durability inside the retention window.",
+      "source_ids": ["SF-PE-ARCH"],
+      "scope": "EDA model",
+      "validation": "Platform Events Developer Guide architecture topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Use event-driven architecture for near real-time fan-out and async processing. Do not use it when a human must wait for a synchronous response, or when infrequent source changes make batch sync enough.",
+      "source_ids": ["SF-ARCH-EDA"],
+      "scope": "When to use EDA",
+      "validation": "Architecture Center Event-Driven Architecture Decision Guide takeaways.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Platform Events and Change Data Capture are the preferred Salesforce mechanisms for new record/field-change eventing. PushTopic and generic events are not recommended for new implementations. Use Pub/Sub API for new publish/subscribe clients.",
+      "source_ids": ["SF-ARCH-EDA", "SF-PUBSUB"],
+      "scope": "Tool choice",
+      "validation": "Decision Guide takeaways plus Pub/Sub API introduction.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Publish Immediately can deliver a message before related DML commits, so a subscriber lookup may miss the row. Publish After Commit waits for a successful transaction commit. Publish Immediately can also cause same-transaction subscriber row locks.",
+      "source_ids": ["SF-PE-DECOUPLE", "SF-ARCH-EDA"],
+      "scope": "Eventual consistency and publish behavior",
+      "validation": "Decoupled publishing topic and Decision Guide anti-pattern note.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Change Data Capture publishes committed create, update, delete, and undelete of selected Salesforce records with a predefined payload; custom platform events carry user-defined fields.",
+      "source_ids": ["SF-CDC-INTRO", "SF-ARCH-EDA"],
+      "scope": "CDC vs platform event",
+      "validation": "CDC intro plus Decision Guide tool table.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Pub/Sub API remains the Architecture Center preference for new external subscribe/publish clients. Reverify event allocations, CDC object enablement, and replay windows in the target org for Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact high-volume platform event allocations, CDC selected-object counts, and replay-day figures are org- and edition-sensitive; quote the live Decision Guide / Help tables rather than this handbook.",
+    "Pub/Sub API publish-behavior interaction with Lightning Platform transactions needs verification against the current Pub/Sub API guide for the client in play."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Event bus",
+      "telugu": "ప్రచురణదారు నుంచి వినియోగదారుకి సందేశాలు నిల్వ చేసి పంపే వేదిక."
+    },
+    {
+      "english": "Eventual consistency",
+      "telugu": "సబ్‌స్క్రైబర్ తర్వాత అప్‌డేట్ అవుతుంది; అదే క్షణంలో అన్నీ కనిపించవు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Event-driven architecture is publish/subscribe on the event bus. CDC announces committed record CRUD. A custom platform event is a payload you design. Subscribers are eventually consistent. If they must see the new row, use Publish After Commit, not a synchronous wait.",
+    "two_minutes": "I start from whether anyone must wait for an answer. If yes, I refuse EDA. If the need is committed record changes to many systems, I pick CDC. If it is a named business occurrence with custom fields, I pick a platform event and Publish After Commit when subscribers query related data. I use Pub/Sub API for new external clients. I call out Publish Immediately as a logging tool that can race the commit and lock rows. I never use events to orchestrate the next Flow when a subflow would do."
+  },
+  "terminology": [
+    {
+      "term": "event-driven architecture",
+      "plain": "Systems talk by posting messages, not by calling each other and waiting.",
+      "precise": "Producers, consumers, and channels on a publish-subscribe event bus. Salesforce stores messages in a time-ordered log with Replay ID.",
+      "example": "LAB_Order__c status Shipped publishes; warehouse and billing subscribe independently.",
+      "non_example": "A Lightning page calling Apex and blocking until the method returns.",
+      "confusable_neighbor": "Request/reply integration: the caller waits for a response.",
+      "boundary": "INT track owns SOAP/REST contracts; this lesson owns the EDA decision."
+    },
+    {
+      "term": "event bus",
+      "plain": "The platform stream that holds event messages for a while so subscribers can read or replay them.",
+      "precise": "A multitenant event storage and delivery service. Messages are time-ordered. Replay ID identifies a position in the stream during the retention window.",
+      "example": "A Pub/Sub client resumes after Replay ID 12345 after a brief disconnect.",
+      "non_example": "A custom object used as a DIY queue table.",
+      "confusable_neighbor": "Platform Cache: an in-memory cache, not an event log.",
+      "boundary": "Retention days are versioned; reverify rather than quoting a memorized number."
+    },
+    {
+      "term": "platform event",
+      "plain": "A custom notification type you define, then publish from Apex, Flow, or APIs.",
+      "precise": "Secure, scalable messages with user-defined fields. Preferred with CDC for new eventing. High-volume versus standard volume is a later capacity check.",
+      "example": "LAB_ShipmentReady__e with OrderId__c and WarehouseCode__c.",
+      "non_example": "A Chatter post, which is not a platform event channel.",
+      "confusable_neighbor": "Change Data Capture: system-published record-change events with a predefined shape.",
+      "boundary": "Do not invent allocation numbers; look up the current High-Volume Platform Events tables."
+    },
+    {
+      "term": "Change Data Capture",
+      "plain": "Salesforce announces that a record was created, updated, deleted, or undeleted.",
+      "precise": "Change events for selected objects. Payload is predefined. Architecture Center lists CDC for record/field change fan-out.",
+      "example": "Subscribe to LAB_Order__c CDC so an ERP upserts the committed row.",
+      "non_example": "A custom LAB_ShipmentReady__e that is not generated from object DML.",
+      "confusable_neighbor": "Outbound Messages: XML callbacks from workflow/Flow; not the preferred new EDA tool.",
+      "boundary": "Which objects can be selected is org-specific; enablement is metadata, the changed rows are data."
+    },
+    {
+      "term": "eventual consistency",
+      "plain": "Subscribers catch up later; they may not see the publisher's new row yet.",
+      "precise": "Because subscription is asynchronous, a consumer can run before related DML is visible, or long after. Publish Immediately widens that gap; Publish After Commit narrows the 'row not found' case after a successful commit.",
+      "example": "Warehouse Flow queries LAB_Order__c and finds nothing until the publisher transaction commits.",
+      "non_example": "A before-save Flow that updates the same record in one transaction.",
+      "confusable_neighbor": "Record locking: a different race (ARCH-008).",
+      "boundary": "This is architecture timing, not a sharing/OWD problem."
+    },
+    {
+      "term": "Publish After Commit",
+      "plain": "Do not put the message on the bus until the Salesforce transaction succeeds.",
+      "precise": "The event is published after the transaction commits and is not published if the transaction fails. Use when the subscriber must find committed records.",
+      "example": "Publish LAB_ShipmentReady__e after inserting LAB_Order__c so the subscriber query succeeds.",
+      "non_example": "A debug log event that must fire even when the DML rolls back.",
+      "confusable_neighbor": "Publish Immediately: fires at EventBus.publish regardless of later rollback.",
+      "boundary": "Confirm Pub/Sub API behavior separately; the Platform Events field applies to EventBus/API publish from the Lightning Platform."
+    },
+    {
+      "term": "Publish Immediately",
+      "plain": "Put the message on the bus as soon as you publish, even if the transaction later fails.",
+      "precise": "Publishing is outside the database transaction. Subscribers may run before related records commit. The Decision Guide warns of same-transaction consumption and row locks.",
+      "example": "A LAB_TxnLog__e published in a catch path so ops still see the attempt after rollback.",
+      "non_example": "A subscriber that must load the new LAB_Order__c row.",
+      "confusable_neighbor": "Apex savepoints: those roll back DML, not necessarily an already-emitted immediate event.",
+      "boundary": "Do not use this as a Flow orchestrator."
+    },
+    {
+      "term": "Pub/Sub API",
+      "plain": "The current external API to publish and subscribe to Salesforce events.",
+      "precise": "gRPC/HTTP2 API for platform events, CDC, and real-time event monitoring. Architecture Center says use it for new publish/subscribe instead of Streaming API.",
+      "example": "An ERP service subscribes to CDC on LAB_Order__c via Pub/Sub API.",
+      "non_example": "An Apex trigger subscriber inside the same org.",
+      "confusable_neighbor": "REST Composite: request/reply, not an event bus client.",
+      "boundary": "CometD/Streaming API still exists; it is not the recommended new pattern."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide if EDA is the right pattern",
+      "actor": "Architect",
+      "trigger": "Need to notify other systems or automations",
+      "before": "Point-to-point API or batch job assumed",
+      "after": "EDA, request/reply, or batch chosen with a written reason",
+      "observe": "NFR: latency, fan-out, human wait, data change frequency",
+      "failure": "Using events because they feel modern while a clerk waits on screen"
+    },
+    {
+      "step": 2,
+      "transition": "Choose CDC or a custom platform event",
+      "actor": "Architect + admin",
+      "trigger": "EDA is justified",
+      "before": "Payload and source of truth unclear",
+      "after": "CDC for committed record CRUD; custom PE for a named business event",
+      "observe": "Object selected for CDC, or LAB_ event metadata with fields",
+      "failure": "Custom PE that duplicates CDC field-for-field without a business reason"
+    },
+    {
+      "step": 3,
+      "transition": "Set publish behavior",
+      "actor": "Developer + architect",
+      "trigger": "Custom platform event defined",
+      "before": "Default Publish Immediately may be in force",
+      "after": "After Commit if subscribers query related rows; Immediately only for rollback-tolerant logs",
+      "observe": "Event definition publish behavior in metadata",
+      "failure": "Subscriber 404s on the new record after Publish Immediately"
+    },
+    {
+      "step": 4,
+      "transition": "Subscribe and replay",
+      "actor": "Developer",
+      "trigger": "Consumers identified",
+      "before": "No durable subscriber",
+      "after": "In-org Apex/Flow or Pub/Sub API client with Replay ID strategy",
+      "observe": "Test: disconnect and resume; no duplicate business side effect without idempotency (ARCH-008)",
+      "failure": "Apex trigger that republishes the same event type and loops"
+    }
+  ],
+  "when_to_use": [
+    "When multiple systems need near real-time notifications of a business state change and nobody is blocked waiting for a reply—this is event-driven architecture.",
+    "When committed Salesforce record create/update/delete/undelete must fan out: choose Change Data Capture, not a hand-built copy of the row.",
+    "When you need a custom payload (warehouse code, reason) that is not the CDC shape: define a platform event and pick Publish After Commit if subscribers query related rows.",
+    "When teaching eventual consistency: subscribers are async; Replay ID is how a client resumes the event-driven stream after a disconnect."
+  ],
+  "when_not_to_use": [
+    "Do not use event-driven architecture when a human or UI must wait for a synchronous response; that is request/reply, and eventual consistency cannot guarantee the wait.",
+    "Do not use event-driven architecture when source data changes so rarely that a batch sync is enough.",
+    "Do not publish a platform event from a trigger on that same event type, or use events to orchestrate the next Flow when a subflow would do.",
+    "Do not pick Publish Immediately for a subscriber that must see committed records; that is the classic eventual consistency miss, and it can lock rows."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Integrations → Change Data Capture (object selection is metadata).",
+    "Setup → Platform Events (custom event object, publish behavior, fields).",
+    "Apex EventBus.publish / event-triggered Flow / Pub/Sub API client.",
+    "Event Relay only if the destination is Amazon EventBridge—Needs verification of current relay limits."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab ships LAB_Order__c. Warehouse middleware must load the committed order plus a warehouse code that is not an Order field. A clerk must not sit on a spinner waiting for the warehouse ACK. No production data.",
+    "inputs": [
+      "LAB_Order__c insert then Status__c = Shipped",
+      "Warehouse needs Order Id and WarehouseCode__c",
+      "ERP also wants a replica of committed Order field changes",
+      "Clerk UI is not waiting on warehouse"
+    ],
+    "decisions": [
+      {
+        "decision": "Reject a synchronous REST call from the UI to the warehouse for the ship action.",
+        "because": "The Decision Guide says EDA is wrong when a human waits for the target system.",
+        "rejected": "Screen Flow that callouts and blocks"
+      },
+      {
+        "decision": "Use CDC on LAB_Order__c for the ERP replica.",
+        "because": "CDC is the preferred committed record-change event.",
+        "rejected": "Custom platform event that clones every Order field"
+      },
+      {
+        "decision": "Publish LAB_ShipmentReady__e with WarehouseCode__c using Publish After Commit.",
+        "because": "The warehouse subscriber queries the Order row; After Commit avoids the eventual-consistency miss.",
+        "rejected": "Publish Immediately 'to go faster'"
+      }
+    ],
+    "configuration_or_code": [
+      "Enable CDC on LAB_Order__c in a disposable sandbox (metadata).",
+      "Create LAB_ShipmentReady__e with OrderId__c and WarehouseCode__c; set Publish After Commit.",
+      "Publish from after-save Flow or Apex after the Order DML; subscribe with a test Apex trigger that queries the Order.",
+      "Prove the miss: temporarily switch to Publish Immediately in sandbox and show a failed query—then revert."
+    ],
+    "output": "ERP sees CDC; warehouse sees the custom event and finds the Order; clerk is not blocked.",
+    "verification": [
+      "Subscriber query for LAB_Order__c succeeds after After Commit publish.",
+      "CDC event appears for the Order insert/update in a test subscriber or Pub/Sub client.",
+      "No platform-event trigger publishes the same event type (no loop)."
+    ],
+    "self_explanation": "I split CDC (record replica) from a custom business event (warehouse code). I treated eventual consistency as a publish-behavior choice, not as 'the bus is slow.'"
+  },
+  "hands_on_lab": {
+    "environment": "Disposable Developer sandbox or scratch org; synthetic LAB_ objects only.",
+    "starting_state_checks": [
+      "You can create custom objects and platform events.",
+      "No production aliases in names."
+    ],
+    "steps": [
+      "Create LAB_Order__c and a custom platform event LAB_ShipmentReady__e with Publish After Commit.",
+      "Publish the event from Apex or Flow after inserting a LAB_Order__c, then subscribe and query the order Id.",
+      "Document in one paragraph why CDC would be the better fan-out if the warehouse only needed Order fields.",
+      "Write the Replay ID resume plan for a Pub/Sub client disconnect (no need to implement gRPC)."
+    ],
+    "guided_completion": [
+      "If the subscriber query fails, check publish behavior before blaming CDC enablement.",
+      "If you used Streaming API in the write-up, replace it with Pub/Sub API as the new-client preference."
+    ],
+    "independent_challenge": "Add a logging event that must survive DML rollback and justify Publish Immediately only for that log.",
+    "evidence": [
+      "Screenshot or describe the event definition publish behavior.",
+      "Written CDC versus platform event decision for the warehouse payload."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ event and object metadata from the sandbox.",
+      "Do not deploy to production."
+    ],
+    "limitations": "This lab does not prove high-volume allocations, Event Relay, or MuleSoft."
+  },
+  "decision_table": [
+    {
+      "signal": "A clerk or UI must wait for the other system to answer before continuing.",
+      "choose": "Request/reply or keep work in one Salesforce transaction—not event-driven architecture.",
+      "not": "A platform event plus a spinner that 'usually' comes back.",
+      "why": "The Decision Guide says EDA cannot guarantee a human-wait response time."
+    },
+    {
+      "signal": "Many systems need the committed Salesforce row after create/update/delete/undelete.",
+      "choose": "Change Data Capture on the object, consumed via Pub/Sub API or in-org subscribers.",
+      "not": "A custom platform event that copies every field of the record.",
+      "why": "CDC is the preferred record-change event with a predefined payload."
+    },
+    {
+      "signal": "A named business occurrence needs extra fields the CDC payload does not carry, and subscribers will query related records.",
+      "choose": "Custom platform event with Publish After Commit.",
+      "not": "Publish Immediately to 'beat the commit'.",
+      "why": "After Commit is the official fix when the subscriber must find committed data; Immediately creates eventual-consistency misses and lock risk."
+    },
+    {
+      "signal": "You need an ops log even if the DML rolls back.",
+      "choose": "A dedicated logging platform event with Publish Immediately.",
+      "not": "The same event that warehouse fulfillment depends on.",
+      "why": "Immediately survives rollback; mixing it with fulfillment data lies to subscribers."
+    },
+    {
+      "signal": "A new external client must subscribe to PE, CDC, or real-time monitoring events.",
+      "choose": "Pub/Sub API as the new publish/subscribe client.",
+      "not": "A greenfield CometD/Streaming API client.",
+      "why": "Architecture Center takeaway: use Pub/Sub API for future pub/sub patterns."
+    }
+  ],
+  "limitations": [
+    "Does not size high-volume event allocations or CDC object caps.",
+    "Does not design MuleSoft ESB topologies.",
+    "Does not replace ARCH-008 locking and idempotency.",
+    "Event Relay destinations and PushTopic retirement timelines should be re-read from current docs."
+  ],
+  "security_notes": [
+    "Event payloads can carry business identifiers; do not put secrets or raw PII in custom fields.",
+    "CDC exposes field values of selected objects to authorized subscribers—treat enablement as a data-exposure decision.",
+    "Shield encryption of event bus messages is a separate org capability; Needs verification before claiming it is on."
+  ],
+  "common_mistakes": [
+    "Treating a platform event as a synchronous API.",
+    "Publish Immediately when the subscriber queries the new row.",
+    "Apex trigger on an event that publishes the same event type (loop).",
+    "Using events to chain Flows instead of a subflow.",
+    "New Streaming API clients despite the Pub/Sub API guidance."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Subscriber cannot find the record that the publisher just inserted.",
+      "check": [
+        "Publish behavior is Immediately versus After Commit.",
+        "The publisher transaction actually committed.",
+        "The subscriber queries the correct Id from the payload."
+      ],
+      "do_not_assume": "CDC is 'broken' or sharing hid the row."
+    },
+    {
+      "symptom": "UNABLE_TO_LOCK_ROW after publishing a platform event.",
+      "check": [
+        "A subscriber in the same transaction path updates the same records.",
+        "Publish Immediately allowing same-transaction consumption."
+      ],
+      "do_not_assume": "The event bus is down."
+    },
+    {
+      "symptom": "Recursive platform-event trigger executions.",
+      "check": [
+        "A trigger on the event publishes the same event type.",
+        "Two systems that CDC-update each other without a suppression flag."
+      ],
+      "do_not_assume": "Governor CPU is the root cause."
+    }
+  ],
+  "production_notes": [
+    "Document event names, payloads, publishers, and subscribers before go-live.",
+    "Plan Replay ID and idempotent consumers (ARCH-008) before the first outage.",
+    "Reverify event allocations in the target production org; this lesson authorizes no production publish."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In Salesforce event-driven architecture, what stores and delivers event messages to subscribers?",
+      "options": {
+        "A": "The event bus (publish-subscribe channel with a time-ordered log)",
+        "B": "Platform Cache partitions",
+        "C": "A custom object used as a queue table",
+        "D": "Organization-wide defaults"
+      },
+      "answer": "A",
+      "rationale": "The Platform Events guide describes the event bus as the multitenant storage and delivery service for event messages.",
+      "distractor_explanations": {
+        "B": "Platform Cache is an in-memory cache (ARCH-009).",
+        "C": "A DIY object is not the platform event bus.",
+        "D": "OWD is a sharing baseline, not messaging."
+      },
+      "concept": "Event bus",
+      "citation_ids": ["SF-PE-ARCH"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When does the Architecture Center say not to use event-driven architecture?",
+      "options": {
+        "A": "When a human must wait for a synchronous response, or source data rarely changes so batch is enough",
+        "B": "Whenever two systems exist",
+        "C": "Only when MuleSoft is licensed",
+        "D": "Only inside a single org"
+      },
+      "answer": "A",
+      "rationale": "The Decision Guide lists human-wait processes and infrequently changing data (batch) as poor EDA fits.",
+      "distractor_explanations": {
+        "B": "EDA is a pattern, not a default for every integration.",
+        "C": "MuleSoft is optional in the landscape, not a prerequisite for PE/CDC.",
+        "D": "In-org platform events are explicitly allowed."
+      },
+      "concept": "When not EDA",
+      "citation_ids": ["SF-ARCH-EDA"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "ERP must mirror committed LAB_Account__c field changes. What is the preferred Salesforce event?",
+      "options": {
+        "A": "Change Data Capture on the object",
+        "B": "A custom platform event that copies every Account field",
+        "C": "PushTopic for all new work",
+        "D": "A synchronous UI callout"
+      },
+      "answer": "A",
+      "rationale": "CDC is the preferred mechanism for publishing record and field changes to other systems.",
+      "distractor_explanations": {
+        "B": "Custom PE is for user-defined business events, not a CDC clone.",
+        "C": "PushTopic is not recommended for new implementations.",
+        "D": "Synchronous UI wait is the opposite of EDA."
+      },
+      "concept": "CDC vs PE",
+      "citation_ids": ["SF-ARCH-EDA", "SF-CDC-INTRO"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A subscriber queries the Order the publisher just inserted and often finds nothing. What publish behavior should you inspect first?",
+      "options": {
+        "A": "Publish Immediately, which can fire before the DML commits",
+        "B": "OWD on Order",
+        "C": "Whether the event name ends in __e",
+        "D": "Whether Scale Center is enabled"
+      },
+      "answer": "A",
+      "rationale": "Decoupled publishing documents that Immediate events can arrive before related records commit; After Commit is the fix when the subscriber needs that data.",
+      "distractor_explanations": {
+        "B": "Sharing is a later check, not the first eventual-consistency cause.",
+        "C": "Suffix is naming, not timing.",
+        "D": "Scale Center is performance observability (ARCH-009)."
+      },
+      "concept": "Eventual consistency",
+      "citation_ids": ["SF-PE-DECOUPLE"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What identifier lets a client resume an event stream after a specific message?",
+      "options": {
+        "A": "Replay ID",
+        "B": "Organization Id only",
+        "C": "Permission set group Id",
+        "D": "ContentVersion Id"
+      },
+      "answer": "A",
+      "rationale": "Each event message includes Replay ID for durability and replay within the retention window.",
+      "distractor_explanations": {
+        "B": "Org Id does not position a stream.",
+        "C": "Permission sets are authorization.",
+        "D": "Files are a different identity model."
+      },
+      "concept": "Replay ID",
+      "citation_ids": ["SF-PE-ARCH"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which client does the Architecture Center prefer for new external publish/subscribe work?",
+      "options": {
+        "A": "Pub/Sub API",
+        "B": "A new CometD/Streaming API client as the default",
+        "C": "Outbound Messages as the strategic EDA bus",
+        "D": "Generic events"
+      },
+      "answer": "A",
+      "rationale": "The guide says use Pub/Sub API for future pub/sub patterns and plan to migrate off Streaming API when feasible.",
+      "distractor_explanations": {
+        "B": "Streaming API is legacy relative to the new-client recommendation.",
+        "C": "Outbound Messages are not the preferred new EDA investment.",
+        "D": "Generic events are not recommended for new work."
+      },
+      "concept": "Pub/Sub API",
+      "citation_ids": ["SF-ARCH-EDA", "SF-PUBSUB"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "When is Publish Immediately a reasonable platform-event choice?",
+      "options": {
+        "A": "Logging that must be emitted even if the DML transaction rolls back",
+        "B": "Whenever a subscriber will query the new record",
+        "C": "To orchestrate the next record-triggered Flow",
+        "D": "To replace CDC for all objects"
+      },
+      "answer": "A",
+      "rationale": "The Decision Guide cites logging that should survive rollback; it warns against Immediate when subscribers need committed data or may lock rows.",
+      "distractor_explanations": {
+        "B": "That case wants After Commit.",
+        "C": "Use subflows/orchestrator, not events as Flow glue.",
+        "D": "CDC remains the record-change tool."
+      },
+      "concept": "Publish Immediately",
+      "citation_ids": ["SF-ARCH-EDA", "SF-PE-DECOUPLE"]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is a platform event compared with Change Data Capture?",
+      "options": {
+        "A": "A user-defined message type; CDC is a predefined record-change event",
+        "B": "They are identical metadata",
+        "C": "CDC is only for files; platform events are only for users",
+        "D": "Platform events are synchronous request/reply"
+      },
+      "answer": "A",
+      "rationale": "Decision Guide tool table: CDC predefined payload from record changes; platform events user-defined fields.",
+      "distractor_explanations": {
+        "B": "Different publishers and payload control.",
+        "C": "Both can apply to ordinary sObjects.",
+        "D": "Both are async event messages."
+      },
+      "concept": "PE vs CDC",
+      "citation_ids": ["SF-ARCH-EDA"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "An Apex trigger on LAB_Ready__e publishes another LAB_Ready__e. What anti-pattern is this?",
+      "options": {
+        "A": "An infinite event trigger loop",
+        "B": "A recommended fan-out",
+        "C": "Required for Replay ID",
+        "D": "The only way to reach Pub/Sub API"
+      },
+      "answer": "A",
+      "rationale": "The Decision Guide lists publishing events from Apex triggers associated with the same event object as an infinite-loop anti-pattern.",
+      "distractor_explanations": {
+        "B": "Fan-out is multiple subscribers, not self-publish.",
+        "C": "Replay ID is a field on messages, not a loop.",
+        "D": "Pub/Sub API does not require a self-publish trigger."
+      },
+      "concept": "Loop anti-pattern",
+      "citation_ids": ["SF-ARCH-EDA"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Event Relay from Salesforce event-driven architecture currently targets which destination in the Decision Guide?",
+      "options": {
+        "A": "Amazon EventBridge",
+        "B": "Any on-prem JDBC database",
+        "C": "Every SFTP server",
+        "D": "Organization-wide default sharing"
+      },
+      "answer": "A",
+      "rationale": "The guide notes Event Relays send platform events and CDC to Amazon EventBridge only.",
+      "distractor_explanations": {
+        "B": "Not the Event Relay destination.",
+        "C": "Batch/SFTP is a different pattern.",
+        "D": "Sharing is unrelated."
+      },
+      "concept": "Event Relay",
+      "citation_ids": ["SF-ARCH-EDA"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement correctly separates event metadata from business data?",
+      "options": {
+        "A": "The platform event definition is metadata; each published message about a LAB_Order__c is business event data",
+        "B": "CDC enablement is a row on Account",
+        "C": "Replay ID is a permission set",
+        "D": "Publish After Commit is a sharing rule"
+      },
+      "answer": "A",
+      "rationale": "Event object/fields/publish behavior deploy as metadata; payloads describe business occurrences.",
+      "distractor_explanations": {
+        "B": "CDC selection is configuration metadata.",
+        "C": "Replay ID is a stream position.",
+        "D": "Publish behavior is event definition, not sharing."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-PE-ARCH", "SF-CDC-INTRO"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Source data in a legacy system changes once a quarter. Architecture Center guidance for event-driven architecture?",
+      "options": {
+        "A": "Prefer a batch pattern instead of EDA",
+        "B": "Always CDC every object",
+        "C": "Always Publish Immediately",
+        "D": "Always Event Relay"
+      },
+      "answer": "A",
+      "rationale": "Infrequently changing source data is called out as a batch-sync fit, not EDA.",
+      "distractor_explanations": {
+        "B": "CDC is for committed Salesforce record change fan-out, not a quarterly file.",
+        "C": "Publish behavior is unrelated to change frequency.",
+        "D": "Event Relay is an AWS path, not a default."
+      },
+      "concept": "Batch vs EDA",
+      "citation_ids": ["SF-ARCH-EDA"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "Name the three EDA pieces in the Platform Events architecture topic.",
+      "back": "Event producers, event consumers, and channels (plus the event bus that stores messages)."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "What is eventual consistency for a Salesforce event subscriber?",
+      "back": "The subscriber runs asynchronously and may not yet see records the publisher wrote, especially with Publish Immediately."
+    },
+    {
+      "id": "F3",
+      "category": "tools",
+      "front": "CDC versus custom platform event—one sentence?",
+      "back": "CDC is a predefined committed record-change event; a platform event is a custom payload you publish."
+    },
+    {
+      "id": "F4",
+      "category": "tools",
+      "front": "Preferred new external pub/sub client?",
+      "back": "Pub/Sub API, not a greenfield Streaming API/CometD client."
+    },
+    {
+      "id": "F5",
+      "category": "behavior",
+      "front": "Publish After Commit means?",
+      "back": "The message is published only after the Lightning Platform transaction commits successfully."
+    },
+    {
+      "id": "F6",
+      "category": "behavior",
+      "front": "Publish Immediately risk for a query subscriber?",
+      "back": "The event can arrive before related DML commits, so the lookup misses the row."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "Human waiting on screen—EDA?",
+      "back": "No. Event-driven architecture is async and cannot guarantee that wait."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Quarterly file from a legacy system—EDA?",
+      "back": "Usually no; the Decision Guide points to batch when source data rarely changes."
+    },
+    {
+      "id": "F9",
+      "category": "anti-pattern",
+      "front": "Trigger on an event that publishes the same event?",
+      "back": "Infinite loop anti-pattern. Do not do it."
+    },
+    {
+      "id": "F10",
+      "category": "anti-pattern",
+      "front": "Events to chain the next Flow?",
+      "back": "Anti-pattern. Prefer subflows or Flow Orchestrator."
+    },
+    {
+      "id": "F11",
+      "category": "durability",
+      "front": "What is Replay ID for?",
+      "back": "Identifying a position in the event stream so a client can resume after that event."
+    },
+    {
+      "id": "F12",
+      "category": "tools",
+      "front": "PushTopic for new implementations?",
+      "back": "Not recommended. Prefer Platform Events and CDC."
+    },
+    {
+      "id": "F13",
+      "category": "relay",
+      "front": "Event Relay destination in the Decision Guide?",
+      "back": "Amazon EventBridge only, not an arbitrary endpoint."
+    },
+    {
+      "id": "F14",
+      "category": "locks",
+      "front": "How can Publish Immediately cause row locks?",
+      "back": "Subscribers may consume the event in the same transaction path and update the same records."
+    },
+    {
+      "id": "F15",
+      "category": "boundary",
+      "front": "Event definition versus published message?",
+      "back": "The __e object and fields are metadata. Each published payload is event data about a business occurrence."
+    },
+    {
+      "id": "F16",
+      "category": "logging",
+      "front": "When is Publish Immediately appropriate?",
+      "back": "When you must emit a log even if the DML transaction rolls back—not for fulfillment that queries new rows."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is event-driven architecture on Salesforce, and how is it different from request/reply?",
+      "answer_30_seconds": "Producers publish to an event bus; consumers subscribe without calling the producer. Request/reply waits for an answer. EDA is async, so consistency is eventual.",
+      "answer_2_minutes": "I use the Platform Events architecture terms: event, message, producer, channel, consumer, bus, Replay ID. I say the Architecture Center wants EDA for fan-out and near real-time notifications, not for a human waiting on a response. I mention CDC and custom platform events as the preferred Salesforce tools, and Pub/Sub API for new external clients.",
+      "example": "LAB_Order__c shipped publishes; warehouse and billing subscribe. The clerk is not blocked on warehouse ACK.",
+      "tradeoffs": [
+        "Decoupling versus guaranteed immediate response",
+        "Fan-out versus point-to-point APIs"
+      ],
+      "follow_ups": [
+        "When would you still use REST?",
+        "What is Replay ID?"
+      ],
+      "weak_answer_warnings": [
+        "Calling platform events 'just another API that returns a payload'"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Explain eventual consistency for platform events and CDC.",
+      "answer_30_seconds": "Subscribers run later. They may query a row that is not committed yet, especially with Publish Immediately. After Commit waits for a successful transaction.",
+      "answer_2_minutes": "I separate bus latency from publish behavior. Immediate publishing is outside the DML transaction, so rollback will not un-publish it and subscribers can race the commit. After Commit is for subscribers that must see related records. CDC is about committed record changes, but consumers are still async. I do not blame sharing first.",
+      "example": "Warehouse Flow queries LAB_Order__c after an Immediate event and gets zero rows until commit.",
+      "tradeoffs": [
+        "Immediate logging versus After Commit data visibility",
+        "Async fan-out versus same-transaction Flow"
+      ],
+      "follow_ups": [
+        "When is Immediate still correct?",
+        "How do savepoints interact?"
+      ],
+      "weak_answer_warnings": [
+        "Saying the event bus is strongly consistent like a DML statement"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "ERP needs a replica of Account field changes; a warehouse needs a custom warehouse code on ship. Design the events.",
+      "answer_30_seconds": "CDC on Account for the replica. Custom platform event with warehouse code and Publish After Commit for ship. Do not clone Account into a custom event.",
+      "answer_2_minutes": "I match payload ownership: CDC for committed CRUD, custom PE for a named business event. I pick Pub/Sub API for the ERP client. I refuse a UI callout that blocks the clerk. I document publishers and subscribers so we do not create an update loop between ERP and Salesforce.",
+      "example": "LAB_Account__c CDC plus LAB_ShipmentReady__e with WarehouseCode__c.",
+      "tradeoffs": [
+        "CDC payload vs custom fields",
+        "One event versus two channels"
+      ],
+      "follow_ups": [
+        "What if the warehouse cannot query Salesforce?",
+        "Event Relay?"
+      ],
+      "weak_answer_warnings": [
+        "One giant platform event for every integration"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A stakeholder wants a screen that waits until the warehouse confirms. Your event-driven architecture answer?",
+      "answer_30_seconds": "Refuse EDA for that wait. Event-driven architecture cannot guarantee a human response time. Keep confirmation as a later status the UI polls or refreshes, or use request/reply if the wait is truly required.",
+      "answer_2_minutes": "I quote the Decision Guide: processes that require humans to wait are a poor EDA fit. I offer a ship event that updates LAB_Order__c when the warehouse later publishes back, and a UI that shows 'pending warehouse' without blocking. If the business insists on a blocking ACK, that is a synchronous integration with timeout and error UX, not a platform event spinner.",
+      "example": "Status__c = Awaiting_Warehouse on LAB_Order__c; warehouse callback or inbound event later sets Shipped.",
+      "tradeoffs": [
+        "User-perceived latency versus decoupling",
+        "Polling UI versus true request/reply"
+      ],
+      "follow_ups": [
+        "How long may warehouse lag?",
+        "What is the SLA?"
+      ],
+      "weak_answer_warnings": [
+        "Promising the event bus will return in 200 ms"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Subscriber cannot find the new record. Walk the diagnosis.",
+      "answer_30_seconds": "Check Publish Immediately versus After Commit, whether the publisher committed, and whether the payload Id is correct. Then sharing. Do not start at 'CDC is down.'",
+      "answer_2_minutes": "I reproduce with a LAB_ order. If Immediate, I expect a race. I switch After Commit in sandbox and retest. I confirm the subscriber is not querying in the publisher transaction. I look for lock errors if a same-transaction subscriber updates the row. Only then I check FLS and CDC object selection.",
+      "example": "LAB_ShipmentReady__e Immediate plus query on Order Id from payload returns empty.",
+      "tradeoffs": [
+        "Fixing publish behavior versus adding a retry",
+        "Retries without idempotency (ARCH-008)"
+      ],
+      "follow_ups": [
+        "Would you add a Queueable retry?",
+        "How does Replay ID help after an outage?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming OWD before publish behavior"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Platform event trigger keeps firing until CPU limit. What do you look for?",
+      "answer_30_seconds": "A trigger on that event that publishes the same event, or two systems that update each other via CDC without a suppression flag.",
+      "answer_2_minutes": "The Decision Guide names same-event-object publish from its trigger as an infinite loop. I inspect EventBus.publish in the trigger and any Flow that republishes. For CDC, I look for Salesforce updates that the ERP writes back. I add a source flag or stop publishing on subscriber-driven DML. I do not raise the CPU limit as the design.",
+      "example": "LAB_Ready__e trigger publishes LAB_Ready__e again.",
+      "tradeoffs": [
+        "In-process subflow versus event glue",
+        "Bidirectional sync vs one-way CDC"
+      ],
+      "follow_ups": [
+        "How do you test for loops?",
+        "Flow Orchestrator alternative?"
+      ],
+      "weak_answer_warnings": [
+        "Raising governor limits instead of breaking the loop"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Why might you still not choose event-driven architecture even if both systems can subscribe?",
+      "answer_30_seconds": "If the pattern is really request/reply, batch, or data virtualization, EDA is a square peg. Also if you cannot govern payload changes or staff cannot operate an event bus.",
+      "answer_2_minutes": "The Decision Guide asks whether EDA is an obvious misfit, whether legacy systems lack event support, how often message structures change, and whether governance exists. I would not impose EDA on an SFTP-only partner. I would not skip MuleSoft if the enterprise already runs an ESB for these patterns. I still use PE/CDC inside Salesforce when they fit.",
+      "example": "A partner that drops a nightly CSV is batch, not CDC.",
+      "tradeoffs": [
+        "Enterprise ESB reuse versus native PE",
+        "Governance cost of payload versioning"
+      ],
+      "follow_ups": [
+        "How do you version an event payload?",
+        "When is MuleSoft the better bus?"
+      ],
+      "weak_answer_warnings": [
+        "EDA for every integration because it is on the exam"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach eventual consistency with a concrete analogy, then say where it breaks.",
+      "answer_30_seconds": "Airport status boards update after the gate posts. Other airports catch up later. The analogy breaks on governor allocations, CDC payload shape, and Pub/Sub transaction rules.",
+      "answer_2_minutes": "I map producer to gate agent, bus to ATIS, Replay ID to sequence numbers, After Commit to posting only after the passenger list is sealed, Immediate to posting a log even if the flight cancels. I then say a board is not a cockpit instrument: if a clerk must wait, we are in request/reply. I mention the Decision Guide anti-patterns so the interviewer hears I did not stop at the metaphor.",
+      "example": "LAB_ShipmentReady__e After Commit versus a blocked Screen Flow callout.",
+      "tradeoffs": [
+        "Metaphor clarity versus false precision",
+        "Logging Immediate versus fulfillment After Commit"
+      ],
+      "follow_ups": [
+        "Map CDC onto the analogy",
+        "Where does Event Relay fit?"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer filler with no publish-behavior punchline"
+      ]
+    }
+  ]
+}

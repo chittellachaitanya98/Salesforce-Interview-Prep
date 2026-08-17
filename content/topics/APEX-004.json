@@ -1,0 +1,949 @@
+{
+  "topic_id": "APEX-004",
+  "slug": "sosl-use-cases-and-comparison-with-soql",
+  "title": "SOSL use cases and comparison with SOQL",
+  "track": "Apex and database programming",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-003"
+  ],
+  "objectives": [
+    "Explain SOSL as a text-index search that can return multiple sObject types in one FIND.",
+    "Choose SOSL when the object or field is unknown and SOQL when the object and structured filters are known.",
+    "Read Apex SOSL results as List<List<SObject>> in RETURNING order, including empty inner lists.",
+    "Apply documented SOSL efficiency clauses (IN, LIMIT, RETURNING) without inventing unofficial result caps unless citing the current reference."
+  ],
+  "diagnostic_question": "A global search box receives 'acme*' and must surface matching Account, Contact, and LAB_Shipment__c rows. When would you write SOSL instead of three SOQL queries, and what would you verify about the FIND syntax in Apex?",
+  "definition": "SOSL (Salesforce Object Search Language) builds text-based searches against the search index. Use it when you do not know which object or field holds the term, or when you must retrieve multiple objects—related or not—in one search. SOQL remains the structured query language for a known object and selective filters. ([SOSL](https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_sosl.htm); [SOQL and SOSL Queries](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL.htm))",
+  "why_it_matters": "Interviewers fail candidates who FIND by Id, or who run three unfiltered SOQL queries because they forgot SOSL can RETURNING multiple types. Apex FIND uses single quotes, not API braces. Result order matches RETURNING, and a miss is an empty list—not null.",
+  "sixty_second_explanation": "Picture airport lost-and-found versus a warehouse aisle lookup. SOSL is the loudspeaker: 'Anyone holding a bag tagged ACME?'—it scans the index across terminals (objects) and returns the most relevant matches. SOQL is walking to aisle Account, bin Name = 'Acme' with a barcode. If you already know the aisle and the barcode, do not page the whole airport. In Apex the loudspeaker script uses FIND 'term' in quotes; the API uses braces.",
+  "deeper_explanation": [
+    "The SOSL reference says to use SOSL when you do not know which object or field the data resides in, when you want a term that exists in a field, when you need multiple objects efficiently (related or not), for divisions, or for CJKT morphological tokenization. ([SOSL — When to Use SOSL](https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_sosl.htm))",
+    "In Apex, SOSL in square brackets returns List<List<SObject>>. Inner lists follow RETURNING order. An object with no hits still gets an empty list. FIND values use single quotes in Apex and braces in SOAP/REST. ([SOQL and SOSL Queries](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL.htm))",
+    "Efficiency clauses include IN (name/email/phone/all fields), LIMIT, OFFSET, RETURNING, and several WITH filters. The reference states that by default only the top matched records are returned based on relevancy and that unselective searches can hit search crowding. Quote a numeric cap only from the current page; this lesson treats 'top matches / 2,000 default' as cited from that reference. ([SOSL](https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_sosl.htm))",
+    "SOQL is still correct for Id IN :ids, relationship children, and aggregates. SOSL is not a join engine. Sharing is applied after the search stack returns results—Needs verification of exact sharing timing against current search docs if an interviewer presses."
+  ],
+  "mental_model": {
+    "analogy": "Airport lost-and-found loudspeaker versus walking a known warehouse aisle.",
+    "useful_mapping": [
+      "SOSL FIND → paging all terminals for a keyword on the tag",
+      "RETURNING objects → which terminals to listen to",
+      "IN NAME/EMAIL/PHONE FIELDS → which part of the tag to scan",
+      "SOQL WHERE on Account → walking aisle Account to a known bin",
+      "List<List<SObject>> → a tray per terminal, empty if that terminal had no hits",
+      "Apex quotes vs API braces → two scripts for the same loudspeaker"
+    ],
+    "where_it_breaks": [
+      "SOSL relevance ranking is not a warehouse barcode—order is not your ORDER BY unless you add SOQL-like clauses where supported.",
+      "You cannot replace a parent-to-child SOQL subquery with FIND.",
+      "Search crowding and sharing-after-search are not part of the loudspeaker picture.",
+      "The analogy does not encode SOSL governor counts (see APEX-007)."
+    ]
+  },
+  "teach_back_prompt": "Tell a teammate when you would page the airport (SOSL) versus walk an aisle (SOQL), then name one place the lost-and-found analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Write FIND 'term' RETURNING Account, Contact from memory and name the Apex result type."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given an Id set, choose SOQL or SOSL and say why."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain Apex quotes versus API braces and empty inner lists."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Rewrite three SOQL keyword queries as one SOSL RETURNING list."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: SOSL use cases versus SOQL relationship queries."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-SOSL-REF",
+      "title": "Salesforce Object Search Language (SOSL)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_sosl.htm",
+      "supports": "When to use SOSL; text index; multiple objects; efficiency clauses; default top-match behavior and search crowding note.",
+      "release_or_version": "SOQL and SOSL Reference / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Default result caps and crowding behavior are release-sensitive; reverify the current reference."
+    },
+    {
+      "source_id": "SF-APEX-SOQL-SOSL",
+      "title": "SOQL and SOSL Queries",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL.htm",
+      "supports": "Apex SOSL in brackets; List<List<SObject>>; FIND quotes in Apex versus braces in the API; empty lists for misses.",
+      "release_or_version": "Apex Developer Guide / API 67.0 / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "System-mode IN ALL FIELDS note: Apex in system mode ignores FLS while scanning—neighbor of APEX-014."
+    },
+    {
+      "source_id": "SF-SOQL-REF",
+      "title": "Salesforce Object Query Language (SOQL)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql.htm",
+      "supports": "SOQL as structured retrieval from the Salesforce database—the comparison partner to SOSL.",
+      "release_or_version": "SOQL and SOSL Reference / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define SOSL FIND syntax."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "SOSL text index",
+        "When to use SOSL",
+        "When to use SOQL",
+        "Apex FIND quotes",
+        "List of lists",
+        "RETURNING order"
+      ],
+      "accessible_description": "Portrait map: SOSL searches the text index across objects; SOQL queries a known object; Apex FIND uses quotes; results are List<List<SObject>> in RETURNING order."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-SOSL-REF",
+        "SF-APEX-SOQL-SOSL",
+        "SF-SOQL-REF"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "SOSL versus SOQL decision"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Term[Search term] --> SOSL[SOSL FIND on search index]\n  SOSL --> Ret[RETURNING object list]\n  Ret --> L0[List 0 first type]\n  Ret --> L1[List 1 second type]\n  Known[Known object and filters] --> SOQL[SOQL SELECT FROM WHERE]\n  SOQL --> Rows[List of one sObject type]",
+      "decision": "flowchart TD\n  Need[Need records?] --> Q1{Know the object and structured filters?}\n  Q1 -->|Yes Id IN or relationship or aggregate| SOQL[SOQL in Apex]\n  Q1 -->|No keyword across objects| SOSL[SOSL FIND RETURNING types]\n  SOSL --> Q2{Need children of these Ids?}\n  Q2 -->|Yes| Back[Back to SOQL relationship query]\n  Q2 -->|No| Apex[Cast List List SObject in RETURNING order]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Use SOSL when you do not know which object or field holds the term, when you want multiple objects in one search (related or not), and for documented cases such as divisions or CJKT tokenization.",
+      "source_ids": ["SF-SOSL-REF"],
+      "scope": "SOSL use cases",
+      "validation": "When to Use SOSL in the SOQL and SOSL Reference.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Apex SOSL returns List<List<SObject>> in RETURNING order; missing types are empty lists. FIND uses single quotes in Apex and braces in the API.",
+      "source_ids": ["SF-APEX-SOQL-SOSL"],
+      "scope": "Apex SOSL embedding",
+      "validation": "SOQL and SOSL Queries in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "SOQL retrieves rows from a known object with structured clauses; it is the correct tool for Id filters, relationship queries, and aggregates—not a keyword search across unknown objects.",
+      "source_ids": ["SF-SOQL-REF", "SF-APEX-SOQL-SOSL"],
+      "scope": "SOQL comparison",
+      "validation": "SOQL reference plus Apex SOQL/SOSL embedding page.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Default SOSL result caps, pagination, and crowding behavior are release-sensitive. Reverify the current SOSL reference before quoting numbers.",
+  "unresolved_uncertainty": [
+    "Exact sharing-application timing after the search stack should be confirmed in current search documentation if an interviewer asks about with sharing versus SOSL."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "SOSL",
+      "telugu": "Text index search across objects."
+    },
+    {
+      "english": "SOQL",
+      "telugu": "Structured query on a known object."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "SOSL searches the text index and can RETURNING several objects in one FIND. SOQL queries a known object with WHERE, relationships, and aggregates. In Apex, FIND uses quotes and returns List<List<SObject>>.",
+    "two_minutes": "I pick SOSL when the user typed a term and I do not know the object or field—or I need Account, Contact, and a custom type together. I pick SOQL when I have Ids, need children, or need COUNT. I cast searchList[0] to the first RETURNING type and treat misses as empty lists. I do not FIND an Id I already have. I cite the reference for default top-match behavior rather than inventing a number if I am unsure of the release."
+  },
+  "terminology": [
+    {
+      "term": "SOSL",
+      "plain": "The language for text search against Salesforce’s search index.",
+      "precise": "Salesforce Object Search Language. FIND locates terms in text, email, and phone fields across objects you can access, including custom objects.",
+      "example": "FIND 'acme*' IN ALL FIELDS RETURNING Account(Id, Name), Contact",
+      "non_example": "SELECT Id FROM Account WHERE Id IN :ids",
+      "confusable_neighbor": "SOQL: structured query of a known object.",
+      "boundary": "SOSL is not a replacement for relationship subqueries."
+    },
+    {
+      "term": "SOQL",
+      "plain": "The language for structured retrieval of rows from a known object.",
+      "precise": "Salesforce Object Query Language. Best when you know the object and can filter, relate, or aggregate.",
+      "example": "SELECT Id FROM LAB_Shipment__c WHERE Id IN :ids",
+      "non_example": "FIND 'acme*' RETURNING Account, Contact",
+      "confusable_neighbor": "SOSL FIND.",
+      "boundary": "Covered in depth in APEX-003; this lesson is the comparison."
+    },
+    {
+      "term": "FIND clause",
+      "plain": "The SOSL clause that holds the search term.",
+      "precise": "In Apex the term is wrapped in single quotes; in SOAP/REST API it is wrapped in braces. Wildcards such as * follow SOSL reference rules.",
+      "example": "FIND 'map*' IN ALL FIELDS RETURNING Account, Lead",
+      "non_example": "SOQL WHERE Name LIKE 'map%'",
+      "confusable_neighbor": "SOQL LIKE: works on a known field of a known object.",
+      "boundary": "Apex quote style is a frequent interview gotcha."
+    },
+    {
+      "term": "RETURNING",
+      "plain": "The SOSL clause that lists which objects (and fields) to come back.",
+      "precise": "Defines result objects and optional per-object field lists. Apex result lists are in this order.",
+      "example": "RETURNING Account(Id, Name), Contact, Opportunity, Lead",
+      "non_example": "SOQL FROM Account only.",
+      "confusable_neighbor": "SOQL SELECT field list on one object.",
+      "boundary": "Omit an object and you will not get that inner list."
+    },
+    {
+      "term": "List of lists",
+      "plain": "The Apex type SOSL returns: a list per RETURNING object.",
+      "precise": "List<List<SObject>>. Cast each inner list to the concrete type. Empty inner list means no hits for that type, not a null result.",
+      "example": "Account[] accounts = (List<Account>)searchList[0];",
+      "non_example": "Assuming SOSL returns List<Account> like SOQL.",
+      "confusable_neighbor": "AggregateResult lists from SOQL.",
+      "boundary": "Index 0 is the first RETURNING type, not 'the best object.'"
+    },
+    {
+      "term": "search crowding",
+      "plain": "Too many matches so relevance and filters hide what you wanted.",
+      "precise": "The SOSL reference warns that unselective filters with more than the documented match volume can run into search crowding. Sharing is applied after the search stack returns results.",
+      "example": "FIND 'a*' IN ALL FIELDS with no RETURNING limits on a huge org.",
+      "non_example": "A selective SOQL on Id IN :ids.",
+      "confusable_neighbor": "SOQL non-selective query errors—different engine.",
+      "boundary": "Cite the current reference for numeric thresholds."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose SOSL versus SOQL",
+      "actor": "Developer",
+      "trigger": "A search or query requirement arrives",
+      "before": "Unknown whether the object is known",
+      "after": "FIND versus SELECT decided",
+      "observe": "Written reason: keyword/unknown object versus Id/relationship",
+      "failure": "FIND used to load children by parent Id"
+    },
+    {
+      "step": 2,
+      "transition": "Write FIND with Apex quote style",
+      "actor": "Developer",
+      "trigger": "SOSL chosen",
+      "before": "Term in memory",
+      "after": "FIND 'term' IN ... RETURNING ... in square brackets",
+      "observe": "Compiles in Apex; API brace example not pasted raw",
+      "failure": "Pasting FIND {term} into an Apex class"
+    },
+    {
+      "step": 3,
+      "transition": "Cast result lists in RETURNING order",
+      "actor": "Developer",
+      "trigger": "searchList returned",
+      "before": "List<List<SObject>>",
+      "after": "Concrete lists; empty lists handled",
+      "observe": "No NullPointerException on a miss",
+      "failure": "Assuming searchList[1] is null when Contact has no hits"
+    },
+    {
+      "step": 4,
+      "transition": "Narrow the search",
+      "actor": "Developer",
+      "trigger": "Too many or slow results",
+      "before": "IN ALL FIELDS with a short token",
+      "after": "IN NAME FIELDS, LIMIT, tighter RETURNING",
+      "observe": "Relevant LAB_ rows; no need for three SOQL scans",
+      "failure": "Unfiltered FIND 'a*'"
+    }
+  ],
+  "when_to_use": [
+    "When a user-typed keyword must be found and you do not know which object or field holds it—SOSL FIND, not guess-and-SOQL.",
+    "When one SOSL RETURNING list can replace several SOQL queries across unrelated objects.",
+    "When you need SOSL tokenization benefits called out in the reference (including CJKT) rather than a naive SOQL LIKE.",
+    "When comparing SOSL use cases with SOQL so an Apex class does not FIND an Id set it already has."
+  ],
+  "when_not_to_use": [
+    "Do not use SOSL when SOQL relationship queries or Id IN binds already identify the rows (APEX-003).",
+    "Do not use SOSL to compute aggregate COUNT/SUM—that is SOQL.",
+    "Do not paste API-style FIND {term} braces into an Apex class; Apex uses quotes.",
+    "Do not treat this SOSL-versus-SOQL lesson as a governor-limit table (APEX-007) or a DML lesson (APEX-005)."
+  ],
+  "configuration_or_code_location": [
+    "Anonymous Apex or a class method in a disposable sandbox.",
+    "Developer Console Query Editor SOSL tab if available in the org.",
+    "Global Search in the UI as a product analog—not a substitute for Apex FIND.",
+    "Debug logs for SOSL_EXECUTE lines."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox global-search helper must find 'LAB_Acme*' across Account, Contact, and LAB_Shipment__c and show counts per type. A second method already has shipment Ids and must load those rows. No production data.",
+    "inputs": [
+      "String term = 'LAB_Acme*'",
+      "Set<Id> shipmentIds from a prior SOQL",
+      "RETURNING order Account, Contact, LAB_Shipment__c"
+    ],
+    "decisions": [
+      {
+        "decision": "Use SOSL FIND for the keyword helper.",
+        "because": "Object and field are not known; three objects are required.",
+        "rejected": "Three SOQL LIKE queries as the default"
+      },
+      {
+        "decision": "Use SOQL WHERE Id IN :shipmentIds for the second method.",
+        "because": "The object and Ids are known; FIND would be the wrong engine.",
+        "rejected": "FIND the 18-character Ids as text"
+      },
+      {
+        "decision": "Cast searchList[0/1/2] and treat empty lists as zero hits.",
+        "because": "Apex returns empty inner lists, not null, for misses.",
+        "rejected": "Null-checking searchList[1] as the miss signal"
+      }
+    ],
+    "configuration_or_code": [
+      "List<List<SObject>> found = [FIND :term IN ALL FIELDS RETURNING Account(Id, Name), Contact(Id, Name), LAB_Shipment__c(Id, Name)];",
+      "Account[] accts = (List<Account>)found[0];",
+      "List<LAB_Shipment__c> known = [SELECT Id, Name FROM LAB_Shipment__c WHERE Id IN :shipmentIds];"
+    ],
+    "output": "Keyword path returns per-type lists; Id path uses SOQL only.",
+    "verification": [
+      "A term that matches only Account leaves Contact and shipment inner lists empty, not null.",
+      "The Id method never executes FIND.",
+      "Apex FIND uses quotes or a bind, not API braces."
+    ],
+    "self_explanation": "SOSL for unknown-object keywords; SOQL for known Ids. Result order follows RETURNING."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; synthetic LAB_ names on Account/Contact.",
+    "starting_state_checks": [
+      "You can insert Accounts and Contacts.",
+      "Search index may lag—wait or use records that already search."
+    ],
+    "steps": [
+      "Insert Account and Contact whose Name contains LAB_Acme.",
+      "Run Apex SOSL FIND 'LAB_Acme*' RETURNING Account(Id, Name), Contact(Id, Name).",
+      "Print sizes of both inner lists.",
+      "Run SOQL WHERE Id IN :ids on the same Account Ids and compare intent."
+    ],
+    "guided_completion": [
+      "If SOSL returns empty immediately after insert, wait for indexing or note that as a lab limitation.",
+      "If you used FIND {LAB_Acme*} in Apex, rewrite with quotes."
+    ],
+    "independent_challenge": "Add IN NAME FIELDS and LIMIT 10; explain what IN ALL FIELDS would change.",
+    "evidence": [
+      "Debug output of both list sizes.",
+      "One sentence: SOSL for keywords, SOQL for Ids."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ test records.",
+      "Do not deploy the helper to production."
+    ],
+    "limitations": "Search indexing delay can make a just-inserted row miss SOSL in the same transaction."
+  },
+  "decision_table": [
+    {
+      "signal": "User typed a keyword; object and field are unknown.",
+      "choose": "SOSL FIND with RETURNING the candidate objects.",
+      "not": "A guess-and-check series of unfiltered SOQL queries.",
+      "why": "The SOSL reference lists unknown object/field as a primary use case."
+    },
+    {
+      "signal": "You already have Ids or need children/aggregates.",
+      "choose": "SOQL with binds and relationship or aggregate clauses.",
+      "not": "SOSL FIND on the 18-character Id.",
+      "why": "SOQL is the structured retrieval language for a known object."
+    },
+    {
+      "signal": "One search must return Account, Contact, and a custom object.",
+      "choose": "Single SOSL RETURNING all three types.",
+      "not": "Three separate SOQL LIKE queries as the default architecture.",
+      "why": "SOSL is documented for retrieving multiple objects in one search."
+    },
+    {
+      "signal": "You are pasting a SOAP example into an Apex class.",
+      "choose": "Rewrite FIND to use single quotes (or a bind) in Apex.",
+      "not": "Leave FIND {term} braces in Apex source.",
+      "why": "The Apex Developer Guide calls out the quote-versus-brace difference."
+    }
+  ],
+  "limitations": [
+    "Search index lag can hide just-inserted rows from SOSL.",
+    "Does not replace SOQL relationship or aggregate queries.",
+    "Numeric SOSL governors belong with APEX-007 unless cited here from the reference.",
+    "FLS behavior in system mode is a neighboring security topic."
+  ],
+  "security_notes": [
+    "Apex in system mode can ignore FLS while scanning IN ALL FIELDS—do not treat SOSL as user-mode safe by default.",
+    "Bind or sanitize search terms; do not concatenate raw FIND strings from the UI without review.",
+    "LAB_ data only."
+  ],
+  "common_mistakes": [
+    "Using SOSL to load records you already have Ids for.",
+    "Pasting API braces into Apex FIND.",
+    "Assuming a missing object is a null inner list.",
+    "Expecting SOSL to return related children like a subquery.",
+    "Treating SOSL order as your SOQL ORDER BY."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Apex compile error on FIND {term}.",
+      "check": [
+        "Use single quotes or a bind in Apex.",
+        "Braces are the API form."
+      ],
+      "do_not_assume": "SOSL is disabled in the org."
+    },
+    {
+      "symptom": "Just-inserted LAB_ row does not appear in SOSL.",
+      "check": [
+        "Search index lag.",
+        "RETURNING includes that object and fields."
+      ],
+      "do_not_assume": "SOQL would also miss it—SOQL reads the database, not the search index."
+    },
+    {
+      "symptom": "NullPointerException when casting searchList[1].",
+      "check": [
+        "RETURNING order and whether you skipped a type.",
+        "Empty list versus null—usually empty, so the cast should succeed."
+      ],
+      "do_not_assume": "The second object is omitted from the result array."
+    }
+  ],
+  "production_notes": [
+    "Narrow IN and RETURNING in user-facing search.",
+    "Do not rely on SOSL for transactional consistency immediately after DML.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does SOSL search according to the reference?",
+      "options": {
+        "A": "The search index for text, email, and phone fields across objects you can access",
+        "B": "Only relationship children of one parent Id",
+        "C": "Only AggregateResult totals",
+        "D": "Only Apex class metadata"
+      },
+      "answer": "A",
+      "rationale": "SOSL constructs text-based search queries against the search index.",
+      "distractor_explanations": {
+        "B": "That is SOQL relationship query.",
+        "C": "Aggregates are SOQL.",
+        "D": "Classes are metadata, not SOSL targets."
+      },
+      "concept": "SOSL",
+      "citation_ids": ["SF-SOSL-REF"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When does the SOSL reference say to use SOSL?",
+      "options": {
+        "A": "When you do not know which object or field the data resides in",
+        "B": "When you have a Set<Id> for one object",
+        "C": "When you need GROUP BY",
+        "D": "When you need Database.setSavepoint"
+      },
+      "answer": "A",
+      "rationale": "When to Use SOSL leads with unknown object/field and multi-object retrieval.",
+      "distractor_explanations": {
+        "B": "Use SOQL WHERE Id IN.",
+        "C": "Aggregates are SOQL.",
+        "D": "Savepoints are DML/transaction (APEX-005/010)."
+      },
+      "concept": "SOSL use cases",
+      "citation_ids": ["SF-SOSL-REF"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What type does Apex SOSL return?",
+      "options": {
+        "A": "List<List<SObject>> in RETURNING order",
+        "B": "Always List<Account>",
+        "C": "A single Integer",
+        "D": "Schema.DescribeSObjectResult"
+      },
+      "answer": "A",
+      "rationale": "The Apex guide states SOSL evaluates to a list of lists of sObjects in RETURNING order.",
+      "distractor_explanations": {
+        "B": "That is typical SOQL.",
+        "C": "COUNT() is SOQL.",
+        "D": "Describe is APEX-002."
+      },
+      "concept": "List of lists",
+      "citation_ids": ["SF-APEX-SOQL-SOSL"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "FIND syntax in Apex versus the API?",
+      "options": {
+        "A": "Apex uses single quotes; SOAP/REST API uses braces",
+        "B": "Apex uses braces; the API uses quotes",
+        "C": "Both require square brackets around the term only",
+        "D": "Apex cannot run SOSL"
+      },
+      "answer": "A",
+      "rationale": "The Apex SOQL/SOSL page documents quotes in Apex and braces in the API.",
+      "distractor_explanations": {
+        "B": "That reverses the two.",
+        "C": "Square brackets wrap the whole SOSL statement in Apex.",
+        "D": "Apex supports SOSL."
+      },
+      "concept": "FIND clause",
+      "citation_ids": ["SF-APEX-SOQL-SOSL"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A SOSL query returns no Contacts but RETURNING included Contact. What is in that slot?",
+      "options": {
+        "A": "An empty list for that sObject type",
+        "B": "The inner list is omitted entirely",
+        "C": "A thrown QueryException always",
+        "D": "A SOQL subquery of children"
+      },
+      "answer": "A",
+      "rationale": "If a type has no records, the search results include an empty list for that sObject.",
+      "distractor_explanations": {
+        "B": "The slot remains; it is empty.",
+        "C": "No hits are not an exception.",
+        "D": "SOSL is not a child subquery."
+      },
+      "concept": "List of lists",
+      "citation_ids": ["SF-APEX-SOQL-SOSL"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You have shipment Ids and need those LAB_Shipment__c rows. Choose:",
+      "options": {
+        "A": "SOQL WHERE Id IN :ids",
+        "B": "SOSL FIND the Ids in ALL FIELDS",
+        "C": "Schema describe of LAB_Shipment__c",
+        "D": "COUNT() without FROM"
+      },
+      "answer": "A",
+      "rationale": "Known object and Ids are a SOQL use case.",
+      "distractor_explanations": {
+        "B": "FIND is the wrong engine for Id retrieval.",
+        "C": "Describe is metadata.",
+        "D": "Invalid SOQL."
+      },
+      "concept": "SOQL comparison",
+      "citation_ids": ["SF-SOQL-REF", "SF-SOSL-REF"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which clause limits which objects SOSL returns?",
+      "options": {
+        "A": "RETURNING",
+        "B": "GROUP BY",
+        "C": "DATABASE.INSERT",
+        "D": "Trigger.new"
+      },
+      "answer": "A",
+      "rationale": "RETURNING limits the objects and fields to return.",
+      "distractor_explanations": {
+        "B": "GROUP BY is SOQL.",
+        "C": "DML is not SOSL.",
+        "D": "Trigger context is APEX-008."
+      },
+      "concept": "RETURNING",
+      "citation_ids": ["SF-SOSL-REF"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which IN clause narrows SOSL field types searched?",
+      "options": {
+        "A": "IN NAME FIELDS (or EMAIL, PHONE, ALL FIELDS)",
+        "B": "IN :Trigger.new only",
+        "C": "INNER JOIN",
+        "D": "WITH USER_MODE as the only legal IN"
+      },
+      "answer": "A",
+      "rationale": "The reference lists IN to limit field types searched, including email, name, or phone.",
+      "distractor_explanations": {
+        "B": "That is a SOQL bind pattern.",
+        "C": "Not SOSL syntax.",
+        "D": "WITH USER_MODE is a different clause family."
+      },
+      "concept": "SOSL efficiency",
+      "citation_ids": ["SF-SOSL-REF"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Why might SOSL miss a row SOQL can see in the same transaction?",
+      "options": {
+        "A": "SOSL reads the search index, which can lag just-inserted rows",
+        "B": "SOQL cannot see inserted rows either",
+        "C": "SOSL only queries metadata",
+        "D": "FIND always requires a deployed Flow"
+      },
+      "answer": "A",
+      "rationale": "SOSL is index search; SOQL reads database rows. Fresh DML may not be indexed yet.",
+      "distractor_explanations": {
+        "B": "SOQL can see uncommitted rows in the same transaction in typical Apex cases.",
+        "C": "SOSL returns records, not describe.",
+        "D": "Flow is unrelated."
+      },
+      "concept": "search index",
+      "citation_ids": ["SF-SOSL-REF"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "The SOSL reference mentions search crowding when what happens?",
+      "options": {
+        "A": "Filters are not selective and term matches exceed the documented volume",
+        "B": "You use SOQL GROUP BY",
+        "C": "You bind Trigger.new in SOQL",
+        "D": "You call getDescribe()"
+      },
+      "answer": "A",
+      "rationale": "Unselective searches with large match volumes can run into search crowding.",
+      "distractor_explanations": {
+        "B": "GROUP BY is SOQL.",
+        "C": "That is selective SOQL.",
+        "D": "Describe is unrelated."
+      },
+      "concept": "search crowding",
+      "citation_ids": ["SF-SOSL-REF"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates an Apex SOSL class from business data?",
+      "options": {
+        "A": "Deploying the class does not index or insert the Account rows FIND would return",
+        "B": "SOSL results are metadata",
+        "C": "RETURNING creates custom objects",
+        "D": "FIND deploys fields"
+      },
+      "answer": "A",
+      "rationale": "The class is metadata. Search hits are records (data).",
+      "distractor_explanations": {
+        "B": "Results are records.",
+        "C": "RETURNING selects existing types.",
+        "D": "FIND does not deploy schema."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-APEX-SOQL-SOSL"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Can SOSL replace a parent-to-child SOQL subquery?",
+      "options": {
+        "A": "No. Need children of known parent Ids? Use SOQL relationship queries",
+        "B": "Yes, FIND always returns children automatically",
+        "C": "Yes, RETURNING is a nested SELECT",
+        "D": "Only in before triggers"
+      },
+      "answer": "A",
+      "rationale": "SOSL is multi-object text search, not the parent-child query engine.",
+      "distractor_explanations": {
+        "B": "FIND does not walk child relationships for you.",
+        "C": "RETURNING lists objects, not nested children.",
+        "D": "Trigger timing does not change the language choice."
+      },
+      "concept": "SOSL vs SOQL",
+      "citation_ids": ["SF-SOSL-REF", "SF-APEX-SOQL-SOSL"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is SOSL?",
+      "back": "Salesforce Object Search Language: text-index search across objects you can access."
+    },
+    {
+      "id": "F2",
+      "category": "use",
+      "front": "Primary SOSL use case?",
+      "back": "You do not know which object or field holds the term, or you need multiple objects in one search."
+    },
+    {
+      "id": "F3",
+      "category": "soql",
+      "front": "When is SOQL the better comparison choice?",
+      "back": "Known object, Id filters, relationship queries, or aggregates."
+    },
+    {
+      "id": "F4",
+      "category": "apex",
+      "front": "Apex SOSL result type?",
+      "back": "List<List<SObject>> in RETURNING order; misses are empty lists."
+    },
+    {
+      "id": "F5",
+      "category": "syntax",
+      "front": "FIND quotes versus braces?",
+      "back": "Apex uses single quotes. SOAP/REST API uses braces."
+    },
+    {
+      "id": "F6",
+      "category": "clause",
+      "front": "What does RETURNING do?",
+      "back": "Lists objects and fields to return; sets Apex inner-list order."
+    },
+    {
+      "id": "F7",
+      "category": "clause",
+      "front": "What does IN NAME FIELDS do?",
+      "back": "Limits SOSL to name fields instead of scanning all text fields."
+    },
+    {
+      "id": "F8",
+      "category": "pitfall",
+      "front": "FIND an Id you already have?",
+      "back": "Use SOQL WHERE Id IN :ids instead."
+    },
+    {
+      "id": "F9",
+      "category": "pitfall",
+      "front": "Just-inserted row missing from SOSL?",
+      "back": "Search index can lag; SOQL reads the database."
+    },
+    {
+      "id": "F10",
+      "category": "crowding",
+      "front": "What is search crowding?",
+      "back": "Unselective SOSL with a huge match volume so relevance/filters hide desired rows."
+    },
+    {
+      "id": "F11",
+      "category": "cast",
+      "front": "How do you read Accounts from a two-type FIND?",
+      "back": "Cast searchList[0] to List<Account> if Account is first in RETURNING."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "SOSL versus relationship SOQL?",
+      "back": "SOSL does not replace parent-to-child subqueries for known parent Ids."
+    },
+    {
+      "id": "F13",
+      "category": "security",
+      "front": "IN ALL FIELDS in system-mode Apex?",
+      "back": "The Apex guide notes system mode can ignore FLS while scanning. Neighbor of APEX-014."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Keyword across Account and Contact?",
+      "back": "One SOSL FIND RETURNING both types."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Need COUNT of open cases per account?",
+      "back": "SOQL aggregate, not SOSL FIND."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is SOSL, and when do you use it instead of SOQL?",
+      "answer_30_seconds": "SOSL searches the text index and can return several objects in one FIND. Use it when the object or field is unknown. Use SOQL when you know the object and have structured filters.",
+      "answer_2_minutes": "I quote the reference: unknown object/field, multi-object retrieval, divisions, CJKT tokenization. I contrast Id IN, relationship children, and aggregates as SOQL. In Apex I mention quotes versus API braces and List<List<SObject>>. I do not FIND records I can already identify by Id.",
+      "example": "FIND 'LAB_Acme*' RETURNING Account, Contact versus SELECT Id FROM Account WHERE Id IN :ids.",
+      "tradeoffs": [
+        "One SOSL vs several SOQL LIKE queries",
+        "Index lag vs transactional SOQL"
+      ],
+      "follow_ups": [
+        "What is RETURNING for?",
+        "What is search crowding?"
+      ],
+      "weak_answer_warnings": [
+        "Calling SOSL 'SOQL with multiple FROM clauses'"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you consume SOSL results in Apex?",
+      "answer_30_seconds": "The statement returns List<List<SObject>> in RETURNING order. Cast each inner list. A miss is an empty list, not null.",
+      "answer_2_minutes": "I write FIND 'term' IN ALL FIELDS RETURNING Account(Id, Name), Contact. I cast index 0 to Account and 1 to Contact. I iterate only if !list.isEmpty(). I never assume the 'best' object is index 0 for relevance—index 0 is just the first RETURNING type.",
+      "example": "Account[] a = (List<Account>)searchList[0];",
+      "tradeoffs": [
+        "RETURNING many types vs two targeted searches",
+        "IN ALL FIELDS vs IN NAME FIELDS"
+      ],
+      "follow_ups": [
+        "What if you omit Contact from RETURNING?",
+        "Can you bind the FIND term?"
+      ],
+      "weak_answer_warnings": [
+        "Treating the result as List<Account>"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A teammate pastes FIND {acme*} from a REST example into an Apex class. What happens and what do you do?",
+      "answer_30_seconds": "Apex FIND uses single quotes, not braces. Rewrite to FIND 'acme*' or bind :term.",
+      "answer_2_minutes": "I show the Developer Guide note on the syntax split. I also check they want SOSL at all—if they have Ids, I switch to SOQL. I mention WITH USER_MODE if the current guide example uses it, without inventing FLS behavior.",
+      "example": "[FIND 'acme*' IN ALL FIELDS RETURNING Account(Id, Name)]",
+      "tradeoffs": [
+        "Copy-paste API samples vs Apex embedding",
+        "SOSL vs SOQL LIKE"
+      ],
+      "follow_ups": [
+        "Does the wildcard differ from SOQL LIKE?",
+        "What is IN NAME FIELDS?"
+      ],
+      "weak_answer_warnings": [
+        "Saying Apex cannot run SOSL"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "You need child LAB_Stop__c rows for Trigger.new shipments. SOSL or SOQL?",
+      "answer_30_seconds": "SOQL relationship query. SOSL does not walk parent-to-child by parent Id.",
+      "answer_2_minutes": "This is the comparison question. Known parents and a child relationship are APEX-003. SOSL would at best keyword-match stop names and would not guarantee those children. I would FIND only if the requirement were a keyword search across stop notes and other objects.",
+      "example": "SELECT Id, (SELECT Id FROM LAB_Stops__r) FROM LAB_Shipment__c WHERE Id IN :Trigger.new",
+      "tradeoffs": [
+        "Relationship SOQL vs keyword SOSL",
+        "One language vs mixing both"
+      ],
+      "follow_ups": [
+        "Could you SOSL then SOQL filter?",
+        "What if stops are in several unrelated objects?"
+      ],
+      "weak_answer_warnings": [
+        "FIND Trigger.new Ids"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you refuse SOSL?",
+      "answer_30_seconds": "When Ids, relationship paths, or aggregates already solve it. Also when you need rows in the same transaction that were just inserted and may not be indexed yet.",
+      "answer_2_minutes": "I refuse FIND as a generic 'search anything' inside triggers that already have Trigger.new. I refuse unselective FIND 'a*'. I prefer SOQL for admin reports that filter picklists and dates. I keep SOSL for user-typed global search in a class designed for it.",
+      "example": "A before-update trigger loading related contacts by AccountId uses SOQL, not SOSL.",
+      "tradeoffs": [
+        "Index freshness vs keyword UX",
+        "SOSL governors vs SOQL governors"
+      ],
+      "follow_ups": [
+        "Where are SOSL governor numbers documented?",
+        "What is OFFSET for?"
+      ],
+      "weak_answer_warnings": [
+        "SOSL inside every trigger"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do you explain search crowding without inventing limits?",
+      "answer_30_seconds": "If the term matches a huge set and filters are weak, the search stack’s top-match window can hide the row you wanted. Narrow IN, RETURNING, and the term.",
+      "answer_2_minutes": "I cite the SOSL reference: default top matches by relevancy, pagination exists, unselective filters above the documented volume risk crowding, sharing applied after the search stack. I will quote 2,000 only as that page’s default and say it is release-sensitive. I do not confuse this with SOQL non-selective query errors.",
+      "example": "FIND 'inc' IN ALL FIELDS with no RETURNING limits in a large org.",
+      "tradeoffs": [
+        "Broad global search vs targeted RETURNING",
+        "Relevance vs exact SOQL filters"
+      ],
+      "follow_ups": [
+        "How does pagination work? (Reverify.)",
+        "Does with sharing change crowding?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing unofficial match caps"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "SOSL returns empty but SOQL finds the LAB_ row. Walk the diagnosis.",
+      "answer_30_seconds": "Check index lag after insert, RETURNING/IN clauses, and whether the term is actually in a searchable field.",
+      "answer_2_minutes": "I run SOQL to prove the row exists. I wait or requery SOSL if the insert was seconds ago. I confirm the field is text/email/phone and included in IN. I check the user can access the object. I do not 'fix' it by switching a known-Id retrieval to SOSL—that was the wrong tool if they had the Id.",
+      "example": "Account inserted in the same test method, SOSL run immediately.",
+      "tradeoffs": [
+        "Test.startTest indexing assumptions vs SOQL assertions",
+        "SeeAllData vs synthetic LAB_ data"
+      ],
+      "follow_ups": [
+        "How do you write a reliable SOSL test?",
+        "Does undelete affect the index?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming SOQL for an index miss"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "A Java developer asks if SOSL is 'JOIN across objects.' What do you teach?",
+      "answer_30_seconds": "No. SOSL returns parallel lists per type from the search index. It does not join children to parents. That is SOQL relationship query.",
+      "answer_2_minutes": "I draw two trays: Accounts and Contacts that both matched 'acme,' not contacts of those accounts. If they need contacts of those accounts, they take Account Ids from SOSL then SOQL children—or they used the wrong first tool. I also teach Apex quotes versus API braces so they do not paste Postman SOSL into a class.",
+      "example": "FIND returns a Contact that matches the term even if its Account did not.",
+      "tradeoffs": [
+        "Keyword UX vs relational integrity",
+        "Two-step SOSL+SOQL vs one SOQL"
+      ],
+      "follow_ups": [
+        "The reference says SOSL can support SOQL relationship queries if enabled—what would you verify?",
+        "How do you rank results in the UI?"
+      ],
+      "weak_answer_warnings": [
+        "Teaching SOSL as SQL JOIN"
+      ]
+    }
+  ]
+}

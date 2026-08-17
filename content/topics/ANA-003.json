@@ -1,0 +1,994 @@
+{
+  "topic_id": "ANA-003",
+  "slug": "filters-cross-filters-row-level-formulas-summary-formul",
+  "title": "Filters, cross filters, row-level formulas, summary formulas, and bucketing",
+  "track": "Reports and analytics",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ANA-002"
+  ],
+  "objectives": [
+    "Choose a field filter, filter logic, or a cross filter when the question is about related records WITH or WITHOUT a child.",
+    "Contrast row-level formulas (each record) with summary formulas (groups and totals).",
+    "Use bucketing to categorize numeric, picklist, or text values inside one report.",
+    "Cite Help limits: 20 field filters, 5 formulas, 3 cross filters, 5 bucket fields."
+  ],
+  "diagnostic_question": "A manager wants Accounts without open Cases, a per-row age column, a win-rate on each Stage group, and deal sizes of Small/Medium/Large—without new custom fields. Which report tools do you stack, and which do you refuse?",
+  "definition": "After report type and format, you shape results with field filters (up to 20), optional filter logic, cross filters on related objects (up to 3, with up to 5 subfilters each), row-level formulas that evaluate each record, summary formulas that evaluate groups and totals, and bucket columns that categorize values in that report only. ([Limits](https://help.salesforce.com/s/articleView?id=analytics.rd_reports_dashboards_limits.htm); [Add a Bucket Column](https://help.salesforce.com/s/articleView?id=analytics.reports_bucketing_adding.htm))",
+  "why_it_matters": "Interviewers listen for WITH/WITHOUT related records (cross filter) versus a custom report type relationship (ANA-001), and for row-level versus summary formulas. Buckets are report-local. Limits are Help facts: filter logic does not apply to cross filters.",
+  "sixty_second_explanation": "Think of an airport checkpoint. Field filters are the boarding-pass scan. Cross filters ask whether you have a connecting bag (WITH) or none (WITHOUT). A row-level formula weighs each suitcase. A summary formula weighs the whole flight or gate group. Bucketing sorts bags into Small/Medium/Large bins on this flight only—not a new permanent tag in the cargo system.",
+  "deeper_explanation": [
+    "Field filters per report are allocated at 20 in the report builder (10 if someone still uses the old wizard). Some date-range filters consume multiple custom filters toward that 20. Filter logic applies only to field filters, not to cross filters. ([Reports and Dashboards Limits](https://help.salesforce.com/s/articleView?id=analytics.rd_reports_dashboards_limits.htm))",
+    "Cross filters filter across objects: each report can have up to 3 cross filters, each with up to 5 subfilters. They are the report-level WITH/WITHOUT related-record tool. They are not supported on reports that include external objects.",
+    "Formulas per report are allocated at 5. Row-level formulas evaluate each record and appear as a column you can edit in Lightning. Summary formulas evaluate groups and totals; PARENTGROUPVAL and PREVGROUPVAL are available with summary, matrix, and joined reports. ([Formula Operators and Functions](https://help.salesforce.com/s/articleView?id=platform.customize_functions.htm); [Edit a Row-Level Formula](https://help.salesforce.com/s/articleView?id=analytics.reports_formulas_row_level_edit.htm))",
+    "Bucket columns categorize numeric, picklist, or text values. Each report can include up to 5 bucket fields; each bucket field up to 20 buckets; each bucket up to 20 values. Buckets exist only in that report unless you instead create an object formula field. ([Add a Bucket Column](https://help.salesforce.com/s/articleView?id=analytics.reports_bucketing_adding.htm))",
+    "These features are report metadata. They do not insert business records. They also do not replace sharing: a filter cannot show a row the user is not allowed to see."
+  ],
+  "mental_model": {
+    "analogy": "An airport checkpoint: scans (filters), connecting-bag checks (cross filters), per-suitcase scales (row-level formulas), per-flight scales (summary formulas), and size bins used only on this flight (buckets).",
+    "useful_mapping": [
+      "field filter → boarding-pass scan",
+      "filter logic → AND/OR among scans, not among bag checks",
+      "cross filter WITH → must have a connecting bag",
+      "cross filter WITHOUT → must have no connecting bag",
+      "row-level formula → weigh each suitcase",
+      "summary formula → weigh the flight or gate group",
+      "bucket column → Small/Medium/Large bins on this flight only",
+      "object formula field → a permanent cargo tag used by every flight"
+    ],
+    "where_it_breaks": [
+      "Airports do not have a 20-filter allocation.",
+      "Cross filters are not the same as a custom report type inner/outer relationship.",
+      "PARENTGROUPVAL has no checkpoint equivalent.",
+      "Sharing can hide a bag the checkpoint never sees."
+    ]
+  },
+  "teach_back_prompt": "Explain field filters versus cross filters versus row-level versus summary formulas versus bucketing using the airport checkpoint, then name one Help limit and one place the analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Write the five tools and one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Map five requests to filter, cross filter, row-level, summary, or bucket."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Recite 20 / 3 / 5 / 5 limits from Help."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Why filter logic does not apply to cross filters."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: WITH/WITHOUT versus CRT relationship versus bucket versus custom field."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-RD-LIMITS",
+      "title": "Reports and Dashboards Limits and Allocations",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=analytics.rd_reports_dashboards_limits.htm",
+      "supports": "20 field filters, 5 formulas, 3 cross filters with 5 subfilters, filter logic excludes cross filters, external-object exclusions.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Allocations can change; wizard still listed at 10 filters."
+    },
+    {
+      "source_id": "SF-HELP-BUCKETS",
+      "title": "Add a Bucket Column",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=analytics.reports_bucketing_adding.htm",
+      "supports": "Numeric/picklist/text buckets; 5 bucket fields, 20 buckets, 20 values; report-local; no external objects.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Enterprise, Performance, Unlimited, Developer; Enhanced Folder Sharing."
+    },
+    {
+      "source_id": "SF-HELP-ROWFORMULA",
+      "title": "Edit a Row-Level Formula",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=analytics.reports_formulas_row_level_edit.htm",
+      "supports": "Row-level formulas are edited as columns in Lightning and evaluate report data per record.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Permission names differ for private versus public reports."
+    },
+    {
+      "source_id": "SF-HELP-SUMMARYFUNCS",
+      "title": "Formula Operators and Functions by Context — Summary Functions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.customize_functions.htm",
+      "supports": "PARENTGROUPVAL and PREVGROUPVAL are for custom summary formulas on summary, matrix, and joined reports.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Not for use at grand-summary level in the ways the article forbids; read the function notes."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Field filters and logic",
+        "Cross filters WITH/WITHOUT",
+        "Row-level formulas",
+        "Summary formulas",
+        "Bucketing",
+        "Help limits 20/3/5/5"
+      ],
+      "accessible_description": "Portrait map of report filters, cross filters, row-level and summary formulas, and buckets with official limits."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-RD-LIMITS",
+        "SF-HELP-BUCKETS",
+        "SF-HELP-ROWFORMULA",
+        "SF-HELP-SUMMARYFUNCS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Shape the result set after type and format"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Type[Report type] --> Fmt[Format]\n  Fmt --> FF[Field filters up to 20]\n  FF --> Logic[Filter logic on field filters only]\n  Fmt --> XF[Cross filters up to 3]\n  XF --> Sub[Up to 5 subfilters each]\n  Fmt --> RLF[Row-level formula: each record]\n  Fmt --> SF[Summary formula: groups and totals]\n  Fmt --> Bkt[Bucket column: this report only]",
+      "decision": "flowchart TD\n  Need[Need to shape the report?] --> Q1{Related records WITH or WITHOUT a child?}\n  Q1 -->|Yes| XF[Cross filter]\n  Q1 -->|No, just field values| FF[Field filter plus logic]\n  Need --> Q2{Calculate per row or per group?}\n  Q2 -->|Each record| RLF[Row-level formula]\n  Q2 -->|Group or grand total| SF[Summary formula]\n  Need --> Q3{Categorize values without a new object field?}\n  Q3 -->|This report only| Bkt[Bucket column]\n  Q3 -->|Reuse on many reports and lists| Obj[Object formula field instead]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Report builder field filters are allocated at 20. Formulas per report are allocated at 5. Each report can have up to 3 cross filters with up to 5 subfilters each. Filter logic applies only to field filters, not cross filters.",
+      "source_ids": ["SF-HELP-RD-LIMITS"],
+      "scope": "Filter and formula allocations",
+      "validation": "Reports and Dashboards Limits and Allocations.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "A report can include up to 5 bucket fields, 20 buckets per field, and 20 values per bucket. Bucket columns exist only in the report that created them.",
+      "source_ids": ["SF-HELP-BUCKETS"],
+      "scope": "Bucketing",
+      "validation": "Add a Bucket Column limitations list.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Row-level formulas evaluate each record as a report column. PARENTGROUPVAL and PREVGROUPVAL are summary functions for grouped reports, not for ordinary field formulas.",
+      "source_ids": ["SF-HELP-ROWFORMULA", "SF-HELP-SUMMARYFUNCS"],
+      "scope": "Formulas",
+      "validation": "Edit a Row-Level Formula; Formula Operators and Functions summary functions.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Einstein Report Formula Generation is a neighboring feature with its own considerations article; this lesson does not treat generated formulas as a separate format. Reverify formula-per-report allocation each release.",
+  "unresolved_uncertainty": [
+    "Exact Lightning click path to add a cross filter can differ from Classic; confirm in the target org.",
+    "Whether a specific row-level formula counts 1:1 against the 5-formulas allocation should be confirmed against the current limits wording when designing dense reports."
+  ],
+  "telugu_glossary": [{"english": "Cross filter", "telugu": "Related records unnaya leda ani report-level filter."}, {"english": "Bucket column", "telugu": "Ee report lo matrame values ni groups ga chupince column."}],
+  "interview_explanation": {
+    "thirty_seconds": "Field filters cut by values. Cross filters ask WITH or WITHOUT a related record. Row-level formulas calculate each row. Summary formulas calculate groups. Buckets categorize values in this report only. Logic does not apply to cross filters.",
+    "two_minutes": "I stack tools after type and format. Accounts without Cases is a WITHOUT cross filter, not a CRT rebuild, unless the type cannot see Case. Age of each Opportunity is a row-level formula. Win rate by Stage is a summary formula, maybe PARENTGROUPVAL. Deal size Small/Medium/Large is a numeric bucket if we do not need a durable field. I stay inside 20 field filters, 3 cross filters, 5 formulas, and 5 bucket fields. I never claim a filter bypasses sharing."
+  },
+  "terminology": [
+    {
+      "term": "field filter",
+      "plain": "A condition on a field already on the report type, such as Stage equals Closed Won.",
+      "precise": "Up to 20 in the report builder. Some date ranges consume multiple filters. Filter logic applies to these, not to cross filters.",
+      "example": "Close Date equals This Fiscal Quarter AND Amount greater than 0.",
+      "non_example": "A cross filter 'Accounts without Cases' is not a field filter.",
+      "confusable_neighbor": "List view filter: similar idea, different metadata.",
+      "boundary": "You cannot filter reports by custom long text area fields per the limits article."
+    },
+    {
+      "term": "filter logic",
+      "plain": "AND/OR parentheses among field filters.",
+      "precise": "Applies only to field filters. If you apply filter logic to a locked filter, the lock is removed.",
+      "example": "(1 AND 2) OR 3 on Stage, Amount, and Type.",
+      "non_example": "Trying to OR two cross filters together with the same logic box.",
+      "confusable_neighbor": "Cross filter subfilters: up to 5 per cross filter, not the field-filter logic box.",
+      "boundary": "Locked-filter plus logic interaction is in the limits article."
+    },
+    {
+      "term": "cross filter",
+      "plain": "A report filter that keeps rows WITH or WITHOUT related records of another object.",
+      "precise": "Up to 3 per report, 5 subfilters each. Not supported with external objects. Filter logic does not apply to them.",
+      "example": "Accounts WITHOUT Cases, subfilter Status equals Open.",
+      "non_example": "A custom report type set to must-have related Cases (that is ANA-001).",
+      "confusable_neighbor": "CRT with-or-without relationship.",
+      "boundary": "Use when the type already includes the parent; you are filtering related presence, not defining the type."
+    },
+    {
+      "term": "row-level formula",
+      "plain": "A calculation that runs once per report row and shows as a column.",
+      "precise": "Edited in Lightning from the formula column. Evaluates each record. Counts toward formulas-per-report allocation.",
+      "example": "Close Date minus Created Date as Time to Close on each Opportunity.",
+      "non_example": "PARENTGROUPVAL, which is a summary function, not a per-row field formula.",
+      "confusable_neighbor": "Object formula field: stored on every record and reusable everywhere.",
+      "boundary": "Permissions differ for private versus public reports."
+    },
+    {
+      "term": "summary formula",
+      "plain": "A calculation on a grouping or grand total, not on each detail row.",
+      "precise": "Used on summary, matrix, and joined reports. PARENTGROUPVAL returns a parent grouping value; PREVGROUPVAL returns a previous grouping.",
+      "example": "Won Amount / PARENTGROUPVAL(Amount) as a win rate within Stage.",
+      "non_example": "A bucket named Won/Lost.",
+      "confusable_neighbor": "Summary report format (ANA-002).",
+      "boundary": "Joined reports have extra custom-summary-formula caps in the limits article."
+    },
+    {
+      "term": "PARENTGROUPVAL",
+      "plain": "A summary function that reads the total from a grouping above the current one.",
+      "precise": "Available in custom summary formulas at grouping levels, not at summary levels, on summary, matrix, and joined reports.",
+      "example": "Region amount as a percent of the country parent group.",
+      "non_example": "A row-level formula referencing another row's Amount.",
+      "confusable_neighbor": "PREVGROUPVAL: previous peer grouping, increment up to 12.",
+      "boundary": "Do not invent other PARENT* functions."
+    },
+    {
+      "term": "bucket column",
+      "plain": "A report-only grouping of values into named bins.",
+      "precise": "Numeric, picklist, or text. Max 5 bucket fields, 20 buckets, 20 values each. Not on external-object reports. Not reused on other reports.",
+      "example": "Amount buckets Small ≤1000, Medium, Large >25000.",
+      "non_example": "A picklist field on the object used by every report and list view.",
+      "confusable_neighbor": "Report grouping: you can group by a bucket once it exists.",
+      "boundary": "Filtering a bucket drops custom-index gains on the source field."
+    },
+    {
+      "term": "subfilter",
+      "plain": "An extra condition on the related object inside a cross filter.",
+      "precise": "Up to 5 subfilters per cross filter.",
+      "example": "WITHOUT Cases where Status equals Open and Origin equals Phone.",
+      "non_example": "A fourth cross filter (the cap is 3 cross filters).",
+      "confusable_neighbor": "Field filter on the parent.",
+      "boundary": "Subfilters do not get the field-filter logic box."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Filter the parent fields you already have",
+      "actor": "Admin",
+      "trigger": "Report type and format exist",
+      "before": "Too many rows",
+      "after": "Field filters plus logic within 20",
+      "observe": "Row count drops; logic does not mention cross filters",
+      "failure": "Using 21 field filters or OR on a long text area"
+    },
+    {
+      "step": 2,
+      "transition": "Add a cross filter only for related presence",
+      "actor": "Admin",
+      "trigger": "Need WITH or WITHOUT a child object",
+      "before": "Field filters cannot see 'no child'",
+      "after": "At most 3 cross filters with subfilters",
+      "observe": "Accounts without open Cases appear or disappear as specified",
+      "failure": "Rebuilding a CRT when a WITHOUT cross filter was enough"
+    },
+    {
+      "step": 3,
+      "transition": "Choose row-level versus summary formula",
+      "actor": "Admin",
+      "trigger": "Need a calculated number",
+      "before": "Unclear grain",
+      "after": "Row-level column or grouping formula, within 5 formulas",
+      "observe": "Validate on the formula editor; PARENTGROUPVAL only on grouped formats",
+      "failure": "Putting PARENTGROUPVAL in a row-level formula"
+    },
+    {
+      "step": 4,
+      "transition": "Bucket only if the category is report-local",
+      "actor": "Admin",
+      "trigger": "Need Small/Medium/Large or industry groups",
+      "before": "No durable field required",
+      "after": "Up to 5 bucket fields on this report",
+      "observe": "You can group or filter by the bucket column",
+      "failure": "Expecting the same buckets to appear on a second report automatically"
+    }
+  ],
+  "when_to_use": [
+    "When a field filter or filter logic can cut the result set without changing the report type.",
+    "When the question is Accounts WITH or WITHOUT related Cases—use a cross filter rather than a new object.",
+    "When each row needs a calculation (row-level formula) or each group needs a ratio (summary formula).",
+    "When you need Small/Medium/Large bucketing on this report only, without a new custom field."
+  ],
+  "when_not_to_use": [
+    "Do not use a cross filter to add an object the report type cannot see; fix the custom report type first (ANA-001).",
+    "Do not use bucketing as a company-wide picklist replacement when many reports and list views need the same bins.",
+    "Do not put PARENTGROUPVAL in a row-level formula or on a tabular report that has no groupings.",
+    "Do not use filters, formulas, or buckets to bypass sharing, FLS, or the 2,000-row display cap (ANA-005)."
+  ],
+  "configuration_or_code_location": [
+    "Lightning report builder: Filters pane; cross filter controls; Columns → row-level formula; summary formula on groupings; Bucket This Column.",
+    "Help limits table for 20 / 5 / 3 allocations.",
+    "Object Manager formula field if the calculation must be reused outside this report."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox sales manager wants LAB Opportunities this quarter that have no open LAB_Case__c, a per-row age in days, win rate by Stage, and Amount buckets Small/Medium/Large—without new production fields.",
+    "inputs": [
+      "Opportunities report type that can see the case relationship or a CRT that can",
+      "Summary format grouped by Stage",
+      "Synthetic LAB_ data"
+    ],
+    "decisions": [
+      {
+        "decision": "Close Date field filter = this quarter.",
+        "because": "A field filter is enough for the date cut.",
+        "rejected": "A cross filter on Close Date"
+      },
+      {
+        "decision": "Cross filter Opportunities WITHOUT open LAB_Case__c (subfilter Status = Open).",
+        "because": "Related absence is a cross filter job.",
+        "rejected": "New CRT with must-have cases, which would keep only parents that have cases"
+      },
+      {
+        "decision": "Row-level formula for age; summary formula for win rate; numeric buckets for Amount.",
+        "because": "Grain matches each tool; buckets stay report-local.",
+        "rejected": "One object formula field for all three needs 'just in case'"
+      }
+    ],
+    "configuration_or_code": [
+      "Filters: Close Date = This Quarter.",
+      "Cross filter: WITHOUT LAB_Case__c, subfilter Status equals Open.",
+      "Row-level: CloseDate - CreatedDate (output number) named LAB_Age_Days.",
+      "Summary formula using groupings for win rate; Amount bucket Small/Medium/Large; Save & Run."
+    ],
+    "output": "A summary report that excludes Opportunities with open cases, shows age per row, win rate per Stage, and deal-size buckets.",
+    "verification": [
+      "An Opportunity with an open case disappears; one with none remains.",
+      "Age differs per row; win rate is constant within a Stage group.",
+      "A second report does not inherit the buckets.",
+      "Filter, formula, cross-filter, and bucket counts stay within Help caps."
+    ],
+    "self_explanation": "I matched grain: related presence, per-row math, per-group math, report-local bins. I did not rebuild the report type."
+  },
+  "hands_on_lab": {
+    "environment": "Sandbox or Playground with Opportunities (and Cases if available) and permission to create and customize reports.",
+    "starting_state_checks": [
+      "Non-production org.",
+      "You can edit report filters and formulas."
+    ],
+    "steps": [
+      "Create a summary Opportunities report grouped by Stage with a Close Date field filter.",
+      "Add a WITHOUT Cases (or Contacts) cross filter and one subfilter.",
+      "Add a row-level formula column and validate it.",
+      "Add a numeric Amount bucket with three ranges and group by the bucket."
+    ],
+    "guided_completion": [
+      "If filter logic can 'see' the cross filter, you are not in the Help model—logic is field filters only.",
+      "If the bucket appears on a second report, you accidentally created an object field."
+    ],
+    "independent_challenge": "Write one PARENTGROUPVAL sentence from the functions Help without deploying it to production.",
+    "evidence": [
+      "Screenshot of filters, one cross filter, one row-level column, one bucket.",
+      "Note of the 20 / 3 / 5 / 5 caps."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete the lab report.",
+      "Do not add buckets to production reports as an unreviewed change."
+    ],
+    "limitations": "Does not prove external-object exclusions or Einstein formula generation."
+  },
+  "decision_table": [
+    {
+      "signal": "Need rows where a field on the same report type matches a value or date range.",
+      "choose": "Field filter, then filter logic if you need AND/OR among those filters.",
+      "not": "A cross filter on that same field.",
+      "why": "Cross filters answer related-record presence, not ordinary field values."
+    },
+    {
+      "signal": "Need Accounts that have no open Cases, or Opportunities with at least one Product.",
+      "choose": "Cross filter WITHOUT or WITH, plus subfilters (max 3 / 5).",
+      "not": "A new custom report type unless the type cannot see the related object.",
+      "why": "Help positions cross filters as filter-across-objects; CRT is the type graph."
+    },
+    {
+      "signal": "Need a number that is different on every detail row, such as age in days.",
+      "choose": "Row-level formula column.",
+      "not": "PARENTGROUPVAL or a summary formula at the detail grain.",
+      "why": "Row-level formulas evaluate each record; summary functions evaluate groups."
+    },
+    {
+      "signal": "Need a ratio or comparison at Stage or Owner totals.",
+      "choose": "Summary formula, using PARENTGROUPVAL or PREVGROUPVAL when the functions Help allows.",
+      "not": "A bucket named 'Win Rate'.",
+      "why": "Summary functions exist for grouped formats, not as picklist bins."
+    },
+    {
+      "signal": "Need Small/Medium/Large on this report only, without a new custom field.",
+      "choose": "Numeric bucket column (max 5 bucket fields on the report).",
+      "not": "A durable object formula if only one report will ever need the bins.",
+      "why": "Buckets are report-local; object fields are for reuse across reports and lists."
+    }
+  ],
+  "limitations": [
+    "Filter logic does not apply to cross filters.",
+    "Buckets, cross filters, and row-level formulas are unavailable on reports that include external objects (limits article).",
+    "Five formulas per report; joined reports have additional custom-summary-formula caps.",
+    "Does not replace dashboard filters (ANA-004) or sharing diagnosis (ANA-005)."
+  ],
+  "security_notes": [
+    "Filters cannot reveal rows the user cannot see.",
+    "A row-level formula on a sensitive field still requires FLS to the inputs.",
+    "Do not email filtered reports of real customers as a lab artifact."
+  ],
+  "common_mistakes": [
+    "Using filter logic on cross filters.",
+    "Rebuilding a CRT for a WITHOUT question.",
+    "Putting PARENTGROUPVAL in a row-level formula.",
+    "Expecting buckets to travel to other reports.",
+    "Creating a sixth bucket field."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Filter logic seems to ignore the WITH/WITHOUT clause.",
+      "check": [
+        "Filter logic applies only to field filters, not cross filters."
+      ],
+      "do_not_assume": "The cross filter failed to save."
+    },
+    {
+      "symptom": "Bucket missing on a second report.",
+      "check": [
+        "Buckets are local to the report that created them.",
+        "Create the bucket again or add an object formula field."
+      ],
+      "do_not_assume": "A deployment dropped the bucket metadata org-wide."
+    },
+    {
+      "symptom": "Cannot add another formula or filter.",
+      "check": [
+        "20 field filters, 5 formulas, 3 cross filters, 5 bucket fields.",
+        "Date ranges that consume multiple filters."
+      ],
+      "do_not_assume": "The org lost Report Builder permission only."
+    }
+  ],
+  "production_notes": [
+    "Prefer object fields when many reports need the same bins or age calculation.",
+    "Document cross filters in the report description; they are easy to miss.",
+    "Trial formulas in a sandbox with LAB_ data.",
+    "This lesson does not authorize production filter changes on executive reports without change control."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Field filters per report in the report builder, per Help?",
+      "options": {
+        "A": "20 (10 if using the old wizard)",
+        "B": "3",
+        "C": "5 only",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "Allocations table: 20 field filters; wizard 10.",
+      "distractor_explanations": {
+        "B": "3 is the cross-filter cap.",
+        "C": "5 is formulas or bucket fields.",
+        "D": "There is a cap."
+      },
+      "concept": "Field filter allocation",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Does filter logic apply to cross filters?",
+      "options": {
+        "A": "No. Filter logic applies only to field filters",
+        "B": "Yes, always",
+        "C": "Only in joined reports",
+        "D": "Only for WITHOUT"
+      },
+      "answer": "A",
+      "rationale": "Limits article: filter logic applies only to field filters, not cross filters.",
+      "distractor_explanations": {
+        "B": "Help explicitly excludes cross filters.",
+        "C": "The exclusion is not joined-only.",
+        "D": "WITH and WITHOUT are both cross filters."
+      },
+      "concept": "Filter logic scope",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Cross filter caps in Help?",
+      "options": {
+        "A": "3 cross filters, 5 subfilters each",
+        "B": "20 cross filters, 3 subfilters",
+        "C": "5 cross filters, 20 subfilters",
+        "D": "1 cross filter only"
+      },
+      "answer": "A",
+      "rationale": "Cross filter limits: 3 and 5.",
+      "distractor_explanations": {
+        "B": "20 is field filters.",
+        "C": "Those numbers are bucket caps.",
+        "D": "Up to three are allowed."
+      },
+      "concept": "Cross filter limits",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Accounts that have no Cases. Best first tool if the report type already includes Account?",
+      "options": {
+        "A": "Cross filter WITHOUT Cases",
+        "B": "Matrix format",
+        "C": "PARENTGROUPVAL",
+        "D": "A dashboard subscription"
+      },
+      "answer": "A",
+      "rationale": "Related absence is a cross filter.",
+      "distractor_explanations": {
+        "B": "Format does not express WITHOUT.",
+        "C": "A summary function is not a related-record filter.",
+        "D": "Subscriptions send output; they do not filter related presence."
+      },
+      "concept": "WITHOUT",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Bucket field limits per Help?",
+      "options": {
+        "A": "5 bucket fields, 20 buckets, 20 values per bucket, report-local",
+        "B": "20 bucket fields, 5 buckets",
+        "C": "Unlimited buckets if Lightning",
+        "D": "3 bucket fields shared org-wide"
+      },
+      "answer": "A",
+      "rationale": "Add a Bucket Column limitations list.",
+      "distractor_explanations": {
+        "B": "Numbers reversed.",
+        "C": "Caps apply in Lightning.",
+        "D": "Buckets are not org-wide shared objects."
+      },
+      "concept": "Bucket limits",
+      "citation_ids": ["SF-HELP-BUCKETS"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Age in days on every Opportunity row. Which formula kind?",
+      "options": {
+        "A": "Row-level formula",
+        "B": "PARENTGROUPVAL only",
+        "C": "PREVGROUPVAL only",
+        "D": "A cross filter"
+      },
+      "answer": "A",
+      "rationale": "Row-level formulas evaluate each record.",
+      "distractor_explanations": {
+        "B": "PARENTGROUPVAL is a summary function.",
+        "C": "PREVGROUPVAL compares groupings.",
+        "D": "Cross filters do not calculate age."
+      },
+      "concept": "Row-level grain",
+      "citation_ids": ["SF-HELP-ROWFORMULA"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "PARENTGROUPVAL is available with which report formats?",
+      "options": {
+        "A": "Summary, matrix, and joined reports",
+        "B": "Tabular only",
+        "C": "Dashboards only",
+        "D": "Tabular and list views"
+      },
+      "answer": "A",
+      "rationale": "Functions Help: summary functions for summary, matrix, and joined.",
+      "distractor_explanations": {
+        "B": "Tabular has no groupings for parent groups.",
+        "C": "The function is a report summary formula.",
+        "D": "List views are not this function context."
+      },
+      "concept": "Summary functions",
+      "citation_ids": ["SF-HELP-SUMMARYFUNCS"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You need the same Small/Medium/Large bins on ten reports and a list view. What should you prefer?",
+      "options": {
+        "A": "An object formula or picklist field, because buckets stay on one report",
+        "B": "One bucket field that Salesforce copies everywhere",
+        "C": "Five cross filters",
+        "D": "Filter logic named Small"
+      },
+      "answer": "A",
+      "rationale": "Help: recreate the bucket on each report or create a separate formula field on the object.",
+      "distractor_explanations": {
+        "B": "Buckets are not globally copied.",
+        "C": "Cross filters are not bins.",
+        "D": "Filter logic is not a category field."
+      },
+      "concept": "Bucket reuse",
+      "citation_ids": ["SF-HELP-BUCKETS"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A report includes an external object. Which features does Help say are not supported?",
+      "options": {
+        "A": "Cross filters, buckets, and row-level formulas (among others listed)",
+        "B": "Field filters of any kind",
+        "C": "Saving the report",
+        "D": "Using a standard report type"
+      },
+      "answer": "A",
+      "rationale": "Limits article lists cross filters, buckets, historical trending, and row-level formulas as unsupported with external objects.",
+      "distractor_explanations": {
+        "B": "Ordinary field filters are not the listed exclusion.",
+        "C": "Saving is not the cited limitation.",
+        "D": "Types can still exist; those features are excluded."
+      },
+      "concept": "External objects",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Formulas per report allocation in the limits table?",
+      "options": {
+        "A": "5",
+        "B": "20",
+        "C": "50 on every format",
+        "D": "3"
+      },
+      "answer": "A",
+      "rationale": "Formulas per report = 5. Joined reports have additional per-block totals listed separately.",
+      "distractor_explanations": {
+        "B": "20 is field filters.",
+        "C": "50 is a joined-report custom-summary-formula total, not every format.",
+        "D": "3 is cross filters."
+      },
+      "concept": "Formula allocation",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Cross filter WITHOUT versus CRT 'must have related records'?",
+      "options": {
+        "A": "Cross filter shapes one report; CRT relationship shapes every report of that type",
+        "B": "They are identical metadata",
+        "C": "WITHOUT can add objects the type cannot see",
+        "D": "CRT relationships apply only to dashboards"
+      },
+      "answer": "A",
+      "rationale": "Different layers: report filter versus type graph.",
+      "distractor_explanations": {
+        "B": "Different setup surfaces.",
+        "C": "The type must already expose the relationship.",
+        "D": "CRT is a report-type concern."
+      },
+      "concept": "Layering",
+      "citation_ids": ["SF-HELP-RD-LIMITS"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Row-level formula versus summary formula?",
+      "options": {
+        "A": "Row-level evaluates each record; summary evaluates groups and totals",
+        "B": "Summary formulas run once per row on tabular reports",
+        "C": "Row-level formulas require joined format",
+        "D": "They both require PARENTGROUPVAL"
+      },
+      "answer": "A",
+      "rationale": "Help splits evaluate-each-record versus evaluate groups/totals.",
+      "distractor_explanations": {
+        "B": "Tabular has no groups for summary functions.",
+        "C": "Row-level is not joined-only.",
+        "D": "PARENTGROUPVAL is a summary function only."
+      },
+      "concept": "Formula grain",
+      "citation_ids": ["SF-HELP-ROWFORMULA", "SF-HELP-SUMMARYFUNCS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "Field filter versus cross filter?",
+      "back": "Field filters condition fields on the type. Cross filters keep rows WITH or WITHOUT related records."
+    },
+    {
+      "id": "F2",
+      "category": "limits",
+      "front": "Does filter logic apply to cross filters?",
+      "back": "No. Help says filter logic applies only to field filters."
+    },
+    {
+      "id": "F3",
+      "category": "limits",
+      "front": "Cross filter numeric caps?",
+      "back": "3 cross filters per report; 5 subfilters each."
+    },
+    {
+      "id": "F4",
+      "category": "limits",
+      "front": "Field filters per report (builder)?",
+      "back": "20. Some date ranges count as multiple filters."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "Row-level formula grain?",
+      "back": "Once per record, shown as a column you can validate and apply."
+    },
+    {
+      "id": "F6",
+      "category": "terminology",
+      "front": "Summary formula grain?",
+      "back": "Groups and totals on summary, matrix, or joined reports."
+    },
+    {
+      "id": "F7",
+      "category": "terminology",
+      "front": "What is PARENTGROUPVAL?",
+      "back": "A summary function that returns a parent grouping's value. Not a row-level function."
+    },
+    {
+      "id": "F8",
+      "category": "terminology",
+      "front": "PREVGROUPVAL increment cap?",
+      "back": "Default 1, maximum 12 previous groupings."
+    },
+    {
+      "id": "F9",
+      "category": "limits",
+      "front": "Bucket field caps?",
+      "back": "5 bucket fields, 20 buckets, 20 values; report-local only."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "Need the same bins on many reports?",
+      "back": "Create an object formula or picklist; do not rely on one report's buckets."
+    },
+    {
+      "id": "F11",
+      "category": "decision",
+      "front": "Accounts without open Cases?",
+      "back": "Cross filter WITHOUT Cases plus a Status subfilter, if the type can see Case."
+    },
+    {
+      "id": "F12",
+      "category": "limits",
+      "front": "Formulas per report allocation?",
+      "back": "5 in the limits table (joined reports have extra per-block totals)."
+    },
+    {
+      "id": "F13",
+      "category": "boundary",
+      "front": "Buckets on external-object reports?",
+      "back": "Not supported, along with cross filters and row-level formulas."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Filter a bucket whose source had a custom index?",
+      "back": "Custom-index performance gains on that source are lost."
+    },
+    {
+      "id": "F15",
+      "category": "boundary",
+      "front": "Do filters bypass sharing?",
+      "back": "No. Users still only see rows they are allowed to see."
+    },
+    {
+      "id": "F16",
+      "category": "terminology",
+      "front": "Three bucket data types?",
+      "back": "Numeric, picklist, and text."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you choose among filters, cross filters, row-level formulas, summary formulas, and bucketing?",
+      "answer_30_seconds": "Field filters cut values. Cross filters ask WITH or WITHOUT a related record. Row-level formulas calculate each row. Summary formulas calculate groups. Buckets categorize values on this report only.",
+      "answer_2_minutes": "I start from grain. If the type already has the field, I filter it—max 20, logic only on those filters. If the question is related presence, I use a cross filter (max 3) rather than rebuilding a CRT. Age-style math is row-level. Win-rate-style math is a summary formula with PARENTGROUPVAL when Help allows. Small/Medium/Large is a bucket if we do not need reuse; otherwise an object field. I stay inside the 5-formula and 5-bucket caps.",
+      "example": "Quarter filter + WITHOUT open Cases + age column + Stage win rate + Amount buckets on one summary report.",
+      "tradeoffs": [
+        "Report-local bucket vs object field",
+        "Cross filter vs CRT relationship"
+      ],
+      "follow_ups": [
+        "Does logic apply to cross filters?",
+        "External object exclusions?"
+      ],
+      "weak_answer_warnings": [
+        "Mixing PARENTGROUPVAL into row-level",
+        "No limits"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What is a cross filter, and when is it the wrong tool?",
+      "answer_30_seconds": "A cross filter keeps parent rows WITH or WITHOUT related children, with up to five subfilters. It is wrong when the report type cannot see that child—then you need a custom report type.",
+      "answer_2_minutes": "I describe WITH and WITHOUT as report-level related presence. I cite 3 cross filters and 5 subfilters, and I say filter logic will not combine them. I contrast ANA-001: must-have on a CRT changes every report of that type. I refuse cross filters on external-object reports because Help lists them as unsupported. I do not use a cross filter to calculate age or win rate.",
+      "example": "Accounts WITHOUT Cases, subfilter Status equals Open.",
+      "tradeoffs": [
+        "One report's cross filter vs a CRT change",
+        "Subfilters vs a second cross filter"
+      ],
+      "follow_ups": [
+        "Can you OR two cross filters in the logic box?",
+        "What if Case is not on the type?"
+      ],
+      "weak_answer_warnings": [
+        "Calling a CRT a cross filter",
+        "Inventing a 20-cross-filter cap"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Build 'this quarter's deals without open cases, with age, win rate, and size bins' in words.",
+      "answer_30_seconds": "Field filter on Close Date, WITHOUT Cases cross filter, row-level age, summary win rate on a grouped format, numeric Amount buckets. No new production fields required.",
+      "answer_2_minutes": "I pick a summary Opportunities report grouped by Stage so summary formulas have a home. Close Date is a field filter. Open-case absence is a cross filter with a Status subfilter. Age is row-level. Win rate uses a summary formula, possibly PARENTGROUPVAL. Size is a three-range numeric bucket. I count toward 20/3/5/5. I verify with a LAB Opportunity that has an open case versus one that does not. I warn buckets will not appear on the next report.",
+      "example": "The worked example LAB report in a sandbox.",
+      "tradeoffs": [
+        "Bucket vs Amount picklist",
+        "Summary format vs matrix for win rate"
+      ],
+      "follow_ups": [
+        "What if they need the bins on a list view?",
+        "What if formulas already equal five?"
+      ],
+      "weak_answer_warnings": [
+        "One object field for everything without asking reuse",
+        "Tabular plus PARENTGROUPVAL"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A developer wants to add PARENTGROUPVAL to a tabular phone list. How do you respond?",
+      "answer_30_seconds": "PARENTGROUPVAL is a summary function for summary, matrix, and joined reports at grouping levels. A tabular list has no parent group. Use a row-level formula or change format.",
+      "answer_2_minutes": "I open the functions Help mentally: summary functions are not for tabular grain. If they need a per-row calculation, that is a row-level formula. If they need a percent of a group, they must group first—summary or matrix. I will not 'hack' PARENTGROUPVAL into a list. I also keep them inside five formulas and remind them this is report metadata, not a new Opportunity field.",
+      "example": "Phone list stays tabular; a separate summary report holds win rate by owner.",
+      "tradeoffs": [
+        "Second report vs changing format",
+        "Row-level vs object field"
+      ],
+      "follow_ups": [
+        "PREVGROUPVAL increment maximum?",
+        "Joined cross-block formulas?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to PARENTGROUPVAL on tabular",
+        "Confusing summary format with summary formula"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Users added filter logic and the WITHOUT Cases clause seems ignored. What do you check?",
+      "answer_30_seconds": "Filter logic does not apply to cross filters. The WITHOUT clause still runs independently. I check they did not hit the 3-cross-filter cap or lose the type relationship.",
+      "answer_2_minutes": "I look at the Filters pane and separate field filters from the cross filter. I explain Help's sentence: logic is for field filters only. If they tried to OR a Stage filter with WITHOUT Cases inside the logic box, that OR never bound the cross filter. I may add a field filter they actually need, or I accept that WITH/WITHOUT is always on. I also confirm this is not an outer CRT filter trap from ANA-001.",
+      "example": "Logic '(1 OR 2)' on Stage and Amount; WITHOUT Cases still applied to every row.",
+      "tradeoffs": [
+        "Two reports vs one confusing filter stack",
+        "CRT inner join vs cross filter"
+      ],
+      "follow_ups": [
+        "Locked filters plus logic?",
+        "External objects?"
+      ],
+      "weak_answer_warnings": [
+        "Rewriting logic five times without naming the Help rule",
+        "Deleting the cross filter as 'broken'"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A bucket used for grouping vanished after someone edited bucket values. What else might have happened?",
+      "answer_30_seconds": "Help says if a bucket column has a filter, modifying bucket values removes filters that refer to that column. The bucket is also report-local, so another report never had it.",
+      "answer_2_minutes": "I check whether a filter referenced the bucket—editing values drops those filters. I recreate the filter. I explain 5/20/20 caps if they cannot add another bucket. I ask whether they expected org-wide reuse; if yes, we promote an object field. I mention custom-index loss if they filter the bucket. I do not treat this as a sharing bug.",
+      "example": "Medium bucket renamed; the filter 'Bucket equals Medium' disappeared.",
+      "tradeoffs": [
+        "Recreate filter vs promote to a field",
+        "Fewer buckets vs more reports"
+      ],
+      "follow_ups": [
+        "Tab characters in picklist buckets?",
+        "Empty numeric values as zeroes?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming a release deleted buckets org-wide",
+        "No mention of report-local scope"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When do you refuse a report formula and ask for an object field instead?",
+      "answer_30_seconds": "When many reports, list views, validation, or automation need the same calculation or bins. Report formulas and buckets are local and capped at five formulas and five bucket fields.",
+      "answer_2_minutes": "I keep report formulas for interview-friendly, report-only math. Age used in one forecast report can be row-level. Age used in assignment rules cannot. Small/Medium/Large used in ten dashboards should be a field. I also refuse formulas as a way to dodge FLS or to stitch unrelated objects. If we are already at five formulas, I split reports or move logic to the object. I stay out of CRM Analytics unless the grain truly leaves core reports (ANA-006).",
+      "example": "Deal-size bins needed on list views and two dozen reports: picklist or formula field, not 24 buckets.",
+      "tradeoffs": [
+        "Deployment of a field vs report-only speed",
+        "Split reports vs more formulas"
+      ],
+      "follow_ups": [
+        "Joined custom-summary-formula caps?",
+        "When is a CRT the better change?"
+      ],
+      "weak_answer_warnings": [
+        "Formulas for everything",
+        "Buckets as enterprise data model"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this topic with the airport checkpoint and then break the analogy.",
+      "answer_30_seconds": "Scans are field filters, connecting bags are cross filters, suitcase scales are row-level, flight scales are summary, size bins are buckets. The analogy breaks because logic does not apply to bag checks and because sharing hides bags the checkpoint never sees.",
+      "answer_2_minutes": "I map each Help limit onto the picture: 20 scans, 3 bag checks, 5 suitcase formulas, 5 bin fields. I say PARENTGROUPVAL is a gate-group scale, not a suitcase scale. I refuse a library story. I warn that external-object flights cannot use bags, bins, or suitcase formulas. I finish with WITH/WITHOUT versus CRT must-have so the interviewer hears two layers.",
+      "example": "Whiteboard the checkpoint, then write 20 / 3 / 5 / 5 under it.",
+      "tradeoffs": [
+        "Story vs numeric precision",
+        "One report vs object model"
+      ],
+      "follow_ups": [
+        "Where does the checkpoint analogy break?",
+        "Quote the filter-logic sentence from Help."
+      ],
+      "weak_answer_warnings": [
+        "No limits",
+        "Calling buckets a CRT"
+      ]
+    }
+  ]
+}

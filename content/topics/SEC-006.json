@@ -1,0 +1,377 @@
+{
+  "topic_id": "SEC-006",
+  "slug": "with-sharing-without-sharing-inherited-sharing-and-user",
+  "title": "`with sharing`, `without sharing`, inherited sharing, and user/system execution context",
+  "track": "Identity, access, and security",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "SEC-005"
+  ],
+  "objectives": [
+    "Choose with sharing, without sharing, or inherited sharing and explain the API 67.0 default.",
+    "State that sharing keywords do not enforce object or field permissions.",
+    "Separate record-sharing mode from user-mode versus system-mode database operations.",
+    "Refuse without sharing except as a documented, targeted elevation."
+  ],
+  "diagnostic_question": "A community user must read a LAB_ FAQ article they do not own. A service class is also called from a with-sharing controller and from a batch job. Which sharing keyword, and does that enforce FLS?",
+  "definition": "Apex sharing keywords choose whether the current user's sharing rules are enforced: with sharing enforces them, without sharing does not, and inherited sharing uses the caller's mode. In API version 67.0 and later, a class without an explicit sharing declaration runs in with sharing mode. Sharing keywords do not enforce object or field permissions. User mode versus system mode is the separate CRUD/FLS execution context. ([Sharing Keywords](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_keywords_sharing.htm); [Enforce Sharing](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_security_sharing_rules.htm))",
+  "why_it_matters": "Interviewers fail candidates who say with sharing equals FLS, or who mark every class without sharing 'so queries work.' API 67.0 changed the implicit default to with sharing. Inherited sharing is how a service class stays honest when callers differ.",
+  "sixty_second_explanation": "Think of a museum after hours. With sharing means the visitor escort rules apply: you only enter galleries your ticket already allows. Without sharing is a documented master key for one job, such as letting an Experience Cloud user read a knowledge article they could not otherwise reach. Inherited sharing means the service cart uses whoever wheeled it in. Checking tickets at the door (CRUD/FLS) is user mode—a different lock than the escort rules.",
+  "deeper_explanation": [
+    "Use with sharing or without sharing to specify whether sharing rules are enforced. Use inherited sharing to run in the sharing mode of the calling class. The documented default sharing mode is with sharing. Salesforce recommends declaring the keyword explicitly. ([Sharing Keywords](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_keywords_sharing.htm))",
+    "In API 67.0 and later, classes without an explicit sharing declaration run in with sharing mode. In API 66.0 and earlier, implicit behavior depended on inheritance, Aura/@AuraEnabled entry, and caller mode. Do not quote the old implicit without-sharing story for a 67.0 class. ([Sharing Keywords](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_keywords_sharing.htm))",
+    "Using with sharing does not enforce the user's object permissions and field-level security. Sharing rules are distinct from, and can coexist with, object-level and field-level permissions. ([Enforce Sharing](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_security_sharing_rules.htm))",
+    "Without sharing is for targeted elevation, for example allowing community users to read records they would not otherwise access. Use it with caution so you do not expose data hidden by sharing. Inherited sharing is for service classes that must support both modes. An inherited-sharing class runs as without sharing only when explicitly called from an already established without-sharing context. ([Sharing Keywords](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_keywords_sharing.htm))",
+    "The LWC Developer Guide states that in API 67.0 and later, Apex runs in user mode by default, meaning current-user object permissions and FLS are enforced unless a database operation is explicitly set to system mode. Sharing keywords remain the record-level control. ([Secure Apex Classes](https://developer.salesforce.com/docs/platform/lwc/guide/apex-security.html))"
+  ],
+  "mental_model": {
+    "analogy": "A museum after hours: escort rules are sharing keywords; ticket checks at each case are user-mode CRUD/FLS; a labeled master key is without sharing.",
+    "useful_mapping": [
+      "escort rules → with sharing",
+      "master key for one documented job → without sharing",
+      "use the caller's escort → inherited sharing",
+      "ticket check on each case → user mode CRUD/FLS",
+      "staff override on a database operation → system mode",
+      "API 67 default escort → implicit with sharing"
+    ],
+    "where_it_breaks": [
+      "Pricebook2 queries ignore with sharing; all price books are returned.",
+      "A with-sharing class can still call a without-sharing class.",
+      "Inner-class and inheritance details are in the Developer Guide; do not invent them."
+    ]
+  },
+  "teach_back_prompt": "Explain to an admin why with sharing will not hide Amount, and when you would still declare inherited sharing on a helper.",
+  "review_schedule": [
+    {"interval": "1 day", "prompt": "with vs without vs inherited, plus API 67 default."},
+    {"interval": "3 days", "prompt": "Sharing keyword vs user mode."},
+    {"interval": "7 days", "prompt": "When is without sharing justified?"},
+    {"interval": "14 days", "prompt": "What did implicit sharing do before API 67?"},
+    {"interval": "30 days", "prompt": "Two-minute interview: keywords plus FLS boundary."}
+  ],
+  "sources": [
+    {
+      "source_id": "SF-DEV-SHARING-KW",
+      "title": "Use the with sharing, without sharing, and inherited sharing Keywords",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_keywords_sharing.htm",
+      "supports": "Keyword meanings, default with sharing, API 67 implicit behavior, when-to-use table.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "API 66 implicit rules differ; always read the class API version."
+    },
+    {
+      "source_id": "SF-DEV-ENFORCE-SHARING",
+      "title": "Enforce Sharing Rules",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_security_sharing_rules.htm",
+      "supports": "Sharing enforced by default; with sharing does not enforce CRUD/FLS; Pricebook2 exception.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace stripInaccessible or user-mode DML details."
+    },
+    {
+      "source_id": "SF-DEV-LWC-APEX-SEC",
+      "title": "Secure Apex Classes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/apex-security.html",
+      "supports": "API 67 user-mode default for permissions/FLS; sharing keywords are record-level only.",
+      "release_or_version": "LWC Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "System-mode syntax lives in the Apex DML/AccessLevel topics; do not invent method names here beyond what you re-read."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": ["API 67 default with sharing", "without sharing is elevation", "inherited follows caller", "Keywords are not FLS", "User mode is CRUD/FLS", "Declare keywords explicitly"],
+      "accessible_description": "Two locks: sharing keywords for records, user/system mode for object and field permissions."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": ["SF-DEV-SHARING-KW", "SF-DEV-ENFORCE-SHARING", "SF-DEV-LWC-APEX-SEC"]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Sharing mode versus user mode"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Class[Apex class API 67] --> KW{Sharing keyword}\n  KW -->|with sharing or omitted| WS[Enforce current user sharing]\n  KW -->|without sharing| WOS[Do not enforce sharing]\n  KW -->|inherited sharing| INH[Caller mode; without only if caller is without]\n  WS --> NotFLS[Does not enforce CRUD or FLS]\n  Mode[User mode default API 67] --> CRUD[Object and field permissions]",
+      "decision": "flowchart TD\n  Need[Need Apex data access] --> Q1{Must the running user's sharing apply?}\n  Q1 -->|Yes default| WS[with sharing]\n  Q1 -->|Service used both ways| INH[inherited sharing]\n  Q1 -->|Documented elevation such as community read| WOS[without sharing plus other checks]\n  Q1 -->|Need FLS too| User[User-mode database operations; keywords are not enough]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "with sharing enforces the current user's sharing rules; without sharing does not; inherited sharing uses the calling class. The default sharing mode is with sharing.",
+      "source_ids": ["SF-DEV-SHARING-KW"],
+      "scope": "Keywords",
+      "validation": "Apex sharing-keywords topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "In API 67.0 and later, classes without an explicit sharing declaration run in with sharing mode.",
+      "source_ids": ["SF-DEV-SHARING-KW", "SF-DEV-ENFORCE-SHARING"],
+      "scope": "Versioned default",
+      "validation": "Versioned behavior notes in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "with sharing does not enforce object permissions or field-level security.",
+      "source_ids": ["SF-DEV-ENFORCE-SHARING", "SF-DEV-LWC-APEX-SEC"],
+      "scope": "Keyword boundary",
+      "validation": "Enforce Sharing Rules and LWC Secure Apex Classes.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "In API 67.0 and later, Apex runs in user mode by default so object permissions and FLS are enforced unless a database operation is explicitly set to system mode.",
+      "source_ids": ["SF-DEV-LWC-APEX-SEC"],
+      "scope": "User vs system mode",
+      "validation": "LWC Developer Guide Secure Apex Classes.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "API 67.0: implicit sharing default is with sharing; Apex user-mode default for permissions/FLS. Reverify the class API version.",
+  "unresolved_uncertainty": [
+    "Exact AccessLevel / system-mode method signatures should be re-read in the current Apex DML topic before a coding interview.",
+    "How restriction rules interact with without sharing is Needs verification in current Help."
+  ],
+  "telugu_glossary": [
+    {"english": "with sharing", "telugu": "Prastuta user sharing rules apply avvadam."},
+    {"english": "without sharing", "telugu": "Sharing rules apply kakunda documented elevation."}
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Sharing keywords choose record visibility in Apex. API 67 defaults to with sharing. without sharing is targeted elevation. inherited sharing follows the caller. None of those keywords enforce FLS; user mode does.",
+    "two_minutes": "I read the class API version first. On 67 I treat omitted keywords as with sharing, but I still declare them. I pick inherited sharing for services. I use without sharing only with a written reason, such as a community user reading a specified object. I separately say user mode is the CRUD/FLS default on 67 and that with sharing will not hide Amount. I mention the Pricebook2 exception so I do not over-claim."
+  },
+  "terminology": [
+    {"term": "with sharing", "plain": "Apex honors the running user's record sharing.", "precise": "Declare the class so sharing rules of the current user are enforced. Recommended default.", "example": "public with sharing class LAB_CaseReader", "non_example": "Assuming with sharing also hides Amount.", "confusable_neighbor": "User mode: object and field permissions.", "boundary": "Does not enforce CRUD/FLS."},
+    {"term": "without sharing", "plain": "Apex ignores the running user's sharing rules.", "precise": "Targeted elevation. The guide's example includes community users reading records they would not otherwise access.", "example": "A narrow LAB_FaqReader without sharing for published FAQ rows.", "non_example": "Putting without sharing on every class so tests pass.", "confusable_neighbor": "inherited sharing.", "boundary": "Still need CRUD/FLS design."},
+    {"term": "inherited sharing", "plain": "Use whatever sharing mode the caller already has.", "precise": "Runs with sharing unless explicitly called from an established without-sharing context. Good for service classes.", "example": "public inherited sharing class LAB_CaseService", "non_example": "Omitting the keyword and calling that inherited on API 67—omission is with sharing.", "confusable_neighbor": "Implicit default on API 66.", "boundary": "Declare it so intent is obvious."},
+    {"term": "User mode", "plain": "Database work respects the user's object and field permissions.", "precise": "API 67 default for Apex: permissions and FLS enforced unless an operation is set to system mode.", "example": "A query that fails when LAB_Rep lacks Amount FLS.", "non_example": "with sharing by itself.", "confusable_neighbor": "with sharing.", "boundary": "Confirm AccessLevel syntax in current DML docs."},
+    {"term": "System mode", "plain": "A database operation that ignores the user's object and field permissions.", "precise": "Must be explicit in API 67+. Sharing keywords are a different switch.", "example": "A documented system-mode operation in a privileged service—Needs verification of the exact API you will type.", "non_example": "without sharing, which is record sharing, not FLS.", "confusable_neighbor": "without sharing.", "boundary": "Do not invent method names in the interview if you have not re-read them."},
+    {"term": "API 67 default", "plain": "Omitted sharing keyword means with sharing.", "precise": "Versioned behavior: 67+ implicit with sharing; 66 and earlier used a multi-factor implicit rule.", "example": "A 67.0 class with no keyword still enforces sharing.", "non_example": "Teaching every omitted class as without sharing.", "confusable_neighbor": "inherited sharing.", "boundary": "Always check the class API version."}
+  ],
+  "mechanics": [
+    {"step": 1, "transition": "Read the class API version", "actor": "Developer", "trigger": "Sharing or FLS surprise", "before": "Unknown default", "after": "67 vs 66 behavior known", "observe": "Class metadata API version", "failure": "Applying 66 implicit lore to a 67 class"},
+    {"step": 2, "transition": "Declare the sharing keyword", "actor": "Developer", "trigger": "New or reviewed class", "before": "Omitted keyword", "after": "with, without, or inherited stated", "observe": "Class header", "failure": "without sharing as a habit"},
+    {"step": 3, "transition": "Design CRUD/FLS separately", "actor": "Developer", "trigger": "Queries and DML", "before": "Keyword only", "after": "User-mode or explicit system-mode decision", "observe": "Operation fails or succeeds on FLS independently of sharing", "failure": "Saying with sharing enforces FLS"},
+    {"step": 4, "transition": "Test as the intended user", "actor": "Developer", "trigger": "Proof", "before": "System-admin tests only", "after": "LAB user evidence", "observe": "Record missing under with sharing; present under without sharing", "failure": "Testing only in Execute Anonymous as admin"}
+  ],
+  "when_to_use": [
+    "When you must declare with sharing, without sharing, or inherited sharing on an Apex class.",
+    "When explaining the API 67.0 default sharing mode and user-mode execution context.",
+    "When a community or integration path needs documented without-sharing elevation.",
+    "When an interviewer asks whether sharing keywords enforce field-level security."
+  ],
+  "when_not_to_use": [
+    "Do not use without sharing to paper over a missing sharing design or missing object permission.",
+    "Do not treat with sharing as field-level security or as a substitute for user mode.",
+    "Do not apply API 66 implicit-sharing stories to a class saved as 67.0.",
+    "Do not use this keyword lesson to design OWD or restriction rules."
+  ],
+  "configuration_or_code_location": [
+    "Apex class header: with sharing, without sharing, inherited sharing.",
+    "Class API version on the class metadata.",
+    "Database operations' user-mode or system-mode options in current Apex DML docs.",
+    "Tests run as LAB_ users, not only as the automation user."
+  ],
+  "worked_example": {
+    "scenario": "LAB_FaqReader must let an Experience Cloud user read published LAB_ FAQ records they do not own. LAB_CaseService is called from a with-sharing LWC controller and from a without-sharing maintenance job. Classes are API 67.0. Synthetic data only.",
+    "inputs": ["Community user lacks sharing on some FAQ rows", "Service class has two callers", "Amount on Case must still honor FLS"],
+    "decisions": [
+      {"decision": "Declare LAB_FaqReader without sharing with a written elevation reason.", "because": "The guide lists community read as a without-sharing use case.", "rejected": "Mark every class without sharing"},
+      {"decision": "Declare LAB_CaseService inherited sharing.", "because": "The service must follow each caller.", "rejected": "Omit the keyword and call that inherited"},
+      {"decision": "Do not claim the keywords hide Amount.", "because": "with sharing does not enforce FLS; user mode does.", "rejected": "with sharing as an FLS control"}
+    ],
+    "configuration_or_code": [
+      "public without sharing class LAB_FaqReader { /* documented elevation */ }",
+      "public inherited sharing class LAB_CaseService { }",
+      "Keep both classes on API 67.0.",
+      "Test FAQ read as the community user; test Case Amount as LAB_Rep under user mode."
+    ],
+    "output": "Community user reads published FAQs. Case service follows caller sharing. Amount still follows FLS in user mode.",
+    "verification": [
+      "Omitting a keyword on a 67 class still behaves as with sharing.",
+      "inherited service called from with sharing does not see unshared Cases.",
+      "Amount remains inaccessible when FLS denies it even with sharing keywords present."
+    ],
+    "self_explanation": "I split record-sharing mode from CRUD/FLS mode and I declared keywords on API 67."
+  },
+  "hands_on_lab": {
+    "environment": "Scratch org or Developer sandbox; LAB_ Apex only.",
+    "starting_state_checks": ["Non-production.", "You can create Apex classes on API 67.0."],
+    "steps": [
+      "Create public with sharing class LAB_CaseReader that queries Case.",
+      "Create a second class inherited sharing LAB_CaseService that calls a query helper.",
+      "As a LAB user who cannot see a peer Case, prove with sharing hides it.",
+      "Read the Developer Guide sentence that with sharing does not enforce FLS and paste it into a class comment.",
+      "Do not deploy without sharing unless you write a one-line elevation reason."
+    ],
+    "guided_completion": ["If the peer Case appears, you are not running as that user or the class is without sharing.", "If you omitted the keyword on API 67, expect with sharing, not inherited."],
+    "independent_challenge": "Explain API 66 versus 67 implicit sharing in two sentences without inventing extra rules.",
+    "evidence": ["Class headers and API version.", "The FLS-boundary comment."],
+    "stop_recovery_cleanup": ["Delete LAB_ Apex classes.", "Do not leave without sharing in a shared sandbox without a reason."],
+    "limitations": "Does not prove Pricebook2 or managed-package review."
+  },
+  "decision_table": [
+    {"signal": "Controller or LWC Apex should see only records the user can see.", "choose": "with sharing (and declare it even though API 67 defaults to it).", "not": "without sharing so the query 'just works'.", "why": "Guide default and recommendation."},
+    {"signal": "A service class is called from both privileged and user-facing entry points.", "choose": "inherited sharing.", "not": "Omitting the keyword and calling that inherited on API 67.", "why": "Omission is with sharing on 67; inherited is an explicit caller-follow design."},
+    {"signal": "An Experience Cloud user must read a specified record set they do not own.", "choose": "without sharing on a narrow class, plus other security checks.", "not": "without sharing on the entire codebase.", "why": "Documented targeted elevation."},
+    {"signal": "Amount must honor field-level security in Apex.", "choose": "User-mode database operations; do not rely on with sharing.", "not": "with sharing as the FLS control.", "why": "Guide: with sharing does not enforce FLS."}
+  ],
+  "limitations": ["Pricebook2 ignores with sharing.", "Inner-class and caller-chain details need the current guide.", "System-mode APIs should be re-read before coding live."],
+  "security_notes": ["without sharing is an elevation; treat it like an API contract.", "User mode and sharing are both required for a complete answer.", "Never log session IDs or real customer data in tests."],
+  "common_mistakes": ["Saying with sharing enforces FLS.", "Teaching omitted keywords as without sharing on API 67.", "Using without sharing to fix tests.", "Confusing inherited sharing with the implicit default."],
+  "troubleshooting": [
+    {"symptom": "Query returns unshared rows on a 67 class with no keyword.", "check": ["Is an inner without-sharing class doing the query?", "Are you running as admin?"], "do_not_assume": "API 67 implicit default is without sharing."},
+    {"symptom": "Amount still visible in Apex.", "check": ["User mode versus system mode.", "with sharing is the wrong lever."], "do_not_assume": "Sharing keywords hide fields."},
+    {"symptom": "inherited sharing class sees everything.", "check": ["Was it called from without sharing?", "Is the class actually declared inherited?"], "do_not_assume": "inherited means 'secure by default' in every entry path."}
+  ],
+  "production_notes": ["Review without sharing in security review.", "Pin class API versions when you rely on 67 defaults.", "No production deploy is authorized by this lesson."],
+  "mcqs": [
+    {"id": "Q1", "category": "recall", "difficulty": "Foundation", "prompt": "What is the default sharing mode in the Apex sharing-keywords guide?", "options": {"A": "with sharing", "B": "without sharing", "C": "inherited sharing", "D": "No sharing concept exists"}, "answer": "A", "rationale": "The default sharing mode is with sharing.", "distractor_explanations": {"B": "Must be declared for elevation.", "C": "Explicit service-class choice.", "D": "Keywords exist."}, "concept": "Default", "citation_ids": ["SF-DEV-SHARING-KW"]},
+    {"id": "Q2", "category": "recall", "difficulty": "Foundation", "prompt": "API 67.0 class with no sharing keyword runs as?", "options": {"A": "with sharing", "B": "without sharing always", "C": "System mode only", "D": "It will not compile"}, "answer": "A", "rationale": "API 67+ implicit declaration is with sharing.", "distractor_explanations": {"B": "That is the outdated 66-era story for some entry points.", "C": "User/system mode is separate.", "D": "Omission compiles."}, "concept": "API 67 implicit", "citation_ids": ["SF-DEV-SHARING-KW"]},
+    {"id": "Q3", "category": "recall", "difficulty": "Foundation", "prompt": "Does with sharing enforce FLS?", "options": {"A": "No. It does not enforce object permissions or field-level security", "B": "Yes, always", "C": "Yes, only on Pricebook2", "D": "Yes, only in Classic"}, "answer": "A", "rationale": "Enforce Sharing Rules states the boundary explicitly.", "distractor_explanations": {"B": "Common interview fail.", "C": "Pricebook2 ignores with sharing for records.", "D": "Not Classic-specific."}, "concept": "Not FLS", "citation_ids": ["SF-DEV-ENFORCE-SHARING"]},
+    {"id": "Q4", "category": "application", "difficulty": "Intermediate", "prompt": "When does inherited sharing run as without sharing?", "options": {"A": "Only when explicitly called from an already established without-sharing context", "B": "Whenever the keyword is omitted", "C": "On every API 67 class", "D": "When the profile is Minimum Access"}, "answer": "A", "rationale": "Guide: inherited runs as without sharing only from an established without-sharing caller.", "distractor_explanations": {"B": "Omission on 67 is with sharing.", "C": "Default is with sharing.", "D": "Profile is not the keyword."}, "concept": "Inherited", "citation_ids": ["SF-DEV-SHARING-KW"]},
+    {"id": "Q5", "category": "application", "difficulty": "Intermediate", "prompt": "Community user must read records they do not own. Guide-aligned choice?", "options": {"A": "without sharing on a narrow class, used with caution", "B": "with sharing and hope", "C": "inherited sharing with no caller", "D": "A second profile"}, "answer": "A", "rationale": "The when-to-use table lists community read as a without-sharing example.", "distractor_explanations": {"B": "Sharing would hide the rows.", "C": "Inherited needs a caller mode.", "D": "Profiles are not Apex keywords."}, "concept": "Elevation", "citation_ids": ["SF-DEV-SHARING-KW"]},
+    {"id": "Q6", "category": "application", "difficulty": "Intermediate", "prompt": "API 67 default for object permissions and FLS in Apex?", "options": {"A": "User mode unless a database operation is set to system mode", "B": "Always system mode", "C": "Controlled only by with sharing", "D": "FLS is never enforced in Apex"}, "answer": "A", "rationale": "LWC Secure Apex Classes: user mode by default in API 67+.", "distractor_explanations": {"B": "System mode must be explicit.", "C": "Keywords are record-level.", "D": "User mode enforces FLS."}, "concept": "User mode default", "citation_ids": ["SF-DEV-LWC-APEX-SEC"]},
+    {"id": "Q7", "category": "scenario", "difficulty": "Intermediate", "prompt": "Service class used by a with-sharing LWC and a without-sharing job. Keyword?", "options": {"A": "inherited sharing", "B": "Omit the keyword on API 67 and call it inherited", "C": "Two profiles", "D": "Restriction rule on the class"}, "answer": "A", "rationale": "Inherited sharing is for flexible service classes.", "distractor_explanations": {"B": "Omission is with sharing on 67.", "C": "Not an Apex keyword.", "D": "Restriction is admin sharing metadata."}, "concept": "Service class", "citation_ids": ["SF-DEV-SHARING-KW"]},
+    {"id": "Q8", "category": "scenario", "difficulty": "Intermediate", "prompt": "Pricebook2 query in a with-sharing class. What does the guide say?", "options": {"A": "Pricebook2 queries ignore with sharing; all price books are returned", "B": "Only shared price books return", "C": "The class will not compile", "D": "FLS is enforced by the keyword"}, "answer": "A", "rationale": "Documented exception.", "distractor_explanations": {"B": "Exception overrides that hope.", "C": "It compiles.", "D": "Keywords are not FLS."}, "concept": "Pricebook2", "citation_ids": ["SF-DEV-ENFORCE-SHARING"]},
+    {"id": "Q9", "category": "compare", "difficulty": "Intermediate", "prompt": "without sharing versus system mode?", "options": {"A": "without sharing skips record sharing; system mode skips object/FLS on a database operation", "B": "They are identical", "C": "system mode is a sharing keyword", "D": "without sharing encrypts fields"}, "answer": "A", "rationale": "Two different locks.", "distractor_explanations": {"B": "Common confusion.", "C": "Keywords are with/without/inherited.", "D": "Encryption is Shield."}, "concept": "Two modes", "citation_ids": ["SF-DEV-SHARING-KW", "SF-DEV-LWC-APEX-SEC"]},
+    {"id": "Q10", "category": "compare", "difficulty": "Foundation", "prompt": "Why declare sharing keywords even on API 67?", "options": {"A": "Salesforce recommends explicit declarations so intent stays clear across versions", "B": "The class will not compile otherwise", "C": "Otherwise FLS is disabled", "D": "Otherwise OWD becomes Public"}, "answer": "A", "rationale": "Guide recommends explicit keywords for maintainability.", "distractor_explanations": {"B": "Omission compiles.", "C": "FLS is user mode.", "D": "OWD is admin metadata."}, "concept": "Explicit keywords", "citation_ids": ["SF-DEV-SHARING-KW"]},
+    {"id": "Q11", "category": "scenario", "difficulty": "Intermediate", "prompt": "A 66.0 class with no keyword is later saved as 67.0. What should you re-read?", "options": {"A": "The versioned implicit-sharing notes; behavior becomes with sharing", "B": "Session timeout Help", "C": "Guest user sharing rules only", "D": "Field Audit Trail retention"}, "answer": "A", "rationale": "Versioned behavior changes at 67.", "distractor_explanations": {"B": "Wrong topic.", "C": "Experience Cloud is SEC-008.", "D": "SEC-009."}, "concept": "Version change", "citation_ids": ["SF-DEV-SHARING-KW"]},
+    {"id": "Q12", "category": "scenario", "difficulty": "Intermediate", "prompt": "with sharing class calls a without sharing helper. Risk?", "options": {"A": "The helper can still query rows the user cannot see; class-level security remains necessary", "B": "The helper is forced to with sharing automatically in all API versions", "C": "FLS is turned on by the caller keyword", "D": "The caller cannot compile"}, "answer": "A", "rationale": "A with-sharing class can call without sharing; the guide warns you may still need class-level security.", "distractor_explanations": {"B": "Not automatic in the warning's sense.", "C": "Keywords are not FLS.", "D": "It compiles."}, "concept": "Caller chain", "citation_ids": ["SF-DEV-ENFORCE-SHARING"]}
+  ],
+  "flashcards": [
+    {"id": "F1", "category": "kw", "front": "with sharing means?", "back": "Enforce the current user's sharing rules."},
+    {"id": "F2", "category": "kw", "front": "without sharing means?", "back": "Do not enforce the current user's sharing rules; targeted elevation."},
+    {"id": "F3", "category": "kw", "front": "inherited sharing means?", "back": "Use the caller's sharing mode; without sharing only from a without-sharing caller."},
+    {"id": "F4", "category": "ver", "front": "API 67 omitted keyword?", "back": "Runs as with sharing."},
+    {"id": "F5", "category": "fls", "front": "Does with sharing enforce FLS?", "back": "No. Object permissions and FLS are a different control."},
+    {"id": "F6", "category": "mode", "front": "API 67 Apex permission default?", "back": "User mode unless a database operation is explicitly system mode."},
+    {"id": "F7", "category": "ex", "front": "Pricebook2 and with sharing?", "back": "Queries ignore with sharing; all price books return."},
+    {"id": "F8", "category": "when", "front": "When without sharing?", "back": "Documented elevation, such as community users reading otherwise-hidden records."},
+    {"id": "F9", "category": "when", "front": "When inherited sharing?", "back": "Service classes that must support different caller modes."},
+    {"id": "F10", "category": "trap", "front": "Omitted keyword equals inherited?", "back": "No. On API 67 omission is with sharing."},
+    {"id": "F11", "category": "trap", "front": "without sharing equals system mode?", "back": "No. One skips sharing; the other skips CRUD/FLS on a database operation."},
+    {"id": "F12", "category": "chain", "front": "Can with sharing call without sharing?", "back": "Yes. That is why class-level security still matters."},
+    {"id": "F13", "category": "rec", "front": "Recommended practice?", "back": "Declare the sharing keyword on every class."},
+    {"id": "F14", "category": "test", "front": "How do you prove with sharing?", "back": "Run as a LAB user who lacks a sharing path and show the row is absent."},
+    {"id": "F15", "category": "boundary", "front": "Do keywords set OWD?", "back": "No. They choose whether Apex enforces existing sharing."}
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain with sharing, without sharing, and inherited sharing.",
+      "answer_30_seconds": "with sharing enforces the user's sharing. without sharing does not, and is a targeted elevation. inherited sharing follows the caller and is without sharing only if the caller already is.",
+      "answer_2_minutes": "I add the API 67 default: omitted keywords run with sharing, but I still declare them. I pick inherited for services. I use without sharing only with a written community or batch reason. I immediately say none of this is FLS. That sequence is the interview-ready answer.",
+      "example": "LAB_CaseService inherited sharing; LAB_FaqReader without sharing for published FAQs; LAB_CaseReader with sharing for the LWC.",
+      "tradeoffs": ["Usable community queries vs over-exposure", "Explicit keywords vs relying on defaults"],
+      "follow_ups": ["What is the API 67 default?", "Does with sharing hide Amount?"],
+      "weak_answer_warnings": ["Equating keywords with FLS"]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What changed for implicit sharing in API 67.0?",
+      "answer_30_seconds": "Classes without an explicit sharing declaration run in with sharing mode. Older API 66 behavior used a multi-factor implicit rule and must not be taught as current for 67 classes.",
+      "answer_2_minutes": "I read the class version before I answer. On 67 I treat omission as with sharing. On 66 I say implicit mode depended on inheritance, Aura entry, and caller, and I would re-read the table rather than recite unofficial lore. I recommend declaring the keyword so a version bump does not surprise you.",
+      "example": "A helper saved as 67.0 with no keyword still enforces sharing for LAB_Rep.",
+      "tradeoffs": ["Upgrading API versions vs silent sharing changes", "Explicit keywords vs shorter headers"],
+      "follow_ups": ["What about Aura controllers on 66?", "What about inherited sharing?"],
+      "weak_answer_warnings": ["Teaching 66 implicit without sharing as the 67 default"]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "An LWC must show only Cases the user can see, and Amount must honor FLS. Design the Apex class.",
+      "answer_30_seconds": "Declare with sharing for record visibility. Rely on user-mode database operations for FLS, not on the sharing keyword. Test as LAB_Rep, not as admin.",
+      "answer_2_minutes": "I put with sharing on the controller even though API 67 defaults to it. I do not use without sharing to make the list look full. I state that with sharing will not hide Amount. If Amount still appears, I inspect user mode versus an explicit system-mode operation. I keep restriction rules and OWD out of the Apex keyword answer unless asked.",
+      "example": "public with sharing class LAB_CaseLwc on API 67.0 querying Cases for the current user.",
+      "tradeoffs": ["User-mode failures vs privileged system mode", "with sharing vs inherited on a shared service"],
+      "follow_ups": ["When would you use inherited sharing instead?", "What about Pricebook2?"],
+      "weak_answer_warnings": ["with sharing as the FLS answer"]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A batch job must update Cases the running user cannot see. How do you avoid a without-sharing culture?",
+      "answer_30_seconds": "I isolate elevation in a small without-sharing or established privileged caller, keep user-facing classes with sharing, and use inherited sharing on the service so it follows each caller.",
+      "answer_2_minutes": "I do not stamp without sharing on the LWC controller. I write the elevation reason next to the privileged class. I test both callers. I still separate CRUD/FLS: a batch may need system mode, which is not the same keyword. I mention security review and least privilege. I would not change OWD to make the batch easier.",
+      "example": "LAB_CaseNightly without sharing calls LAB_CaseService inherited sharing; the LWC controller stays with sharing.",
+      "tradeoffs": ["One privileged class vs spreading without sharing", "System mode vs sharing elevation"],
+      "follow_ups": ["How do you test both callers?", "What does inherited do if the batch is without sharing?"],
+      "weak_answer_warnings": ["without sharing on every class"]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "Why is inherited sharing better than omitting the keyword?",
+      "answer_30_seconds": "On API 67 omission means with sharing, not inherited. inherited sharing is an explicit, reviewable choice that a service can run either way.",
+      "answer_2_minutes": "The guide calls inherited sharing an advanced technique to decide mode at run time. Omitting the keyword used to look like 'inherit from caller' in older mental models and in some 66 paths. That ambiguity is why security reviews want the word inherited on the page. I declare it on helpers and I still test both callers.",
+      "example": "public inherited sharing class LAB_CaseService used by both the LWC and the nightly job.",
+      "tradeoffs": ["Clarity vs slightly more verbose headers", "Flexible services vs surprising without-sharing callers"],
+      "follow_ups": ["When does inherited become without sharing?", "Should entry-point controllers be inherited?"],
+      "weak_answer_warnings": ["Omission equals inherited"]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Apex returns a Case the user cannot open in the UI. Walk the diagnosis.",
+      "answer_30_seconds": "I inspect the class sharing keyword, the caller chain, the API version, and whether I am running as that user. A without-sharing helper is the usual leak.",
+      "answer_2_minutes": "UI uses sharing plus CRUD/FLS. Apex can bypass sharing if a class is without sharing or called that way. I read headers down the stack. I check API 67 defaults so I do not misread an omitted keyword. If the user also should not see Amount, I switch to the user-mode conversation. I do not 'fix' it by opening OWD.",
+      "example": "LAB_CaseLwc with sharing called LAB_CaseUtil without sharing; the util query leaked the peer Case.",
+      "tradeoffs": ["Fixing the helper vs widening UI sharing", "Keeping a privileged util vs splitting APIs"],
+      "follow_ups": ["What if it is Pricebook2?", "What if restriction rules apply?"],
+      "weak_answer_warnings": ["Blaming FLS for extra rows"]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How do you talk about user mode and sharing keywords in one minute without mixing them?",
+      "answer_30_seconds": "Sharing keywords choose record rows. User mode versus system mode chooses object and field permissions. API 67 defaults both toward the running user. They are two locks.",
+      "answer_2_minutes": "I draw two columns. Left: with, without, inherited. Right: user mode, system mode. I say with sharing will not hide Amount, and user mode will not invent a sharing path. I mention you can still have a with-sharing class perform a system-mode operation if someone coded that—so I read the operation, not only the class header. I refuse to invent AccessLevel method names if I have not just read them.",
+      "example": "LAB_CaseReader with sharing still returns Amount if a system-mode query is used and FLS would have hidden it.",
+      "tradeoffs": ["Safe defaults vs privileged operations", "Honesty about syntax vs bluffing APIs"],
+      "follow_ups": ["Where is system mode set?", "Does inherited sharing change user mode?"],
+      "weak_answer_warnings": ["One keyword to rule them all"]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the museum-escort analogy, then break it with Pricebook2 and a caller chain.",
+      "answer_30_seconds": "Escort rules are sharing keywords; ticket checks are user mode; the master key is without sharing. It breaks because Pricebook2 ignores the escort, and a with-sharing room can still call a master-key helper.",
+      "answer_2_minutes": "I walk LAB_Rep through the museum. I show inherited sharing as using whoever wheeled the cart. I then open the Pricebook2 exception and the with-calls-without warning so I do not sound like a brochure. I finish with API 67: if you forget to label the door, the escort still applies, which is safer than the old stories and still not an excuse to skip the keyword.",
+      "example": "LAB_CaseReader with sharing calls LAB_CaseUtil without sharing and also queries Pricebook2.",
+      "tradeoffs": ["Teaching speed vs exceptions", "Defaults vs explicit review"],
+      "follow_ups": ["What is the community-user elevation example?", "What did API 66 do when omitted?"],
+      "weak_answer_warnings": ["Library or labeled-drawer filler", "Ignoring Pricebook2"]
+    }
+  ]
+}

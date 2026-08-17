@@ -1,0 +1,960 @@
+{
+  "topic_id": "APEX-003",
+  "slug": "soql-clauses-relationship-queries-aggregate-queries-bin",
+  "title": "SOQL clauses, relationship queries, aggregate queries, bind variables, and dynamic SOQL",
+  "track": "Apex and database programming",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-002"
+  ],
+  "objectives": [
+    "Write static SOQL in Apex with SELECT, FROM, WHERE, ORDER BY, LIMIT, and related clauses.",
+    "Choose child-to-parent paths versus parent-to-child subqueries using relationship names.",
+    "Use aggregate functions with GROUP BY and read AggregateResult, and bind Apex variables with a colon.",
+    "Use Database.query for dynamic SOQL with binds, and refuse string-concatenated user input."
+  ],
+  "diagnostic_question": "A trigger must load LAB_Stop__c children for every LAB_Shipment__c in Trigger.new, count stops per shipment, and optionally filter by a user-supplied status string. Which SOQL shape, bind, and dynamic-SOQL rule would you apply before writing a query-in-a-loop?",
+  "definition": "SOQL is the query language Apex uses to retrieve sObjects. Clauses shape the result; relationship queries walk parent or child paths; aggregate queries roll up with functions such as COUNT and SUM; bind variables inject Apex values safely with a colon; dynamic SOQL builds a query string at runtime via Database.query. ([SOQL and SOSL Queries](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL.htm); [Dynamic SOQL](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dynamic_soql.htm))",
+  "why_it_matters": "Most governor failures start as SOQL in a loop or as string-concatenated filters. Interviewers want selective WHERE clauses, relationship queries instead of N+1, binds instead of injection, and a clear split between static SOQL and Database.query.",
+  "sixty_second_explanation": "Think of a restaurant ticket rail. SELECT is the dishes, FROM is the station, WHERE is the table filter, ORDER BY/LIMIT is how tickets are stacked. A relationship query is asking the grill for the table's sides in one walk. Aggregates are the nightly totals, not every plate. A bind is filling in table 12 from the host stand without rewriting the ticket. Dynamic SOQL is composing a ticket from a template—still use binds, never paste the diner's handwriting into SQL.",
+  "deeper_explanation": [
+    "In Apex, static SOQL lives in square brackets and returns a List of sObjects, a single sObject, or an Integer for COUNT(). WITH USER_MODE appears in current guide examples; treat user-mode enforcement as neighboring APEX-014. ([SOQL and SOSL Queries](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL.htm))",
+    "Child-to-parent uses the relationship path (Contact.Account.Name). Parent-to-child uses a nested SELECT on the child relationship name. Those names come from schema (APEX-002), not from labels. ([Understanding Foreign Key and Parent-Child Relationship SOQL Queries](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL.htm))",
+    "Aggregate functions such as COUNT, SUM, and MAX return AggregateResult rows and typically need GROUP BY for non-aggregated fields. They summarize; they do not replace a list query when you need every child row. ([Working with SOQL Aggregate Functions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL.htm))",
+    "Bind variables use :apexVariable inside static SOQL and can be used with Database.query. Dynamic SOQL is a string at runtime—flexible and injection-prone if you concatenate unsanitized input. Prefer binds. Numeric SOQL governor ceilings belong to APEX-007; quote them only from that limits page."
+  ],
+  "mental_model": {
+    "analogy": "A restaurant ticket rail: dishes, stations, table filters, and the host-stand table number.",
+    "useful_mapping": [
+      "SELECT/FROM/WHERE → dishes, station, table filter on the ticket",
+      "ORDER BY / LIMIT → how tickets are stacked and capped",
+      "relationship query → one walk to the grill for sides (parent or children)",
+      "aggregate query → nightly totals, not every plate",
+      "bind variable → host fills table 12 without rewriting the ticket",
+      "dynamic SOQL → composing a ticket from a template string at runtime"
+    ],
+    "where_it_breaks": [
+      "SOQL is not a full SQL dialect—no arbitrary JOINs across unrelated objects.",
+      "Aggregates return AggregateResult, not the original sObject type.",
+      "Binds are not a substitute for a selective index; large scans still hurt.",
+      "The analogy does not encode heap, query rows, or trigger bulkification."
+    ]
+  },
+  "teach_back_prompt": "Explain static SOQL versus Database.query to a teammate using the ticket-rail idea, then state one place the restaurant analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Write SELECT/FROM/WHERE plus a colon bind from memory."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given Trigger.new shipments, sketch one parent-to-child query—not a loop of queries."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "When do you use AggregateResult versus a list of sObjects?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Rewrite a concatenated WHERE string to use a bind in Database.query."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: relationship query versus SOSL versus aggregate."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-SOQL",
+      "title": "SOQL and SOSL Queries",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL.htm",
+      "supports": "Static SOQL in square brackets; result types; COUNT(); pointer to relationship and aggregate topics.",
+      "release_or_version": "Apex Developer Guide / API 67.0 / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Full clause grammar lives in the SOQL and SOSL Reference; Apex page is the runtime embedding."
+    },
+    {
+      "source_id": "SF-APEX-DYN-SOQL",
+      "title": "Dynamic SOQL",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dynamic_soql.htm",
+      "supports": "SOQL strings at runtime via Database.query; flexibility and injection risk if values are concatenated.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Exact bind support in Database.query is version-sensitive; reverify the current Dynamic SOQL page."
+    },
+    {
+      "source_id": "SF-APEX-SOQL-LARGE",
+      "title": "Working with Very Large SOQL Queries",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL_VLSQ.htm",
+      "supports": "SOQL for loops versus loading all rows into heap; selective query guidance for triggers.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Selectivity thresholds are system-defined; the page states they can change."
+    },
+    {
+      "source_id": "SF-SOQL-REF",
+      "title": "Salesforce Object Query Language (SOQL)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql.htm",
+      "supports": "SOQL as the query language for retrieving data from the Salesforce database.",
+      "release_or_version": "SOQL and SOSL Reference / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "API query behavior can differ slightly from Apex square-bracket SOQL."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Static SOQL in Apex",
+        "Clauses",
+        "Relationship queries",
+        "Aggregates",
+        "Binds vs concat",
+        "Dynamic SOQL"
+      ],
+      "accessible_description": "Portrait map: static SOQL in brackets; clauses filter and sort; relationship queries walk schema paths; aggregates return AggregateResult; colon binds inject Apex values; Database.query is dynamic SOQL."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-SOQL",
+        "SF-APEX-DYN-SOQL",
+        "SF-APEX-SOQL-LARGE",
+        "SF-SOQL-REF"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Static SOQL, relationship, aggregate, bind, dynamic SOQL"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  SOQL[SOQL in Apex] --> Static[Square-bracket static SOQL]\n  SOQL --> Dyn[Database.query dynamic SOQL]\n  Static --> Clauses[SELECT FROM WHERE ORDER LIMIT]\n  Static --> Rel[Relationship parent path or child subquery]\n  Static --> Agg[Aggregate functions and GROUP BY]\n  Static --> Bind[Colon bind Apex variables]\n  Dyn --> Bind",
+      "decision": "flowchart TD\n  Need[Need rows?] --> Q1{Know objects and fields at compile time?}\n  Q1 -->|Yes| Q2{Need every row or a total?}\n  Q2 -->|Every child or parent field| Rel[Relationship SOQL one query]\n  Q2 -->|Totals only| Agg[Aggregate query]\n  Q1 -->|Runtime field or object list| Dyn[Dynamic SOQL plus binds]\n  Dyn --> Inj{User-supplied filter?}\n  Inj -->|Yes| Bind[Colon bind never concatenate]\n  Inj -->|No still bind| Bind"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Apex evaluates SOQL in square brackets; statements return a list of sObjects, a single sObject, or an Integer for count method queries.",
+      "source_ids": ["SF-APEX-SOQL"],
+      "scope": "Static SOQL runtime",
+      "validation": "SOQL and SOSL Queries in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Dynamic SOQL creates a SOQL string at runtime (Database.query). Concatenating unsanitized input is an injection risk; prefer bind variables.",
+      "source_ids": ["SF-APEX-DYN-SOQL"],
+      "scope": "Dynamic SOQL",
+      "validation": "Dynamic SOQL topic in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Very large SOQL result sets can exceed heap; a SOQL query for loop processes batches via query/queryMore. Triggers should use selective filters on indexed fields.",
+      "source_ids": ["SF-APEX-SOQL-LARGE"],
+      "scope": "Large queries / selectivity",
+      "validation": "Working with Very Large SOQL Queries.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Guide examples increasingly show WITH USER_MODE. Reverify clause support and user-mode defaults for the class API version.",
+  "unresolved_uncertainty": [
+    "Exact Database.query bind-variable combinations (including complex expressions) should be rechecked on the current Dynamic SOQL page before an interview deep-dive."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "SOQL",
+      "telugu": "Apexలో రికార్డులను తీసే క్వెరీ భాష."
+    },
+    {
+      "english": "Bind variable",
+      "telugu": "కోలన్‌తో Apex విలువను SOQLలోకి సురక్షితంగా పంపడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Static SOQL sits in brackets. Use relationship queries instead of query-per-row, aggregates when you need totals, and colon binds for Apex values. Dynamic SOQL is Database.query—bind, do not concatenate user text.",
+    "two_minutes": "I start from bulk: one SOQL for Trigger.new Ids, parent paths or child subqueries as needed. Aggregates when the question is a count or sum, not a list of sObjects. Binds keep filters injection-safe in static and dynamic SOQL. If the SELECT list is runtime-driven, Database.query with binds—not string-glued WHERE. Heap pressure gets a SOQL for loop; governors are APEX-007. I will not invent query-row numbers unless I am citing the limits page."
+  },
+  "terminology": [
+    {
+      "term": "SOQL",
+      "plain": "The query language Apex uses to read Salesforce records.",
+      "precise": "Salesforce Object Query Language. In Apex, static SOQL is written in square brackets and returns sObjects, a single sObject, or COUNT() as Integer.",
+      "example": "List<Account> rows = [SELECT Id, Name FROM Account WHERE Name = :labName];",
+      "non_example": "SOSL FIND, which searches the text index across objects.",
+      "confusable_neighbor": "SQL JOIN: SOQL uses relationship paths and subqueries, not arbitrary joins.",
+      "boundary": "DML writes records (APEX-005); SOQL reads."
+    },
+    {
+      "term": "SOQL clause",
+      "plain": "A section of the query such as WHERE, ORDER BY, or LIMIT.",
+      "precise": "The parts that choose fields, object, filters, grouping, sort, and row cap. Grammar details live in the SOQL Reference.",
+      "example": "WHERE Status__c = :st ORDER BY CreatedDate LIMIT 200",
+      "non_example": "An Apex if statement that filters a list already in memory.",
+      "confusable_neighbor": "SOSL IN/RETURNING clauses, which are search syntax.",
+      "boundary": "Do not invent undocumented SQL clauses."
+    },
+    {
+      "term": "relationship query",
+      "plain": "SOQL that walks parent or child records using relationship names.",
+      "precise": "Child-to-parent field paths (Account.Name from Contact) or parent-to-child nested SELECT on the child relationship name.",
+      "example": "SELECT Name, (SELECT Name FROM LAB_Stops__r) FROM LAB_Shipment__c WHERE Id IN :ids",
+      "non_example": "A for-loop that queries children once per parent Id.",
+      "confusable_neighbor": "SOSL returning multiple objects that are not related.",
+      "boundary": "Relationship names come from schema (APEX-002)."
+    },
+    {
+      "term": "aggregate query",
+      "plain": "SOQL that summarizes with COUNT, SUM, MAX, and similar functions.",
+      "precise": "Queries that return AggregateResult (except COUNT() which can return Integer). Non-aggregated fields typically require GROUP BY.",
+      "example": "SELECT LAB_Shipment__c, COUNT(Id) cnt FROM LAB_Stop__c GROUP BY LAB_Shipment__c",
+      "non_example": "SELECT Id FROM LAB_Stop__c when you needed a count per parent.",
+      "confusable_neighbor": "Roll-up summary fields: declarative, not Apex SOQL.",
+      "boundary": "You cannot treat AggregateResult as LAB_Stop__c."
+    },
+    {
+      "term": "bind variable",
+      "plain": "An Apex value plugged into SOQL with a colon.",
+      "precise": "Using :variable (including collections for IN) so the platform binds the value instead of concatenating it into the query string.",
+      "example": "WHERE Id IN :Trigger.new",
+      "non_example": "'WHERE Name = \\'' + userInput + '\\'' concatenated into Database.query.",
+      "confusable_neighbor": "Apex assignment = versus SOQL filter =.",
+      "boundary": "Binds do not make a non-selective filter selective."
+    },
+    {
+      "term": "dynamic SOQL",
+      "plain": "Building the query string at runtime.",
+      "precise": "Database.query (and related APIs) executing a SOQL string constructed in Apex. Use for runtime field lists; bind values rather than concatenating user input.",
+      "example": "Database.query('SELECT Id FROM Account WHERE Name = :labName');",
+      "non_example": "Static [SELECT Id FROM Account] in brackets.",
+      "confusable_neighbor": "Dynamic DML newSObject (APEX-002).",
+      "boundary": "Injection and WITH USER_MODE details still need current-guide verification."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide static versus dynamic SOQL",
+      "actor": "Developer",
+      "trigger": "Need to read records in an Apex class or trigger",
+      "before": "Fields and object may or may not be known",
+      "after": "Square-bracket SOQL or Database.query chosen",
+      "observe": "The query compiles or the string is built with binds",
+      "failure": "Concatenating user text into WHERE"
+    },
+    {
+      "step": 2,
+      "transition": "Shape clauses and selectivity",
+      "actor": "Developer",
+      "trigger": "Writing WHERE/ORDER/LIMIT",
+      "before": "Unfiltered SELECT on a large object",
+      "after": "Indexed, selective filters especially in triggers",
+      "observe": "Query plan or volume test in sandbox",
+      "failure": "Leading NOT EQUALS or empty-string inequality on large objects"
+    },
+    {
+      "step": 3,
+      "transition": "Choose relationship versus aggregate",
+      "actor": "Developer",
+      "trigger": "Need children or a total",
+      "before": "Temptation to query in a loop",
+      "after": "One parent-to-child subquery or one grouped aggregate",
+      "observe": "Single SOQL in debug logs for the bulk path",
+      "failure": "COUNT in a loop of parent Ids"
+    },
+    {
+      "step": 4,
+      "transition": "Bind Apex values",
+      "actor": "Developer",
+      "trigger": "Filter uses an Apex variable or collection",
+      "before": "Value only in memory",
+      "after": "Colon bind in static or dynamic SOQL",
+      "observe": "Correct rows; no quotes glued around user input",
+      "failure": "String concatenation that breaks on apostrophes"
+    }
+  ],
+  "when_to_use": [
+    "When an Apex class or trigger must read Salesforce rows with SOQL clauses rather than loading every record into a list.",
+    "When relationship queries can replace a SOQL-in-loop over parent Ids for child or parent fields.",
+    "When aggregate queries answer a COUNT/SUM question without returning every sObject.",
+    "When bind variables or dynamic SOQL (Database.query) must pass Apex values without concatenating user input."
+  ],
+  "when_not_to_use": [
+    "Do not use SOQL when SOSL is the right tool because you only have a keyword and do not know the object (APEX-004).",
+    "Do not use aggregate queries when a trigger needs each child sObject for DML.",
+    "Do not use dynamic SOQL merely to avoid typing a static query in an Apex class.",
+    "Do not treat this SOQL-clauses lesson as a governor-number catalog (APEX-007) or as DML/Database methods (APEX-005)."
+  ],
+  "configuration_or_code_location": [
+    "Apex class or trigger in a disposable sandbox.",
+    "Query Editor in Developer Console for shaping SOQL before pasting into Apex.",
+    "Debug logs: SOQL_EXECUTE_BEGIN to count queries.",
+    "Object Manager for child relationship names used in subqueries."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox trigger handler receives up to a batch of LAB_Shipment__c records. It must load child LAB_Stop__c rows, count stops per shipment for a log line, and optionally filter stops by a status string from a custom metadata test flag. No production data.",
+    "inputs": [
+      "Set<Id> shipmentIds from Trigger.new",
+      "Optional String statusFilter from test configuration",
+      "Child relationship LAB_Stops__r confirmed in schema"
+    ],
+    "decisions": [
+      {
+        "decision": "One parent-to-child relationship query keyed by Id IN :shipmentIds.",
+        "because": "Avoids SOQL in a loop over Trigger.new.",
+        "rejected": "Query stops inside for (LAB_Shipment__c s : Trigger.new)"
+      },
+      {
+        "decision": "Separate aggregate COUNT grouped by LAB_Shipment__c when only totals are needed for the log.",
+        "because": "Aggregates return AggregateResult, not stop rows.",
+        "rejected": "Using COUNT() as if it returned LAB_Stop__c records to update"
+      },
+      {
+        "decision": "Bind :statusFilter; if the SELECT list must vary, Database.query with the same bind.",
+        "because": "Dynamic SOQL plus concatenation of status would be injection-prone.",
+        "rejected": "WHERE Status__c = \\'' + statusFilter + '\\''"
+      }
+    ],
+    "configuration_or_code": [
+      "List<LAB_Shipment__c> rows = [SELECT Id, (SELECT Id, Name FROM LAB_Stops__r WHERE Status__c = :statusFilter) FROM LAB_Shipment__c WHERE Id IN :shipmentIds];",
+      "List<AggregateResult> counts = [SELECT LAB_Shipment__c, COUNT(Id) cnt FROM LAB_Stop__c WHERE LAB_Shipment__c IN :shipmentIds GROUP BY LAB_Shipment__c];",
+      "If fields are runtime-only: Database.query('SELECT Id FROM LAB_Stop__c WHERE LAB_Shipment__c IN :shipmentIds');"
+    ],
+    "output": "Children load in one SOQL; counts available as AggregateResult; user-supplied status never concatenated.",
+    "verification": [
+      "Debug log shows one relationship query for the bulk handler, not one per shipment.",
+      "A statusFilter containing a quote still binds and does not break the query.",
+      "AggregateResult.get('cnt') is read; no cast to LAB_Stop__c."
+    ],
+    "self_explanation": "Relationship SOQL for rows, aggregate for totals, binds for Apex values, dynamic SOQL only if the shape is runtime-driven."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; Account/Contact or LAB_ objects; synthetic names only.",
+    "starting_state_checks": [
+      "You can run anonymous Apex and create test Accounts.",
+      "No production data in queries."
+    ],
+    "steps": [
+      "Insert two LAB_ or Account parents and several children.",
+      "Write static SOQL with a colon bind on a Set<Id> and a parent-to-child subquery.",
+      "Write an aggregate COUNT GROUP BY parent Id and print AggregateResult.",
+      "Write Database.query using the same bind; then write a bad concatenated version in a comment and explain why it is refused."
+    ],
+    "guided_completion": [
+      "If you queried inside a for-loop, rewrite to Id IN :ids.",
+      "If COUNT() was assigned to List<Contact>, switch to Integer or AggregateResult."
+    ],
+    "independent_challenge": "Add ORDER BY CreatedDate LIMIT 50 to the child subquery and explain how LIMIT applies to the nested query.",
+    "evidence": [
+      "Anonymous Apex output of child names and counts.",
+      "One written sentence: binds not concatenation."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ test rows and Apex used only for this lab.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not prove index selectivity on a million-row object or user-mode FLS."
+  },
+  "decision_table": [
+    {
+      "signal": "Object and fields are known; you need matching rows in an Apex class.",
+      "choose": "Static square-bracket SOQL with clauses and colon binds.",
+      "not": "Database.query of a fully hardcoded string.",
+      "why": "Static SOQL is compile-checked and is the default embedding in Apex."
+    },
+    {
+      "signal": "You need children of every parent in Trigger.new.",
+      "choose": "One relationship query: WHERE Id IN :ids plus a child subquery.",
+      "not": "SOQL inside a for-loop over Trigger.new.",
+      "why": "Relationship queries plus binds are the bulk pattern; loops blow query governors (APEX-007)."
+    },
+    {
+      "signal": "You only need a count or sum per parent, not child field updates.",
+      "choose": "Aggregate SOQL with GROUP BY returning AggregateResult.",
+      "not": "Querying every child sObject just to count in Apex.",
+      "why": "Aggregate functions exist to roll up without hydrating every row."
+    },
+    {
+      "signal": "The SELECT list or object API name is only known at runtime.",
+      "choose": "Dynamic SOQL via Database.query with bind variables.",
+      "not": "String-concatenate user input into WHERE.",
+      "why": "The Dynamic SOQL topic exists for runtime strings; concatenation is injection-prone."
+    }
+  ],
+  "limitations": [
+    "Does not list numeric SOQL governor ceilings except by pointing to APEX-007.",
+    "Does not replace SOSL for unknown-object keyword search.",
+    "Does not teach DML or Database.setSavepoint.",
+    "Selectivity thresholds are system-defined and can change."
+  ],
+  "security_notes": [
+    "Never concatenate unsanitized user input into dynamic SOQL.",
+    "WITH USER_MODE / stripInaccessible are neighboring APEX-014 concerns.",
+    "Use LAB_ data only in examples."
+  ],
+  "common_mistakes": [
+    "SOQL inside a for-loop over Trigger.new.",
+    "Concatenating filters into Database.query.",
+    "Casting AggregateResult to the source sObject type.",
+    "Forgetting to SELECT a relationship field before touching it in Apex.",
+    "Using SOSL FIND syntax inside a SOQL query."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "SObject row was retrieved via SOQL without querying the requested field.",
+      "check": [
+        "Add the field or relationship path to SELECT.",
+        "Nested subquery fields are selected inside the parentheses."
+      ],
+      "do_not_assume": "The database value is null."
+    },
+    {
+      "symptom": "Illegal assignment from List<AggregateResult> to List<Account>.",
+      "check": [
+        "Aggregates return AggregateResult (COUNT() may return Integer).",
+        "Do not GROUP BY if you needed full sObjects."
+      ],
+      "do_not_assume": "The compiler is wrong about types."
+    },
+    {
+      "symptom": "Query works in Query Editor but fails in Apex with a bind.",
+      "check": [
+        "Colon binds exist only in Apex, not in all Query Editor contexts.",
+        "Collection binds require a Set/List in Apex scope."
+      ],
+      "do_not_assume": "The WHERE clause itself is invalid."
+    }
+  ],
+  "production_notes": [
+    "Prefer static SOQL; use dynamic SOQL when the shape must vary.",
+    "In triggers, filter on indexed fields; see Very Large SOQL Queries.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How does Apex embed static SOQL?",
+      "options": {
+        "A": "Square brackets that return sObjects, a single sObject, or COUNT() as Integer",
+        "B": "Only as a JSON string posted to REST",
+        "C": "Only inside a Flow formula",
+        "D": "As SOSL FIND braces"
+      },
+      "answer": "A",
+      "rationale": "The Apex SOQL topic states statements evaluate to a list, a single sObject, or Integer for count method queries.",
+      "distractor_explanations": {
+        "B": "REST is not required for in-Apex SOQL.",
+        "C": "Flow is not Apex SOQL.",
+        "D": "FIND braces are SOSL in the API, not Apex SOQL."
+      },
+      "concept": "SOQL",
+      "citation_ids": ["SF-APEX-SOQL"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does a colon before an Apex variable do in SOQL?",
+      "options": {
+        "A": "Binds the Apex value into the query",
+        "B": "Starts a comment",
+        "C": "Forces dynamic SOQL",
+        "D": "Disables sharing"
+      },
+      "answer": "A",
+      "rationale": "Bind variables inject Apex values (including collections for IN) instead of concatenating strings.",
+      "distractor_explanations": {
+        "B": "Apex comments are // or /* */.",
+        "C": "Static SOQL can bind too.",
+        "D": "Sharing keywords are on the class."
+      },
+      "concept": "bind variable",
+      "citation_ids": ["SF-APEX-SOQL"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need all child stops for every shipment in a Set<Id>. Best SOQL shape?",
+      "options": {
+        "A": "One relationship query with a child subquery and Id IN :ids",
+        "B": "A SOQL query inside for (Id id : ids)",
+        "C": "SOSL FIND on the Id",
+        "D": "Schema describe of the child object"
+      },
+      "answer": "A",
+      "rationale": "Parent-to-child relationship queries plus binds are the bulk pattern.",
+      "distractor_explanations": {
+        "B": "Query-in-loop hits governors.",
+        "C": "SOSL is text search, not Id children.",
+        "D": "Describe is metadata (APEX-002)."
+      },
+      "concept": "relationship query",
+      "citation_ids": ["SF-APEX-SOQL"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A query uses SUM(Amount) and AccountId. What is typically required?",
+      "options": {
+        "A": "GROUP BY AccountId and read AggregateResult",
+        "B": "Cast the result to List<Opportunity>",
+        "C": "Use SOSL RETURNING",
+        "D": "Omit FROM"
+      },
+      "answer": "A",
+      "rationale": "Aggregate functions roll up; non-aggregated fields belong in GROUP BY; results are AggregateResult.",
+      "distractor_explanations": {
+        "B": "Opportunity is not the aggregate type.",
+        "C": "SOSL is not aggregation.",
+        "D": "FROM is required."
+      },
+      "concept": "aggregate query",
+      "citation_ids": ["SF-APEX-SOQL"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why is concatenating userInput into Database.query dangerous?",
+      "options": {
+        "A": "It is injection-prone; bind the value instead",
+        "B": "Database.query cannot run SOQL",
+        "C": "Binds are illegal in Apex",
+        "D": "User input is always a governor limit"
+      },
+      "answer": "A",
+      "rationale": "Dynamic SOQL exists for runtime strings; values should be bound, not glued into the WHERE clause.",
+      "distractor_explanations": {
+        "B": "Database.query is the dynamic SOQL API.",
+        "C": "Binds are the recommended injection control.",
+        "D": "Injection is a security issue, not a limit number."
+      },
+      "concept": "dynamic SOQL",
+      "citation_ids": ["SF-APEX-DYN-SOQL"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "COUNT() in static Apex SOQL can return which type according to the guide?",
+      "options": {
+        "A": "Integer",
+        "B": "Always List<Account>",
+        "C": "A Flow variable only",
+        "D": "A Schema token"
+      },
+      "answer": "A",
+      "rationale": "The SOQL topic shows Integer i = [SELECT COUNT() FROM Contact ...].",
+      "distractor_explanations": {
+        "B": "COUNT() is not a list of Accounts.",
+        "C": "This is Apex, not Flow.",
+        "D": "Tokens are describe, not COUNT()."
+      },
+      "concept": "SOQL",
+      "citation_ids": ["SF-APEX-SOQL"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A query returns so many sObjects that heap is exceeded. What does the large-query topic recommend first?",
+      "options": {
+        "A": "A SOQL query for loop (query/queryMore batches), or Batch Apex for mass update",
+        "B": "Catch LimitException",
+        "C": "Switch the query to SOSL FIND",
+        "D": "Put the query inside another for-loop"
+      },
+      "answer": "A",
+      "rationale": "Working with Very Large SOQL Queries recommends SOQL for loops and notes Batch Apex as preferred for mass update.",
+      "distractor_explanations": {
+        "B": "Governor/limit exceptions cannot be handled (APEX-006/007).",
+        "C": "SOSL does not fix heap of a huge SOQL list.",
+        "D": "Nested loops worsen the problem."
+      },
+      "concept": "large SOQL",
+      "citation_ids": ["SF-APEX-SOQL-LARGE"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Contact.Account.Name in SOQL is which relationship direction?",
+      "options": {
+        "A": "Child-to-parent field path",
+        "B": "Parent-to-child subquery",
+        "C": "A SOSL returning clause",
+        "D": "A DML upsert key"
+      },
+      "answer": "A",
+      "rationale": "Dot-notation from child to parent is the foreign-key path.",
+      "distractor_explanations": {
+        "B": "Parent-to-child uses nested SELECT on the child relationship name.",
+        "C": "SOSL is search.",
+        "D": "DML is APEX-005."
+      },
+      "concept": "relationship query",
+      "citation_ids": ["SF-APEX-SOQL"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "When should you choose dynamic SOQL over static SOQL?",
+      "options": {
+        "A": "When the object or field list is only known at runtime",
+        "B": "Whenever you see a bind variable",
+        "C": "Because static SOQL cannot use WHERE",
+        "D": "To avoid sharing rules automatically"
+      },
+      "answer": "A",
+      "rationale": "Dynamic SOQL is for runtime query strings. Static SOQL already supports binds and WHERE.",
+      "distractor_explanations": {
+        "B": "Binds work in static SOQL.",
+        "C": "Static SOQL has full clauses.",
+        "D": "Dynamic SOQL is not a sharing bypass lesson."
+      },
+      "concept": "dynamic SOQL",
+      "citation_ids": ["SF-APEX-DYN-SOQL"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which is a SOQL clause, not a SOSL clause?",
+      "options": {
+        "A": "GROUP BY",
+        "B": "FIND",
+        "C": "RETURNING",
+        "D": "IN NAME FIELDS"
+      },
+      "answer": "A",
+      "rationale": "GROUP BY belongs to SOQL aggregates. FIND/RETURNING/IN ... FIELDS are SOSL.",
+      "distractor_explanations": {
+        "B": "FIND starts SOSL.",
+        "C": "RETURNING is SOSL.",
+        "D": "IN NAME FIELDS is SOSL field scope."
+      },
+      "concept": "SOQL clause",
+      "citation_ids": ["SF-APEX-SOQL", "SF-SOQL-REF"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates SOQL in an Apex class from business data?",
+      "options": {
+        "A": "Deploying the class metadata does not insert the rows the SOQL would return",
+        "B": "SOQL results are metadata and the .cls file is data",
+        "C": "Bind variables deploy records",
+        "D": "AggregateResult is a custom object definition"
+      },
+      "answer": "A",
+      "rationale": "The class is metadata. Queried rows are business data.",
+      "distractor_explanations": {
+        "B": "That reverses the split.",
+        "C": "Binds pass values at runtime.",
+        "D": "AggregateResult is a platform type for query results."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-APEX-SOQL"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "The large-query topic says trigger SOQL should be what?",
+      "options": {
+        "A": "Selective, especially with filters on indexed fields",
+        "B": "Unfiltered SELECT Id FROM Account",
+        "C": "Always dynamic SOQL",
+        "D": "Written without a FROM clause"
+      },
+      "answer": "A",
+      "rationale": "For best performance, SOQL queries must be selective, particularly inside triggers.",
+      "distractor_explanations": {
+        "B": "That is the anti-pattern on large objects.",
+        "C": "Static selective SOQL is fine.",
+        "D": "FROM is required."
+      },
+      "concept": "selectivity",
+      "citation_ids": ["SF-APEX-SOQL-LARGE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is SOQL in Apex?",
+      "back": "Salesforce Object Query Language embedded in square brackets (static) or Database.query (dynamic) to retrieve sObjects."
+    },
+    {
+      "id": "F2",
+      "category": "clauses",
+      "front": "Name four common SOQL clauses.",
+      "back": "SELECT, FROM, WHERE, plus ORDER BY, LIMIT, GROUP BY as needed."
+    },
+    {
+      "id": "F3",
+      "category": "bind",
+      "front": "How do you bind an Apex variable in SOQL?",
+      "back": "Prefix with a colon, for example WHERE Id IN :ids."
+    },
+    {
+      "id": "F4",
+      "category": "relationship",
+      "front": "Child-to-parent versus parent-to-child SOQL?",
+      "back": "Child-to-parent uses a field path like Account.Name. Parent-to-child uses a nested SELECT on the child relationship name."
+    },
+    {
+      "id": "F5",
+      "category": "aggregate",
+      "front": "What type do SUM/COUNT grouped queries return?",
+      "back": "AggregateResult (COUNT() without GROUP BY can return Integer in Apex)."
+    },
+    {
+      "id": "F6",
+      "category": "dynamic",
+      "front": "What API runs dynamic SOQL?",
+      "back": "Database.query with a SOQL string built at runtime."
+    },
+    {
+      "id": "F7",
+      "category": "dynamic",
+      "front": "Why not concatenate user input into dynamic SOQL?",
+      "back": "It is injection-prone. Bind the Apex value with a colon instead."
+    },
+    {
+      "id": "F8",
+      "category": "bulk",
+      "front": "SOQL in a loop over Trigger.new?",
+      "back": "Anti-pattern. Query once with Id IN :Trigger.new and relationship subqueries."
+    },
+    {
+      "id": "F9",
+      "category": "large",
+      "front": "Heap blown by a huge SOQL list?",
+      "back": "Use a SOQL for loop (queryMore batches) or Batch Apex for mass updates."
+    },
+    {
+      "id": "F10",
+      "category": "selectivity",
+      "front": "Trigger SOQL should be…",
+      "back": "Selective, with filters on indexed fields when querying large objects."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "SOQL versus SOSL?",
+      "back": "SOQL queries a known object with structured filters. SOSL searches the text index, often across objects."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "SOQL versus DML?",
+      "back": "SOQL reads. DML inserts/updates/deletes (APEX-005)."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Need stop rows to update?",
+      "back": "Relationship or list SOQL returning LAB_Stop__c, not an aggregate COUNT."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Need only how many stops per shipment?",
+      "back": "Aggregate COUNT GROUP BY parent Id; read AggregateResult."
+    },
+    {
+      "id": "F15",
+      "category": "runtime",
+      "front": "Field list unknown until runtime?",
+      "back": "Dynamic SOQL with Database.query and binds—not concatenation."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How does SOQL run inside Apex, and what can it return?",
+      "answer_30_seconds": "Static SOQL sits in square brackets and returns a list of sObjects, one sObject, or Integer for COUNT(). Dynamic SOQL uses Database.query on a string.",
+      "answer_2_minutes": "I write static SOQL when the shape is known. I bind Apex variables with a colon. I use relationship queries for parent/child and aggregates when I need rollups. I reach for Database.query only when the SELECT list or type is runtime-driven, still with binds. I keep governor numbers for APEX-007 unless I am citing the limits page.",
+      "example": "List<Account> a = [SELECT Id FROM Account WHERE Name = :labName];",
+      "tradeoffs": [
+        "Static vs dynamic SOQL",
+        "List query vs COUNT()"
+      ],
+      "follow_ups": [
+        "What does WITH USER_MODE do?",
+        "When does SOQL return a single sObject versus a list?"
+      ],
+      "weak_answer_warnings": [
+        "Calling SOQL 'SQL with joins'"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Explain bind variables versus string concatenation.",
+      "answer_30_seconds": "A colon bind injects an Apex value safely. Concatenating user text into Database.query is injection-prone and breaks on quotes.",
+      "answer_2_minutes": "I bind collections for IN clauses from Trigger.new. In dynamic SOQL I still bind values even if the field list is concatenated from an allowlist. I never take a raw filter string from the UI and glue it into WHERE. Binds are not a selectivity strategy—indexes still matter.",
+      "example": "WHERE Status__c = :statusFilter instead of + statusFilter +.",
+      "tradeoffs": [
+        "Allowlisted field names vs bound values",
+        "Static SOQL vs dynamic SOQL"
+      ],
+      "follow_ups": [
+        "Can you bind in Query Editor?",
+        "What about LIKE wildcards?"
+      ],
+      "weak_answer_warnings": [
+        "Saying concatenation is 'just easier'"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A trigger queries children inside a for-loop over Trigger.new. How do you fix it?",
+      "answer_30_seconds": "Collect Ids, then one relationship query or one child query with parent Id IN :ids. No SOQL inside the loop.",
+      "answer_2_minutes": "This is the bulk SOQL pattern interviewers expect. I sketch SELECT Id, (SELECT ... FROM Children__r) FROM Parent WHERE Id IN :Trigger.new. If I only need counts, I switch to aggregate GROUP BY. I mention selectivity for large objects. I do not quote unofficial query limits unless citing APEX-007.",
+      "example": "LAB_Shipment__c with nested LAB_Stops__r for all Trigger.new Ids.",
+      "tradeoffs": [
+        "Nested subquery vs separate child query into a Map",
+        "Aggregate vs list of children"
+      ],
+      "follow_ups": [
+        "How do you map children by parent Id?",
+        "What if the child relationship name is wrong?"
+      ],
+      "weak_answer_warnings": [
+        "Adding LIMIT 1 inside the loop as a 'fix'"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "You need the number of open cases per account in Trigger.new. SOQL choice?",
+      "answer_30_seconds": "Aggregate COUNT with GROUP BY AccountId WHERE AccountId IN :ids, then read AggregateResult. Do not hydrate every Case unless you must update them.",
+      "answer_2_minutes": "I separate 'need rows to DML' from 'need a number.' Aggregates return AggregateResult—I get('expr0') or an alias. If I later need case fields, I switch to a relationship subquery. I keep this distinct from roll-up summary fields, which are declarative.",
+      "example": "SELECT AccountId, COUNT(Id) cnt FROM Case WHERE AccountId IN :ids AND IsClosed = false GROUP BY AccountId",
+      "tradeoffs": [
+        "Aggregate vs child subquery",
+        "Roll-up field vs Apex aggregate"
+      ],
+      "follow_ups": [
+        "HAVING versus WHERE?",
+        "How do aliases work on AggregateResult?"
+      ],
+      "weak_answer_warnings": [
+        "Assigning the aggregate to List<Case>"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When do you choose dynamic SOQL?",
+      "answer_30_seconds": "When the object or field list is only known at runtime. Otherwise static SOQL. Always bind values; allowlist field names if they come from users.",
+      "answer_2_minutes": "ISV field-set UIs and generic inspectors are the usual justification. A hardcoded Account service should stay static. Dynamic SOQL is not a way to skip sharing or FLS—that is APEX-014. I mention SOQL for loops if the dynamic query might return a huge heap.",
+      "example": "Database.query('SELECT ' + allowlistedFields + ' FROM Account WHERE Name = :labName')",
+      "tradeoffs": [
+        "Flexibility vs compile-time checks",
+        "Field sets vs fully dynamic strings"
+      ],
+      "follow_ups": [
+        "escapeSingleQuotes versus binds?",
+        "queryWithBinds in newer APIs? (Needs verification.)"
+      ],
+      "weak_answer_warnings": [
+        "Using dynamic SOQL for every query"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do relationship queries differ from SOSL?",
+      "answer_30_seconds": "Relationship SOQL walks known parent/child schema paths on a known object. SOSL searches the text index and can return several objects that may not be related.",
+      "answer_2_minutes": "If I know I need LAB_Stop__c children of these shipment Ids, that is SOQL. If a user types 'acme' and I do not know whether it lives on Account, Contact, or a custom object, that is SOSL (APEX-004). Interviewers fail people who FIND when they should WHERE Id IN.",
+      "example": "Nested SELECT on LAB_Stops__r versus FIND 'acme*' RETURNING Account, Contact.",
+      "tradeoffs": [
+        "Structured filters vs keyword search",
+        "One object vs many objects"
+      ],
+      "follow_ups": [
+        "Can SOSL use relationship queries when enabled?",
+        "What is search crowding?"
+      ],
+      "weak_answer_warnings": [
+        "Using SOSL to load children by parent Id"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Apex throws that a field was not queried. Walk the diagnosis.",
+      "answer_30_seconds": "The field or relationship path is missing from SELECT. Add it, or query it in the nested subquery. Describe will not hydrate it.",
+      "answer_2_minutes": "I reproduce with the exact SOQL. Parent paths must be selected to use them in Apex. Child subquery fields are selected inside the parentheses. If the code used get('Name') on a generic sObject from a dynamic query, the string SELECT list must include Name. I do not catch this as DmlException.",
+      "example": "Contact queried without Account.Name then c.Account.Name in Apex.",
+      "tradeoffs": [
+        "Selecting more fields vs heap",
+        "Static SOQL vs dynamic field list"
+      ],
+      "follow_ups": [
+        "What about formula fields?",
+        "Querying in a loop to 'add fields'?"
+      ],
+      "weak_answer_warnings": [
+        "Re-querying inside a loop per record"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Your SOQL is non-selective in a trigger on a large object. What do you change first?",
+      "answer_30_seconds": "Filter on indexed fields (Id, lookup, External Id, and others listed in the large-query topic) and reduce rows. Do not scan the whole object.",
+      "answer_2_minutes": "I cite Working with Very Large SOQL Queries: selective means an indexed filter that reduces rows below a system threshold. I avoid leading NOT EQUALS and empty-string comparisons on huge objects. I bind Trigger.new Ids. If I still need millions of rows, that is Batch Apex, not a trigger query. I will not invent a 10% number in an interview unless I am quoting that page's best-practice wording and noting it can change.",
+      "example": "WHERE Id IN :Trigger.new instead of WHERE Name != ''.",
+      "tradeoffs": [
+        "Index vs custom index request",
+        "Trigger vs Batch Apex"
+      ],
+      "follow_ups": [
+        "Which fields are indexed by default?",
+        "What is a SOQL for loop for?"
+      ],
+      "weak_answer_warnings": [
+        "Adding LIMIT 1 and calling it selective for bulk"
+      ]
+    }
+  ]
+}

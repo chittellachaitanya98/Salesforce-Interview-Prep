@@ -1,0 +1,1020 @@
+{
+  "topic_id": "PROG-003",
+  "slug": "classes-objects-constructors-interfaces-inheritance-and",
+  "title": "Classes, objects, constructors, interfaces, inheritance, and polymorphism",
+  "track": "Programming foundations for Salesforce",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "PROG-002"
+  ],
+  "objectives": [
+    "Define an Apex class as a type and an object as an instance created with new.",
+    "Explain constructors, including the default no-arg constructor and losing it after you write one.",
+    "Contrast extends (one superclass) with implements (multiple interfaces).",
+    "Describe polymorphism as the same type reference calling an override on a subclass instance."
+  ],
+  "diagnostic_question": "You need a LAB_Marker type, a YellowMarker that writes differently, and a contract that any marker can write(). Before coding, what is the class, the object, the constructor, the interface, the extends line, and where polymorphism shows up in a test?",
+  "definition": "An Apex class is a type you define. An object is an instance created from that class, usually with new and a constructor. A constructor initializes the instance and has no return type. A class may extend one other class (inheritance) and implement many interfaces. Overriding a virtual method so the same reference type behaves differently is polymorphism. ([Apex Class Definition](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_defining.htm); [Using Constructors](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_constructors.htm); [Extending a Class](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_extending.htm))",
+  "why_it_matters": "Interviewers fail candidates who call a Salesforce object (Account) an Apex class, who forget virtual before override, who expect multiple inheritance, or who say polymorphism means 'many classes exist'. This vocabulary is the bridge into APEX-001 modifiers and APEX-002 sObjects.",
+  "sixty_second_explanation": "Think of a custom motorcycle chassis shop. The class is the chassis blueprint. An object is one built bike on the floor. The constructor is first assembly—the moment you bolt the frame. An interface is the rider contract: every bike must have throttle and brake, regardless of brand. Inheritance is a sport-bike variant that extends the same chassis. Polymorphism is the test rider grabbing any bike as a 'motorcycle' and twisting throttle—each subclass responds with its own geometry.",
+  "deeper_explanation": [
+    "Top-level classes need public or global. You may nest inner classes only one level. A class can implement multiple interfaces but extend only one class—Apex does not support multiple inheritance. virtual allows extension and overrides; abstract classes declare methods without a body. ([Apex Class Definition](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_defining.htm))",
+    "A constructor runs when an object is created. If you write no constructor, Apex generates a default no-argument constructor with the class's visibility. After you write any constructor, that default is gone unless you add your own no-arg constructor. Constructors have no return type, can be overloaded, and can chain with this(...). You instantiate with new. ([Using Constructors](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_constructors.htm))",
+    "A subclass inherits methods and properties. It may override virtual methods with override. Calling write() on a Marker reference that actually points at YellowMarker runs the subclass body—that is polymorphism. Extra subclass methods require a subclass-typed reference. ([Extending a Class](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_extending.htm))",
+    "From API 65.0, abstract or override methods need protected, public, or global—not private. From API 61.0, private superclass methods are no longer overridden by a same-signature subclass method. Access-modifier depth is APEX-001; this lesson only needs the inheritance hook."
+  ],
+  "mental_model": {
+    "analogy": "Custom motorcycle chassis shop: blueprint (class), built bike (object), first assembly (constructor), rider controls contract (interface), sport-bike variant (inheritance), same throttle command different geometry (polymorphism).",
+    "useful_mapping": [
+      "class → chassis blueprint (Apex type / metadata)",
+      "object / instance → one bike on the shop floor",
+      "constructor → first assembly; new starts it",
+      "default constructor → shop will assemble a bare frame if you never wrote a procedure",
+      "interface → rider contract (throttle, brake) many brands implement",
+      "extends → one parent chassis only",
+      "override / virtual → swap the geometry of an existing control",
+      "polymorphism → Marker ref, YellowMarker instance, write() differs"
+    ],
+    "where_it_breaks": [
+      "A Salesforce Account 'object' is an sObject, not an Apex class instance you authored.",
+      "You cannot extend two chassis; Apex has single inheritance.",
+      "Writing any constructor removes the default no-arg—shops do not keep a secret spare procedure.",
+      "The analogy does not encode global/public or governor limits."
+    ]
+  },
+  "teach_back_prompt": "Using the chassis shop, explain class versus object, why adding a constructor can break new LAB_Bike(), and how a Marker reference can call YellowMarker's write(). Name one place the analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Define class, object, constructor, interface, inheritance, and polymorphism in one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Explain what happens to the default constructor after you add a one-arg constructor."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Draw Marker / YellowMarker and show which write() runs through a Marker variable."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Why can a class implement two interfaces but not extend two classes?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: OOP vocabulary with one Apex example, plus the sObject trap."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-CLASSDEF",
+      "title": "Apex Class Definition",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_defining.htm",
+      "supports": "Top-level public/global; one-level inner classes; virtual/abstract; one extends; many implements; no multiple inheritance.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Sharing keywords and packaging annotations are neighboring."
+    },
+    {
+      "source_id": "SF-APEX-CTOR",
+      "title": "Using Constructors",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_constructors.htm",
+      "supports": "Constructor initializes an instance; default no-arg; lost after a user constructor; overload; this(...) chaining; new.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not cover every initialization-order edge with static blocks."
+    },
+    {
+      "source_id": "SF-APEX-EXTEND",
+      "title": "Extending a Class",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_extending.htm",
+      "supports": "extends inherits members; override virtual methods; polymorphism example; one superclass; interfaces may extend interfaces.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "API 65+ abstract/override visibility is versioned; cite the page rather than inventing older behavior."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Class is a type",
+        "Object is new instance",
+        "Constructor initializes",
+        "One extends",
+        "Many implements",
+        "Polymorphism via override"
+      ],
+      "accessible_description": "Portrait map: class blueprint, object instance, constructor, single inheritance, multiple interfaces, polymorphic override."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-CLASSDEF",
+        "SF-APEX-CTOR",
+        "SF-APEX-EXTEND"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "From class type to polymorphic call"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Class[Apex class type] --> Ctor[Constructor]\n  Ctor --> Obj[Object instance via new]\n  Class --> Ext[extends one superclass]\n  Class --> Impl[implements many interfaces]\n  Ext --> Inh[Inherited methods]\n  Inh --> Ov[override virtual method]\n  Ov --> Poly[Same reference type, subclass behavior]",
+      "decision": "flowchart TD\n  Need[Need a type?] --> Q1{Is it a Salesforce record shape?}\n  Q1 -->|Yes Account Case| Sobj[sObject: APEX-002 not an Apex class you wrote]\n  Q1 -->|No your behavior| Q2{Shared contract only?}\n  Q2 -->|Signatures no body| Ifc[interface plus implements]\n  Q2 -->|Shared code| Q3{Need a variant?}\n  Q3 -->|Specialize one parent| Ext[virtual class plus extends and override]\n  Q3 -->|Just construct| Ctor[class plus constructor and new]\n  Ext --> Poly[Call through parent type to see polymorphism]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A class can implement multiple interfaces but only extend one existing class. Apex does not support multiple inheritance. virtual allows extension and overrides; abstract declares methods without a body.",
+      "source_ids": [
+        "SF-APEX-CLASSDEF"
+      ],
+      "scope": "Classes, interfaces, inheritance",
+      "validation": "Apex Class Definition page.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "A constructor is invoked when an object is created. If you write no constructor, a default no-arg constructor is generated. After you write a constructor, the default no-arg is no longer available unless you write one. Instantiate with new.",
+      "source_ids": [
+        "SF-APEX-CTOR"
+      ],
+      "scope": "Constructors and objects",
+      "validation": "Using Constructors page.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A class that extends another inherits its methods and properties and may override virtual methods. Different subclass implementations behind the same type is polymorphism. Extra subclass-only methods need a subclass-typed reference.",
+      "source_ids": [
+        "SF-APEX-EXTEND"
+      ],
+      "scope": "Inheritance and polymorphism",
+      "validation": "Extending a Class page, including the Marker example.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "In API 65.0 and later, abstract or override methods require protected, public, or global. Private is invalid because the implementing class could not see the abstract method.",
+      "source_ids": [
+        "SF-APEX-EXTEND",
+        "SF-APEX-CLASSDEF"
+      ],
+      "scope": "Versioned override visibility",
+      "validation": "Versioned behavior notes on class definition and extending pages.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "API 65.0+ abstract/override methods cannot be private. API 61.0+ private superclass methods are not overridden by a same-signature subclass method. Reverify the class API version.",
+  "unresolved_uncertainty": [
+    "Exact interface method visibility defaults across older API versions should be re-read on the Interfaces page before a packaging interview."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Class",
+      "telugu": "బ్లూప్రింట్ టైప్; కోడ్ మెటాడేటా."
+    },
+    {
+      "english": "Object (instance)",
+      "telugu": "new తో తయారైన ఇన్‌స్టన్స్; Account రికార్డ్ కాదు."
+    },
+    {
+      "english": "Constructor",
+      "telugu": "new సమయంలో నడిచే అసెంబ్లీ కోడ్."
+    },
+    {
+      "english": "Polymorphism",
+      "telugu": "ఒకే టైప్ రిఫరెన్స్, సబ్‌క్లాస్ ప్రవర్తన."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "A class is a type; an object is new Instance(). Constructors initialize and replace the default no-arg if you write any. extends is one parent; implements can be many. Polymorphism is a parent-typed variable calling an override.",
+    "two_minutes": "I separate Salesforce sObjects from Apex classes. I write a constructor only when I need arguments, and I add a no-arg if callers still need new Foo(). I mark a class virtual before anyone overrides. I implement an interface when several types must share a method list without sharing a parent. I demonstrate polymorphism with a parent reference and two subclasses. I mention API 65+ override visibility without turning this into the access-modifier lesson."
+  },
+  "terminology": [
+    {
+      "term": "class",
+      "plain": "The blueprint type you author in Apex.",
+      "precise": "A user-defined type. Top-level classes need public or global. Inner classes nest one level. Optional virtual or abstract.",
+      "example": "public virtual class LAB_Marker { public virtual String write() { return 'dark'; } }",
+      "non_example": "The Account sObject type in Object Manager is not a class you wrote.",
+      "confusable_neighbor": "sObject: platform data type, APEX-002.",
+      "boundary": "Access modifiers in depth are APEX-001."
+    },
+    {
+      "term": "object",
+      "plain": "One living instance of a class, created with new.",
+      "precise": "A value whose type is the class (or subclass). You assign instances to variables of that class type.",
+      "example": "LAB_Marker m = new LAB_YellowMarker();",
+      "non_example": "An Account record in the database is an sObject row, not this OOP object.",
+      "confusable_neighbor": "JavaScript object literal in LWC: different runtime.",
+      "boundary": "Heap and governors are later topics."
+    },
+    {
+      "term": "constructor",
+      "plain": "The assembly code that runs when you new an instance.",
+      "precise": "No return type, not inherited. Default no-arg exists until you write any constructor. Overload and this(...) chaining are supported.",
+      "example": "public LAB_Marker(String color) { this.color = color; }",
+      "non_example": "A static factory method that returns an instance is not a constructor.",
+      "confusable_neighbor": "Method: has a return type or void.",
+      "boundary": "Initialization static blocks are neighboring, not fully specified here."
+    },
+    {
+      "term": "interface",
+      "plain": "A contract of method signatures a class promises to implement.",
+      "precise": "A class may implement multiple interfaces. An interface may extend another interface. This is not a second superclass.",
+      "example": "public interface LAB_Writable { String write(); }",
+      "non_example": "A Lightning page interface (phone/tablet) is a UI form factor, not an Apex interface.",
+      "confusable_neighbor": "abstract class: can include implemented methods and state.",
+      "boundary": "Iterator/Iterable interfaces appear in PROG-004."
+    },
+    {
+      "term": "inheritance",
+      "plain": "A subclass reuses and specializes one parent class.",
+      "precise": "extends copies methods and properties. Only one superclass. Override virtual methods with override. The class must be virtual (or abstract) to allow overrides.",
+      "example": "public class LAB_YellowMarker extends LAB_Marker { public override String write() { return 'yellow'; } }",
+      "non_example": "Copy-pasting a class is not inheritance.",
+      "confusable_neighbor": "sObject relationships (Account-Contact) are data model, not extends.",
+      "boundary": "Multiple inheritance is not supported."
+    },
+    {
+      "term": "polymorphism",
+      "plain": "The same call on a parent type runs subclass code.",
+      "precise": "A Marker variable holding a YellowMarker instance uses YellowMarker's override of write(). Extra subclass-only methods are not visible on the parent type.",
+      "example": "LAB_Marker m = new LAB_YellowMarker(); m.write(); // yellow",
+      "non_example": "Having two unrelated classes in an org is not polymorphism.",
+      "confusable_neighbor": "Overload: same name, different parameters, compile-time choice (PROG-002).",
+      "boundary": "The Extending a Class Marker example is the official illustration."
+    },
+    {
+      "term": "virtual",
+      "plain": "Permission slip for subclasses to extend and override.",
+      "precise": "You cannot override a method unless the class is virtual (or the method is on an abstract class as specified). Use override on the subclass method.",
+      "example": "public virtual class LAB_Marker",
+      "non_example": "public class without virtual cannot be extended for overrides.",
+      "confusable_neighbor": "global: visibility, not extensibility.",
+      "boundary": "API 65+ override visibility is versioned."
+    },
+    {
+      "term": "abstract class",
+      "plain": "A class that declares some methods without a body.",
+      "precise": "abstract methods have a signature only. From API 65.0 they need protected, public, or global.",
+      "example": "public abstract class LAB_Tool { public abstract void use(); }",
+      "non_example": "An interface is not an abstract class, though both can define contracts.",
+      "confusable_neighbor": "virtual class: may have full method bodies and still be extended.",
+      "boundary": "Do not instantiate an abstract class with new."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Declare the type",
+      "actor": "Developer",
+      "trigger": "Behavior belongs in Apex, not only a record",
+      "before": "No class",
+      "after": "public (or global) class, optional virtual/abstract",
+      "observe": "Class compiles as metadata",
+      "failure": "Calling Account a class you authored"
+    },
+    {
+      "step": 2,
+      "transition": "Construct instances",
+      "actor": "Developer",
+      "trigger": "Need an object",
+      "before": "Only the type exists",
+      "after": "new ClassName(...) using a live constructor",
+      "observe": "new ClassName() fails if you added a one-arg constructor and no no-arg",
+      "failure": "Forgetting the default constructor disappeared"
+    },
+    {
+      "step": 3,
+      "transition": "Share a contract or a parent",
+      "actor": "Developer",
+      "trigger": "Several types must be interchangeable",
+      "before": "Copy-pasted methods",
+      "after": "interface + implements, or virtual parent + extends",
+      "observe": "Two classes compile against the same interface or parent type",
+      "failure": "Trying to extend two classes"
+    },
+    {
+      "step": 4,
+      "transition": "Prove polymorphism",
+      "actor": "Developer + reviewer",
+      "trigger": "Override exists",
+      "before": "Only subclass-typed variables used",
+      "after": "Parent-typed variable, subclass instance, override runs",
+      "observe": "Assert write() differs for two instances stored as Marker",
+      "failure": "Saying polymorphism means 'we have many classes'"
+    }
+  ],
+  "when_to_use": [
+    "When you must define Apex classes and objects rather than only configure an sObject.",
+    "When a constructor must initialize instances, including restoring a no-arg after adding parameters.",
+    "When several types share an interface contract or one inheritance parent.",
+    "When an interview asks you to show polymorphism with an override, not just define the word."
+  ],
+  "when_not_to_use": [
+    "Do not use this classes-and-objects lesson as a substitute for sObject schema design (APEX-002).",
+    "Do not treat inheritance as a way to extend two parents—Apex has no multiple inheritance.",
+    "Do not lecture Java constructors without the Apex default-constructor disappearance rule.",
+    "Do not hide access-modifier or governor questions inside an OOP vocabulary answer (APEX-001, APEX-007)."
+  ],
+  "configuration_or_code_location": [
+    "Apex Classes in a sandbox or force-app/main/default/classes/*.cls.",
+    "Class header: virtual/abstract, extends, implements.",
+    "Constructor block with the class name and no return type.",
+    "Tests that assign subclass instances to parent-typed variables."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox lab needs LAB_Marker (virtual), LAB_YellowMarker that overrides write(), and LAB_Writable as an interface both can implement. A test stores both as LAB_Marker and asserts different write() results. No production data.",
+    "inputs": [
+      "Shared write() contract",
+      "Default dark ink on the parent",
+      "Yellow variant",
+      "Need new LAB_Marker() still after adding a color constructor"
+    ],
+    "decisions": [
+      {
+        "decision": "Make LAB_Marker virtual with a virtual write() and both a no-arg and a String constructor.",
+        "because": "Overrides need virtual; writing only a String constructor would remove the default no-arg.",
+        "rejected": "A non-virtual class plus override"
+      },
+      {
+        "decision": "LAB_YellowMarker extends LAB_Marker and implements LAB_Writable.",
+        "because": "One parent via extends; the interface is the contract.",
+        "rejected": "Trying to extend two classes"
+      },
+      {
+        "decision": "In the test, LAB_Marker m = new LAB_YellowMarker(); System.assertEquals('yellow', m.write());",
+        "because": "That is the official polymorphism shape from Extending a Class.",
+        "rejected": "Only calling write() on a YellowMarker-typed variable and calling it polymorphism"
+      }
+    ],
+    "configuration_or_code": [
+      "public interface LAB_Writable { String write(); }",
+      "public virtual class LAB_Marker implements LAB_Writable { public LAB_Marker() {} public LAB_Marker(String c) {} public virtual String write() { return 'dark'; } }",
+      "public class LAB_YellowMarker extends LAB_Marker { public override String write() { return 'yellow'; } }"
+    ],
+    "output": "Parent-typed variables run different write() bodies; new LAB_Marker() still compiles.",
+    "verification": [
+      "new LAB_Marker() compiles because a no-arg constructor exists.",
+      "Marker reference to YellowMarker returns yellow.",
+      "A second extends clause does not compile."
+    ],
+    "self_explanation": "I kept one parent, an interface contract, and proved polymorphism through the parent type."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox or scratch org; LAB_ classes only.",
+    "starting_state_checks": [
+      "Can create multiple Apex classes.",
+      "No production names."
+    ],
+    "steps": [
+      "Create LAB_Writable, virtual LAB_Marker with no-arg and one-arg constructors, and LAB_YellowMarker that overrides write().",
+      "In a test, assign new LAB_YellowMarker() to a LAB_Marker variable and assert write().",
+      "Temporarily delete the no-arg constructor, compile a new LAB_Marker() caller, capture the error, then restore the no-arg.",
+      "Attempt public class LAB_X extends LAB_Marker, LAB_Other and record that multiple inheritance is rejected."
+    ],
+    "guided_completion": [
+      "If override fails to compile, the parent method or class is not virtual/abstract.",
+      "If new LAB_Marker() failed, you wrote a constructor and did not replace the default no-arg."
+    ],
+    "independent_challenge": "Add a subclass-only method computePrice() and show it is not callable on a LAB_Marker reference without a cast.",
+    "evidence": [
+      "Test asserting polymorphic write().",
+      "Compile error for missing no-arg and for two extends types."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Apex classes.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not prove managed-package global inheritance or API 60 private-override quirks unless you set those versions."
+  },
+  "decision_table": [
+    {
+      "signal": "You need a Salesforce record such as Account, not custom behavior.",
+      "choose": "sObject / Object Manager (later APEX-002), not a new Apex class for the row.",
+      "not": "An Apex class named AccountHelper that you call 'the Account object'.",
+      "why": "An sObject type is data-model; an Apex class is code metadata."
+    },
+    {
+      "signal": "Several types must share method signatures without sharing implementation.",
+      "choose": "An interface plus implements on each class.",
+      "not": "Copy-paste methods, or extend two classes.",
+      "why": "A class may implement many interfaces but extend only one class."
+    },
+    {
+      "signal": "A variant reuses parent code and changes one method.",
+      "choose": "virtual parent, extends, override—then call through the parent type.",
+      "not": "A new unrelated class with the same method name and no extends.",
+      "why": "Extending a Class defines that override pattern as polymorphism."
+    },
+    {
+      "signal": "You added a constructor with arguments and callers still use new Foo().",
+      "choose": "Write an explicit no-arg constructor as well.",
+      "not": "Assume the platform keeps the default no-arg forever.",
+      "why": "After you create a constructor, the default no-arg is gone."
+    }
+  ],
+  "limitations": [
+    "Does not teach sObject describe or relationships.",
+    "Does not list every interface in Apex (Schedulable, etc.).",
+    "Does not replace access-modifier interviews.",
+    "Versioned override visibility depends on class API version."
+  ],
+  "security_notes": [
+    "A class is metadata; do not confuse it with record access.",
+    "global on a parent class is an API contract (APEX-001).",
+    "Do not put secrets in constructors logged via System.debug."
+  ],
+  "common_mistakes": [
+    "Calling an Account record an Apex object in the OOP sense.",
+    "Forgetting virtual so override fails.",
+    "Expecting multiple inheritance.",
+    "Adding a constructor and breaking new ClassName().",
+    "Calling overload polymorphism."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "override method does not compile.",
+      "check": [
+        "Parent class is virtual or abstract.",
+        "Parent method is virtual/abstract.",
+        "API 65+ method is not private."
+      ],
+      "do_not_assume": "The method name alone is enough."
+    },
+    {
+      "symptom": "new ClassName() no longer compiles.",
+      "check": [
+        "A parameterized constructor was added.",
+        "Add a no-arg constructor."
+      ],
+      "do_not_assume": "The default constructor remains."
+    },
+    {
+      "symptom": "Subclass-only method not visible.",
+      "check": [
+        "Variable type is the parent.",
+        "Cast or use a subclass-typed variable."
+      ],
+      "do_not_assume": "Polymorphism exposes extra methods."
+    }
+  ],
+  "production_notes": [
+    "Treat virtual public APIs as extension contracts.",
+    "Match class API version for override visibility.",
+    "No production deploy from this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How many classes may an Apex class extend?",
+      "options": {
+        "A": "Exactly one",
+        "B": "As many as you list after extends",
+        "C": "Zero; Apex has no inheritance",
+        "D": "Two: one virtual and one abstract"
+      },
+      "answer": "A",
+      "rationale": "A class can only extend one other class. Apex does not support multiple inheritance.",
+      "distractor_explanations": {
+        "B": "That is implements, not extends.",
+        "C": "extends is documented.",
+        "D": "Still a single parent."
+      },
+      "concept": "inheritance",
+      "citation_ids": [
+        "SF-APEX-CLASSDEF"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What happens if you write no constructor on a class?",
+      "options": {
+        "A": "A default no-argument constructor is generated",
+        "B": "You cannot use new",
+        "C": "The class becomes abstract",
+        "D": "Apex creates a constructor that takes every field"
+      },
+      "answer": "A",
+      "rationale": "Using Constructors: a default no-arg constructor is generated with the class visibility.",
+      "distractor_explanations": {
+        "B": "new uses that default.",
+        "C": "abstract is explicit.",
+        "D": "Not generated that way."
+      },
+      "concept": "constructors",
+      "citation_ids": [
+        "SF-APEX-CTOR"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You add public LAB_Bike(String vin) { } and no other constructor. What about new LAB_Bike()?",
+      "options": {
+        "A": "It no longer compiles unless you add a no-arg constructor",
+        "B": "The default no-arg remains automatically",
+        "C": "Apex supplies vin as null silently",
+        "D": "It becomes an interface"
+      },
+      "answer": "A",
+      "rationale": "After you create a constructor, you no longer have the default no-arg.",
+      "distractor_explanations": {
+        "B": "That is the common Java/Apex mix-up the guide warns about.",
+        "C": "No implicit null vin constructor.",
+        "D": "Unrelated."
+      },
+      "concept": "constructors",
+      "citation_ids": [
+        "SF-APEX-CTOR"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "LAB_Marker m = new LAB_YellowMarker(); m.write(); YellowMarker overrides write(). What runs?",
+      "options": {
+        "A": "YellowMarker's override — polymorphism",
+        "B": "Always the parent body, because the variable is Marker",
+        "C": "A compile error",
+        "D": "Both bodies concatenated"
+      },
+      "answer": "A",
+      "rationale": "Extending a Class: the second Marker object assigned a YellowMarker instance yields a different write().",
+      "distractor_explanations": {
+        "B": "That ignores override dispatch.",
+        "C": "This is the documented pattern.",
+        "D": "Only one body runs."
+      },
+      "concept": "polymorphism",
+      "citation_ids": [
+        "SF-APEX-EXTEND"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Can one Apex class implement more than one interface?",
+      "options": {
+        "A": "Yes",
+        "B": "No; only one interface",
+        "C": "Only if it extends two classes",
+        "D": "Only inner classes"
+      },
+      "answer": "A",
+      "rationale": "A class can implement multiple interfaces but only extend one class.",
+      "distractor_explanations": {
+        "B": "Multiple implements is allowed.",
+        "C": "Multiple extends is not allowed.",
+        "D": "Not an inner-class-only rule."
+      },
+      "concept": "interfaces",
+      "citation_ids": [
+        "SF-APEX-CLASSDEF"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What keyword allows a class to be extended and its methods overridden?",
+      "options": {
+        "A": "virtual (or abstract for abstract classes)",
+        "B": "static",
+        "C": "final",
+        "D": "transient"
+      },
+      "answer": "A",
+      "rationale": "virtual declares that the class allows extension and overrides.",
+      "distractor_explanations": {
+        "B": "static is lifetime, not inheritance.",
+        "C": "final is constants (PROG-001).",
+        "D": "transient is serialization-related."
+      },
+      "concept": "inheritance",
+      "citation_ids": [
+        "SF-APEX-CLASSDEF"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A subclass has computePrice() not on the parent. You have a parent-typed variable. How do you call computePrice()?",
+      "options": {
+        "A": "Use a subclass-typed reference or a cast; the parent type does not see extra methods",
+        "B": "Polymorphism automatically exposes extra methods",
+        "C": "Call it as a static on the parent",
+        "D": "It is available because of the constructor"
+      },
+      "answer": "A",
+      "rationale": "Extending a Class: extra methods require the object type to be the extending class.",
+      "distractor_explanations": {
+        "B": "Polymorphism is about overrides of shared methods.",
+        "C": "Not how instance extra methods work.",
+        "D": "Constructors do not publish extra methods."
+      },
+      "concept": "polymorphism boundary",
+      "citation_ids": [
+        "SF-APEX-EXTEND"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Foundation",
+      "prompt": "A teammate says 'the Account object is our class.' What distinction do you teach?",
+      "options": {
+        "A": "Account is an sObject data type; an Apex class is code you define",
+        "B": "They are the same in Salesforce",
+        "C": "Account is an interface",
+        "D": "Account is a constructor"
+      },
+      "answer": "A",
+      "rationale": "This lesson's boundary: sObject versus authored Apex class.",
+      "distractor_explanations": {
+        "B": "That confusion is the interview trap.",
+        "C": "Account is not an Apex interface.",
+        "D": "No."
+      },
+      "concept": "class vs sObject",
+      "citation_ids": [
+        "SF-APEX-CLASSDEF"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "interface versus abstract class in this lesson's terms?",
+      "options": {
+        "A": "Interface is a contract of signatures; abstract class can declare unimplemented methods and is a single parent type",
+        "B": "They are identical",
+        "C": "Interfaces can be new'ed; abstract classes cannot have methods",
+        "D": "Abstract classes support multiple inheritance"
+      },
+      "answer": "A",
+      "rationale": "Class definition: abstract methods have no body; interfaces are implemented, and you still extend only one class.",
+      "distractor_explanations": {
+        "B": "Different tools.",
+        "C": "You do not instantiate an interface with fields like a class; abstract classes do have methods.",
+        "D": "Apex still has single inheritance."
+      },
+      "concept": "interfaces",
+      "citation_ids": [
+        "SF-APEX-CLASSDEF"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Overload versus override?",
+      "options": {
+        "A": "Overload is same name different parameters; override replaces a virtual parent method",
+        "B": "They are synonyms in Apex",
+        "C": "Override is only for constructors",
+        "D": "Overload requires extends"
+      },
+      "answer": "A",
+      "rationale": "Constructors/methods can overload; override is the inheritance keyword on virtual methods.",
+      "distractor_explanations": {
+        "B": "Different mechanisms.",
+        "C": "Constructors are not inherited and are not override.",
+        "D": "Overload is same class, different signatures."
+      },
+      "concept": "polymorphism vs overload",
+      "citation_ids": [
+        "SF-APEX-EXTEND",
+        "SF-APEX-CTOR"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "API 65+ abstract method with no access modifier. What happens?",
+      "options": {
+        "A": "Compile error; abstract/override cannot be private by default",
+        "B": "It is public automatically",
+        "C": "It is global automatically",
+        "D": "It becomes an interface"
+      },
+      "answer": "A",
+      "rationale": "API 65+: abstract or override requires protected, public, or global.",
+      "distractor_explanations": {
+        "B": "Default without a modifier is private, which is invalid here.",
+        "C": "Not automatic.",
+        "D": "Unrelated."
+      },
+      "concept": "inheritance versioning",
+      "citation_ids": [
+        "SF-APEX-EXTEND"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "How do you create an object from a class that has a constructor?",
+      "options": {
+        "A": "Use the new keyword with that constructor",
+        "B": "Insert a record in Object Manager",
+        "C": "Declare the class name only",
+        "D": "Call override"
+      },
+      "answer": "A",
+      "rationale": "After you write a constructor, you must use new to instantiate with that constructor.",
+      "distractor_explanations": {
+        "B": "That creates sObject data, not an Apex instance.",
+        "C": "Declaration is a null reference until new.",
+        "D": "override is inheritance."
+      },
+      "concept": "objects",
+      "citation_ids": [
+        "SF-APEX-CTOR"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "Class versus object in Apex?",
+      "back": "Class is the type/blueprint; object is an instance created with new."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "What is a constructor?",
+      "back": "Code invoked when an object is created; no return type; not inherited."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "What is an Apex interface?",
+      "back": "A contract of method signatures a class implements; a class may implement many."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "How many superclasses can an Apex class extend?",
+      "back": "One. Apex does not support multiple inheritance."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "What is polymorphism in the Extending a Class sense?",
+      "back": "Same parent type, subclass instance, overridden method runs the subclass body."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "When do you write a no-arg constructor yourself?",
+      "back": "After you add any constructor, if callers still need new ClassName()."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "interface vs virtual parent class?",
+      "back": "Interface for shared signatures; virtual class when you also share implementation."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Account record or Apex class?",
+      "back": "Account is an sObject. Use an Apex class for behavior you author."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "Need override to compile?",
+      "back": "Parent class/method must be virtual or abstract; use the override keyword."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "Subclass-only method on a parent-typed variable?",
+      "back": "Not visible. Cast or use a subclass-typed reference."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "Is a class metadata or business data?",
+      "back": "The class is metadata. Rows it queries are business data."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Does inheritance replace sharing/CRUD?",
+      "back": "No. OOP visibility is not record access."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "API 65+ abstract method default?",
+      "back": "Defaults to private, which is invalid; use protected, public, or global."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "new Foo() broke after adding Foo(Integer n). Why?",
+      "back": "The default no-arg constructor disappeared when you wrote a constructor."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "How do you demonstrate polymorphism in a test?",
+      "back": "Parent-typed variable, subclass instance, assert the override result."
+    },
+    {
+      "id": "F16",
+      "category": "terminology",
+      "front": "virtual versus abstract class?",
+      "back": "virtual can have full methods and be extended; abstract declares some methods without bodies."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain classes, objects, constructors, interfaces, inheritance, and polymorphism in Apex.",
+      "answer_30_seconds": "A class is a type; an object is new instance. Constructors initialize. Interfaces are contracts. extends is one parent. Polymorphism is a parent reference running an override.",
+      "answer_2_minutes": "I define a class as metadata that is a type. I create objects with new and a constructor. If I add a constructor I may need to restore a no-arg. I implement interfaces for shared signatures and extend one virtual class for shared code. I prove polymorphism with Marker m = new YellowMarker(); m.write(). I refuse to call an Account row an Apex class.",
+      "example": "LAB_Marker / LAB_YellowMarker lab from the worked example.",
+      "tradeoffs": [
+        "interface vs abstract parent",
+        "constructor args vs default no-arg"
+      ],
+      "follow_ups": [
+        "Can you extend two classes?",
+        "What is virtual for?"
+      ],
+      "weak_answer_warnings": [
+        "Equating sObject with class"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How is an Apex object different from a Salesforce object like Account?",
+      "answer_30_seconds": "Account is an sObject data type. An Apex object is an instance of a class you wrote, created with new.",
+      "answer_2_minutes": "Interviewers listen for this split. Object Manager objects are schema. Apex classes are code. You can have Account a = new Account(); which is an sObject instance in memory, still not a user-defined class. I keep PROG-003 vocabulary for authored types and point sObject details to APEX-002.",
+      "example": "new LAB_Marker() versus new Account(Name='LAB') — both use new, different type families.",
+      "tradeoffs": [
+        "In-memory sObject vs custom class"
+      ],
+      "follow_ups": [
+        "Is Account a class in Apex?",
+        "What does new Account() construct?"
+      ],
+      "weak_answer_warnings": [
+        "They are the same thing"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Design Marker and YellowMarker so a test shows polymorphism.",
+      "answer_30_seconds": "virtual parent with virtual write(), subclass extends and override, test uses Marker variable holding YellowMarker.",
+      "answer_2_minutes": "I follow the Developer Guide Marker shape. Parent is virtual. write() is virtual. YellowMarker extends and overrides. The test must not only call new YellowMarker().write(); it should assign to a Marker reference. If I need a write() contract without a parent body, I add an interface. I keep a no-arg constructor if tests use new Marker().",
+      "example": "The official Extending a Class snippet uses two Marker variables, the second assigned YellowMarker.",
+      "tradeoffs": [
+        "interface-only vs virtual parent with default ink"
+      ],
+      "follow_ups": [
+        "Where do extra subclass methods live?",
+        "Why virtual?"
+      ],
+      "weak_answer_warnings": [
+        "Two unrelated classes with the same method name"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Callers use new Service() and you need to require an org-specific timeout in the constructor. What else do you add?",
+      "answer_30_seconds": "A constructor with the timeout parameter, plus an explicit no-arg if you still want new Service(), or you update all callers.",
+      "answer_2_minutes": "The guide is clear: writing any constructor removes the default no-arg. I either migrate every new Service() or I add Service() { this(defaultTimeout); } using this(...) chaining. I do not tell the panel the platform keeps the old constructor. I treat this as a breaking API change if the class is already packaged.",
+      "example": "public LAB_Service() { this(30); } public LAB_Service(Integer timeout) { this.timeout = timeout; }",
+      "tradeoffs": [
+        "Break callers vs keep a no-arg default"
+      ],
+      "follow_ups": [
+        "What is this(...) chaining?",
+        "Are constructors inherited?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming Java-style default always remains"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "override write() will not compile on the subclass. Walk the checks.",
+      "answer_30_seconds": "Parent class and method must be virtual or abstract, use override, and on API 65+ the method cannot be private.",
+      "answer_2_minutes": "I open the parent: is the class virtual? Is write virtual? Did I misspell the signature so it is an accidental overload? Is the class API version 65+ with a private abstract? I do not add a second extends. I recompile after each fix. If the method is extra rather than an override, I stop using override.",
+      "example": "public class YellowMarker extends Marker { public override String write() ... } fails if Marker is not virtual.",
+      "tradeoffs": [
+        "Make parent virtual vs extract an interface"
+      ],
+      "follow_ups": [
+        "API 61 private method override change?",
+        "Can you override static methods?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the IDE cache first"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A reviewer says your design uses inheritance but you needed two parents. Options?",
+      "answer_30_seconds": "Apex allows one extends. Implement multiple interfaces, or compose a helper object instead of a second parent.",
+      "answer_2_minutes": "I state the single-inheritance rule from Class Definition. I move the second 'parent' into an interface or a member (composition). I do not fake multiple inheritance with inner classes. I mention that an interface can extend another interface, which is still not two class parents. This keeps the design interview honest.",
+      "example": "class LAB_YellowMarker extends LAB_Marker implements LAB_Writable, LAB_Priced.",
+      "tradeoffs": [
+        "Composition vs a wider interface"
+      ],
+      "follow_ups": [
+        "When is composition clearer?",
+        "Can interfaces extend interfaces?"
+      ],
+      "weak_answer_warnings": [
+        "Listing two classes after extends"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you avoid inheritance and use only an interface?",
+      "answer_30_seconds": "When types share a method list but not implementation or a single parent story.",
+      "answer_2_minutes": "If Marker and Printer both write() but share no fields, an interface avoids a fake parent. If they share ink-counting code, a virtual class is fair. I also avoid deep inheritance trees in Salesforce orgs because they become packaging contracts. I do not use inheritance just to reuse a utility method—a static helper or composition is enough.",
+      "example": "LAB_Writable on Marker and on a report exporter that is not a Marker.",
+      "tradeoffs": [
+        "Shared code vs shared contract only"
+      ],
+      "follow_ups": [
+        "When is abstract class better than interface?",
+        "How does this interact with Batchable?"
+      ],
+      "weak_answer_warnings": [
+        "Always inherit from a Utils god class"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this with the motorcycle chassis shop and where it breaks.",
+      "answer_30_seconds": "Blueprint is class, bike is object, first assembly is constructor, rider controls are the interface, sport variant is inheritance, same throttle different geometry is polymorphism. It breaks on sObjects and single inheritance.",
+      "answer_2_minutes": "I walk a visitor through the shop floor. I then say Account is not a chassis you welded—it is a factory-standard part type (sObject). I say you cannot bolt two parent chassis. I say writing a custom assembly procedure (constructor) retires the shop's default bare-frame procedure. I finish by assigning two bikes to a Motorcycle variable and twisting throttle.",
+      "example": "Marker m1 = new Marker(); Marker m2 = new YellowMarker(); different write() results.",
+      "tradeoffs": [
+        "Analogy speed vs compiling the Marker sample"
+      ],
+      "follow_ups": [
+        "Map virtual to the shop",
+        "Map default constructor"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog or filing-cabinet metaphor"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1056 @@
+{
+  "topic_id": "DATA-007",
+  "slug": "roll-up-summary-fields-and-alternatives",
+  "title": "Roll-up summary fields and alternatives",
+  "track": "Data model and configuration",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-006"
+  ],
+  "objectives": [
+    "Define a roll-up summary field as a custom field on the master that aggregates detail records in a master-detail relationship.",
+    "Choose COUNT, SUM, MIN, or MAX and name which child field types each operation allows.",
+    "Refuse a roll-up when the relationship is lookup, when the input is a cross-object formula, or when the need is a formula display on the child.",
+    "Name alternatives (declarative automation, Apex, reporting) without inventing unofficial product limits."
+  ],
+  "diagnostic_question": "Property should show a count of units and the latest inspection date. Units are master-detail; inspections are lookup. Which number can be a roll-up summary field, and what do you do for the other?",
+  "definition": "A roll-up summary field is a custom field on the master object that aggregates values from detail records in a master-detail relationship. Create it on the master; choose the detail object and an operation: COUNT of related records; SUM of number, currency, or percent fields; MIN or MAX of number, currency, percent, date, or date/time fields. If the relationship does not exist, create the master-detail first. You cannot reference cross-object formulas in roll-up summary fields. ([Create a Roll-Up Summary Field](https://help.salesforce.com/s/articleView?id=platform.fields_defining_summary_fields.htm); [Custom Field Attributes](https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm); [Tips for Building Cross-Object Formulas](https://help.salesforce.com/s/articleView?id=platform.fields_creating_cross_object_notes.htm))",
+  "why_it_matters": "Interviewers bait you into rolling up a lookup child or a spanning formula. Native roll-ups require master-detail and allowed field types. The alternative is not 'a formula that queries children' (DATA-006)—it is a different relationship, automation, or a report.",
+  "sixty_second_explanation": "Think of a warehouse tally board bolted to the pallet. It can count, sum, or show min/max only for boxes glued to that pallet (master-detail). Loose consulting notes sitting nearby (lookup inspections) do not move the tally. You cannot feed a reprint formula that already walked to another warehouse into this board. If the boxes are not glued, you need another counter: automation, Apex, or a report—not a fake formula COUNT.",
+  "deeper_explanation": [
+    "Help: define the roll-up on the object on the master side. If no relationship exists, create a master-detail between the master that displays the value and the detail that contains the records. Then choose COUNT, SUM, MIN, or MAX and optional filter criteria. ([Create a Roll-Up Summary Field](https://help.salesforce.com/s/articleView?id=platform.fields_defining_summary_fields.htm))",
+    "Custom Field Attributes: SUM allows number, currency, and percent. MIN and MAX also allow date and date/time. COUNT totals related records. Calculation options include automatic recalculation when displayed and a force mass recalculation safety net. ([Custom Field Attributes](https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm))",
+    "Master-detail rules from DATA-003 still apply: cascade delete, no Owner on detail, inherited sharing. Do not convert a lookup to master-detail only to get a roll-up if the child must remain independent. That is when you name an alternative.",
+    "Cross-object formulas cannot be roll-up inputs. Formula fields cannot replace child aggregates. Numeric roll-up limits (how many per object) are edition- and release-sensitive—Needs verification in current Help; do not invent a number.",
+    "Alternatives when native roll-up does not fit: a report or dashboard summary; record-triggered Flow or Apex that maintains a stored number (DATA-005 writer); or changing grain to a true master-detail if life cycle allows. Mark Flow/Apex mechanics as neighboring AUTO/APEX topics."
+  ],
+  "mental_model": {
+    "analogy": "A tally board bolted to a pallet that only counts boxes glued to that pallet (master-detail), not loose notes on the floor (lookup).",
+    "useful_mapping": [
+      "roll-up field → tally board on the master pallet",
+      "COUNT/SUM/MIN/MAX → how the board calculates",
+      "detail records → glued boxes",
+      "filter criteria → count only red boxes",
+      "lookup children → loose notes the board will not tally",
+      "cross-object formula → a reprint from another warehouse the board cannot ingest",
+      "alternative → a clerk (Flow/Apex) or a printed report if boxes are not glued"
+    ],
+    "where_it_breaks": [
+      "Recalculation timing is not a person with a clipboard; use Help's automatic vs mass-recalc options.",
+      "Junction objects can be details of two masters; which side gets which roll-up needs care.",
+      "Unofficial 'max roll-ups per object' numbers are not quoted here.",
+      "The analogy does not encode sharing or skew from 10,000 children (DATA-005)."
+    ]
+  },
+  "teach_back_prompt": "Explain why a roll-up summary field lives on the master, which operations exist, and when you must choose an alternative instead of converting a lookup.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "List COUNT, SUM, MIN, MAX and allowed child field types."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Units MD vs inspections lookup: which can roll up?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why a cross-object formula cannot be a roll-up input."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Name two alternatives when the child is lookup."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: roll-up vs formula vs Flow stamp."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-RSF-CREATE",
+      "title": "Create a Roll-Up Summary Field",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.fields_defining_summary_fields.htm",
+      "supports": "Create the field on the master; require master-detail; COUNT/SUM/MIN/MAX; filter criteria; create MD first if needed.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-FIELDATTR",
+      "title": "Custom Field Attributes",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm",
+      "supports": "Roll-up type operations and allowed field types; calculation options; master object and summarized object attributes.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-FLIMITS",
+      "title": "Formula Field Limits and Restrictions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.formula_field_limits.htm",
+      "supports": "Cannot directly reference some parent aggregates in formulas; consider roll-up summaries to aggregate children.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-OBJREF-REL",
+      "title": "Relationships Among Standard Objects and Fields",
+      "type": "Official Salesforce Object Reference",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm",
+      "supports": "Master-detail is the parent-child type that controls detail life cycle; required for native roll-up placement on the master.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Master side field",
+        "Needs master-detail",
+        "COUNT SUM MIN MAX",
+        "Allowed child types",
+        "No cross-object formula input",
+        "Alternatives if lookup"
+      ],
+      "accessible_description": "Roll-up summary fields sit on the master, require master-detail, support four operations, and are not a substitute for lookup-child automation."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-RSF-CREATE",
+        "SF-HELP-FIELDATTR",
+        "SF-HELP-FLIMITS",
+        "SF-OBJREF-REL"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Detail rows → roll-up on master; lookup rows → alternative writer or report"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  M[Master object] --> RSF[Roll-up summary field]\n  D[Detail object] --> MD[Master-detail]\n  MD --> RSF\n  RSF --> Op[COUNT SUM MIN MAX]\n  Op --> Filt[Optional filter criteria]",
+      "decision": "flowchart TD\n  Need[Need an aggregate on the parent] --> Q1{Is the child master-detail?}\n  Q1 -->|Yes| Q2{Allowed type and operation?}\n  Q2 -->|Yes| RSF[Create roll-up on the master]\n  Q2 -->|Input is cross-object formula| NoXO[Do not roll up that formula]\n  Q1 -->|Lookup or external| Alt[Alternative: Flow Apex or report; or change relationship only if life cycle allows]\n  Need --> Q3{Need a parent value on the child?}\n  Q3 -->|Yes| FF[Formula field DATA-006 not a roll-up]",
+      "sequence": "sequenceDiagram\n  participant Detail\n  participant Master\n  Detail->>Master: Save or delete detail row\n  Master->>Master: Roll-up recalculates COUNT SUM MIN or MAX"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A roll-up summary field is created on the master side of a master-detail relationship and summarizes records on the detail side. If the relationship does not exist, create the master-detail first.",
+      "source_ids": [
+        "SF-HELP-RSF-CREATE",
+        "SF-OBJREF-REL"
+      ],
+      "scope": "Placement and MD requirement",
+      "validation": "Create a Roll-Up Summary Field plus Object Reference MD definition.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "COUNT totals related records. SUM totals number, currency, or percent fields. MIN and MAX support number, currency, percent, date, and date/time fields.",
+      "source_ids": [
+        "SF-HELP-RSF-CREATE",
+        "SF-HELP-FIELDATTR"
+      ],
+      "scope": "Operations and types",
+      "validation": "Create article plus Custom Field Attributes roll-up type table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "You cannot reference cross-object formulas in roll-up summary fields. Formula fields are not the tool for aggregating children; Help points those calculations to roll-up summaries.",
+      "source_ids": [
+        "SF-HELP-FLIMITS",
+        "SF-HELP-RSF-CREATE"
+      ],
+      "scope": "Formula boundary",
+      "validation": "Formula Field Limits plus roll-up create article.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Filter criteria can select a subset of detail records. Calculation options include automatic calculation when displayed and forcing a mass recalculation.",
+      "source_ids": [
+        "SF-HELP-FIELDATTR",
+        "SF-HELP-RSF-CREATE"
+      ],
+      "scope": "Filters and recalc",
+      "validation": "Custom Field Attributes calculation options plus create steps.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Roll-up availability on specific standard objects and per-object counts are release- and edition-sensitive. Reverify Create a Roll-Up Summary Field for Summer '26.",
+  "unresolved_uncertainty": [
+    "How many roll-up summary fields an object may have is Needs verification in current limits Help—do not invent a number.",
+    "Exact recalculation timing under load is org-sensitive."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Roll-up summary field",
+      "telugu": "A master-side field that aggregates master-detail children."
+    },
+    {
+      "english": "COUNT SUM MIN MAX",
+      "telugu": "The four native roll-up operations."
+    },
+    {
+      "english": "Alternative",
+      "telugu": "Flow, Apex, or a report when the child is not master-detail."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "A roll-up summary field lives on the master and aggregates master-detail children with COUNT, SUM, MIN, or MAX. Lookups do not get native roll-ups. Cross-object formulas cannot be inputs. If life cycle forbids master-detail, use an alternative writer or a report.",
+    "two_minutes": "I put the field on Property to count LAB_Unit__c because units are MD. I refuse a native roll-up of lookup inspections; I name Flow, Apex, or a report. I check SUM types and MIN/MAX dates. I do not convert inspections to MD just for a count if they need their own Owner. I do not quote an unofficial per-object roll-up limit."
+  },
+  "terminology": [
+    {
+      "term": "roll-up summary field",
+      "plain": "A calculated aggregate on the parent.",
+      "precise": "A custom field on the master that summarizes detail records in a master-detail relationship.",
+      "example": "LAB_UnitCount__c COUNT of units on Property.",
+      "non_example": "A formula on Property that pretends to query units.",
+      "confusable_neighbor": "Cross-object formula: walks to a parent, opposite direction.",
+      "boundary": "Requires MD; not available for ordinary lookup children."
+    },
+    {
+      "term": "summarized object",
+      "plain": "The detail object being aggregated.",
+      "precise": "Custom Field Attributes: the object on the detail side that provides values for the roll-up.",
+      "example": "LAB_Unit__c as the summarized object.",
+      "non_example": "The master Property object.",
+      "confusable_neighbor": "Related list: presentation of those details.",
+      "boundary": "Must be the MD child."
+    },
+    {
+      "term": "COUNT",
+      "plain": "How many related detail records.",
+      "precise": "Totals the number of related records, optionally filtered.",
+      "example": "Count of LAB_Unit__c where Status = Active.",
+      "non_example": "SUM of a number field.",
+      "confusable_neighbor": "Report record count: not a field on the parent.",
+      "boundary": "Does not need a field to aggregate."
+    },
+    {
+      "term": "SUM",
+      "plain": "Add child numbers.",
+      "precise": "Totals number, currency, or percent fields on the details.",
+      "example": "SUM of LAB_SqFt__c on units.",
+      "non_example": "SUM of a text field.",
+      "confusable_neighbor": "MIN/MAX: extrema, not a total.",
+      "boundary": "Wrong child type will not appear in the field picker."
+    },
+    {
+      "term": "MIN and MAX",
+      "plain": "Lowest or highest child value.",
+      "precise": "Available for number, currency, percent, date, and date/time fields.",
+      "example": "MAX of LAB_InspectionDate__c only if that child is MD.",
+      "non_example": "MAX of a checkbox.",
+      "confusable_neighbor": "Latest date via Flow on a lookup child: an alternative.",
+      "boundary": "Date support is why MAX is used for latest dates."
+    },
+    {
+      "term": "filter criteria",
+      "plain": "Which children participate.",
+      "precise": "Optional criteria so the roll-up uses a subset of detail records. Enter filter values in the org default language if multilingual.",
+      "example": "COUNT units where LAB_Occupied__c is true.",
+      "non_example": "A validation rule on the child.",
+      "confusable_neighbor": "Report filter: does not write a field.",
+      "boundary": "Language note is in the create article."
+    },
+    {
+      "term": "mass recalculation",
+      "plain": "Force the roll-up to recompute.",
+      "precise": "Calculation Options: automatic next time displayed, or force a mass recalculation as a safety net after properties change.",
+      "example": "Force recalc after changing filters.",
+      "non_example": "Editing one child record by hand.",
+      "confusable_neighbor": "Formula compile: a different feature.",
+      "boundary": "Use in sandbox on LAB_ data first."
+    },
+    {
+      "term": "roll-up alternative",
+      "plain": "A writer or report when native roll-up does not fit.",
+      "precise": "Handbook term: Flow, Apex, or reporting when the child is lookup, external, or otherwise ineligible. Not a second roll-up type in Setup.",
+      "example": "Record-triggered Flow increments Property.LAB_InspectionCount__c.",
+      "non_example": "A formula field COUNT on Property.",
+      "confusable_neighbor": "Declarative roll-up helper packages: third-party; do not endorse a specific AppExchange product here.",
+      "boundary": "Changing to MD is not an alternative if life cycle forbids it."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Confirm master-detail and life cycle",
+      "actor": "Admin",
+      "trigger": "Need an aggregate on the parent",
+      "before": "Unknown relationship type",
+      "after": "MD exists and cascade/Owner are acceptable",
+      "observe": "Fields & Relationships shows master-detail",
+      "failure": "Converting lookup solely to unlock roll-up"
+    },
+    {
+      "step": 2,
+      "transition": "Create the roll-up on the master",
+      "actor": "Admin",
+      "trigger": "MD confirmed",
+      "before": "No aggregate field",
+      "after": "Field type Roll-Up Summary; pick summarized object and operation",
+      "observe": "LAB_ parent shows the number after child saves",
+      "failure": "Creating the field on the child"
+    },
+    {
+      "step": 3,
+      "transition": "Match operation to child field type",
+      "actor": "Admin",
+      "trigger": "Need SUM or MIN/MAX",
+      "before": "Wrong type selected",
+      "after": "SUM on number/currency/percent; MIN/MAX also date/time",
+      "observe": "Field picker shows the child field",
+      "failure": "SUM of a text code"
+    },
+    {
+      "step": 4,
+      "transition": "Choose alternative if ineligible",
+      "actor": "Admin + developer",
+      "trigger": "Child is lookup or input is spanning formula",
+      "before": "Stuck in the roll-up wizard",
+      "after": "Flow/Apex/report or a same-object stored field",
+      "observe": "Written alternative and owner",
+      "failure": "A formula that queries children"
+    }
+  ],
+  "when_to_use": [
+    "When a master object must show COUNT, SUM, MIN, or MAX of master-detail children.",
+    "When the child field type matches the roll-up operation (for example Date for MAX latest date).",
+    "When you want the platform to maintain the aggregate without a handwritten stamp.",
+    "When filter criteria should include only some detail records in the summary.",
+    "When explaining why a lookup child cannot use a native roll-up summary field."
+  ],
+  "when_not_to_use": [
+    "Do not use a roll-up summary field on a lookup relationship; change the relationship only if DATA-003 life cycle allows.",
+    "Do not roll up a cross-object formula field.",
+    "Do not use a roll-up when you need a parent value displayed on the child (that is a formula field).",
+    "Do not use a roll-up as a validation rule or error message (DATA-010).",
+    "Do not convert thousands of independent children to master-detail just to get a count (DATA-005 skew and Owner loss)."
+  ],
+  "configuration_or_code_location": [
+    "Object Manager → master object → Fields & Relationships → New → Roll-Up Summary.",
+    "Select summarized (detail) object, operation, optional field to aggregate, optional filters.",
+    "Calculation options on the field if filters or definitions change.",
+    "Neighboring: Flow Builder or Apex if the child is lookup."
+  ],
+  "worked_example": {
+    "scenario": "LAB_Property__c has MD children LAB_Unit__c and lookup children LAB_Inspection__c. Leadership wants unit count, sum of unit square footage, and latest inspection date on the property. Sandbox only.",
+    "inputs": [
+      "MD units with Number sqft",
+      "Lookup inspections with Date",
+      "Synthetic LAB_ rows"
+    ],
+    "decisions": [
+      {
+        "decision": "LAB_UnitCount__c COUNT and LAB_TotalSqFt__c SUM on Property.",
+        "because": "Units are master-detail and sqft is Number.",
+        "rejected": "Formula fields that query units"
+      },
+      {
+        "decision": "Do not create a native roll-up of inspection date.",
+        "because": "Inspections are lookup, not master-detail.",
+        "rejected": "Convert inspections to MD just for MAX date"
+      },
+      {
+        "decision": "Latest inspection date uses an alternative (report, or a Flow-maintained date if a stored field is required).",
+        "because": "Native roll-up is ineligible.",
+        "rejected": "A Property formula that pretends to MAX children"
+      }
+    ],
+    "configuration_or_code": [
+      "Create two roll-up fields on Property summarizing Unit.",
+      "Create two units and confirm count 2 and SUM of sqft.",
+      "Document the inspection-date alternative in the design note."
+    ],
+    "output": "Native roll-ups for units; explicit alternative for lookup inspections.",
+    "verification": [
+      "Delete a unit and watch count and SUM change.",
+      "Inspection date is not a Roll-Up Summary field type.",
+      "Unit Owner is still absent (MD), which we accepted."
+    ],
+    "self_explanation": "I rolled up only glued boxes and I named a different counter for loose notes."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ objects.",
+    "starting_state_checks": [
+      "Property and Unit exist with MD.",
+      "Inspection is lookup if present."
+    ],
+    "steps": [
+      "Create LAB_UnitCount__c COUNT on Property.",
+      "Create LAB_TotalSqFt__c SUM of unit sqft.",
+      "Add two LAB_ units and record the totals.",
+      "Attempt a roll-up of inspections and record why the wizard will not treat them as a summarized MD object."
+    ],
+    "guided_completion": [
+      "If SUM cannot see sqft, check the field type is Number/Currency/Percent.",
+      "If you converted inspections to MD, undo unless life cycle truly changed."
+    ],
+    "independent_challenge": "Add a filtered COUNT of occupied units only.",
+    "evidence": [
+      "Field type Roll-Up Summary on Property.",
+      "Before/after child delete totals."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ roll-up fields and records.",
+      "Do not deploy."
+    ],
+    "limitations": "Does not prove mass-recalc timing or per-object roll-up limits."
+  },
+  "decision_table": [
+    {
+      "signal": "Need a count or sum of master-detail children on the parent.",
+      "choose": "Roll-up summary field on the master.",
+      "not": "A formula field on the master that queries children.",
+      "why": "Help defines roll-ups on the master side of master-detail; formulas do not aggregate children."
+    },
+    {
+      "signal": "Need the latest date among lookup children.",
+      "choose": "An alternative writer or a report; native roll-up is ineligible.",
+      "not": "Convert to master-detail only to unlock MAX.",
+      "why": "Lookup children keep Owner and do not cascade; do not break life cycle for a tally."
+    },
+    {
+      "signal": "The only candidate input is a cross-object formula.",
+      "choose": "Do not use it in a roll-up; aggregate a stored or same-object field, or change the design.",
+      "not": "Hope SUM accepts the spanning formula.",
+      "why": "Cross-object formulas cannot be referenced in roll-up summary fields."
+    },
+    {
+      "signal": "Need parent city on the child.",
+      "choose": "Cross-object formula (DATA-006), not a roll-up.",
+      "not": "A roll-up on the child.",
+      "why": "Roll-ups aggregate children onto the master, opposite direction."
+    },
+    {
+      "signal": "Need a subset of children, such as occupied units only.",
+      "choose": "Roll-up with filter criteria.",
+      "not": "A second object just to hold occupied units.",
+      "why": "The create article supports filter criteria on the summary."
+    }
+  ],
+  "limitations": [
+    "Per-object roll-up counts are not quoted.",
+    "Does not implement Flow or Apex alternatives in this lesson.",
+    "Object-specific roll-up eligibility remains Needs verification.",
+    "Does not replace reports for ad-hoc totals."
+  ],
+  "security_notes": [
+    "Rolling up does not bypass field-level security on the roll-up field itself.",
+    "Converting lookup to MD to get a roll-up changes sharing and delete behavior.",
+    "Do not mass-recalc production roll-ups as an experiment."
+  ],
+  "common_mistakes": [
+    "Expecting a native roll-up on a lookup.",
+    "Putting the roll-up field on the child.",
+    "Using a formula as a child COUNT.",
+    "Rolling up a cross-object formula.",
+    "Converting independent children to MD only for a tally."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Summarized object list does not include the child.",
+      "check": [
+        "The child is master-detail to this master.",
+        "You are creating the field on the master."
+      ],
+      "do_not_assume": "The roll-up feature is disabled org-wide."
+    },
+    {
+      "symptom": "Field to aggregate is missing for SUM.",
+      "check": [
+        "Child field is number, currency, or percent.",
+        "You did not pick a text or formula spanning field."
+      ],
+      "do_not_assume": "The field label is wrong only."
+    },
+    {
+      "symptom": "Totals look stale after changing filters.",
+      "check": [
+        "Calculation options; consider force mass recalculation in sandbox.",
+        "Child rows still match filters."
+      ],
+      "do_not_assume": "The operation type is wrong."
+    }
+  ],
+  "production_notes": [
+    "Create roll-ups in sandbox; they are metadata. Recalc can be heavy on large child sets (DATA-005).",
+    "Communicate MD conversion as a sharing/delete change, not a silent roll-up unlock.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do you create a roll-up summary field?",
+      "options": {
+        "A": "On the object on the master side of a master-detail relationship",
+        "B": "On the detail object only",
+        "C": "Only on User",
+        "D": "In a validation rule"
+      },
+      "answer": "A",
+      "rationale": "Help: create the field on the master that displays the value.",
+      "distractor_explanations": {
+        "B": "The detail provides values, it does not host the roll-up.",
+        "C": "User is not the typical host.",
+        "D": "Validation rules do not create roll-ups."
+      },
+      "concept": "Placement",
+      "citation_ids": [
+        "SF-HELP-RSF-CREATE",
+        "SF-OBJREF-REL"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "If the relationship does not exist yet, what does Help say to do first?",
+      "options": {
+        "A": "Create a master-detail relationship between the master and the detail",
+        "B": "Create a formula field",
+        "C": "Create a JunctionIdList",
+        "D": "Create a named credential"
+      },
+      "answer": "A",
+      "rationale": "Create the MD relationship first, then the roll-up.",
+      "distractor_explanations": {
+        "B": "Formulas do not create the relationship.",
+        "C": "JunctionIdList is Task/Event.",
+        "D": "Unrelated."
+      },
+      "concept": "Create MD first",
+      "citation_ids": [
+        "SF-HELP-RSF-CREATE",
+        "SF-OBJREF-REL"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which operations exist on a roll-up summary field?",
+      "options": {
+        "A": "COUNT, SUM, MIN, and MAX",
+        "B": "AVG and MEDIAN only",
+        "C": "VLOOKUP only",
+        "D": "CONCAT only"
+      },
+      "answer": "A",
+      "rationale": "The create article and attributes list those four.",
+      "distractor_explanations": {
+        "B": "AVG/MEDIAN are not in that list.",
+        "C": "VLOOKUP is a validation function.",
+        "D": "CONCAT is not a roll-up type."
+      },
+      "concept": "Operations",
+      "citation_ids": [
+        "SF-HELP-RSF-CREATE",
+        "SF-HELP-FIELDATTR"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "SUM can aggregate which child field types?",
+      "options": {
+        "A": "Number, currency, and percent",
+        "B": "Text, checkbox, and lookup",
+        "C": "Date only",
+        "D": "Long text area"
+      },
+      "answer": "A",
+      "rationale": "Attributes: SUM allows number, currency, and percent.",
+      "distractor_explanations": {
+        "B": "Those are not SUM types.",
+        "C": "Date is MIN/MAX, not SUM.",
+        "D": "Long text cannot SUM."
+      },
+      "concept": "SUM types",
+      "citation_ids": [
+        "SF-HELP-FIELDATTR",
+        "SF-HELP-RSF-CREATE"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "MIN/MAX can use which extra types beyond SUM?",
+      "options": {
+        "A": "Date and date/time",
+        "B": "Checkbox and picklist",
+        "C": "Encrypted text",
+        "D": "Time only in reports"
+      },
+      "answer": "A",
+      "rationale": "MIN and MAX also allow date and date/time fields.",
+      "distractor_explanations": {
+        "B": "Not listed.",
+        "C": "Not listed.",
+        "D": "The cited types are date and date/time."
+      },
+      "concept": "MIN MAX types",
+      "citation_ids": [
+        "SF-HELP-FIELDATTR",
+        "SF-HELP-RSF-CREATE"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Can you natively roll up lookup inspections to Property?",
+      "options": {
+        "A": "No. Native roll-ups require master-detail",
+        "B": "Yes. Any relationship works",
+        "C": "Yes, if you use COUNT only",
+        "D": "Yes, if the lookup is required"
+      },
+      "answer": "A",
+      "rationale": "The field is defined on the master side of a master-detail relationship.",
+      "distractor_explanations": {
+        "B": "Lookup is not enough.",
+        "C": "COUNT still needs MD.",
+        "D": "Required lookup is still lookup."
+      },
+      "concept": "Lookup ineligible",
+      "citation_ids": [
+        "SF-HELP-RSF-CREATE",
+        "SF-OBJREF-REL"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Can a roll-up reference a cross-object formula?",
+      "options": {
+        "A": "No",
+        "B": "Yes for MAX dates",
+        "C": "Yes on custom objects",
+        "D": "Yes if filters are empty"
+      },
+      "answer": "A",
+      "rationale": "You cannot reference cross-object formulas in roll-up summary fields.",
+      "distractor_explanations": {
+        "B": "No exception for MAX.",
+        "C": "No custom-object exception in that ban.",
+        "D": "Filters do not lift the ban."
+      },
+      "concept": "No XO input",
+      "citation_ids": [
+        "SF-HELP-FLIMITS",
+        "SF-HELP-RSF-CREATE"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Need parent city on the child. Roll-up?",
+      "options": {
+        "A": "No. Use a cross-object formula on the child",
+        "B": "Yes. COUNT the parent",
+        "C": "Yes. SUM the city",
+        "D": "Yes. MIN the parent name"
+      },
+      "answer": "A",
+      "rationale": "Roll-ups aggregate children onto the master, opposite direction.",
+      "distractor_explanations": {
+        "B": "You do not COUNT a parent.",
+        "C": "City is not a SUM type in that design.",
+        "D": "Wrong tool."
+      },
+      "concept": "Direction",
+      "citation_ids": [
+        "SF-HELP-RSF-CREATE",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Best first alternative when inspections must stay lookup?",
+      "options": {
+        "A": "A report or a maintained stored field via Flow/Apex—not a formula child COUNT",
+        "B": "Always convert to master-detail",
+        "C": "A JunctionIdList on Property",
+        "D": "A validation rule that counts"
+      },
+      "answer": "A",
+      "rationale": "Native roll-up is ineligible; formula fields do not aggregate children.",
+      "distractor_explanations": {
+        "B": "Conversion changes Owner and delete behavior.",
+        "C": "JunctionIdList is not this model.",
+        "D": "Validation does not store a count."
+      },
+      "concept": "Alternatives",
+      "citation_ids": [
+        "SF-HELP-RSF-CREATE",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What do filter criteria do on a roll-up?",
+      "options": {
+        "A": "Select a subset of detail records to include",
+        "B": "Change the master object",
+        "C": "Convert lookup to MD",
+        "D": "Assign a page layout"
+      },
+      "answer": "A",
+      "rationale": "Enter filter criteria to summarize a selected group of records.",
+      "distractor_explanations": {
+        "B": "Master stays the same.",
+        "C": "Filters are not conversion.",
+        "D": "Layouts are DATA-009."
+      },
+      "concept": "Filters",
+      "citation_ids": [
+        "SF-HELP-RSF-CREATE",
+        "SF-HELP-FIELDATTR"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Automatic vs force mass recalculation?",
+      "options": {
+        "A": "Automatic recalculates when next displayed; force mass recalc is a safety net after properties change",
+        "B": "They are identical",
+        "C": "Force recalc deletes children",
+        "D": "Automatic only works in Classic"
+      },
+      "answer": "A",
+      "rationale": "Custom Field Attributes calculation options.",
+      "distractor_explanations": {
+        "B": "They are different options.",
+        "C": "Recalc does not delete children.",
+        "D": "Not a Classic-only claim in that text."
+      },
+      "concept": "Recalc options",
+      "citation_ids": [
+        "SF-HELP-FIELDATTR",
+        "SF-HELP-RSF-CREATE"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why not convert 20,000 independent inspections to MD just for a count?",
+      "options": {
+        "A": "You lose Owner/queues and cascade-delete, and you may create parent-child skew",
+        "B": "MD cannot roll up COUNT",
+        "C": "Inspections cannot have date fields",
+        "D": "Property cannot have custom fields"
+      },
+      "answer": "A",
+      "rationale": "DATA-003 and DATA-005 constraints still apply; roll-up is not worth breaking life cycle.",
+      "distractor_explanations": {
+        "B": "COUNT works on MD.",
+        "C": "Dates are allowed on inspections.",
+        "D": "Property can have custom fields."
+      },
+      "concept": "Do not convert for tally",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RSF-CREATE"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "placement",
+      "front": "Where does a roll-up summary field live?",
+      "back": "On the master object of a master-detail relationship."
+    },
+    {
+      "id": "F2",
+      "category": "ops",
+      "front": "Four roll-up operations?",
+      "back": "COUNT, SUM, MIN, and MAX."
+    },
+    {
+      "id": "F3",
+      "category": "sum",
+      "front": "SUM allowed child types?",
+      "back": "Number, currency, and percent fields only."
+    },
+    {
+      "id": "F4",
+      "category": "minmax",
+      "front": "MIN/MAX extra types vs SUM?",
+      "back": "Date and date/time in addition to number, currency, and percent."
+    },
+    {
+      "id": "F5",
+      "category": "lookup",
+      "front": "Native roll-up on a lookup child?",
+      "back": "No. Create master-detail first, or use an alternative if life cycle forbids MD."
+    },
+    {
+      "id": "F6",
+      "category": "formula",
+      "front": "Formula field to count children?",
+      "back": "No. Help points child aggregates to roll-up summaries."
+    },
+    {
+      "id": "F7",
+      "category": "xo",
+      "front": "Roll up a cross-object formula?",
+      "back": "No. Those formulas cannot be referenced in roll-up summary fields."
+    },
+    {
+      "id": "F8",
+      "category": "filter",
+      "front": "What do roll-up filters do?",
+      "back": "Include only a subset of detail records in the calculation."
+    },
+    {
+      "id": "F9",
+      "category": "dir",
+      "front": "Parent city on the child?",
+      "back": "Use a cross-object formula, not a roll-up."
+    },
+    {
+      "id": "F10",
+      "category": "alt",
+      "front": "Lookup child latest date?",
+      "back": "Report or a Flow/Apex-maintained field; not a native roll-up."
+    },
+    {
+      "id": "F11",
+      "category": "recalc",
+      "front": "Force mass recalculation?",
+      "back": "A safety-net option after roll-up properties change."
+    },
+    {
+      "id": "F12",
+      "category": "create",
+      "front": "No MD yet?",
+      "back": "Create the master-detail relationship before the roll-up field."
+    },
+    {
+      "id": "F13",
+      "category": "count",
+      "front": "Does COUNT need a field to aggregate?",
+      "back": "No. It totals related records, optionally filtered."
+    },
+    {
+      "id": "F14",
+      "category": "limits",
+      "front": "Quote max roll-ups per object?",
+      "back": "Needs verification in current Help; do not invent a number."
+    },
+    {
+      "id": "F15",
+      "category": "md",
+      "front": "Why MD conversion is not free?",
+      "back": "Cascade delete, lost Owner, inherited sharing, possible skew."
+    },
+    {
+      "id": "F16",
+      "category": "attr",
+      "front": "Summarized object means?",
+      "back": "The detail object that supplies the records being aggregated."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is a roll-up summary field?",
+      "answer_30_seconds": "A custom field on the master that aggregates master-detail children with COUNT, SUM, MIN, or MAX. It is not a formula that queries children and not a lookup feature.",
+      "answer_2_minutes": "I place it on the parent. I confirm MD and allowed types. I mention optional filters and recalc options. I refuse lookup children and spanning-formula inputs. I name alternatives without converting life cycle just for a tally.",
+      "example": "LAB_UnitCount__c COUNT on LAB_Property__c summarizing LAB_Unit__c.",
+      "tradeoffs": [
+        "Native roll-up vs Flow stamp",
+        "COUNT vs SUM types"
+      ],
+      "follow_ups": [
+        "Where is the field created?",
+        "Can you filter occupied units?"
+      ],
+      "weak_answer_warnings": [
+        "Calling any total a roll-up"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "Latest inspection date on Property when inspections are lookup?",
+      "answer_30_seconds": "Native roll-up is ineligible. Keep lookup if inspections need Owner. Use a report or a maintained stored date via Flow or Apex.",
+      "answer_2_minutes": "I will not convert inspections to MD just for MAX. That would cascade-delete audits and remove queues. I document the alternative owner. I do not write a Property formula that pretends to MAX children.",
+      "example": "Design note: LAB_LastInspection__c maintained by Flow, not a roll-up.",
+      "tradeoffs": [
+        "Report vs stored date",
+        "MD conversion vs alternative"
+      ],
+      "follow_ups": [
+        "Who owns the Flow?",
+        "What if we later make inspections MD?"
+      ],
+      "weak_answer_warnings": [
+        "Converting to MD in the interview without life-cycle talk"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "design",
+      "question": "When would you refuse a roll-up even if MD exists?",
+      "answer_30_seconds": "When the input is a cross-object formula, when the child type is wrong for the operation, or when 10,000-child skew makes a maintained aggregate dangerous without a volume plan.",
+      "answer_2_minutes": "I still like native roll-ups for honest MD children. I check SUM types. I check DATA-005 volume. I do not roll up a spanning city formula. I mention mass recalc as a sandbox tool after filter changes.",
+      "example": "Rejected rolling up Inspection.LAB_PropertyCity__c formula even if someone later made inspections MD.",
+      "tradeoffs": [
+        "Type mismatch vs spanning ban",
+        "Skew vs convenience"
+      ],
+      "follow_ups": [
+        "What types can MAX use?",
+        "When do you force mass recalc?"
+      ],
+      "weak_answer_warnings": [
+        "Always saying yes if MD exists"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "foundational",
+      "question": "Compare formula fields and roll-up summary fields.",
+      "answer_30_seconds": "Formulas calculate from the same row or parents. Roll-ups aggregate children onto the master. Formulas do not COUNT children. Roll-ups cannot ingest cross-object formulas.",
+      "answer_2_minutes": "Direction is the interview gold. City on inspection is a formula. Unit count on property is a roll-up. I mention return type vs roll-up operation. I keep validation rules out of both.",
+      "example": "LAB_PropertyCity__c formula on Inspection vs LAB_UnitCount__c roll-up on Property.",
+      "tradeoffs": [
+        "Up vs down",
+        "Display vs aggregate"
+      ],
+      "follow_ups": [
+        "Can a same-object formula be rolled up?",
+        "Can a roll-up be used in a formula?"
+      ],
+      "weak_answer_warnings": [
+        "Using the words interchangeably"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "The roll-up wizard does not list Inspection as a summarized object.",
+      "answer_30_seconds": "Inspection is not a master-detail child of this master. The wizard only summarizes MD details.",
+      "answer_2_minutes": "I open Fields & Relationships on Inspection and confirm lookup vs MD. I do not recreate Property. I either change the model with a life-cycle review or pick an alternative. I also confirm I started the field on the master, not the child.",
+      "example": "Inspection.Property__c is lookup, so it never appears in Property's roll-up summarized-object list.",
+      "tradeoffs": [
+        "Fix relationship vs alternative",
+        "Wrong object vs wrong field type"
+      ],
+      "follow_ups": [
+        "Could a junction be summarized?",
+        "What if there are two MD parents?"
+      ],
+      "weak_answer_warnings": [
+        "Toggling the browser and retrying the wizard only"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "scenario",
+      "question": "SUM of unit square footage is missing the field in the picker.",
+      "answer_30_seconds": "LAB_SqFt__c is probably Text or a spanning formula. SUM needs number, currency, or percent on the detail.",
+      "answer_2_minutes": "I inspect the child field type (DATA-002). I convert or replace the field in sandbox if data allows. I do not SUM a text '1200'. I do not change the roll-up to COUNT and call it done if they needed area.",
+      "example": "Recreated LAB_SqFt__c as Number; SUM then appeared.",
+      "tradeoffs": [
+        "Convert type vs new number field",
+        "COUNT occupied vs SUM area"
+      ],
+      "follow_ups": [
+        "What types does MIN allow?",
+        "Can you SUM a currency field?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the page layout"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Filtered COUNT of occupied units—how?",
+      "answer_30_seconds": "A roll-up summary with filter criteria on the occupied checkbox, not a second object.",
+      "answer_2_minutes": "I create COUNT on Property, summarized object Unit, filter LAB_Occupied__c equals true. If the org is multilingual I enter filter values in the default language as Help says. I test occupied and vacant LAB_ units.",
+      "example": "LAB_OccupiedUnitCount__c COUNT where Occupied is true.",
+      "tradeoffs": [
+        "Filter vs two roll-ups",
+        "Checkbox vs status picklist filter"
+      ],
+      "follow_ups": [
+        "Do you need mass recalc after changing the filter?",
+        "Can you filter on a spanning formula?"
+      ],
+      "weak_answer_warnings": [
+        "Creating OccupiedUnit__c as a new object"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "foundational",
+      "question": "What alternatives do you name when native roll-up does not fit?",
+      "answer_30_seconds": "A report or dashboard for read-only totals; a stored number maintained by Flow or Apex when the value must live on the record; or a relationship change only if cascade and Owner are acceptable.",
+      "answer_2_minutes": "I treat alternatives as first-class interview content. I do not endorse a specific AppExchange package. I do not pretend a formula COUNT exists. I mention AUTO-001 and APEX topics own the automation mechanics. I warn about writers and skew if we stamp a number on a hot parent.",
+      "example": "Weekly inspection report plus optional Flow increment on Property.LAB_InspectionCount__c.",
+      "tradeoffs": [
+        "Report vs stored field",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "Who recalculates after a data fix?",
+        "How do you prevent double-count in Flow?"
+      ],
+      "weak_answer_warnings": [
+        "Saying there is no alternative"
+      ]
+    }
+  ]
+}

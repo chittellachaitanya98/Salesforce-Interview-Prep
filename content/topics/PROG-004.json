@@ -1,0 +1,992 @@
+{
+  "topic_id": "PROG-004",
+  "slug": "lists-sets-maps-iterators-and-choosing-the-correct-coll",
+  "title": "Lists, sets, maps, iterators, and choosing the correct collection",
+  "track": "Programming foundations for Salesforce",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "PROG-003"
+  ],
+  "objectives": [
+    "Define Apex List, Set, and Map using the Collections guide meanings.",
+    "Choose a list, set, or map from a signal such as order, uniqueness, or key lookup.",
+    "Walk a collection with for-each or an Iterator (hasNext/next) without inventing item-count limits.",
+    "Explain that collection size is heap-limited, not a fixed item cap."
+  ],
+  "diagnostic_question": "You have duplicate LAB_ Account Ids from two queries, you must keep first-seen order for a UI, and you must later find a Case by AccountId. Which collections do you allocate, what do you iterate, and what do you refuse to put in a loop?",
+  "definition": "Apex collections are lists, sets, or maps. A list is ordered and index-addressable. A set is unordered and unique. A map stores unique keys to values. There is no fixed item-count cap; heap size is the limit. Iterators traverse items with hasNext and next. ([Collections](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_collections.htm); [Lists](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_collections_lists.htm); [Custom Iterators](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_iterable.htm))",
+  "why_it_matters": "The interview question is almost always 'why a Map of Id to Account instead of a list in a loop'. Wrong collection choice causes duplicate Ids, lost order, or SOQL in a loop. Saying 'a list can hold only 200 items' is a common invented limit.",
+  "sixty_second_explanation": "Think of a parcel sorting hub. A list is the numbered conveyor slots—order matters, duplicates can sit in two slots. A set is the unique-tracking scanner: the same barcode cannot occupy two unique bins. A map is the wall of cubbies: each barcode key opens exactly one cubby of contents. An iterator is the night walker who asks 'is there a next parcel?' and then takes it. The hub is not limited to a magic 200 parcels; the constraint is how much you can pile before the floor (heap) gives way.",
+  "deeper_explanation": [
+    "Collections are lists, sets, or maps. Elements and keys can be primitives, sObjects, user-defined types, or nested collections. Apex is statically typed: you declare the type parameters. ([Collections](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_collections.htm))",
+    "A list is ordered; elements are distinguished by indices. Lists may nest up to seven inner collection levels (eight overall). Uninitialized lists are null until you assign a literal or new List<T>(). Array notation works for one-dimensional lists. ([Lists](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_collections_lists.htm))",
+    "A set does not contain duplicates and is unordered. A map is unique keys to a single value each. Sets and maps are the usual tools for Id uniqueness and Id-to-record lookup before a second query. Decimal keys with different scales can hash differently—Needs verification in your scenario; the primitives guide warns about Decimal in sets/maps.",
+    "An iterator traverses a collection. The Iterator interface requires hasNext and next, declared public or global. Iterable.iterator() returns that iterator. Custom iterators appear in Batchable start methods. A for-each loop is the everyday iterator. ([Custom Iterators](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_iterable.htm); [Loops](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_loops.htm))"
+  ],
+  "mental_model": {
+    "analogy": "Parcel sorting hub: numbered conveyor (list), unique-tracking scanner (set), barcode cubbies (map), night walker asking hasNext (iterator).",
+    "useful_mapping": [
+      "list → numbered conveyor slots; order and index matter",
+      "set → unique barcode scan; duplicates bounce",
+      "map → cubby wall; one key, one value",
+      "iterator → walker with hasNext/next",
+      "for-each → the everyday walker you do not write by hand",
+      "heap → floor load limit, not a 200-parcel myth",
+      "Id key → the barcode you should have queried once",
+      "nested list → a pallet of totes, up to documented nesting"
+    ],
+    "where_it_breaks": [
+      "Apex sets are unordered; a physical scanner tray might still look ordered.",
+      "sObject uniqueness in a set uses equality rules you must not invent—use Id sets when unsure.",
+      "The 200 figure people remember is a trigger batch size / for-loop batch size neighbor, not a collection item cap.",
+      "The analogy does not encode SOQL row limits."
+    ]
+  },
+  "teach_back_prompt": "Using the sorting hub, explain when you choose a list, a set, or a map, how an iterator walks, and why 'max 200 items' is the wrong limit. Then name where the hub analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Define list, set, map, and iterator in one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given duplicate Ids plus a later lookup, pick set then map and say why not only a list."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Write for (Id i : idSet) and contrast it with a custom Iterator."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "What limits a collection: heap versus invented item caps versus SOQL rows?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: choose the correct collection with one bulkification example."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-COLL",
+      "title": "Collections",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_collections.htm",
+      "supports": "Collections are lists, sets, or maps; no item-count cap; heap size is the general limit; parameterized types.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace List/Set/Map class method catalogs."
+    },
+    {
+      "source_id": "SF-APEX-LISTS",
+      "title": "Lists",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_collections_lists.htm",
+      "supports": "Ordered, index-distinguished; nested collections up to seven inner levels; lists start null.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Sort-order details by type are on a child page."
+    },
+    {
+      "source_id": "SF-APEX-ITER",
+      "title": "Custom Iterators",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_iterable.htm",
+      "supports": "Iterator hasNext/next; Iterable.iterator(); methods public or global; Batchable start can return Iterable.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Batch job design is APEX-011; this lesson only needs the iterator contract."
+    },
+    {
+      "source_id": "SF-APEX-LOOPS",
+      "title": "Loops",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_loops.htm",
+      "supports": "for (variable : array_or_set) is the standard collection walk.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define Map iteration methods; see Map class."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "List: order + index",
+        "Set: unique",
+        "Map: key to value",
+        "Iterator hasNext/next",
+        "Heap not 200-item cap",
+        "Map for Id lookup"
+      ],
+      "accessible_description": "Portrait map: list ordered, set unique, map keyed, iterator walks, heap limits size, maps prevent query-in-loop."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-COLL",
+        "SF-APEX-LISTS",
+        "SF-APEX-ITER",
+        "SF-APEX-LOOPS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Choose list, set, or map"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Coll[Apex collection] --> List[List: ordered indices]\n  Coll --> Set[Set: unique unordered]\n  Coll --> Map[Map: unique key to value]\n  List --> Walk[for-each or Iterator]\n  Set --> Walk\n  Map --> Keys[keySet values]\n  Keys --> Walk\n  Walk --> Heap[Bounded by heap size]",
+      "decision": "flowchart TD\n  Need[Need many values?] --> Q1{Does order or index matter?}\n  Q1 -->|Yes| List[List]\n  Q1 -->|No| Q2{Must values be unique?}\n  Q2 -->|Yes uniqueness only| Set[Set]\n  Q2 -->|Lookup by Id or key| Map[Map]\n  List --> Q3{Walk how?}\n  Q3 -->|Everyday| For[for variable : list or set]\n  Q3 -->|Custom or Batchable start| Iter[Iterator hasNext next]\n  Map --> Bulk[Query once, map.get in the loop — not SOQL in the loop]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Collections in Apex can be lists, sets, or maps. There is no limit on the number of items a collection can hold; there is a general limit on heap size.",
+      "source_ids": ["SF-APEX-COLL"],
+      "scope": "Collections and limits",
+      "validation": "Collections page note on item count versus heap.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "A list is an ordered collection whose elements are distinguished by indices. Lists can nest collections up to seven inner levels (eight overall) and are initialized to null until assigned.",
+      "source_ids": ["SF-APEX-LISTS"],
+      "scope": "Lists",
+      "validation": "Lists page.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A set is an unordered collection without duplicates. A map is unique keys to a single value. Keys and values can be primitives, sObjects, user-defined types, or collections.",
+      "source_ids": ["SF-APEX-COLL"],
+      "scope": "Sets and maps",
+      "validation": "Collections page definitions.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "An iterator traverses a collection via hasNext and next (public or global). Iterable.iterator() returns that iterator. for (variable : array_or_set) is the standard loop walk.",
+      "source_ids": ["SF-APEX-ITER", "SF-APEX-LOOPS"],
+      "scope": "Iterators",
+      "validation": "Custom Iterators and Loops pages.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Collection definitions are stable in Summer '26 (API 67.0). Reverify heap-size numbers on the governors page if an interview asks for a figure; this lesson does not invent one.",
+  "unresolved_uncertainty": [
+    "Exact sObject equality in a Set<sObject> without Ids should be confirmed on current Set documentation before claiming field-based uniqueness."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "List",
+      "telugu": "క్రమం ఉన్న స్లాట్లు; ఇండెక్స్ తో చూస్తారు."
+    },
+    {
+      "english": "Set",
+      "telugu": "ప్రత్యేక విలువలు; డూప్లికేట్ లేవు."
+    },
+    {
+      "english": "Map",
+      "telugu": "కీకి ఒక విలువ; Id లుకప్ కోసం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "List keeps order and index. Set keeps unique values. Map looks up by key. Iterate with for-each or hasNext/next. Size is heap-bound, not a 200-item cap. Maps of Id prevent query-in-loop.",
+    "two_minutes": "I gather Ids into a Set to drop duplicates, query once, and put results in a Map<Id, sObject> so the record loop uses get. I use a List when the UI or DML order matters. I do not invent a 200-item collection limit—the Collections page says heap is the constraint. I mention custom Iterator only when Batchable start or external paging needs it. I null-check lists because they start null."
+  },
+  "terminology": [
+    {
+      "term": "list",
+      "plain": "An ordered row of slots you can address by index.",
+      "precise": "Ordered collection distinguished by indices. May nest collections (seven inner levels). Starts null until assigned.",
+      "example": "List<Id> labIds = new List<Id>{ id1, id2 };",
+      "non_example": "A related-list on a Lightning page is UI, not a List<T>.",
+      "confusable_neighbor": "Set: uniqueness without order.",
+      "boundary": "Trigger.new is a list-like context variable; trigger frameworks are later."
+    },
+    {
+      "term": "set",
+      "plain": "A bag of unique values with no promised order.",
+      "precise": "Unordered collection that does not contain duplicates. Useful for Id deduplication before SOQL IN binds.",
+      "example": "Set<Id> labAccountIds = new Set<Id>(); labAccountIds.add(a.Id);",
+      "non_example": "A permission set is a security artifact, not Set<T>.",
+      "confusable_neighbor": "List: may contain duplicates and is ordered.",
+      "boundary": "Do not invent sObject field-equality rules here; prefer Set<Id>."
+    },
+    {
+      "term": "map",
+      "plain": "A wall of cubbies: one key opens one value.",
+      "precise": "Unique keys each map to a single value. The bulk pattern is Map<Id, sObject> after one query.",
+      "example": "Map<Id, Account> labById = new Map<Id, Account>([SELECT Id, Name FROM Account WHERE Id IN :ids]);",
+      "non_example": "A Salesforce map/location field is geography, not Map<K,V>.",
+      "confusable_neighbor": "Set of keys versus the map itself.",
+      "boundary": "Decimal keys with different scales can be unequal; see primitives caution."
+    },
+    {
+      "term": "iterator",
+      "plain": "A walker that asks whether another item exists, then takes it.",
+      "precise": "Iterator.hasNext() and next(); methods must be public or global. Iterable.iterator() supplies the walker. Used in custom traversals and some Batchable start methods.",
+      "example": "while (it.hasNext()) { Account a = it.next(); }",
+      "non_example": "A SOQL query locator is related but is not a hand-written Iterator class unless you wrap it.",
+      "confusable_neighbor": "for-each: uses iteration without you implementing the interface.",
+      "boundary": "Batch job choice is APEX-011."
+    },
+    {
+      "term": "collection",
+      "plain": "A typed container: list, set, or map.",
+      "precise": "The Collections page names those three. You must specify type parameters. No documented item-count cap; heap applies.",
+      "example": "List<String>, Set<Id>, Map<Id, Case>",
+      "non_example": "A custom metadata 'collection' of records is data, not this type.",
+      "confusable_neighbor": "Array notation: syntactic sugar on a one-dimensional list.",
+      "boundary": "Heap numbers live on the governors page."
+    },
+    {
+      "term": "for-each",
+      "plain": "The everyday loop that walks a list or set.",
+      "precise": "for (variable : array_or_set) from the Loops page. Prefer this over a manual iterator for in-memory collections.",
+      "example": "for (Id i : labIds) { }",
+      "non_example": "A Flow Loop element is not Apex for-each.",
+      "confusable_neighbor": "SOQL-for loop: walks a query, still a loop form from PROG-002.",
+      "boundary": "Do not query inside this loop over Trigger.new."
+    },
+    {
+      "term": "heap size",
+      "plain": "How much memory the transaction may hold, including collections.",
+      "precise": "The Collections page: no item-count limit; general heap-size limit. Exact megabytes are on Execution Governors—do not invent them here.",
+      "example": "A huge List<String> of payloads fails on heap, not on 'item 201'.",
+      "non_example": "The 200-record trigger batch size is not a List capacity.",
+      "confusable_neighbor": "SOQL 50,000 row limit: query rows, not collection capacity.",
+      "boundary": "Cite governors if asked for a number (APEX-007)."
+    },
+    {
+      "term": "keySet",
+      "plain": "The set of keys living in a map.",
+      "precise": "Map.keySet() yields a Set of keys you can iterate. Values are retrieved with get.",
+      "example": "for (Id i : labById.keySet()) { Account a = labById.get(i); }",
+      "non_example": "A Set you built separately is not automatically the map's keySet.",
+      "confusable_neighbor": "values(): the collection of values, which may contain duplicates.",
+      "boundary": "Method catalog is the Map class reference."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name the access pattern",
+      "actor": "Developer",
+      "trigger": "More than one value",
+      "before": "Unclear whether order, uniqueness, or lookup matters",
+      "after": "Choose list, set, or map",
+      "observe": "Declaration uses type parameters",
+      "failure": "List<sObject> plus nested query for every row"
+    },
+    {
+      "step": 2,
+      "transition": "Allocate and fill",
+      "actor": "Developer",
+      "trigger": "Type chosen",
+      "before": "Collection variable is null",
+      "after": "new List/Set/Map or a literal; Ids added to a set",
+      "observe": "NullPointerException if you add to a null list",
+      "failure": "Forgetting lists start null"
+    },
+    {
+      "step": 3,
+      "transition": "Query once, map by Id",
+      "actor": "Developer",
+      "trigger": "Need related records",
+      "before": "Temptation to query in the loop",
+      "after": "Set<Id> then Map<Id, sObject> from one SOQL",
+      "observe": "Loop uses map.get",
+      "failure": "SOQL inside for-each"
+    },
+    {
+      "step": 4,
+      "transition": "Iterate",
+      "actor": "Developer",
+      "trigger": "Must visit each item",
+      "before": "Manual index or custom walker undecided",
+      "after": "for-each, or Iterator when Batchable/custom traversal needs it",
+      "observe": "hasNext/next only on a real Iterator",
+      "failure": "Implementing Iterator for a simple List walk"
+    }
+  ],
+  "when_to_use": [
+    "When you must choose a list, set, or map for ordered values, unique Ids, or key lookup.",
+    "When an interview asks how iterators walk a collection versus a simple for-each.",
+    "When someone claims a collection can hold only 200 items and you need the heap correction.",
+    "When designing the Set-of-Ids then Map-by-Id pattern so a loop does not query."
+  ],
+  "when_not_to_use": [
+    "Do not use this collections lesson as a substitute for SOQL relationship query design (APEX-003).",
+    "Do not treat list/set/map choice as a governor-number memorization drill (APEX-007).",
+    "Do not implement a custom iterator when for-each over a list already walks the data.",
+    "Do not store secrets or real customer payloads in lab collections or debug dumps."
+  ],
+  "configuration_or_code_location": [
+    "Apex class or test in a sandbox: List<T>, Set<T>, Map<K,V> declarations.",
+    "SOQL assigned into a Map<Id, sObject> constructor.",
+    "for (Type x : collection) or a class implementing Iterator<T>.",
+    "Heap failures appear as LimitException, not a '201st item' message."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox method receives two List<Id> of LAB_ Account Ids that overlap. It must produce unique Ids, query those Accounts once, and let a Case loop find Account.Name by AccountId without a second query per Case. Order of first-seen Ids must be kept for a debug string. No production data.",
+    "inputs": [
+      "List<Id> from query A and query B",
+      "List<Case> already in memory",
+      "Need Account.Name on each Case"
+    ],
+    "decisions": [
+      {
+        "decision": "Walk both Id lists into a List for first-seen order and a Set to skip duplicates.",
+        "because": "List keeps order; Set enforces uniqueness.",
+        "rejected": "Only a Set, which drops first-seen order"
+      },
+      {
+        "decision": "Map<Id, Account> from one SOQL WHERE Id IN :uniqueIds.",
+        "because": "Map is the key-to-value collection for lookup in the Case loop.",
+        "rejected": "for (Case c : cases) { Account a = [SELECT Name FROM Account WHERE Id = :c.AccountId]; }"
+      },
+      {
+        "decision": "Iterate Cases with for-each and map.get; no custom Iterator.",
+        "because": "In-memory lists use for (variable : array_or_set).",
+        "rejected": "Hand-written Iterator for a simple list"
+      }
+    ],
+    "configuration_or_code": [
+      "Set<Id> seen = new Set<Id>(); List<Id> ordered = new List<Id>(); for (Id i : listA) { if (seen.add(i)) { ordered.add(i); } } same for listB;",
+      "Map<Id, Account> byId = new Map<Id, Account>([SELECT Id, Name FROM Account WHERE Id IN :seen]);",
+      "for (Case c : labCases) { Account a = byId.get(c.AccountId); }"
+    ],
+    "output": "Unique Ids, stable first-seen order, one query, Case loop uses the map.",
+    "verification": [
+      "seen.size() is less than listA.size()+listB.size() when overlaps exist.",
+      "No SOQL appears inside the Case loop.",
+      "ordered preserves first occurrence."
+    ],
+    "self_explanation": "Set for uniqueness, list for order, map for lookup, for-each to walk."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; synthetic LAB_ Accounts and Cases only.",
+    "starting_state_checks": [
+      "Can insert LAB-named test records or use mocks in tests.",
+      "No production queries."
+    ],
+    "steps": [
+      "In LAB_CollectionLab, build overlapping Id lists, a Set for unique Ids, and a List that records first-seen order.",
+      "Query once into Map<Id, Account> and walk a Case list with get.",
+      "Assert a duplicate Id appears once in the set and that the Case loop performs no extra query (single SOQL in the debug log / Limits.getQueries).",
+      "Write a tiny Iterator<Integer> for 1..3 with hasNext/next and consume it in a while loop; then delete it if unused."
+    ],
+    "guided_completion": [
+      "If getQueries rose inside the Case loop, you still queried per row.",
+      "If the list allowed duplicate Ids in the 'unique' structure, you used a List where a Set belonged."
+    ],
+    "independent_challenge": "Explain in a comment why you would not tell an interviewer that a List maxes out at 200 elements.",
+    "evidence": [
+      "Test asserting set size and map lookup.",
+      "Comment or assertion citing heap—not item cap—from the Collections page."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ classes and synthetic rows.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not prove Map equality for custom types or Batchable Iterable start."
+  },
+  "decision_table": [
+    {
+      "signal": "UI or DML must keep insertion order, and duplicates are allowed or already unique.",
+      "choose": "List, walk with for-each.",
+      "not": "A Set if you still need stable first-seen order.",
+      "why": "A list is ordered and index-addressable; a set is unordered."
+    },
+    {
+      "signal": "You must drop duplicate Ids before a SOQL IN clause.",
+      "choose": "Set<Id> as the unique collection.",
+      "not": "A List that you scan with nested loops to fake uniqueness.",
+      "why": "A set does not contain duplicates."
+    },
+    {
+      "signal": "Inside a record loop you need a related row by Id.",
+      "choose": "Map<Id, sObject> filled by one query, then get.",
+      "not": "SOQL inside the for-each loop.",
+      "why": "A map is the key-to-value collection; query-in-loop is the bulk fail."
+    },
+    {
+      "signal": "Batchable start or an external sequence is not a simple in-memory list.",
+      "choose": "Implement Iterator/Iterable with hasNext and next.",
+      "not": "A custom iterator for a list you already have in memory.",
+      "why": "Custom Iterators are for custom traversal; for-each already walks lists and sets."
+    }
+  ],
+  "limitations": [
+    "Does not quote heap megabytes; see governors.",
+    "Does not fully specify Set<sObject> equality.",
+    "Does not teach relationship SOQL instead of maps.",
+    "Iterator in Batchable start is a pointer, not a job-type lesson."
+  ],
+  "security_notes": [
+    "Collections in debug logs can leak personal data.",
+    "Map keys that are Ids are still subject to sharing when you query.",
+    "Do not stash secrets in static maps."
+  ],
+  "common_mistakes": [
+    "Inventing a 200-item list cap.",
+    "Querying inside a loop instead of Map.get.",
+    "Using a Set when order matters.",
+    "Calling add on a null List.",
+    "Writing Iterator for a trivial list walk."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "NullPointerException on list.add.",
+      "check": [
+        "Was the list assigned new List<T>() or a literal?",
+        "Lists start null."
+      ],
+      "do_not_assume": "Apex auto-constructs lists."
+    },
+    {
+      "symptom": "Duplicate Ids still processed.",
+      "check": [
+        "Did you use a List instead of a Set?",
+        "Did add() on a set get skipped because the set was not used?"
+      ],
+      "do_not_assume": "SOQL DISTINCT is required for Id sets."
+    },
+    {
+      "symptom": "Cannot find a related record in the loop.",
+      "check": [
+        "Is there a Map keyed by the lookup Id?",
+        "Did the query select the fields you get()?"
+      ],
+      "do_not_assume": "A List preserves Id lookup."
+    }
+  ],
+  "production_notes": [
+    "Prefer Set<Id> + Map<Id,sObject> in triggers.",
+    "Do not invent collection size limits in design reviews.",
+    "No production DML from this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which collections does the Apex Collections page name?",
+      "options": {
+        "A": "Lists, sets, and maps",
+        "B": "Only arrays",
+        "C": "Only maps",
+        "D": "Queues and stacks as first-class types"
+      },
+      "answer": "A",
+      "rationale": "Collections in Apex can be lists, sets, or maps.",
+      "distractor_explanations": {
+        "B": "Array notation is a list convenience.",
+        "C": "Maps are one of three.",
+        "D": "Not the named trio."
+      },
+      "concept": "collections",
+      "citation_ids": ["SF-APEX-COLL"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What limits how many items a collection can hold, per the Collections page?",
+      "options": {
+        "A": "Heap size, not a fixed item count",
+        "B": "Exactly 200 items",
+        "C": "Exactly 50,000 items",
+        "D": "Ten items in Developer Edition"
+      },
+      "answer": "A",
+      "rationale": "There is no item-count limit; there is a general heap-size limit.",
+      "distractor_explanations": {
+        "B": "200 is a neighboring trigger/for-loop batch figure, not collection capacity.",
+        "C": "That is a SOQL row figure people mix in.",
+        "D": "Not a collection rule."
+      },
+      "concept": "heap vs item cap",
+      "citation_ids": ["SF-APEX-COLL"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "You need unique Account Ids before a query. Which collection?",
+      "options": {
+        "A": "Set<Id>",
+        "B": "List<Id> only, with no uniqueness",
+        "C": "Map<String, String> of names",
+        "D": "An interface"
+      },
+      "answer": "A",
+      "rationale": "A set does not contain duplicates.",
+      "distractor_explanations": {
+        "B": "Lists allow duplicates.",
+        "C": "Wrong key story.",
+        "D": "Not a collection of Ids."
+      },
+      "concept": "sets",
+      "citation_ids": ["SF-APEX-COLL"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A Case loop must read Account.Name without querying per Case. What collection finishes the design?",
+      "options": {
+        "A": "Map<Id, Account> filled by one query, then get",
+        "B": "A Set of Case subjects",
+        "C": "A List you binary-search by hand",
+        "D": "An iterator that queries in next()"
+      },
+      "answer": "A",
+      "rationale": "A map is unique keys to values—the Id lookup pattern.",
+      "distractor_explanations": {
+        "B": "Does not look up Account.",
+        "C": "A map is the tool.",
+        "D": "That recreates query-in-loop."
+      },
+      "concept": "maps",
+      "citation_ids": ["SF-APEX-COLL"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How is a list different from a set?",
+      "options": {
+        "A": "A list is ordered and index-based; a set is unordered and unique",
+        "B": "A set is ordered; a list forbids duplicates",
+        "C": "They are identical",
+        "D": "Lists cannot hold sObjects"
+      },
+      "answer": "A",
+      "rationale": "Lists page: ordered, indices. Collections page: sets unordered, no duplicates.",
+      "distractor_explanations": {
+        "B": "Reversed.",
+        "C": "Different contracts.",
+        "D": "Lists can hold sObjects."
+      },
+      "concept": "lists vs sets",
+      "citation_ids": ["SF-APEX-LISTS", "SF-APEX-COLL"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which methods must a custom Iterator implement?",
+      "options": {
+        "A": "hasNext and next, public or global",
+        "B": "only size()",
+        "C": "only iterator()",
+        "D": "execute and finish"
+      },
+      "answer": "A",
+      "rationale": "Iterator interface: hasNext and next; methods public or global.",
+      "distractor_explanations": {
+        "B": "Not the Iterator contract.",
+        "C": "iterator() is on Iterable.",
+        "D": "Batchable methods."
+      },
+      "concept": "iterators",
+      "citation_ids": ["SF-APEX-ITER"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "List<Id> ids; ids.add(someId); throws NullPointerException. Why first?",
+      "options": {
+        "A": "The list was never assigned; lists start null",
+        "B": "Sets cannot hold Ids",
+        "C": "Heap was exceeded at item 1",
+        "D": "add is not a List method"
+      },
+      "answer": "A",
+      "rationale": "Lists are initialized to null until assigned a literal or new List.",
+      "distractor_explanations": {
+        "B": "Set<Id> is common.",
+        "C": "Unlikely at one Id.",
+        "D": "add exists."
+      },
+      "concept": "lists null",
+      "citation_ids": ["SF-APEX-LISTS"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "When is a custom Iterator worth writing instead of for-each?",
+      "options": {
+        "A": "Custom traversal or Batchable start returning Iterable, not a simple in-memory list",
+        "B": "Always; for-each is deprecated",
+        "C": "Only for Maps",
+        "D": "Only in JavaScript"
+      },
+      "answer": "A",
+      "rationale": "Custom Iterators page: custom instructions, external data, Batchable example. Loops page already has for-each.",
+      "distractor_explanations": {
+        "B": "for-each is standard.",
+        "C": "Maps use keySet/values.",
+        "D": "This is Apex."
+      },
+      "concept": "iterators",
+      "citation_ids": ["SF-APEX-ITER", "SF-APEX-LOOPS"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Map versus Set for 'does this Id already exist?'",
+      "options": {
+        "A": "Set<Id> is enough for membership; use a map if you also need the record",
+        "B": "Only a map can test membership",
+        "C": "Only a list can test membership",
+        "D": "Sets cannot hold Ids"
+      },
+      "answer": "A",
+      "rationale": "Set uniqueness answers membership; map adds the value.",
+      "distractor_explanations": {
+        "B": "Set.contains is the membership tool.",
+        "C": "List membership is a scan.",
+        "D": "Set<Id> is idiomatic."
+      },
+      "concept": "sets vs maps",
+      "citation_ids": ["SF-APEX-COLL"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Collection item cap versus SOQL 50,000 rows versus trigger batch 200?",
+      "options": {
+        "A": "They are different limits; collections are heap-bound, not a 200-item cap",
+        "B": "They are the same number",
+        "C": "Collections stop at 200",
+        "D": "SOQL row limits are collection capacity"
+      },
+      "answer": "A",
+      "rationale": "Collections page: no item-count limit, heap applies. Other numbers are neighboring platform limits.",
+      "distractor_explanations": {
+        "B": "Common mix-up.",
+        "C": "Invented.",
+        "D": "Query rows ≠ list capacity."
+      },
+      "concept": "choosing limits",
+      "citation_ids": ["SF-APEX-COLL"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Everyday walk of a Set<Id>?",
+      "options": {
+        "A": "for (Id i : idSet)",
+        "B": "switch (idSet)",
+        "C": "Only a custom Iterator is legal",
+        "D": "Sets cannot be iterated"
+      },
+      "answer": "A",
+      "rationale": "for (variable : array_or_set) is a documented loop.",
+      "distractor_explanations": {
+        "B": "switch is not a set walker.",
+        "C": "Custom iterators are optional.",
+        "D": "Sets are iterable in for-each."
+      },
+      "concept": "iterators / for-each",
+      "citation_ids": ["SF-APEX-LOOPS"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How many nested collection levels may a list contain inside it?",
+      "options": {
+        "A": "Up to seven nested collections (eight levels overall)",
+        "B": "Unlimited nesting",
+        "C": "One only",
+        "D": "Nesting is forbidden"
+      },
+      "answer": "A",
+      "rationale": "Lists page: up to seven levels of nested collections, eight overall.",
+      "distractor_explanations": {
+        "B": "There is a documented nesting cap.",
+        "C": "More than one is allowed.",
+        "D": "Nesting is allowed."
+      },
+      "concept": "lists",
+      "citation_ids": ["SF-APEX-LISTS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "What is an Apex list?",
+      "back": "An ordered collection whose elements are distinguished by indices."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "What is an Apex set?",
+      "back": "An unordered collection that does not contain duplicates."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "What is an Apex map?",
+      "back": "Unique keys each mapping to a single value."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "Iterator methods?",
+      "back": "hasNext and next, declared public or global."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "What limits collection size per the Collections page?",
+      "back": "Heap size. There is no fixed item-count cap."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "Need unique Ids for SOQL IN?",
+      "back": "Use a Set<Id>, not a list that keeps duplicates."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "Need Account by Id inside a Case loop?",
+      "back": "Query once into Map<Id, Account> and get; do not query in the loop."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Need first-seen order and uniqueness?",
+      "back": "Set to skip duplicates plus a List that records first insertion order."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "Simple in-memory walk: Iterator or for-each?",
+      "back": "for (variable : list or set). Save custom Iterator for special traversal."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "Is 200 the max List size?",
+      "back": "No. That figure is a neighboring batch size, not collection capacity."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "Why not debug an entire collection of contacts?",
+      "back": "Logs can leak personal data. Use LAB_ names and counts."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Does a Map bypass sharing?",
+      "back": "No. The query that filled the map still runs under sharing rules."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "Decimal as a Map key caution?",
+      "back": "Equal numbers with different scales may not share a hashCode. Prefer Id keys."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "list.add throws NPE. First check?",
+      "back": "The list is still null; assign new List<T>() or a literal."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Two queries return overlapping Ids. First collection?",
+      "back": "Set<Id> to unique them before the combined query or map."
+    },
+    {
+      "id": "F16",
+      "category": "terminology",
+      "front": "Iterable versus Iterator?",
+      "back": "Iterable.iterator() returns an Iterator that exposes hasNext/next."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you choose among lists, sets, maps, and iterators in Apex?",
+      "answer_30_seconds": "List for order and index, set for uniqueness, map for key lookup, for-each to walk, custom Iterator only for special traversal. Heap, not a 200-item cap.",
+      "answer_2_minutes": "I start from the access pattern. If I need duplicates or positions, List. If I need unique Ids, Set. If I need get-by-Id in a loop, Map after one query. I iterate with for-each unless Batchable start or external paging needs Iterator. I correct anyone who says lists stop at 200 items. I initialize collections because they start null.",
+      "example": "Set<Id> then Map<Id, Account> before a Case loop uses get.",
+      "tradeoffs": [
+        "Set loses order vs list plus set",
+        "Custom iterator vs for-each"
+      ],
+      "follow_ups": [
+        "What is heap versus SOQL rows?",
+        "How do you iterate a map?"
+      ],
+      "weak_answer_warnings": [
+        "200-item list myth"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why is Map<Id, sObject> the default bulk answer?",
+      "answer_30_seconds": "A map is key to value. One query fills it; the record loop uses get instead of SOQL per row.",
+      "answer_2_minutes": "The collection type matches the problem: lookup by Id. A list would force a scan. A set of Ids is the input to the query. Together they replace query-in-loop. I still mention heap if the map is enormous. I do not claim maps ignore sharing. I keep this distinct from relationship subqueries, which can also remove a loop query.",
+      "example": "new Map<Id, Account>([SELECT Id, Name FROM Account WHERE Id IN :ids]).",
+      "tradeoffs": [
+        "Map vs relationship SOQL",
+        "Heap of fat sObjects vs query fewer fields"
+      ],
+      "follow_ups": [
+        "What if the key is not Id?",
+        "Map constructor from a query list?"
+      ],
+      "weak_answer_warnings": [
+        "Using a list and nested loops to find Ids"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Two lists of Ids overlap; UI must show first-seen order. Design the collections.",
+      "answer_30_seconds": "Walk both lists; Set.add tells you if new; if new, also push onto an ordered List. Query from the set.",
+      "answer_2_minutes": "Set alone drops order. List alone keeps duplicates. The pair is the usual answer: membership test plus ordered output. Then Map if I need records. I iterate with for-each. I do not sort the set and hope. I initialize both collections before add.",
+      "example": "if (seen.add(id)) { ordered.add(id); } from the worked example.",
+      "tradeoffs": [
+        "Order versus uniqueness only"
+      ],
+      "follow_ups": [
+        "Does Set.add return Boolean in Apex?",
+        "When would you sort the list after?"
+      ],
+      "weak_answer_warnings": [
+        "Only a set, then claiming it is ordered"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "When would you implement Iterator instead of using a list for-each?",
+      "answer_30_seconds": "When traversal is custom, data is outside a simple list, or Batchable start returns Iterable.",
+      "answer_2_minutes": "The Custom Iterators page is for instructions you cannot express as a list walk, including some Batchable start methods. hasNext/next must be public or global. For Trigger.new or a queried list, for-each is enough. I would not write Iterator as ceremony. I separate this from choosing Queueable versus Batch.",
+      "example": "CustomIterator implementing Iterator<Account> as in the Developer Guide sample shape.",
+      "tradeoffs": [
+        "Queryable locator vs custom Iterable"
+      ],
+      "follow_ups": [
+        "What does Iterable.iterator return?",
+        "Must next throw when empty?"
+      ],
+      "weak_answer_warnings": [
+        "Iterator for every list"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A teammate says the list cannot exceed 200 elements so they chunk by hand. Response?",
+      "answer_30_seconds": "The Collections page says no item-count cap; heap is the limit. 200 is a different platform batch size.",
+      "answer_2_minutes": "I ask what they are chunking for. Trigger batch size 200 and for-loop list batch size 200 are neighboring facts on the governors page, not List capacity. If they hit heap, they should query fewer fields or process in platform batches. If they hit SOQL rows, that is a query limit. I will not let a design review invent a 200-item List type limit.",
+      "example": "A List of 500 Ids is legal; a 200-row trigger invocation is a different boundary.",
+      "tradeoffs": [
+        "Heap vs row limits vs trigger batch"
+      ],
+      "follow_ups": [
+        "Where is 200 documented?",
+        "When is Batch Apex the right chunker?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing with the 200-item myth"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "map.get returns null in the loop even though you queried. Checks?",
+      "answer_30_seconds": "Wrong key, query did not include that Id, or you built Map<String, ...> with 15-char versus 18-char mismatch.",
+      "answer_2_minutes": "I print keySet versus the lookup Id. I confirm the SOQL WHERE Id IN :ids used the same set. I check I did not store Name as the key. Id 15-to-18 conversion is a primitives topic; I mention it as Needs verification if the keys look truncated. I also check the map was assigned, not left null.",
+      "example": "byId.get(c.AccountId) is null when AccountId was not in the queried set.",
+      "tradeoffs": [
+        "Map<Id,sObject> vs Map<String,sObject>"
+      ],
+      "follow_ups": [
+        "containsKey versus get?",
+        "What if AccountId is null?"
+      ],
+      "weak_answer_warnings": [
+        "Querying again inside the loop as the fix"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you avoid a Map and use a relationship query instead?",
+      "answer_30_seconds": "When a single SOQL can walk parent or child fields and you do not need an independent Id lookup later.",
+      "answer_2_minutes": "Collections are not a mandate to query twice. If Case.Account.Name is available through a relationship query, I may skip the map. I use a map when I already have mixed sources of Ids or I will look up from several loops. This lesson still teaches the map because interviewers ask for it. I do not invent relationship syntax here beyond that decision.",
+      "example": "SELECT Id, Account.Name FROM Case versus Map of Account.",
+      "tradeoffs": [
+        "One fatter query vs a map from a second query"
+      ],
+      "follow_ups": [
+        "When do relationship queries hit other limits?",
+        "Can a map still help after a relationship query?"
+      ],
+      "weak_answer_warnings": [
+        "Maps are always required"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach list, set, map, and iterator with the parcel hub and where it breaks.",
+      "answer_30_seconds": "Numbered conveyor is list, unique scanner is set, cubby wall is map, night walker is iterator. It breaks because sets are unordered and 200 is not a hub capacity.",
+      "answer_2_minutes": "I walk a parcel through slots, the unique scan, and a barcode cubby. I have the walker ask hasNext. I then say a physical tray looks ordered even when a Set is not, sObject equality is not a barcode, and people keep citing 200 parcels because they remember trigger batch size. I finish with Set plus Map Apex, not a drawing only.",
+      "example": "seen.add(id) plus byId.get(id) narrated as scan then cubby.",
+      "tradeoffs": [
+        "Analogy vs writing the three declarations"
+      ],
+      "follow_ups": [
+        "Map keySet in the analogy?",
+        "Heap as floor load?"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphor"
+      ]
+    }
+  ]
+}

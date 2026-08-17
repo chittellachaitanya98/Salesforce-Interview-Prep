@@ -1,0 +1,1000 @@
+{
+  "topic_id": "ARCH-003",
+  "slug": "data-architecture-large-data-volumes-archiving-ownershi",
+  "title": "Data architecture, large data volumes, archiving, ownership skew, and query performance",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-002"
+  ],
+  "objectives": [
+    "Explain large data volumes as an elastic architecture concern: reduce records processed via selective queries and by limiting active data.",
+    "Define ownership data skew using the official threshold of a single user owning more than 10,000 records of an object, and parent-child skew at 10,000 or more children on one parent account.",
+    "Choose archiving or tiering to keep active data bounded rather than growing reports and sharing calculations without a policy.",
+    "Tune query performance with selective, index-friendly filters and explain why Recycle Bin soft-deletes still affect queries."
+  ],
+  "diagnostic_question": "Reports time out, a dummy user owns almost every LAB_Lead, and old closed rows still sit in the live object. What do you inspect first—query selectivity, ownership skew, parent-child skew, or archive policy—and what evidence would change the order?",
+  "definition": "Salesforce data architecture for scale is the design of objects, ownership, indexes, and retention so queries, sharing, and the UI stay healthy as volume grows. Official LDV guidance treats 'large data volumes' as an imprecise term and focuses on two levers: make queries selective, and reduce active data through archiving or tiering. Ownership data skew is when one user owns more than 10,000 records of an object; parent-child skew is 10,000 or more children under one parent account. ([LDV Best Practices](https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_best_practices.htm); [Ownership Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_group_membership_data_skew.htm); [Parent-Child Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_object_relationships_parent_child_data_skew.htm))",
+  "why_it_matters": "Interviewers listen for the 10,000-record skew thresholds from Designing Record Access for Enterprise Scale, not for invented million-row folklore. They also listen for whether you archive as a policy, not as a panic delete, and whether you can explain that Recycle Bin rows still tax queries. Getting this wrong shows up as sharing recalculation, related-list delays, and unselective reports—not as a missing field.",
+  "sixty_second_explanation": "Think of a warehouse where every pallet still sits in the picking aisles. Query performance is a scanner that only works if you scan one aisle with a barcode (selective, indexed filters). Ownership skew is one forklift driver assigned more than 10,000 pallets so a role change restacks the whole building. Parent-child skew is 10,000 cartons under one dummy parent pallet. Archiving is moving cold pallets to a side building at the same rate new ones arrive. Do not invent a single 'LDV starts at N million' number; official guidance calls the term elastic.",
+  "deeper_explanation": [
+    "LDV best practices say performance tuning relies on reducing the number of records the system must process: write narrow, selective queries, and reduce active data. A policy of archiving or discarding at the same rate data arrives prevents gradual degradation. ([LDV Best Practices](https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_best_practices.htm))",
+    "Ownership data skew: a single user owns more than 10,000 records of an object, often from parking unassigned rows on a dummy user. Moving that user in the role hierarchy or in a sharing-rule source group forces a large sharing-table adjustment. Distribute ownership; if a small owner set is required, avoid giving those users a role, or park them in a stable top-level role and keep them out of sharing-rule source groups. ([Ownership Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_group_membership_data_skew.htm))",
+    "Parent-child data skew: 10,000 or more child records on a single parent account (for example parking contacts under a dummy account) makes implicit-sharing maintenance expensive when visibility changes. Reduce children per parent rather than only adding UI workarounds. ([Parent-Child Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_object_relationships_parent_child_data_skew.htm))",
+    "Query performance: the Lightning Platform query optimizer decides whether filters are selective enough to use indexes. Prefer indexed fields, avoid negative filters and NULL-heavy patterns called out in the LDV SOQL guidance, use IN instead of huge OR lists, and shrink scope. Recycle Bin soft-deletes remain in the database and must be excluded from queries until hard-deleted; items remain 15 days unless emptied. Bulk API 2.0 hard delete is the recommended path for large deletes. ([SOQL and SOSL](https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_best_practices_soql_and_sosl.htm); [Deleting Data](https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_techniques_deleting_data.htm))",
+    "Skinny tables and divisions are Support-assisted options described in LDV papers; do not claim you can create skinny tables yourself. Big Objects are a separate store for massive archive or ingest sets; this lesson stays on standard and custom object LDV unless you explicitly move archive data there. Exact optimizer percentage thresholds: Needs verification against the current query-optimizer documentation—do not recite unofficial percentages."
+  ],
+  "mental_model": {
+    "analogy": "A live warehouse picking floor: selective queries are barcode scans of one aisle; archiving is moving cold pallets to a side building at the inbound rate; ownership skew is one driver assigned more than 10,000 pallets so a roster change restacks the warehouse; parent-child skew is 10,000 cartons stacked on one dummy pallet.",
+    "useful_mapping": [
+      "active data → pallets still in picking aisles",
+      "archive / tier → cold storage or on-demand fetch",
+      "selective indexed filter → scan one labeled aisle, not the whole building",
+      "ownership skew (>10,000 per owner) → one driver owns too many pallets",
+      "parent-child skew (≥10,000 children) → one dummy parent pallet",
+      "Recycle Bin soft delete → pallets marked gone but still occupying aisle space"
+    ],
+    "where_it_breaks": [
+      "Salesforce sharing tables and implicit parent sharing have no warehouse equivalent; skew is a sharing-calculation problem, not only disk.",
+      "Official LDV language is elastic; do not treat the warehouse story as a million-row cutoff.",
+      "Skinny tables are Support-managed; you cannot bolt them on like extra warehouse racks.",
+      "Big Objects have different query and sharing behavior than standard objects."
+    ]
+  },
+  "teach_back_prompt": "Explain LDV, archiving, ownership skew, parent-child skew, and selective queries with the warehouse floor, then name one place the analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, state the 10,000 ownership-skew and parent-child skew thresholds and what sharing pain they cause."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given a timeout report, list three selectivity fixes from LDV SOQL guidance without inventing optimizer percentages."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Design an archive policy that matches inbound rate; say where Recycle Bin still hurts."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Dummy-user owner with 10,000+ leads: what role and sharing-rule moves do you avoid?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: two LDV levers, two skew types, one query anti-pattern, no invented millions."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LDV-BP",
+      "title": "Best Practices for Deployments with Large Data Volumes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_best_practices.htm",
+      "supports": "Reduce records processed via selective queries and by reducing active data; archive or discard at inbound rate; avoid any user owning more than 10,000 records.",
+      "release_or_version": "LDV best practices guide",
+      "last_verified": "2026-08-16",
+      "limits": "The term large data volume is described as imprecise in the related paper; do not invent a single cutoff."
+    },
+    {
+      "source_id": "SF-DRAES-OWNER",
+      "title": "Ownership Data Skew",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_group_membership_data_skew.htm",
+      "supports": "Ownership skew when one user owns more than 10,000 records of an object; dummy-user parking; role and sharing-rule movement costs; mitigation by distribution or role placement.",
+      "release_or_version": "Designing Record Access for Enterprise Scale",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace a full sharing-model design (SEC topics)."
+    },
+    {
+      "source_id": "SF-DRAES-PARENT",
+      "title": "Parent-Child Data Skew",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_object_relationships_parent_child_data_skew.htm",
+      "supports": "Parent-child skew at 10,000 or more children on one parent account; implicit sharing maintenance cost when visibility changes.",
+      "release_or_version": "Designing Record Access for Enterprise Scale",
+      "last_verified": "2026-08-16",
+      "limits": "Account-centric implicit sharing examples; confirm object-specific implicit sharing in current sharing docs when the parent is not Account."
+    },
+    {
+      "source_id": "SF-LDV-SOQL",
+      "title": "SOQL and SOSL | LDV Best Practices",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_best_practices_soql_and_sosl.htm",
+      "supports": "Selective filters, index use, avoid negative filters, IN versus large OR lists, decompose OR queries, timeout tuning including LIMIT as a last resort.",
+      "release_or_version": "LDV best practices guide",
+      "last_verified": "2026-08-16",
+      "limits": "Exact optimizer selectivity percentages are not restated here; reverify query-optimizer docs before quoting them."
+    },
+    {
+      "source_id": "SF-LDV-DELETE",
+      "title": "Deleting Data | LDV",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_techniques_deleting_data.htm",
+      "supports": "Soft delete in Recycle Bin still affects query performance; 15-day restore window; Bulk API 2.0 hard delete recommended for large volumes.",
+      "release_or_version": "LDV best practices guide",
+      "last_verified": "2026-08-16",
+      "limits": "Hard-delete options and truncate behavior can be org- and Support-sensitive."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LDV and DRAES developer guides",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Two LDV levers",
+        "Ownership skew 10,000",
+        "Parent-child skew 10,000",
+        "Selective queries",
+        "Archive at inbound rate",
+        "Recycle Bin still counts"
+      ],
+      "accessible_description": "Portrait map of Salesforce LDV: selective queries and less active data; ownership and parent-child skew at documented 10,000 thresholds; archive policy; Recycle Bin soft-delete impact."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LDV-BP",
+        "SF-DRAES-OWNER",
+        "SF-DRAES-PARENT",
+        "SF-LDV-SOQL",
+        "SF-LDV-DELETE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "LDV, skew, and query map"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Data[Standard or custom object rows] --> Active[Active data in picking aisles]\n  Data --> Archive[Archive or tier at inbound rate]\n  Active --> Query[Reports, list views, SOQL]\n  Query --> Opt[Query optimizer: selective indexed filters]\n  Active --> Own[Owner]\n  Own -->|more than 10,000 per user| SkewO[Ownership data skew]\n  Active --> Parent[Parent account]\n  Parent -->|10,000 or more children| SkewP[Parent-child data skew]\n  Active --> Bin[Recycle Bin soft deletes still scanned]",
+      "decision": "flowchart TD\n  Pain[Slow report, sharing job, or related list] --> Q1{Is one user over 10,000 owners or one parent over 10,000 children?}\n  Q1 -->|Yes owner| Dist[Distribute ownership; avoid moving that user in roles or sharing-rule groups]\n  Q1 -->|Yes parent| Split[Reduce children per parent; stop dummy-account parking]\n  Q1 -->|No| Q2{Are filters selective and index-friendly?}\n  Q2 -->|No| Sel[Narrow filters; drop negative and non-indexable patterns]\n  Q2 -->|Yes| Q3{Is active data still growing without archive?}\n  Q3 -->|Yes| Arch[Archive or tier at inbound rate; empty Recycle Bin / hard delete when appropriate]\n  Q3 -->|No| Next[Consider Support-assisted options; do not invent a million-row cutoff]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "LDV performance tuning relies on reducing records processed: selective, narrow queries and reducing active data, including archiving or discarding at the inbound rate. Avoid having any user own more than 10,000 records.",
+      "source_ids": ["SF-LDV-BP"],
+      "scope": "LDV levers and owner cap in the best-practices table",
+      "validation": "LDV Best Practices introductory levers and sharing-computation row.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Ownership data skew is when a single user owns more than 10,000 records of an object. Dummy-user parking plus role or sharing-rule membership changes can force large sharing recalculations.",
+      "source_ids": ["SF-DRAES-OWNER"],
+      "scope": "Ownership skew",
+      "validation": "Ownership Data Skew topic in Designing Record Access for Enterprise Scale.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Parent-child data skew is a large number of child records (10,000 or more) associated with a single parent account, which can slow implicit-sharing maintenance when visibility changes.",
+      "source_ids": ["SF-DRAES-PARENT"],
+      "scope": "Parent-child skew",
+      "validation": "Parent-Child Data Skew topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Query performance depends on selective, index-friendly filters. Soft-deleted Recycle Bin rows still affect queries; they remain 15 days unless emptied. Bulk API 2.0 hard delete is recommended for large deletes.",
+      "source_ids": ["SF-LDV-SOQL", "SF-LDV-DELETE"],
+      "scope": "Queries and deletion",
+      "validation": "LDV SOQL best practices and Deleting Data topic.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Skew thresholds cited from DRAES (10,000). Query-optimizer percentage math is intentionally not copied; reverify the current optimizer article before quoting percentages.",
+  "unresolved_uncertainty": [
+    "Exact Lightning Platform query optimizer selectivity percentages and index thresholds: Needs verification in current optimizer documentation.",
+    "Skinny tables, divisions, and object truncate require Customer Support in documented cases; do not claim self-service creation.",
+    "Big Object query, sharing, and license behavior is out of this standard/custom LDV lesson."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Large data volumes",
+      "telugu": "పెద్ద రికార్డ్ రాశులు; అధికారికంగా స్థిర సంఖ్య కాదు, సెలెక్టివ్ క్వేరీలు మరియు యాక్టివ్ డేటా తగ్గింపు."
+    },
+    {
+      "english": "Ownership skew",
+      "telugu": "ఒకే యూజర్ ఒక ఆబ్జెక్ట్‌పై 10,000 కంటే ఎక్కువ రికార్డులు కలిగి ఉండడం."
+    },
+    {
+      "english": "Parent-child skew",
+      "telugu": "ఒకే పేరెంట్ అకౌంట్ కింద 10,000 లేదా అంతకంటే ఎక్కువ చైల్డ్ రికార్డులు."
+    },
+    {
+      "english": "Archiving",
+      "telugu": "కొత్త డేటా వచ్చే రేటుతో పాత యాక్టివ్ రికార్డులను తరలించడం లేదా తొలగించడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I use two official levers: selective queries and less active data. Ownership skew is more than 10,000 records on one user; parent-child skew is 10,000 or more children on one account. I archive as a policy and I do not invent a million-row LDV cutoff.",
+    "two_minutes": "Dummy owners and dummy parents look convenient and then explode sharing recalculation. I distribute ownership or freeze those users out of role movement. I make reports filter on indexed fields and avoid negative filters. Soft deletes still sit in the Recycle Bin for 15 days and still tax queries, so large deletes use Bulk API 2.0 hard delete. Optimizer percentages stay Needs verification unless I have the current article open."
+  },
+  "terminology": [
+    {
+      "term": "large data volumes",
+      "plain": "Enough rows that queries, sharing, and the UI start to hurt unless you design for it.",
+      "precise": "An imprecise, elastic term in official LDV papers. The operational response is to reduce records processed: selective queries and less active data—not a single invented million-row switch.",
+      "example": "LAB_Invoice reports that were fine in a demo org time out after years of unarchived closed rows.",
+      "non_example": "Declaring 'we are LDV' at an invented 5 million rows with no query or skew evidence.",
+      "confusable_neighbor": "Big Objects: a different store for massive datasets; this lesson is standard and custom object LDV.",
+      "boundary": "Exact org storage entitlements are license-specific; cite Storage and Limits docs, do not invent gigabytes."
+    },
+    {
+      "term": "ownership data skew",
+      "plain": "One person owns far too many rows of the same object.",
+      "precise": "A single user owns more than 10,000 records of an object. Common with dummy owners. Role or sharing-rule group movement then recalculates a huge sharing set.",
+      "example": "All unassigned LAB_Lead rows owned by Integration User, then that user is moved in the hierarchy.",
+      "non_example": "One user owning 200 leads in a small sandbox.",
+      "confusable_neighbor": "Parent-child skew: too many children under one parent, not too many rows under one owner.",
+      "boundary": "Sharing rule design remains SEC; this lesson is the skew performance effect."
+    },
+    {
+      "term": "parent-child data skew",
+      "plain": "One parent record has a gigantic pile of children.",
+      "precise": "A common painful pattern is 10,000 or more child records associated with a single parent account, which stresses implicit sharing when access changes.",
+      "example": "Parking 300,000 unallocated contacts under one dummy LAB_Account (the DRAES order of magnitude example).",
+      "non_example": "A normal account with a few related contacts.",
+      "confusable_neighbor": "Ownership skew: owner-centric, not parent-centric.",
+      "boundary": "Confirm implicit-sharing rules for the exact parent object in current sharing documentation when it is not Account."
+    },
+    {
+      "term": "archiving",
+      "plain": "Moving or removing cold rows so the live object stays workable.",
+      "precise": "A policy of archiving or discarding data at the same rate it arrives, or tiering to another object or external store and fetching on demand, so reports and queries scan fewer active rows.",
+      "example": "Monthly job moving closed LAB_Case rows older than a documented retention window to an archive object or Big Object plan.",
+      "non_example": "Deleting from production with no retention policy during an outage panic.",
+      "confusable_neighbor": "Recycle Bin: soft delete is not an archive tier; rows still affect queries.",
+      "boundary": "Retention and legal hold are compliance (Trusted); this lesson is the volume lever."
+    },
+    {
+      "term": "query performance",
+      "plain": "How expensive a report, list view, or SOQL is to run.",
+      "precise": "The Lightning Platform query optimizer uses selectivity and indexes. LDV SOQL guidance: indexed filters, avoid negative filters, IN instead of large OR, decompose problematic OR, shrink scope.",
+      "example": "Filter LAB_Invoice by an indexed status and a date window instead of NOT status = 'Closed' across the object.",
+      "non_example": "Adding more formula-field filters that are not indexable and hoping the report 'just works.'",
+      "confusable_neighbor": "Apex CPU time: related but owned by governor-limit topics; here the issue is rows scanned.",
+      "boundary": "Do not quote unofficial 10% optimizer folklore unless you cite the current optimizer article."
+    },
+    {
+      "term": "Recycle Bin soft delete",
+      "plain": "Deleted rows that are not really gone yet.",
+      "precise": "Salesforce flags deleted rows and keeps them in the Recycle Bin (15 days, restorable). They still occupy the table for query purposes until hard-deleted. Bulk API 2.0 hard delete is recommended for large volumes.",
+      "example": "Archiving by ordinary delete, then wondering why reports are still slow until the bin is emptied or hard delete is used.",
+      "non_example": "Assuming UI delete immediately removes rows from query cost.",
+      "confusable_neighbor": "Archive object: a deliberate second store, not the bin.",
+      "boundary": "Hard-delete permissions and truncate are org-sensitive."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Measure the shape",
+      "actor": "Architect + admin",
+      "trigger": "Timeouts, slow related lists, or sharing jobs",
+      "before": "A vibe that 'we have a lot of data'",
+      "after": "Counts by owner, by parent, and of active versus aged rows",
+      "observe": "A LAB_ query or report showing top owners and top parents",
+      "failure": "Inventing a million-row diagnosis with no counts"
+    },
+    {
+      "step": 2,
+      "transition": "Fix skew before clever indexes",
+      "actor": "Architect + data steward",
+      "trigger": "An owner over 10,000 or a parent at 10,000+ children",
+      "before": "Dummy user or dummy account parking",
+      "after": "Distributed ownership or split parents; frozen role movement on remaining hot owners",
+      "observe": "No sharing-rule source group includes the hot dummy owner",
+      "failure": "Moving the dummy user in the role hierarchy to 'clean up'"
+    },
+    {
+      "step": 3,
+      "transition": "Make queries selective",
+      "actor": "Developer + report owner",
+      "trigger": "Skew is not the only pain",
+      "before": "Negative filters, formula filters, unbounded reports",
+      "after": "Indexed, narrow filters; decomposed OR where required",
+      "observe": "The same report or SOQL completes with the new filter in a full-copy or volume sandbox",
+      "failure": "Quoting unofficial optimizer percentages instead of changing the filter"
+    },
+    {
+      "step": 4,
+      "transition": "Bound active data",
+      "actor": "Architect + compliance",
+      "trigger": "Volume still growing",
+      "before": "All history in the live object; Recycle Bin full of soft deletes",
+      "after": "Archive or tier at inbound rate; hard delete or empty bin when policy allows",
+      "observe": "A written retention policy and a job or integration that moves LAB_ rows",
+      "failure": "Ordinary delete without handling the 15-day query tax"
+    }
+  ],
+  "when_to_use": [
+    "When an interview asks how Salesforce data architecture handles large data volumes, archiving, ownership skew, and query performance.",
+    "When reports, list views, or SOQL time out and you need selective, index-friendly filters rather than a wider report.",
+    "When a dummy user owns more than 10,000 records or a dummy account has 10,000 or more children.",
+    "When active data grows without an archive or tiering policy and Recycle Bin soft deletes may still be in the query path."
+  ],
+  "when_not_to_use": [
+    "Do not use this LDV lesson to invent a million-row cutoff or unofficial query-optimizer percentages.",
+    "Do not treat skinny tables or divisions as self-service Setup clicks; they are Support-assisted in the cited papers.",
+    "Do not use ownership-skew advice as a substitute for designing OWD and sharing rules (SEC topics).",
+    "Do not confuse standard/custom object archiving with a full Big Object or event-driven design (later ARCH topics)."
+  ],
+  "configuration_or_code_location": [
+    "Reports, list views, and SOQL/SOSL that the query optimizer evaluates.",
+    "OwnerId distribution and Account (or parent) child counts in a volume sandbox.",
+    "Recycle Bin and Bulk API 2.0 hard delete for large removals.",
+    "Archive custom object, external store, or a planned Big Object path—not production panic deletes."
+  ],
+  "worked_example": {
+    "scenario": "A LAB_ org's Invoice related list on Account is slow. Most accounts are fine, but a dummy LAB_Account holds tens of thousands of invoice children, Integration User owns more than 10,000 open LAB_Lead rows, and closed invoices never leave the live object. Sandbox only; synthetic rows.",
+    "inputs": [
+      "Parent with 10,000+ LAB_Invoice__c children",
+      "One owner over 10,000 LAB_Lead rows",
+      "Unbounded invoice report with a negative status filter",
+      "Soft-deleted rows still in Recycle Bin"
+    ],
+    "decisions": [
+      {
+        "decision": "Split the dummy parent and stop parking new children there.",
+        "because": "Parent-child skew at 10,000 or more children stresses implicit sharing and related-list queries.",
+        "rejected": "Only enable separate related-list loading and keep the dummy parent forever"
+      },
+      {
+        "decision": "Distribute LAB_Lead ownership and do not move Integration User in the role hierarchy.",
+        "because": "Ownership skew is defined at more than 10,000 records per user; role movement recalculates sharing.",
+        "rejected": "Keep the dummy owner and add them to a sharing-rule source group"
+      },
+      {
+        "decision": "Rewrite the report to indexed status and a date window; archive closed invoices at inbound rate; hard-delete or empty the bin per policy.",
+        "because": "LDV levers are selective queries plus less active data; soft deletes still tax queries for 15 days.",
+        "rejected": "Invent a 'we are not LDV until 20 million rows' story"
+      }
+    ],
+    "configuration_or_code": [
+      "Count children per Account and records per OwnerId in the LAB_ sandbox.",
+      "Replace NOT status = 'Closed' with status IN indexed closed-reason values plus a date bound.",
+      "Plan archive movement; do not load real financial files."
+    ],
+    "output": "A written LDV diagnosis that names both skew types, a selective query change, and an archive policy—without invented cutoffs.",
+    "verification": [
+      "Owner counts show no user left above the 10,000 ownership-skew threshold, or remaining hot owners are frozen out of role movement.",
+      "No dummy parent remains at 10,000 or more children.",
+      "The report filter no longer relies on a negative condition as the only predicate."
+    ],
+    "self_explanation": "I treated skew as sharing math, queries as selectivity, and archiving as a rate policy. I did not invent a million-row switch."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox with synthetic LAB_ objects; do not use production volumes or real customer files.",
+    "starting_state_checks": [
+      "You can create LAB_ records and run reports in a non-production org.",
+      "You will not move production users in a role hierarchy as an experiment."
+    ],
+    "steps": [
+      "Create synthetic LAB_ data: one owner approaching a high row count and one parent with many children (stay well under production risk; the lesson's official thresholds are 10,000).",
+      "Run an unselective report (negative filter or no date bound) and record that it is the baseline, not a production test.",
+      "Rewrite the report to an indexed field plus a narrower window and compare.",
+      "Write an archive policy sentence: what leaves the live object at what inbound rate, and whether Recycle Bin or hard delete applies."
+    ],
+    "guided_completion": [
+      "If you quoted an optimizer percentage, replace it with Needs verification.",
+      "If you created a dummy owner, document that you will not add them to a sharing-rule source group."
+    ],
+    "independent_challenge": "Explain how a role change on the dummy owner would differ from splitting a dummy parent.",
+    "evidence": [
+      "Counts of rows per owner and children per parent (LAB_ names only).",
+      "Before/after report filters and the archive policy sentence."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ synthetic rows using an appropriate delete path; empty the Recycle Bin if the org is shared.",
+      "Do not leave dummy high-volume parents in a shared sandbox."
+    ],
+    "limitations": "A developer sandbox may not reproduce production sharing recalculation time; treat counts as structural evidence, not a load test."
+  },
+  "decision_table": [
+    {
+      "signal": "One user owns more than 10,000 records of an object, often a dummy integration owner.",
+      "choose": "Treat it as ownership data skew: distribute owners; avoid moving that user in roles or sharing-rule source groups.",
+      "not": "Park more rows on the dummy user because it is convenient.",
+      "why": "DRAES defines ownership skew at more than 10,000 records and warns that hierarchy or group movement recalculates a huge sharing set."
+    },
+    {
+      "signal": "One parent account has 10,000 or more children, often unallocated contacts or invoices.",
+      "choose": "Treat it as parent-child skew: split parents and stop dummy-account parking.",
+      "not": "Only hide the related list delay and keep the dummy parent.",
+      "why": "DRAES documents implicit-sharing maintenance cost when visibility changes on highly skewed parents."
+    },
+    {
+      "signal": "A report, list view, or SOQL times out or scans far too much.",
+      "choose": "Make filters selective and index-friendly: drop negative-only predicates, prefer IN, shrink the window.",
+      "not": "Add more formula-field filters or quote unofficial optimizer percentages.",
+      "why": "LDV SOQL guidance centers selectivity and indexes; exact percentage thresholds are not restated in this lesson."
+    },
+    {
+      "signal": "Volume grows every month and old rows never leave the live object.",
+      "choose": "Archive or tier at the inbound rate; account for Recycle Bin query tax and prefer Bulk API 2.0 hard delete for large removals.",
+      "not": "Ordinary-delete millions of rows and assume they vanish from query cost the same day.",
+      "why": "LDV best practices reduce active data; Deleting Data explains 15-day soft delete still affects queries."
+    }
+  ],
+  "limitations": [
+    "LDV is an elastic term; this lesson does not publish a single million-row switch.",
+    "Query optimizer percentages are Needs verification.",
+    "Skinny tables and divisions are Support-assisted.",
+    "Sharing feature design remains SEC; Big Objects remain a neighboring store."
+  ],
+  "security_notes": [
+    "Do not copy production customer volumes into an unmanaged sandbox to 'see LDV.'",
+    "Ownership changes are sharing events; test them in non-production.",
+    "Archive destinations still need Trusted data classification."
+  ],
+  "common_mistakes": [
+    "Inventing an LDV cutoff such as 5 million rows.",
+    "Dummy-user or dummy-account parking as a process design.",
+    "Moving a hot owner in the role hierarchy to tidy the chart.",
+    "Thinking Recycle Bin delete removes query cost immediately.",
+    "Negative filters as the only report predicate."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Sharing recalculation or user-move jobs run for a very long time.",
+      "check": [
+        "Does one user own more than 10,000 records of an object?",
+        "Is that user in a role or a sharing-rule source group being changed?"
+      ],
+      "do_not_assume": "The role feature is broken."
+    },
+    {
+      "symptom": "Account page related list is slow for a few parents only.",
+      "check": [
+        "Child count on those parents versus 10,000.",
+        "Whether a dummy parent collected unallocated children."
+      ],
+      "do_not_assume": "Every related list needs skinny tables first."
+    },
+    {
+      "symptom": "Reports still slow after a mass delete.",
+      "check": [
+        "Recycle Bin still holding soft-deleted rows (15-day window).",
+        "Whether hard delete was used for the large volume.",
+        "Whether remaining filters are still unselective."
+      ],
+      "do_not_assume": "Indexes were automatically added."
+    }
+  ],
+  "production_notes": [
+    "Volume tests belong in a full-copy or similarly representative sandbox, not production experiments.",
+    "Coordinate owner redistribution with sharing owners; it is a security event.",
+    "Reverify optimizer docs before quoting selectivity percentages in a go-live review."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What two levers do LDV best practices emphasize for performance?",
+      "options": {
+        "A": "Reduce records processed with selective queries, and reduce active data (including archive at inbound rate)",
+        "B": "Always create skinny tables in Setup without Support",
+        "C": "Invent a 5 million row cutoff and ignore filters",
+        "D": "Turn off sharing forever"
+      },
+      "answer": "A",
+      "rationale": "LDV Best Practices open with selective/narrow queries and reducing active data.",
+      "distractor_explanations": {
+        "B": "Skinny tables are Support-assisted.",
+        "C": "The term is elastic; do not invent cutoffs.",
+        "D": "Sharing remains required; skew is about how you use it."
+      },
+      "concept": "LDV levers",
+      "citation_ids": ["SF-LDV-BP"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Ownership data skew is officially described as which situation?",
+      "options": {
+        "A": "A single user owns more than 10,000 records of an object",
+        "B": "Any user owns more than 10 records",
+        "C": "A report has more than two columns",
+        "D": "MFA is disabled"
+      },
+      "answer": "A",
+      "rationale": "DRAES Ownership Data Skew uses the more-than-10,000 definition.",
+      "distractor_explanations": {
+        "B": "Far below the documented threshold.",
+        "C": "Unrelated to ownership.",
+        "D": "An identity concern, not skew."
+      },
+      "concept": "Ownership skew",
+      "citation_ids": ["SF-DRAES-OWNER"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Parent-child data skew in DRAES highlights which pattern?",
+      "options": {
+        "A": "10,000 or more child records associated with a single parent account",
+        "B": "Two accounts merged once",
+        "C": "A user with no role",
+        "D": "An empty Recycle Bin"
+      },
+      "answer": "A",
+      "rationale": "Parent-Child Data Skew describes 10,000 or more children on one parent account as a common painful configuration.",
+      "distractor_explanations": {
+        "B": "Merge is not the skew definition.",
+        "C": "Role absence is a mitigation for some hot owners, not parent-child skew.",
+        "D": "Emptying the bin is a delete-performance topic."
+      },
+      "concept": "Parent-child skew",
+      "citation_ids": ["SF-DRAES-PARENT"]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How long do deleted items remain in the Recycle Bin, and do they affect queries?",
+      "options": {
+        "A": "15 days, and soft-deleted rows still affect query performance until hard-deleted",
+        "B": "They vanish from query cost immediately",
+        "C": "They remain forever and never affect queries",
+        "D": "They remain 15 minutes only"
+      },
+      "answer": "A",
+      "rationale": "Deleting Data: 15-day Recycle Bin; soft-deleted data still resident and excluded from queries at a cost.",
+      "distractor_explanations": {
+        "B": "The opposite of the cited behavior.",
+        "C": "They do affect queries while present.",
+        "D": "The documented window is 15 days, not minutes."
+      },
+      "concept": "Recycle Bin",
+      "citation_ids": ["SF-LDV-DELETE"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which filter style matches LDV SOQL guidance for large objects?",
+      "options": {
+        "A": "Selective filters on indexed fields; avoid negative filters as the main predicate; prefer IN over huge OR lists",
+        "B": "status != null across the whole object as the only filter",
+        "C": "Filter only on a non-deterministic formula",
+        "D": "No WHERE clause so the optimizer 'sees everything'"
+      },
+      "answer": "A",
+      "rationale": "LDV SOQL best practices: selective indexed filters, avoid negative filters, use IN, keep queries focused.",
+      "distractor_explanations": {
+        "B": "Negative / NULL-style filters are called out as problems.",
+        "C": "Non-deterministic formula filters are discouraged.",
+        "D": "Unbounded queries are the opposite of reducing scope."
+      },
+      "concept": "Selective queries",
+      "citation_ids": ["SF-LDV-SOQL"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You must keep a small set of users owning a huge pile of records. Which DRAES mitigation applies?",
+      "options": {
+        "A": "Avoid assigning them a role, or place them in a stable top-level role and keep them out of sharing-rule source groups",
+        "B": "Move them between roles weekly to 'refresh sharing'",
+        "C": "Add them to every public group used as a sharing-rule source",
+        "D": "Give them Modify All Data so skew disappears"
+      },
+      "answer": "A",
+      "rationale": "Ownership Data Skew lists those mitigations when concentrated ownership is required.",
+      "distractor_explanations": {
+        "B": "Movement is what triggers expensive recalculation.",
+        "C": "That increases the sharing-rule blast radius.",
+        "D": "Broad permissions do not remove sharing-table work for other users and are a Trusted problem."
+      },
+      "concept": "Skew mitigation",
+      "citation_ids": ["SF-DRAES-OWNER"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "For deleting large data volumes, which path does the LDV delete topic recommend?",
+      "options": {
+        "A": "Bulk API 2.0 hard delete so rows can bypass the Recycle Bin",
+        "B": "Click Delete once in the UI on each row",
+        "C": "Leave them in the Recycle Bin to improve performance",
+        "D": "Truncate production Account without Support when unsure"
+      },
+      "answer": "A",
+      "rationale": "Deleting Data recommends Bulk API 2.0 hard delete for large volumes.",
+      "distractor_explanations": {
+        "B": "Not a volume strategy.",
+        "C": "Soft deletes still tax queries.",
+        "D": "Truncate is Support-sensitive and not a casual Account operation."
+      },
+      "concept": "Hard delete",
+      "citation_ids": ["SF-LDV-DELETE"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Unassigned contacts were parked under one dummy account. Users lose access to one contact and the org slows. What is the likely architecture issue?",
+      "options": {
+        "A": "Parent-child data skew making implicit-sharing maintenance expensive",
+        "B": "A missing dashboard component",
+        "C": "MFA enrollment",
+        "D": "Apex access modifiers"
+      },
+      "answer": "A",
+      "rationale": "DRAES uses dummy-account contact parking as the parent-child skew story, including expensive scans when access is removed.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Identity, not skew.",
+        "D": "Wrong topic (APEX-001)."
+      },
+      "concept": "Dummy parent",
+      "citation_ids": ["SF-DRAES-PARENT"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A teammate says you are not LDV until 20 million rows, so skip archiving. Response?",
+      "options": {
+        "A": "Official guidance calls the term imprecise; archive at inbound rate and keep queries selective regardless of an invented cutoff",
+        "B": "Agree, 20 million is the documented Salesforce switch",
+        "C": "Skip indexes until 20 million",
+        "D": "Ownership skew cannot exist below 20 million"
+      },
+      "answer": "A",
+      "rationale": "LDV papers treat the term as elastic; skew thresholds are 10,000, not 20 million.",
+      "distractor_explanations": {
+        "B": "No such official switch is cited in this lesson.",
+        "C": "Selectivity matters before any folklore cutoff.",
+        "D": "Ownership skew is defined at more than 10,000 per user."
+      },
+      "concept": "Elastic LDV",
+      "citation_ids": ["SF-LDV-BP", "SF-DRAES-OWNER"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Reports remain slow after a large UI delete last week. What should you check besides filters?",
+      "options": {
+        "A": "Recycle Bin still holding soft-deleted rows that affect queries",
+        "B": "Whether the delete automatically created skinny tables",
+        "C": "Whether Apex public became Java public",
+        "D": "Whether Well-Architected Easy forbids reports"
+      },
+      "answer": "A",
+      "rationale": "Soft-deleted rows remain up to 15 days and still affect query performance.",
+      "distractor_explanations": {
+        "B": "Skinny tables are not auto-created by delete.",
+        "C": "Wrong domain.",
+        "D": "Easy does not forbid reports."
+      },
+      "concept": "Post-delete slowness",
+      "citation_ids": ["SF-LDV-DELETE"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Ownership skew versus parent-child skew—what is the clean split?",
+      "options": {
+        "A": "Ownership skew is too many rows per OwnerId; parent-child skew is too many children per parent (often Account)",
+        "B": "They are identical DRAES terms",
+        "C": "Parent-child skew is only about reports; ownership skew is only about list views",
+        "D": "Both are Recycle Bin settings"
+      },
+      "answer": "A",
+      "rationale": "DRAES separates owner concentration from parent-child implicit sharing concentration.",
+      "distractor_explanations": {
+        "B": "They are distinct topics.",
+        "C": "Both can affect sharing and UI.",
+        "D": "Recycle Bin is a delete mechanism."
+      },
+      "concept": "Two skews",
+      "citation_ids": ["SF-DRAES-OWNER", "SF-DRAES-PARENT"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Archive object versus Recycle Bin—why are they not the same lever?",
+      "options": {
+        "A": "Archiving is a planned reduction of active data; Recycle Bin soft delete still leaves rows in the query path for 15 days",
+        "B": "They are the same metadata type",
+        "C": "Recycle Bin is always faster than an archive object",
+        "D": "Archive objects automatically hard-delete owners"
+      },
+      "answer": "A",
+      "rationale": "LDV archive/tiering reduces active data; Deleting Data explains the query tax of the bin.",
+      "distractor_explanations": {
+        "B": "Different mechanisms.",
+        "C": "Soft delete can still hurt queries.",
+        "D": "No such automatic owner delete."
+      },
+      "concept": "Archive vs bin",
+      "citation_ids": ["SF-LDV-BP", "SF-LDV-DELETE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "Two official LDV performance levers?",
+      "back": "Selective, narrower queries, and reducing active data (archive or discard at inbound rate)."
+    },
+    {
+      "id": "F2",
+      "category": "skew",
+      "front": "Ownership data skew threshold?",
+      "back": "A single user owns more than 10,000 records of an object."
+    },
+    {
+      "id": "F3",
+      "category": "skew",
+      "front": "Parent-child data skew pattern?",
+      "back": "10,000 or more child records on a single parent account, stressing implicit sharing."
+    },
+    {
+      "id": "F4",
+      "category": "skew",
+      "front": "Why is dummy-user parking dangerous?",
+      "back": "Role or sharing-rule group movement on that user can recalculate a huge sharing set."
+    },
+    {
+      "id": "F5",
+      "category": "query",
+      "front": "Name two SOQL anti-patterns from LDV guidance.",
+      "back": "Negative filters as the main predicate, and huge OR lists instead of IN (plus non-indexable formula filters)."
+    },
+    {
+      "id": "F6",
+      "category": "delete",
+      "front": "Recycle Bin duration and query impact?",
+      "back": "About 15 days restorable; soft-deleted rows still affect query performance until hard-deleted."
+    },
+    {
+      "id": "F7",
+      "category": "delete",
+      "front": "Recommended large-volume delete path?",
+      "back": "Bulk API 2.0 hard delete so rows can bypass the Recycle Bin."
+    },
+    {
+      "id": "F8",
+      "category": "archive",
+      "front": "Archive policy in one LDV sentence?",
+      "back": "Archive or discard at the same rate data arrives so active volume does not keep growing."
+    },
+    {
+      "id": "F9",
+      "category": "boundary",
+      "front": "Is LDV a single million-row switch?",
+      "back": "No. Official papers call the term imprecise or elastic. Do not invent a cutoff."
+    },
+    {
+      "id": "F10",
+      "category": "boundary",
+      "front": "Can you create skinny tables yourself in Setup?",
+      "back": "No. Contact Salesforce Customer Support; they are created and used automatically where enabled."
+    },
+    {
+      "id": "F11",
+      "category": "scenario",
+      "front": "Hot owner must keep the pile. Mitigation?",
+      "back": "No role, or a stable top-level role, and stay out of sharing-rule source groups."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "Related list slow on a few accounts only. Check?",
+      "back": "Child count versus 10,000 and dummy-parent parking (parent-child skew)."
+    },
+    {
+      "id": "F13",
+      "category": "compare",
+      "front": "Ownership skew vs parent-child skew?",
+      "back": "Too many rows per owner versus too many children per parent."
+    },
+    {
+      "id": "F14",
+      "category": "compare",
+      "front": "Archive object vs Recycle Bin?",
+      "back": "Archive is a planned active-data reduction. The bin is soft delete that still taxes queries."
+    },
+    {
+      "id": "F15",
+      "category": "limits",
+      "front": "May you quote unofficial 10% optimizer folklore here?",
+      "back": "No. Mark optimizer percentages Needs verification unless you cite the current optimizer article."
+    },
+    {
+      "id": "F16",
+      "category": "analogy",
+      "front": "Where does the warehouse-aisle analogy break?",
+      "back": "Sharing-table recalculation and implicit parent sharing have no warehouse equivalent; LDV is not a million-row cutoff."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you explain Salesforce large data volumes without inventing a row cutoff?",
+      "answer_30_seconds": "Official LDV guidance treats the term as imprecise. I reduce records processed: selective queries and less active data, including archive at inbound rate. I do not quote an invented million-row switch.",
+      "answer_2_minutes": "I look at owner distribution, parent-child piles, report filters, and Recycle Bin contents. Skew has documented 10,000 thresholds. Queries need indexed, non-negative filters. Storage entitlements are a separate Limits conversation. Big Objects are a neighboring store, not the whole answer.",
+      "example": "LAB_Invoice reports slow after years of unarchived closed rows, not because someone crossed a folklore 20 million line.",
+      "tradeoffs": [
+        "Keep history in Salesforce vs archive/tier",
+        "Demo data vs representative volume tests"
+      ],
+      "follow_ups": [
+        "When would you consider Big Objects?",
+        "What sandbox type would you use to test?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing 5 million as the official LDV start"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Define ownership skew and parent-child skew with official numbers.",
+      "answer_30_seconds": "Ownership skew: one user owns more than 10,000 records of an object. Parent-child skew: 10,000 or more children on one parent account. Both hurt sharing calculations.",
+      "answer_2_minutes": "Dummy owners and dummy accounts look tidy and then explode when you move a role or remove access to one child. Mitigations: distribute ownership, freeze hot owners out of role movement and sharing-rule source groups, and split parents. I keep this distinct from OWD design, which is SEC.",
+      "example": "Integration User owns 10,000+ LAB_Leads; dummy account holds unallocated contacts.",
+      "tradeoffs": [
+        "Operational convenience of a dummy owner vs sharing performance",
+        "One parent vs many parents for unallocated children"
+      ],
+      "follow_ups": [
+        "What if they must have a role?",
+        "Does implicit sharing apply the same on every object?"
+      ],
+      "weak_answer_warnings": [
+        "Mixing the two skews",
+        "Forgetting the 10,000 figures"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A dummy integration user owns most leads. HR wants to move that user to a new role. What do you do?",
+      "answer_30_seconds": "Stop. That is a classic ownership-skew trigger. Moving the user in the hierarchy can recalculate a huge sharing set. Redistribute owners or freeze the role first.",
+      "answer_2_minutes": "I count records per OwnerId. If we are over 10,000, I treat the move as a production incident waiting to happen. DRAES says distribute ownership, or keep hot users out of roles and sharing-rule source groups. I would not add them to a public group used by sharing rules as a 'cleanup.' I test any remaining move in a full-copy sandbox, not production.",
+      "example": "LAB_Lead owned by Integration User, proposed role change during a reorganization.",
+      "tradeoffs": [
+        "HR org-chart cleanliness vs sharing performance",
+        "Redistribute now vs freeze the dummy owner"
+      ],
+      "follow_ups": [
+        "Queues versus dummy users?",
+        "How do you communicate freeze to HR?"
+      ],
+      "weak_answer_warnings": [
+        "Approving the role move because 'it's just metadata'"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Account related lists are slow only for a few parents. How do you investigate?",
+      "answer_30_seconds": "Count children on those parents. If you are at 10,000 or more, suspect parent-child skew, especially dummy-account parking. Splitting parents beats only delaying the related list.",
+      "answer_2_minutes": "DRAES describes implicit sharing scans when access to one child changes on a highly skewed account. UI settings such as separate related-list loading may hide latency but do not fix sharing math. I also check whether the related list query is unselective. I do not jump to skinny tables first; those are Support-assisted and aimed at read-only operations on very large tables.",
+      "example": "One LAB_Account collecting all unallocated invoices.",
+      "tradeoffs": [
+        "UI workaround vs data-model fix",
+        "Many parents vs one parking account"
+      ],
+      "follow_ups": [
+        "What is implicit sharing?",
+        "Would a mashup or external object help? (Neighboring topic.)"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Lightning page layout only"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A report times out. Walk the LDV query diagnosis without unofficial percentages.",
+      "answer_30_seconds": "I look for missing date bounds, negative filters, formula-field filters, and huge OR lists. I want indexed, selective predicates. I do not recite folklore optimizer percentages.",
+      "answer_2_minutes": "LDV SOQL guidance: decompose problematic OR, use IN, avoid NOT and NULL-style filters as the main predicate, keep searches focused. If it still times out, the same guide discusses shrinking scope, Bulk API 2.0 query, or LIMIT as a last resort. I also check Recycle Bin residue and whether the report joins too many large objects. Exact selectivity math stays Needs verification against the current optimizer article.",
+      "example": "LAB_Invoice report with status != 'Closed' and no date window.",
+      "tradeoffs": [
+        "Business wants all-history vs a bounded operational report",
+        "One mega-report vs decomposed queries"
+      ],
+      "follow_ups": [
+        "When do you request a custom index?",
+        "How does sharing affect the query?"
+      ],
+      "weak_answer_warnings": [
+        "Quoting 10% / 333,333 without a current citation"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Ops deleted millions of rows in the UI last week and reports are still slow. Why might that be?",
+      "answer_30_seconds": "Soft delete. Recycle Bin rows remain about 15 days and still affect queries. Large deletes should use Bulk API 2.0 hard delete when policy allows.",
+      "answer_2_minutes": "I check the bin, remaining unselective filters, and whether archive was actually a second object or just delete. I will not claim the platform is broken. If legal hold forbids hard delete, then query design and a true archive store must carry the volume. I keep Trusted retention separate from the performance lever.",
+      "example": "LAB_ closed cases deleted in the UI; reports still scan flagged rows.",
+      "tradeoffs": [
+        "Restore window vs query cost",
+        "Hard delete vs legal hold"
+      ],
+      "follow_ups": [
+        "Who is allowed to hard delete?",
+        "Does emptying the bin happen automatically at 15 days exactly?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming UI delete is immediately free for the optimizer"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Design an archive approach that matches LDV guidance.",
+      "answer_30_seconds": "Write a retention policy and move or discard at the inbound rate so active data does not grow without bound. Tier to another object or store and fetch on demand if needed. Plan hard delete versus Recycle Bin.",
+      "answer_2_minutes": "I start from Trusted classification and legal hold, then Easy ownership of the job, then Adaptable jobs that can change the window. I do not invent that Big Objects are mandatory; they are a documented option for massive archive or ingest with different features. I test the job in a volume sandbox with LAB_ rows. I never use production as the first archive experiment.",
+      "example": "Monthly move of closed LAB_Case rows to an archive object, with Bulk API 2.0 hard delete of the live rows when policy allows.",
+      "tradeoffs": [
+        "On-platform archive object vs Big Object vs external mashup",
+        "User access to history vs live-object speed"
+      ],
+      "follow_ups": [
+        "How do reports span live plus archive?",
+        "What is skinny tables' role, if any?"
+      ],
+      "weak_answer_warnings": [
+        "Panic delete with no policy"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach LDV with the warehouse floor, then break the analogy, using official 10,000 figures.",
+      "answer_30_seconds": "Picking aisles are active data. Barcode scans are selective queries. One driver with more than 10,000 pallets is ownership skew. 10,000 cartons on one dummy pallet is parent-child skew. Cold storage is archive. The analogy breaks on sharing tables.",
+      "answer_2_minutes": "I add Recycle Bin as pallets marked gone but still in the aisle for 15 days. I refuse a million-row cutoff. I say skinny tables are not extra racks you bolt on in Setup. I finish with the two levers and the two skews so the interviewer hears DRAES, not folklore.",
+      "example": "LAB_Invoice dummy parent plus Integration User leads walked on a whiteboard.",
+      "tradeoffs": [
+        "Memorable analogy vs sharing-engine reality",
+        "Official thresholds vs invented millions"
+      ],
+      "follow_ups": [
+        "What is implicit sharing in one sentence?",
+        "Where do Big Objects fit?"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer analogy",
+        "Invented scale numbers"
+      ]
+    }
+  ]
+}

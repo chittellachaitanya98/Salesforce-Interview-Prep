@@ -1,0 +1,977 @@
+{
+  "topic_id": "ARCH-004",
+  "slug": "security-architecture-and-threat-modeling",
+  "title": "Security architecture and threat modeling",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-003"
+  ],
+  "objectives": [
+    "Place security architecture under Well-Architected Trusted: secure, compliant, and reliable—not MFA folklore alone.",
+    "Threat-model a Salesforce design by naming actors, assets, abuse paths, and controls across identity, session, data, and detection.",
+    "Keep object permissions, field-level security, and record sharing as separate layers; threat modeling does not collapse them.",
+    "Refuse production experiments and real personal data while scoring threats on a LAB_ design."
+  ],
+  "diagnostic_question": "A LAB_ partner community user, an integration user, and an admin automation will all touch the same Case. Before reading, which threats do you name first—stolen session, over-broad sharing, unencrypted field, or missing monitoring—and what evidence would change the order?",
+  "definition": "Salesforce security architecture is the designed set of controls that keep a solution Trusted: only approved users and systems gain access, they receive only what they need, and data is protected. Well-Architected Secure groups organizational security (authentication and authorization), session and device controls, threat detection and response, sharing and visibility, and encryption. Threat modeling in this lesson is the structured habit of listing actors, assets, abuse paths, and compensating controls before you pick a feature. ([Trusted Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/trusted-overview); [Secure](https://architect.salesforce.com/docs/architect/well-architected/guide/secure); [Data Access](https://help.salesforce.com/s/articleView?id=platform.security_data_access.htm))",
+  "why_it_matters": "Interviewers listen for layered thinking: identity is not authorization, sharing is not FLS, and a pentest checklist is not a threat model. A design that 'has MFA' can still leak records through an integration user or a Public Read/Write object. Trusted Overview asks what data moves, whether Salesforce is a system of record, and how much risk the business will accept—before you draw a sharing diagram.",
+  "sixty_second_explanation": "Treat the org like a stadium on event day. Authentication is proving the ticket is real. Authorization is which section and which gates your pass opens. Session security is how long the wristband stays valid if you leave and return. Sharing and FLS are which seats and which clipboard fields you can see. Threat modeling is walking the building asking who could sneak in, steal a wristband, overhear a radio, or abuse a vendor pass—and which camera (detection) would notice. Encryption is the locked cash office, not a substitute for the ticket check.",
+  "deeper_explanation": [
+    "A Trusted solution is secure, compliant, and reliable. Secure architectures ensure only approved users gain access, restrict access to what is essential, and protect data from compromise. Trusted planning asks about risk tolerance, data types, system-of-record role, regulations, and whether Salesforce is business-critical. ([Trusted Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/trusted-overview))",
+    "Well-Architected Secure points architects at Salesforce built-in features and at context: geography, industry, operating procedures, and customer data types. Under Data Security it lists organizational security (authentication, authorization), session management, device access, threat detection and response, sharing and visibility, and encryption. ([Secure](https://architect.salesforce.com/docs/architect/well-architected/guide/secure))",
+    "Help on data access separates what a user can do with an object (object permissions), which fields they can see or edit (field-level security), and which records they can open (sharing). Threat modeling that ignores one layer produces false confidence. ([Control Who Sees What](https://help.salesforce.com/s/articleView?id=platform.security_data_access.htm))",
+    "This lesson's threat-model method is Salesforce-aligned, not a claim that STRIDE is a Salesforce product: for each actor (user, community, integration, admin), name the asset (record, field, session, API), the abuse (impersonation, over-access, exfiltration, integrity loss), and the control (identity, authorization, sharing, encryption, monitoring). Do not invent that Event Monitoring or a named Shield SKU is entitled in every org—verify licenses.",
+    "Security architecture is design metadata: permission sets, sharing, named credentials, encryption settings. The Cases those controls protect are business data. Do not 'test' a threat by opening production sharing."
+  ],
+  "mental_model": {
+    "analogy": "A stadium on event day: ticket check is authentication; section pass is authorization; wristband timeout is session security; seats and clipboards are record and field access; walking the building for sneak-ins, stolen wristbands, and vendor-pass abuse is threat modeling; cameras are detection; the locked cash office is encryption.",
+    "useful_mapping": [
+      "authentication → proving the ticket is genuine",
+      "authorization / object permissions → which gates your pass opens",
+      "field-level security → which clipboard fields you may read or write",
+      "sharing / visibility → which seats you may reach",
+      "session and device → wristband lifetime and which turnstiles accept it",
+      "threat modeling → named actors, assets, abuse paths, and controls",
+      "threat detection → cameras and radios after a control fails"
+    ],
+    "where_it_breaks": [
+      "A stadium has one perimeter; Salesforce has org, user, and data layers plus API and community surfaces the analogy under-draws.",
+      "Encryption is not a substitute for sharing; a locked office still needs a ticket check.",
+      "Named monitoring products are license-gated; do not assume every org has the same cameras.",
+      "Compliance (legal, ethical, accessibility) sits beside Secure under Trusted and is not a turnstile."
+    ]
+  },
+  "teach_back_prompt": "Walk a teammate through authentication, authorization, sharing, FLS, session, and threat modeling using the stadium, then name one place the analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, list Secure's organizational, session, detection, sharing, and encryption concerns."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Threat-model a LAB_ integration user: actor, asset, abuse, control."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain why MFA does not fix Public Read/Write on a sensitive object."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Separate object permission, FLS, and sharing for a Case a partner user should not see."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: Trusted Secure plus a four-part threat model, no product dump."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-WA-TRUSTED",
+      "title": "Trusted | Well-Architected",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/trusted-overview",
+      "supports": "Trusted is secure, compliant, and reliable; planning questions for risk, data, and criticality; Secure includes authentication, authorization, session, threat detection, sharing, encryption.",
+      "release_or_version": "Well-Architected Trusted",
+      "last_verified": "2026-08-16",
+      "limits": "Does not enumerate every sharing feature; SEC topics own OWD mechanics."
+    },
+    {
+      "source_id": "SF-WA-SECURE",
+      "title": "Secure | Trusted | Well-Architected",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/secure",
+      "supports": "Architects secure org and customer data with built-in features; consider geography, industry, procedures, and data types.",
+      "release_or_version": "Well-Architected Secure",
+      "last_verified": "2026-08-16",
+      "limits": "Feature availability is edition- and license-sensitive."
+    },
+    {
+      "source_id": "SF-HELP-DATA-ACCESS",
+      "title": "Control Who Sees What",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.security_data_access.htm",
+      "supports": "Object permissions, field-level security, and record sharing are distinct access layers.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Restriction rules, scoping rules, and implicit sharing details belong to neighboring SEC topics."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Well-Architected Trusted/Secure and Help data-access pages",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Trusted Secure",
+        "Authn vs authz",
+        "Object FLS sharing",
+        "Session and detection",
+        "Threat model four parts",
+        "Encryption is not sharing"
+      ],
+      "accessible_description": "Portrait map of Salesforce security architecture: Trusted Secure controls, access layers, and a four-part threat model of actor, asset, abuse, and control."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-WA-TRUSTED",
+        "SF-WA-SECURE",
+        "SF-HELP-DATA-ACCESS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Security architecture and threat-model map"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Trusted[Trusted] --> Secure[Secure]\n  Trusted --> Compliant[Compliant]\n  Trusted --> Reliable[Reliable]\n  Secure --> OrgSec[Authentication and authorization]\n  Secure --> Session[Session and device]\n  Secure --> Detect[Threat detection and response]\n  Secure --> Share[Sharing and visibility]\n  Secure --> Enc[Encryption]\n  Share --> Obj[Object permissions]\n  Share --> Fls[Field-level security]\n  Share --> Rec[Record sharing]",
+      "decision": "flowchart TD\n  Design[New Salesforce surface] --> Q1{Who is the actor: user, community, integration, admin?}\n  Q1 --> Q2{What asset: record, field, session, API?}\n  Q2 --> Q3{What abuse: impersonation, over-access, exfiltration, integrity loss?}\n  Q3 --> Q4{Which control layer is missing?}\n  Q4 -->|Identity| Authn[Authentication and session]\n  Q4 -->|Capability| Authz[Object permission or FLS]\n  Q4 -->|Which rows| Rec[Sharing / visibility]\n  Q4 -->|At rest or in motion| Enc[Encryption and named credentials]\n  Q4 -->|After failure| Det[Detection and response]\n  Q4 -->|Unknown license| NV[Needs verification: do not assume Shield SKUs]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A Trusted solution is secure, compliant, and reliable. Secure architectures allow only approved access, restrict it to what is essential, and protect data. Planning asks about risk, data types, system-of-record role, and criticality.",
+      "source_ids": ["SF-WA-TRUSTED"],
+      "scope": "Trusted and Secure intent",
+      "validation": "Trusted Overview definition and planning questions.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Well-Architected Secure instructs architects to use Salesforce built-in security features and to consider geography, industry, procedures, and data types. Secure concerns include authentication, authorization, session, threat detection, sharing and visibility, and encryption.",
+      "source_ids": ["SF-WA-SECURE", "SF-WA-TRUSTED"],
+      "scope": "Secure control families",
+      "validation": "Secure page plus Trusted Secure table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Object permissions, field-level security, and record sharing are distinct layers of who sees what.",
+      "source_ids": ["SF-HELP-DATA-ACCESS"],
+      "scope": "Access layers",
+      "validation": "Control Who Sees What Help.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Trusted/Secure Architecture Center pages and data-access Help remain the citations. Named detection products stay license-sensitive.",
+  "unresolved_uncertainty": [
+    "Event Monitoring, Shield Platform Encryption, and specific threat-detection SKUs are entitlement-sensitive; verify in the target org.",
+    "Community, Experience Cloud, and guest-user threat surfaces need their current sharing docs; do not invent guest OWD defaults."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Security architecture",
+      "telugu": "ఎవరు ఏ డేటాను ఎలా చూడవచ్చో పొరలుగా రూపొందించే Trusted Secure డిజైన్."
+    },
+    {
+      "english": "Threat modeling",
+      "telugu": "నటుడు, ఆస్తి, దుర్వినియోగ మార్గం, నియంత్రణను ముందుగా పేర్కొనే అలవాటు."
+    },
+    {
+      "english": "Authentication",
+      "telugu": "వ్యక్తి లేదా సిస్టమ్ ఎవరో నిరూపించడం."
+    },
+    {
+      "english": "Authorization",
+      "telugu": "ఆ నిరూపిత గుర్తింపుకు ఏ సామర్థ్యాలు ఇవ్వాలో నిర్ణయించడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Security architecture is how a Salesforce solution stays Trusted: prove identity, grant least capability, share the right records, protect fields, and detect abuse. Threat modeling names actor, asset, abuse, and control before I pick a feature.",
+    "two_minutes": "I start from Trusted planning: data class, system of record, risk. I separate authentication from authorization, then object permission, FLS, and sharing. I add session, encryption, and detection. I do not claim Shield products without a license check. I never test a threat in production or with real personal data."
+  },
+  "terminology": [
+    {
+      "term": "security architecture",
+      "plain": "The planned layers that keep the org Trusted, not a single checkbox.",
+      "precise": "The designed combination of identity, authorization, session, sharing and visibility, encryption, and detection that matches data class and risk—using Salesforce built-in features in context.",
+      "example": "A LAB_ Case design that names partner users, integration users, FLS on a government-id field, and Private OWD before go-live.",
+      "non_example": "Turning on MFA and declaring the architecture complete.",
+      "confusable_neighbor": "A penetration-test report: evidence of residual risk, not the architecture itself.",
+      "boundary": "OWD and sharing-rule mechanics are SEC-004 territory; this lesson is the architect's threat-informed map."
+    },
+    {
+      "term": "threat modeling",
+      "plain": "Walking the design asking who could abuse what, before you build.",
+      "precise": "A structured pass over actors, assets, abuse paths, and controls aligned to Trusted Secure (identity, session, data, detection). This handbook does not claim a Salesforce product named STRIDE.",
+      "example": "Integration user with Modify All on LAB_Case: abuse is bulk exfiltration; control is least-privilege named credential plus monitoring.",
+      "non_example": "A generic 'hackers exist' slide with no actor or asset.",
+      "confusable_neighbor": "Threat detection: cameras after the fact, not the design-time model.",
+      "boundary": "Do not run exploit proofs; architecture interviews want controls, not attack recipes."
+    },
+    {
+      "term": "authentication",
+      "plain": "Proving the actor is who they claim.",
+      "precise": "Organizational security's identity proof (and MFA where required). Necessary for Trusted Secure, not sufficient for authorization or sharing.",
+      "example": "SSO plus MFA for employees entering the LAB_ org.",
+      "non_example": "A permission set that grants Case edit—that is authorization.",
+      "confusable_neighbor": "Session security: keeping a proven identity bound to a time-limited session.",
+      "boundary": "Identity provider mechanics are SEC-001; here it is one threat-model node."
+    },
+    {
+      "term": "authorization",
+      "plain": "What a proven actor is allowed to do.",
+      "precise": "Capability grants such as object permissions (and, with FLS, field capability). Distinct from which records sharing exposes.",
+      "example": "Partner profile can Read LAB_Case but FLS hides a sensitive field.",
+      "non_example": "OWD Private—that is record sharing, not object capability.",
+      "confusable_neighbor": "Record sharing: which rows, after object permission exists.",
+      "boundary": "Permission set groups and muting are later SEC; this lesson needs the layer split."
+    },
+    {
+      "term": "sharing and visibility",
+      "plain": "Which records an authorized user can actually open.",
+      "precise": "The record-access stack above object permission: organization-wide defaults and the sharing layers that can widen them. A Secure concern under Trusted.",
+      "example": "Private LAB_Case OWD plus a sharing rule for the on-call group.",
+      "non_example": "Hiding a field with FLS and calling it record sharing.",
+      "confusable_neighbor": "Restriction rules (neighboring SEC): additional limits, not this lesson's full catalog.",
+      "boundary": "Do not collapse OWD into threat modeling as the only control."
+    },
+    {
+      "term": "threat detection and response",
+      "plain": "Noticing and reacting when a control fails.",
+      "precise": "A Well-Architected Secure concern covering detection and response. Specific Event Monitoring or Shield capabilities are license-sensitive (Needs verification per org).",
+      "example": "Alerting when the LAB_ integration user downloads an unusual volume of Cases—if the org's monitoring entitlement allows it.",
+      "non_example": "Assuming every org has the same camera product.",
+      "confusable_neighbor": "Threat modeling: design-time questions, not the runtime feed.",
+      "boundary": "Quote current Help for the named product; do not invent event types."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Classify data and actors",
+      "actor": "Architect + security partner",
+      "trigger": "A new object, community, or integration",
+      "before": "Unknown data class and unknown callers",
+      "after": "Written data types, risk tolerance, and actor list",
+      "observe": "Trusted planning answers in the design record",
+      "failure": "Starting with a sharing rule before naming the asset"
+    },
+    {
+      "step": 2,
+      "transition": "Layer access",
+      "actor": "Architect + admin",
+      "trigger": "Actors and assets named",
+      "before": "One 'security setting' for everything",
+      "after": "Object permission, FLS, and sharing decided separately",
+      "observe": "A matrix of actor versus layer",
+      "failure": "MFA as a substitute for Private OWD"
+    },
+    {
+      "step": 3,
+      "transition": "Threat-model the seams",
+      "actor": "Architect",
+      "trigger": "Layers drafted",
+      "before": "Happy-path only",
+      "after": "Each actor has an abuse path and a control, including session and integration",
+      "observe": "Four-column table: actor, asset, abuse, control",
+      "failure": "A slide that only says 'encrypt it'"
+    },
+    {
+      "step": 4,
+      "transition": "Plan detection and verify entitlements",
+      "actor": "Architect + ops",
+      "trigger": "Controls chosen",
+      "before": "Assumed monitoring SKUs",
+      "after": "Detection that the org actually has, plus Needs verification notes",
+      "observe": "License check or a documented gap",
+      "failure": "Claiming Shield features without org evidence"
+    }
+  ],
+  "when_to_use": [
+    "When an interview asks you to describe Salesforce security architecture and how you threat-model a design.",
+    "When a new community, integration user, or sensitive field is added and Trusted Secure must be scored before build.",
+    "When a team treats MFA as the entire security architecture and skips object permission, FLS, or sharing.",
+    "When you must separate detection (runtime) from threat modeling (design-time) and verify monitoring licenses."
+  ],
+  "when_not_to_use": [
+    "Do not use this security-architecture lesson as a substitute for OWD and sharing-rule mechanics (SEC-004).",
+    "Do not treat encryption as a replacement for sharing and FLS, or invent that every org includes Shield.",
+    "Do not run exploit proofs, password attacks, or production sharing experiments as 'threat modeling.'",
+    "Do not collapse authentication into authorization, or object permission into record access."
+  ],
+  "configuration_or_code_location": [
+    "Design record: actor/asset/abuse/control table.",
+    "Setup areas that implement the layers: users, permission sets, sharing, encryption, session settings—in a disposable sandbox only.",
+    "Named credentials and integration users as first-class actors.",
+    "Well-Architected Trusted and Secure pages as the scoring lens."
+  ],
+  "worked_example": {
+    "scenario": "A LAB_ university sandbox will let partner advisors see some Cases, an integration user will upsert Cases from a ticketing tool, and a custom field may hold government-id numbers. Stakeholders say 'we have MFA, ship it.' No production data.",
+    "inputs": [
+      "Employee users with MFA",
+      "Partner community actors",
+      "Integration user proposed with Modify All Data",
+      "Unclassified government-id field"
+    ],
+    "decisions": [
+      {
+        "decision": "Fail Trusted until the government-id field is classified and FLS/encryption needs are named.",
+        "because": "Trusted planning starts with data types and specialized security considerations.",
+        "rejected": "Store the field because MFA is on"
+      },
+      {
+        "decision": "Threat-model the integration user as an actor with bulk-exfiltration abuse; cut Modify All Data.",
+        "because": "Secure architectures restrict access to what is essential.",
+        "rejected": "Reuse a human admin user for the integration"
+      },
+      {
+        "decision": "Separate partner object permission, FLS, and record sharing; do not assume MFA covers partners.",
+        "because": "Help splits those layers; community identity is a different ticket check.",
+        "rejected": "One Public Read/Write OWD because 'partners need to collaborate'"
+      }
+    ],
+    "configuration_or_code": [
+      "Write the four-column threat model for employee, partner, integration, and admin actors.",
+      "Keep government-id off LAB_Case until classification exists.",
+      "No production org and no real student files."
+    ],
+    "output": "A security architecture note that MFA is necessary but not sufficient, with least-privilege integration and layered partner access.",
+    "verification": [
+      "Every actor has an abuse path and a control.",
+      "Object permission, FLS, and sharing are named separately for partners.",
+      "No Shield SKU is claimed without a license note."
+    ],
+    "self_explanation": "I threat-modeled actors instead of celebrating MFA. Data class came before fields. Integration users are not people."
+  },
+  "hands_on_lab": {
+    "environment": "Document plus optional disposable sandbox; synthetic LAB_ names only.",
+    "starting_state_checks": [
+      "You can open Trusted Overview and Control Who Sees What.",
+      "You will not change production sharing or identity settings."
+    ],
+    "steps": [
+      "Pick a LAB_ object and list four actors: end user, admin, integration, and an external or community actor.",
+      "For each actor, fill asset, abuse, and control across identity, object permission, FLS, sharing, and session.",
+      "Mark any detection product as Needs verification unless you confirm the org entitlement.",
+      "Write one sentence on where the stadium analogy breaks for API integrations."
+    ],
+    "guided_completion": [
+      "If MFA is the only control on every row, add authorization and sharing.",
+      "If encryption is the only control on a sharing problem, rewrite that row."
+    ],
+    "independent_challenge": "Add a stolen-session abuse for the end user and name a session or device control rather than a new sharing rule.",
+    "evidence": [
+      "The four-actor threat-model table.",
+      "URLs of Trusted/Secure and data-access Help you used."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ notes that contain any real personal data.",
+      "Revert any sandbox permission experiments that used real aliases."
+    ],
+    "limitations": "This lab is architecture thinking; it does not certify a penetration test."
+  },
+  "decision_table": [
+    {
+      "signal": "The debate is whether the person is really that user or app.",
+      "choose": "Treat it as authentication and session/device security.",
+      "not": "Add a sharing rule or a new field as if that proved identity.",
+      "why": "Trusted Secure separates authentication and session management from sharing and visibility."
+    },
+    {
+      "signal": "The actor is known but can use the wrong object or field.",
+      "choose": "Fix object permissions and field-level security as distinct layers.",
+      "not": "Tighten OWD only, or hide the tab and call it FLS.",
+      "why": "Control Who Sees What documents object, field, and record access separately."
+    },
+    {
+      "signal": "The actor should use the object but only some rows.",
+      "choose": "Design sharing and visibility (OWD plus widening layers) after object permission exists.",
+      "not": "Grant Modify All Data to skip sharing design.",
+      "why": "Secure architectures restrict access to what is essential; Modify All is an abuse path in a threat model."
+    },
+    {
+      "signal": "Sensitive data at rest, in files, or on an integration wire is the asset.",
+      "choose": "Classify first, then consider encryption, named credentials, and field exposure; verify licenses.",
+      "not": "Assume Shield Platform Encryption exists in every org, or use encryption as a sharing substitute.",
+      "why": "Secure tells architects to consider data types and built-in features in context; entitlements vary."
+    },
+    {
+      "signal": "You need to know when a control failed.",
+      "choose": "Plan threat detection and response with org-verified tools.",
+      "not": "Confuse detection with design-time threat modeling, or invent event types.",
+      "why": "Detection is a Secure family of its own; modeling is the four-part table you write before build."
+    }
+  ],
+  "limitations": [
+    "Does not replace SEC sharing-feature catalogs.",
+    "Does not list every Shield or Event Monitoring event.",
+    "Guest, Experience Cloud, and mobile device specifics need current Help.",
+    "No exploit instructions; interviews want controls."
+  ],
+  "security_notes": [
+    "Never use real personal data in LAB_ threat models.",
+    "Do not open production sharing to 'see what happens.'",
+    "Integration users are high-value actors; least privilege is the default design."
+  ],
+  "common_mistakes": [
+    "MFA as the entire architecture.",
+    "Collapsing FLS into sharing or sharing into object permission.",
+    "Encryption as a substitute for who can query the row.",
+    "Assuming monitoring SKUs.",
+    "Testing threats in production."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "A user authenticates but cannot open a record.",
+      "check": [
+        "Object permission",
+        "Record sharing",
+        "Not FLS if the whole record is missing"
+      ],
+      "do_not_assume": "SSO is broken."
+    },
+    {
+      "symptom": "A user opens the record but a field is missing.",
+      "check": [
+        "Field-level security and layout",
+        "Not OWD first"
+      ],
+      "do_not_assume": "The field was deleted."
+    },
+    {
+      "symptom": "An integration exports more Cases than the design allowed.",
+      "check": [
+        "Integration user's object permissions and View All / Modify All",
+        "Named credential and connected-app scope",
+        "Whether detection exists in this org"
+      ],
+      "do_not_assume": "The remote system 'must have been hacked' first."
+    }
+  ],
+  "production_notes": [
+    "Keep the threat-model table with the design; revisit when actors change.",
+    "License-check detection and encryption before go-live claims.",
+    "No production identity or sharing experiments from this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Under Well-Architected, a Trusted solution is which trio?",
+      "options": {
+        "A": "Secure, compliant, and reliable",
+        "B": "Flow, Apex, and LWC",
+        "C": "Sandbox, scratch, and production",
+        "D": "OWD, role, and dashboard"
+      },
+      "answer": "A",
+      "rationale": "Trusted Overview: secure, compliant, and reliable.",
+      "distractor_explanations": {
+        "B": "Implementation tools.",
+        "C": "Environments.",
+        "D": "Sharing pieces plus unrelated UI."
+      },
+      "concept": "Trusted",
+      "citation_ids": ["SF-WA-TRUSTED"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which set appears under Trusted Secure concerns?",
+      "options": {
+        "A": "Authentication, authorization, session, threat detection, sharing and visibility, encryption",
+        "B": "Only report folders",
+        "C": "Only Apex access modifiers",
+        "D": "Only Recycle Bin"
+      },
+      "answer": "A",
+      "rationale": "Trusted Secure table lists those families.",
+      "distractor_explanations": {
+        "B": "Too narrow.",
+        "C": "Wrong topic.",
+        "D": "LDV deletion, not Secure architecture."
+      },
+      "concept": "Secure families",
+      "citation_ids": ["SF-WA-TRUSTED", "SF-WA-SECURE"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Control Who Sees What separates which three layers?",
+      "options": {
+        "A": "Object permissions, field-level security, and record sharing",
+        "B": "Flow, validation rule, and approval",
+        "C": "Trusted, Easy, and only dashboards",
+        "D": "SOAP, REST, and Bulk as sharing models"
+      },
+      "answer": "A",
+      "rationale": "Help documents those three as distinct.",
+      "distractor_explanations": {
+        "B": "Automation tools.",
+        "C": "Incomplete and wrong.",
+        "D": "APIs are not sharing layers."
+      },
+      "concept": "Access layers",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "MFA is on, but an object is Public Read/Write with a sensitive field visible. What did the architecture miss?",
+      "options": {
+        "A": "Authentication is not authorization or sharing; threat-model record and field exposure",
+        "B": "MFA automatically sets OWD to Private",
+        "C": "Public Read/Write is the same as FLS",
+        "D": "Trusted forbids all standard objects"
+      },
+      "answer": "A",
+      "rationale": "Secure requires least essential access; MFA does not set sharing.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Different layers.",
+        "D": "Nonsense."
+      },
+      "concept": "MFA not sufficient",
+      "citation_ids": ["SF-WA-TRUSTED", "SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A user can open the Case but cannot see a field. Which layer is the first check?",
+      "options": {
+        "A": "Field-level security (and layout), not OWD first",
+        "B": "Only SSO logs",
+        "C": "Only Recycle Bin",
+        "D": "Apex public versus Java public"
+      },
+      "answer": "A",
+      "rationale": "Record access already worked; field capability is FLS.",
+      "distractor_explanations": {
+        "B": "Identity is already proven.",
+        "C": "Unrelated.",
+        "D": "Wrong domain."
+      },
+      "concept": "FLS vs sharing",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How should this lesson treat STRIDE or a named Shield SKU?",
+      "options": {
+        "A": "Do not claim STRIDE is a Salesforce product; verify Shield/monitoring entitlements before naming them",
+        "B": "Every org includes all Shield features",
+        "C": "STRIDE is a Setup checkbox",
+        "D": "Threat modeling requires running exploits"
+      },
+      "answer": "A",
+      "rationale": "The lesson uses a Salesforce-aligned four-part model; licenses need verification.",
+      "distractor_explanations": {
+        "B": "Entitlements vary.",
+        "C": "False.",
+        "D": "Interviews want controls, not attacks."
+      },
+      "concept": "No invented products",
+      "citation_ids": ["SF-WA-SECURE"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Encryption versus sharing—what is the architect's split?",
+      "options": {
+        "A": "Encryption protects data at rest or in motion; it does not replace who can query the row",
+        "B": "Encryption sets OWD",
+        "C": "Sharing encrypts fields automatically",
+        "D": "They are identical Secure concerns with one Setup toggle"
+      },
+      "answer": "A",
+      "rationale": "Trusted lists sharing and encryption as separate Secure concerns.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "They are distinct families."
+      },
+      "concept": "Encryption not sharing",
+      "citation_ids": ["SF-WA-TRUSTED"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "An integration user is proposed with Modify All Data 'so the API just works.' Threat-model response?",
+      "options": {
+        "A": "Treat bulk exfiltration as the abuse; restrict to essential object permission and named credential scope",
+        "B": "Approve Modify All because APIs ignore sharing always",
+        "C": "MFA on the integration user fixes over-access",
+        "D": "Put the password in a LAB_ Case comment"
+      },
+      "answer": "A",
+      "rationale": "Secure architectures restrict access to what is essential; integration users are actors.",
+      "distractor_explanations": {
+        "B": "APIs still require a security design.",
+        "C": "Authn ≠ authz.",
+        "D": "Secret handling failure."
+      },
+      "concept": "Integration actor",
+      "citation_ids": ["SF-WA-SECURE", "SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Stakeholders want to 'test sharing' by opening production OWD. What do you do?",
+      "options": {
+        "A": "Refuse; threat modeling is a design table, not a production experiment",
+        "B": "Agree if it is after hours",
+        "C": "It is required by Well-Architected",
+        "D": "Production is the only place sharing can be understood"
+      },
+      "answer": "A",
+      "rationale": "This lesson forbids production sharing experiments; use sandbox and written models.",
+      "distractor_explanations": {
+        "B": "After hours still exposes real data.",
+        "C": "Trusted would oppose careless exposure.",
+        "D": "Sandboxes exist for a reason."
+      },
+      "concept": "No prod experiments",
+      "citation_ids": ["SF-WA-TRUSTED"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A user is logged in, then walks away. Which Secure family is the first threat-model node?",
+      "options": {
+        "A": "Session management and device access, not a new sharing rule",
+        "B": "Parent-child data skew",
+        "C": "Flow versus Apex",
+        "D": "Recycle Bin hard delete"
+      },
+      "answer": "A",
+      "rationale": "Trusted Secure lists session management and device access beside sharing.",
+      "distractor_explanations": {
+        "B": "LDV topic.",
+        "C": "Automation topic.",
+        "D": "Deletion topic."
+      },
+      "concept": "Session",
+      "citation_ids": ["SF-WA-TRUSTED"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Threat modeling versus threat detection?",
+      "options": {
+        "A": "Modeling is design-time actor/asset/abuse/control; detection is runtime noticing and response",
+        "B": "They are the same Setup page",
+        "C": "Detection replaces sharing",
+        "D": "Modeling is only for Apex classes"
+      },
+      "answer": "A",
+      "rationale": "Detection is a Secure family; modeling is the structured design habit in this lesson.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Detection does not set OWD.",
+        "D": "All surfaces, not only Apex."
+      },
+      "concept": "Model vs detect",
+      "citation_ids": ["SF-WA-TRUSTED"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Security architecture metadata versus business data?",
+      "options": {
+        "A": "Permission sets, sharing, and encryption settings are metadata; the Case rows they protect are data",
+        "B": "A threat-model table inserts Account records",
+        "C": "OWD is stored as a Case comment",
+        "D": "Actors are Recycle Bin items"
+      },
+      "answer": "A",
+      "rationale": "Handbook metadata-versus-data split.",
+      "distractor_explanations": {
+        "B": "A spec does not create Accounts.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "Security architecture in one Trusted sentence?",
+      "back": "Designed Secure controls so only approved, least-essential access happens and data is protected—alongside compliant and reliable."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "Threat modeling four parts?",
+      "back": "Actor, asset, abuse path, and control. Not a Salesforce product named STRIDE."
+    },
+    {
+      "id": "F3",
+      "category": "layers",
+      "front": "Object permission vs FLS vs sharing?",
+      "back": "What you can do with the object, which fields, and which records."
+    },
+    {
+      "id": "F4",
+      "category": "identity",
+      "front": "Authentication vs authorization?",
+      "back": "Prove who it is versus what that identity may do."
+    },
+    {
+      "id": "F5",
+      "category": "secure",
+      "front": "Name five Secure families.",
+      "back": "Authentication/authorization, session and device, threat detection, sharing and visibility, encryption."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "Does MFA set OWD?",
+      "back": "No. Authentication is not sharing. Public Read/Write can still leak records."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "Does encryption replace sharing?",
+      "back": "No. Encryption is a separate Secure concern from who can query the row."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Modify All Data on an integration user?",
+      "back": "Threat-model bulk exfiltration; restrict to essential access and named credentials."
+    },
+    {
+      "id": "F9",
+      "category": "detect",
+      "front": "Threat modeling vs detection?",
+      "back": "Design-time table versus runtime noticing. Do not assume every monitoring SKU."
+    },
+    {
+      "id": "F10",
+      "category": "session",
+      "front": "Walk-away user. Which family?",
+      "back": "Session management and device access, not a new sharing rule."
+    },
+    {
+      "id": "F11",
+      "category": "scenario",
+      "front": "User opens record, field missing. Check?",
+      "back": "Field-level security and layout, not OWD first."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "User authenticates, record missing. Check?",
+      "back": "Object permission then record sharing."
+    },
+    {
+      "id": "F13",
+      "category": "boundary",
+      "front": "May you open production OWD to test a threat?",
+      "back": "No. Model in a design table and sandbox. Production experiments are out of scope."
+    },
+    {
+      "id": "F14",
+      "category": "boundary",
+      "front": "May you claim Shield in every org?",
+      "back": "No. Verify entitlements; mark Needs verification otherwise."
+    },
+    {
+      "id": "F15",
+      "category": "planning",
+      "front": "Name a Trusted planning question.",
+      "back": "What data moves, is Salesforce a system of record, what is the risk tolerance?"
+    },
+    {
+      "id": "F16",
+      "category": "analogy",
+      "front": "Where does the stadium analogy break?",
+      "back": "API and community surfaces, license-gated detection, and compliance sitting beside Secure are under-drawn."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is Salesforce security architecture in Well-Architected language?",
+      "answer_30_seconds": "It is how the solution stays Trusted: secure, compliant, and reliable. Secure means approved, least-essential access and protected data—not MFA alone.",
+      "answer_2_minutes": "I start from Trusted planning: data class, system of record, regulations, criticality. I map Secure families: identity, authorization, session, sharing, encryption, detection. I split object permission, FLS, and record sharing. I verify licenses before naming Shield or Event Monitoring. I keep controls as metadata and Cases as data.",
+      "example": "LAB_ Case with partner, employee, and integration actors scored before a field is created.",
+      "tradeoffs": [
+        "Speed of delivery vs Trusted completeness",
+        "Broad integration access vs least privilege"
+      ],
+      "follow_ups": [
+        "What is compliant versus secure?",
+        "Where does reliability show up?"
+      ],
+      "weak_answer_warnings": [
+        "MFA-only answer",
+        "Using a generic catalog metaphor instead of layered access"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you threat-model a Salesforce design in an interview?",
+      "answer_30_seconds": "I list actors, assets, abuse paths, and controls. I walk identity, session, object, field, sharing, encryption, and detection. I do not claim STRIDE is a Salesforce product.",
+      "answer_2_minutes": "Employee, community, integration, and admin are different tickets. For each I ask what they could steal, alter, or over-read. I match a control to a layer rather than stacking slogans. Detection is what we do after a control fails, and it may be license-gated. I will not describe exploits.",
+      "example": "Integration user + LAB_Case + bulk export + least privilege and monitoring gap noted.",
+      "tradeoffs": [
+        "Design time vs runtime detection",
+        "Usability vs least privilege"
+      ],
+      "follow_ups": [
+        "What if the actor is a guest user?",
+        "How do named credentials change the model?"
+      ],
+      "weak_answer_warnings": [
+        "Generic 'hackers' with no actor"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "MFA is on. Ship a partner community on Public Read/Write Case?",
+      "answer_30_seconds": "No. Authentication is not sharing. I threat-model partner over-read, set object permission and OWD deliberately, and hide sensitive fields with FLS.",
+      "answer_2_minutes": "Trusted planning asks what data partners see. Public Read/Write is an abuse path, not collaboration magic. I separate Experience Cloud identity from employee SSO. I would rather a Private OWD plus a sharing path than a stadium with no section ropes. I do not invent guest defaults; I would verify current community sharing Help.",
+      "example": "LAB_ advisor community on Case with Private OWD and a sharing set or rule—exact community feature Needs verification in the org.",
+      "tradeoffs": [
+        "Partner convenience vs record exposure",
+        "One OWD vs extra sharing metadata"
+      ],
+      "follow_ups": [
+        "Sharing sets versus sharing rules?",
+        "What field must partners never see?"
+      ],
+      "weak_answer_warnings": [
+        "MFA as sufficient for community data"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "The middleware team wants the integration user to have Modify All Data. Respond.",
+      "answer_30_seconds": "I threat-model bulk exfiltration and integrity loss. Modify All is not an integration pattern. We grant essential objects and use named credentials.",
+      "answer_2_minutes": "Secure says restrict to what is essential. I would also ask whether the API runs as a dedicated user, whether connected-app scopes are tight, and whether detection exists in this org. MFA on a human admin is the wrong ticket. Secrets do not go in Case comments. ARCH-006 will add failure modes; this lesson is the actor.",
+      "example": "LAB_ upsert user with CRUD on LAB_Case only, no View All Data.",
+      "tradeoffs": [
+        "Integration convenience vs blast radius",
+        "One god user vs several scoped users"
+      ],
+      "follow_ups": [
+        "With sharing versus without sharing in Apex?",
+        "How do you rotate the credential?"
+      ],
+      "weak_answer_warnings": [
+        "Approving Modify All to 'make the API work'"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A user logs in but cannot open a Case another user sees. How do you walk the layers?",
+      "answer_30_seconds": "Identity already worked. Check object permission, then record sharing, then layout. Do not start at encryption or MFA.",
+      "answer_2_minutes": "Control Who Sees What is the script: object, field, record. If the record is missing, FLS is the wrong first stop. If the record opens and a field is missing, then FLS and layout. I also check whether they are a community user with a different sharing model. I would not change production OWD to debug.",
+      "example": "LAB_ partner user versus internal user on the same Case.",
+      "tradeoffs": [
+        "Debug in sandbox vs production peek",
+        "Sharing fix vs accidental View All"
+      ],
+      "follow_ups": [
+        "How do you prove sharing in a query?",
+        "Could a restriction rule be in play? (Neighboring SEC.)"
+      ],
+      "weak_answer_warnings": [
+        "Resetting the password first as the only step"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Leadership wants encryption 'instead of sharing' because of an audit. Answer.",
+      "answer_30_seconds": "Encryption is a Secure family, not a sharing substitute. Auditors still care who can query the row. Classify data, then layer sharing and encryption, and verify licenses.",
+      "answer_2_minutes": "Trusted lists sharing and encryption separately. I would ask which data class triggered the audit. Platform Encryption, if entitled, has limitations that must be read from current Help—Needs verification, I will not invent which fields can be encrypted. Easy still asks who can maintain the model. I refuse a single toggle story.",
+      "example": "LAB_ government-id field: FLS plus Private OWD, encryption only if entitled and suitable.",
+      "tradeoffs": [
+        "Encryption operational cost vs sharing design",
+        "Audit language vs platform capability"
+      ],
+      "follow_ups": [
+        "Bring Your Own Key?",
+        "What cannot be encrypted? (Cite current Help.)"
+      ],
+      "weak_answer_warnings": [
+        "Encryption as OWD"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Where does threat detection sit, and what must you verify?",
+      "answer_30_seconds": "Detection is runtime noticing and response, a Secure family. I verify org entitlements before naming Event Monitoring or other products.",
+      "answer_2_minutes": "Modeling without detection leaves failed controls invisible. Detection without modeling is a camera pointed at the wrong gate. I write the abuse first, then ask whether this org can see that event. If not, I record a gap rather than invent logs. I still would not skip sharing because 'we will watch it.'",
+      "example": "Unusual export by LAB_ integration user—capability Needs verification in the org.",
+      "tradeoffs": [
+        "Prevent vs detect",
+        "License cost vs gap acceptance"
+      ],
+      "follow_ups": [
+        "Who triages alerts?",
+        "How does this meet Adaptable incident response?"
+      ],
+      "weak_answer_warnings": [
+        "Listing SKUs with no license check"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach security architecture with the stadium, then break the analogy.",
+      "answer_30_seconds": "Tickets are authentication, sections are authorization, seats are sharing, clipboards are FLS, wristbands are sessions, walking for sneak-ins is threat modeling, cameras are detection, cash office is encryption. APIs and licenses break the picture.",
+      "answer_2_minutes": "I map a LAB_ Case through four actors. I say compliance is not a turnstile. I forbid production experiments and real student data. I remind them encryption is not a ticket check. I finish with object, field, and record as three gates so Help's data-access split is audible.",
+      "example": "LAB_ university partner advisors plus integration upsert.",
+      "tradeoffs": [
+        "Memorable analogy vs extra Salesforce surfaces",
+        "Physical perimeter vs multi-tenant org"
+      ],
+      "follow_ups": [
+        "Where do named credentials sit in the stadium?",
+        "What is out of scope for ARCH-004?"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer analogy",
+        "Exploit steps"
+      ]
+    }
+  ]
+}

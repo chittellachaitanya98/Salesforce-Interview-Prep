@@ -1,0 +1,1090 @@
+{
+  "topic_id": "APEX-011",
+  "slug": "queueable-batch-scheduled-and-future-apex",
+  "title": "Queueable, Batch, Scheduled, and Future Apex",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-010"
+  ],
+  "objectives": [
+    "Choose Queueable, Batch, Scheduled, or Future Apex using the official Asynchronous Apex when-to-use table.",
+    "Explain why Salesforce recommends Queueable over future methods (job Id, non-primitives, chaining).",
+    "Cite Execution Governors and Limits for enqueue, future, batch concurrency, scheduled count, and daily async executions without inventing numbers.",
+    "Connect rollback of the parent transaction to cancelled queued jobs, and scheduled Apex to synchronous per-transaction limits."
+  ],
+  "diagnostic_question": "You must call an external API with an sObject payload after a trigger save, nightly clean millions of LAB_ rows, and run a weekly maintenance job. Which async Apex types do you pick, and which official limits would you check first?",
+  "definition": "Asynchronous Apex runs in the background when resources are available, in a new transaction with its own governors. The Developer Guide's choice table: Queueable for long work with a job Id, complex types, and chaining; Scheduled to run a class on a schedule; Batch for large volumes or query results bigger than a regular transaction; Future for long work, callouts, or mixed-DML isolation—though Salesforce recommends Queueable instead of future methods. ([Asynchronous Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_async_overview.htm); [Queueable Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_queueing_jobs.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+  "why_it_matters": "Wrong job type shows up as Flex Queue backups, daily async exhaustion, or 'we cannot find the future job.' Interviewers want Queueable vs Batch vs Future vs Scheduled with cited limits, not a vibe.",
+  "sixty_second_explanation": "Think of a restaurant ticket rail. Queueable is a numbered ticket you can chain and pass a whole plate (sObjects). Salesforce recommends it over future, which is a shout into the kitchen with only primitive tickets and no job Id. Batch is catering in pans: start/execute/finish, QueryLocator up to 50 million, five active jobs plus 100 in the Flex Queue. Scheduled is the printed daily prep list—100 concurrent scheduled Apex classes (5 in Developer Edition); the execute still uses synchronous per-transaction limits. Parent rollback throws the tickets away.",
+  "deeper_explanation": [
+    "Asynchronous Apex is a choice among four official features, not a single annotation. Queueable: long operation, job Id, complex types, chaining. Scheduled: run on a schedule. Batch: large volume or larger query results. Future: long method, callouts, mixed DML segregation. Salesforce recommends Queueable instead of future methods. ([Asynchronous Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_async_overview.htm))",
+    "Queueable implements Queueable and System.enqueueJob. Benefits versus future: AsyncApexJob Id, member variables that are sObjects or custom types, chaining. Up to 50 enqueueJob calls per synchronous transaction; only 1 from an asynchronous transaction. Developer and Trial chained depth default 5. Rollback of the parent transaction drops queued jobs. Minimum delay 0–10 minutes exists; delay 0 plus chaining can burn the daily async limit. ([Queueable Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_queueing_jobs.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+    "Batch implements Database.Batchable with start, execute, finish. Each execute is a discrete transaction; governors reset per execute; earlier successful executes stay committed if a later one fails. QueryLocator in start bypasses the usual SOQL row cap and can return up to 50 million records; an Iterable does not get that bypass. Platform limits: 5 batch jobs queued or active concurrently; 100 in Holding on the Flex Queue; 1 concurrent start() execution. ([Use Batch Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_batch_interface.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+    "Scheduled Apex implements Schedulable. Maximum 100 scheduled Apex classes concurrently (5 in Developer Edition). Actual run time can delay. The scheduler runs as system. Although scheduled Apex is asynchronous, synchronous per-transaction limits apply to the scheduled job. Prefer System.scheduleBatch or a Schedulable that only kicks Batch/Queueable rather than doing heavy work in execute. Do not schedule from a bulk trigger without guaranteeing you will not exceed 100. ([Apex Scheduler](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_scheduler.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+    "Future methods are static, void, primitives/collections of primitives only—no sObjects (stale overwrite risk). @future(callout=true) for callouts. You cannot call future from future. Per invocation: 50 future calls synchronously; 0 from batch and future contexts; 50 from queueable context. Daily async executions (batch, future, Queueable, scheduled) are 250,000 or licenses × 200, whichever is greater. Salesforce recommends Queueable instead. ([Future Methods](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_invoking_future_methods.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))"
+  ],
+  "mental_model": {
+    "analogy": "A restaurant ticket rail: Queueable is a numbered ticket you can chain; Future is a shout with no ticket number; Batch is catering pans; Scheduled is the daily prep list printed the night before.",
+    "useful_mapping": [
+      "numbered ticket → Queueable + AsyncApexJob Id",
+      "whole plate on the ticket → sObject / custom-type members",
+      "shout into the kitchen → @future (primitives only, no job Id)",
+      "catering pans → Batch start / execute / finish",
+      "five ovens plus a holding rack of 100 → concurrent batch + Flex Queue Holding",
+      "daily prep list → Schedulable / System.schedule",
+      "thrown-away tickets when the table cancels → parent transaction rollback",
+      "new ticket window after commit → new async transaction (APEX-010)"
+    ],
+    "where_it_breaks": [
+      "Scheduled Apex still uses synchronous per-transaction limits—the prep list is not a bigger oven.",
+      "Batch execute order is not guaranteed even if pans were numbered.",
+      "Cursors plus chained Queueable are a documented alternative to Batch; this lesson only points at that Guide page.",
+      "The kitchen analogy does not encode named credentials or platform events."
+    ]
+  },
+  "teach_back_prompt": "Walk Queueable vs Batch vs Future vs Scheduled as if you are assigning kitchen tickets, then name one official limit for each and where Salesforce recommends Queueable over future.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: the four-row Asynchronous Apex when-to-use table."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Quote enqueueJob 50/1, future 50/0/50, batch 5+100, scheduled 100 (DE 5)."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain rollback-cancels-queued-jobs and scheduled-uses-sync-limits."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Given millions of rows vs a callout with an sObject, pick Batch vs Queueable."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: recommend Queueable over future and defend Batch for QueryLocator volume."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-ASYNC",
+      "title": "Asynchronous Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_async_overview.htm",
+      "supports": "Official when-to-use table for Queueable, Scheduled, Batch, and Future; recommendation to prefer Queueable over future; cursors+Queueable vs Batch note (5 active batch, 100 Flex Queue).",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace the governors tables."
+    },
+    {
+      "source_id": "SF-APEX-QUEUEABLE",
+      "title": "Queueable Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_queueing_jobs.htm",
+      "supports": "Job Id, non-primitives, chaining; 50 enqueue sync / 1 async; DE/Trial chain depth 5; rollback drops queued jobs; delay 0–10 minutes.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Elastic async (beta) is neighboring; do not treat beta caps as required interview facts."
+    },
+    {
+      "source_id": "SF-APEX-BATCH",
+      "title": "Use Batch Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_batch_interface.htm",
+      "supports": "start/execute/finish; QueryLocator up to 50 million and SOQL row-limit bypass; Iterable does not bypass; each execute is a discrete transaction.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Optional scope parameter details should be re-read before quoting batch size numbers beyond the 200-default example in the Guide."
+    },
+    {
+      "source_id": "SF-APEX-SCHED",
+      "title": "Apex Scheduler",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_scheduler.htm",
+      "supports": "Schedulable; 100 concurrent scheduled Apex jobs; runs as system; execution may delay; do not over-schedule from triggers.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Cron expression syntax is neighboring; this lesson does not invent cron fields."
+    },
+    {
+      "source_id": "SF-APEX-FUTURE",
+      "title": "Future Methods",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_invoking_future_methods.htm",
+      "supports": "Static void primitives only; no sObjects; callout=true; mixed DML; cannot call future from future; prefer Queueable.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Daily 250,000-or-licenses×200 is shared with all async types; see governors page."
+    },
+    {
+      "source_id": "SF-APEX-GOV",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "enqueueJob 50 sync / 1 async; future 50 / 0 in batch and future / 50 in queueable; scheduled uses sync limits; 100 scheduled (DE 5); 5 batch active; 100 flex Holding; daily async 250,000 or licenses×200.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Summer '26 / API 67.0 numbers; reverify on later releases."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Four async job types",
+        "Queueable vs Future",
+        "Batch flex queue",
+        "Scheduled count",
+        "Daily async pool",
+        "Rollback cancels enqueue"
+      ],
+      "accessible_description": "Four async job types; Queueable vs Future; Batch flex queue; Scheduled count; Daily async pool; Rollback cancels enqueue"
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-ASYNC",
+        "SF-APEX-QUEUEABLE",
+        "SF-APEX-BATCH",
+        "SF-APEX-SCHED",
+        "SF-APEX-FUTURE",
+        "SF-APEX-GOV"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Which async Apex type owns this job?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Parent[Parent Apex transaction] -->|commit| Queue[Async Apex queue]\n  Parent -->|rollback| Drop[Queued Queueable and future not processed]\n  Queue --> Qable[Queueable: job Id, sObjects, chaining]\n  Queue --> Fut[@future: static void primitives, optional callout=true]\n  Queue --> Batch[Batch: start execute finish, QueryLocator up to 50 million]\n  Queue --> Sched[Scheduled: Schedulable execute on a clock]\n  Batch --> Flex[5 active plus 100 Holding flex queue]\n  Sched --> Clock[100 concurrent scheduled classes; DE 5]\n  Qable --> Daily[Shared DailyAsyncApexExecutions: 250k or licenses times 200]",
+      "decision": "flowchart TD\n  Job[Need async Apex?] --> Q1{Must it run on a clock?}\n  Q1 -->|Yes daily or weekly| Sched[Scheduled Apex; kick Batch or Queueable from execute]\n  Q1 -->|No, after this save| Q2{How much data?}\n  Q2 -->|Millions / QueryLocator maintenance| Batch[Batch Apex]\n  Q2 -->|One logical follow-up, maybe chain or sObject state| Q3{New code vs legacy?}\n  Q3 -->|New| Qable[Queueable: Salesforce-recommended default]\n  Q3 -->|Legacy mixed DML or existing @future| Fut[Future only with a reason]\n  Q2 -->|Callout plus complex payload| Qable2[Queueable with callout, not 50 future fan-out]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Official when-to-use: Queueable for long work with a job Id, complex types, and chaining; Scheduled for a schedule; Batch for large volumes or larger query results; Future for long methods, callouts, or mixed DML. Salesforce recommends Queueable over future methods.",
+      "source_ids": [
+        "SF-APEX-ASYNC",
+        "SF-APEX-QUEUEABLE"
+      ],
+      "scope": "Job-type choice",
+      "validation": "Asynchronous Apex table plus Queueable recommendation.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "System.enqueueJob: 50 jobs per synchronous transaction, 1 per asynchronous transaction. Future methods: 50 per synchronous invocation, 0 from batch and future, 50 from queueable. Chained Queueable depth defaults to 5 in Developer and Trial orgs.",
+      "source_ids": [
+        "SF-APEX-GOV",
+        "SF-APEX-QUEUEABLE"
+      ],
+      "scope": "Enqueue and future ceilings",
+      "validation": "Execution Governors and Limits plus Queueable limits list.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Batch: QueryLocator in start can return up to 50 million records and bypasses the usual SOQL retrieved-row limit; Iterable does not. Each execute is a discrete transaction. Platform: 5 batch jobs queued or active concurrently, 100 Holding in the flex queue.",
+      "source_ids": [
+        "SF-APEX-BATCH",
+        "SF-APEX-GOV",
+        "SF-APEX-ASYNC"
+      ],
+      "scope": "Batch behavior and org limits",
+      "validation": "Use Batch Apex plus governors/async overview.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Maximum 100 scheduled Apex classes concurrently (5 in Developer Edition). Scheduled jobs use synchronous per-transaction limits. Daily async method executions (batch, future, Queueable, scheduled) are 250,000 or licenses × 200, whichever is greater. Parent rollback drops queued Queueable/future work.",
+      "source_ids": [
+        "SF-APEX-SCHED",
+        "SF-APEX-GOV",
+        "SF-APEX-QUEUEABLE",
+        "SF-APEX-FUTURE"
+      ],
+      "scope": "Scheduled, daily async, rollback",
+      "validation": "Scheduler, governors, Queueable/Future rollback notes.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Summer '26 / API 67.0 governors: enqueue 50/1, daily async 250,000 or licenses×200, scheduled 100 (DE 5), batch 5+100. Reverify elastic async (beta) before treating it as a design default.",
+  "unresolved_uncertainty": [
+    "Exact production chain-depth beyond Developer/Trial's 5 should be read from the current Queueable page rather than memorized from unofficial blogs.",
+    "Default Batch execute size of 200 is illustrated in the Guide; confirm optional scope behavior on the current Use Batch Apex page before quoting other sizes as hard caps."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Queueable Apex",
+      "telugu": "నంబర్ టికెట్: job Id, sObject స్టేట్, చైన్."
+    },
+    {
+      "english": "Batch Apex",
+      "telugu": "పెద్ద వాల్యూమ్‌ను start/execute/finish పాన్లలో విభజించడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I pick from the official table: Queueable for job Id, sObjects, and chaining; Batch for millions of rows via QueryLocator; Scheduled for the clock; Future only for mixed DML or legacy callouts. Salesforce recommends Queueable over future. Rollback of the parent save drops queued jobs.",
+    "two_minutes": "I start with volume and timing. Nightly millions: Batch, knowing 5 active plus 100 Flex Queue Holding, and that each execute commits separately. After-trigger callout with an Account in memory: Queueable, 50 enqueue in the sync trigger, only 1 if I chain from async. I will not fan out 50 futures from a queueable without a reason. Scheduled execute uses synchronous limits, so I only kick Batch. Daily async is 250,000 or licenses times 200. I cite Execution Governors and Limits rather than Trailhead round numbers when they disagree."
+  },
+  "terminology": [
+    {
+      "term": "Queueable Apex",
+      "plain": "A numbered background job you enqueue.",
+      "precise": "Class implementing Queueable; System.enqueueJob returns AsyncApexJob Id; supports sObjects/custom types and chaining. Recommended over future.",
+      "example": "LAB_AllocQueueable holding a LAB_Order__c member, enqueued from a trigger after commit path.",
+      "non_example": "A before-save Flow field update is not Queueable.",
+      "confusable_neighbor": "Future method: overlapping use cases, fewer features.",
+      "boundary": "50 enqueue per sync transaction, 1 from async; DE/Trial chain depth 5."
+    },
+    {
+      "term": "Batch Apex",
+      "plain": "Background work in record pans.",
+      "precise": "Database.Batchable with start, execute, finish. QueryLocator can return up to 50 million and bypasses the usual SOQL row governor; each execute is its own transaction.",
+      "example": "Nightly LAB_ArchiveBatch querying all closed LAB_ cases.",
+      "non_example": "A for-loop of 200 updates in a trigger is not Batch.",
+      "confusable_neighbor": "Queueable plus cursors: documented alternative when Flex Queue is saturated.",
+      "boundary": "5 concurrent active/queued; 100 Holding; 1 concurrent start()."
+    },
+    {
+      "term": "Scheduled Apex",
+      "plain": "Run this class when the clock says so.",
+      "precise": "Schedulable.execute; System.schedule or Setup. Max 100 concurrent scheduled Apex (5 in DE). Runs as system. Execution may delay. Uses synchronous per-transaction limits.",
+      "example": "LAB_NightlySched that only Database.executeBatch's a batch class.",
+      "non_example": "Workflow time-based actions are not Scheduled Apex.",
+      "confusable_neighbor": "Queueable delay 0–10 minutes: not a cron replacement.",
+      "boundary": "Do not System.schedule from a bulk trigger without a uniqueness guard."
+    },
+    {
+      "term": "Future method",
+      "plain": "Fire-and-forget static method.",
+      "precise": "@future static void with primitive arguments only. Optional callout=true. Used for callouts and mixed DML. Cannot call future from future. Salesforce recommends Queueable instead.",
+      "example": "@future(callout=true) void pingAllocator(Id orderId)",
+      "non_example": "Passing a LAB_Order__c sObject into @future (illegal).",
+      "confusable_neighbor": "Queueable: preferred replacement.",
+      "boundary": "50 per sync invocation; 0 from batch/future; 50 from queueable."
+    },
+    {
+      "term": "AsyncApexJob",
+      "plain": "The monitoring row for a background job.",
+      "precise": "sObject you query with the Id enqueueJob or BatchableContext returns. Queueable processed-batches fields stay zero.",
+      "example": "SELECT Status FROM AsyncApexJob WHERE Id = :jobId",
+      "non_example": "CronTrigger is the scheduled-job monitor, not Queueable.",
+      "confusable_neighbor": "Apex Jobs Setup page.",
+      "boundary": "No job Id is a reason not to choose @future for new work."
+    },
+    {
+      "term": "Flex Queue",
+      "plain": "Holding area for extra Batch jobs.",
+      "precise": "Batch jobs beyond the 5 active/queued sit Holding, max 100. Async overview warns jobs can pile up and delay critical work.",
+      "example": "Sixth Database.executeBatch while five run: Holding.",
+      "non_example": "The 50 enqueueJob cap is not the Flex Queue.",
+      "confusable_neighbor": "DailyAsyncApexExecutions: org-wide 24-hour async method count.",
+      "boundary": "Cursors + Queueable are the Guide's flexibility alternative."
+    },
+    {
+      "term": "DailyAsyncApexExecutions",
+      "plain": "Shared 24-hour async budget.",
+      "precise": "250,000 or applicable licenses × 200, whichever is greater, across batch (start/execute/finish each count), future, Queueable, and scheduled.",
+      "example": "A Batch of 10,000 executes can throw AsyncApexExecutions Limit exceeded if remaining capacity is 9,500.",
+      "non_example": "Per-transaction CPU is not this org limit.",
+      "confusable_neighbor": "Elastic async (beta): neighboring throttled overflow.",
+      "boundary": "Check REST limits resource rather than guessing remaining capacity."
+    },
+    {
+      "term": "chaining",
+      "plain": "Starting the next Queueable from execute.",
+      "precise": "One child per parent when enqueueing from an executing job. DE/Trial max stack depth 5. Delay 0 with chaining can burn daily async.",
+      "example": "LAB_PageQueueable enqueues the next page of Ids.",
+      "non_example": "Calling 50 Queueables from one async execute (over the 1-job async enqueue limit).",
+      "confusable_neighbor": "Batch finish kicking another batch: a different pattern with the 5-active cap.",
+      "boundary": "Implement a halt/delay fail-safe as the Queueable page warns."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose the job type",
+      "actor": "Developer",
+      "trigger": "Work cannot finish in the parent save",
+      "before": "Sync trigger near limits",
+      "after": "Queueable, Batch, Scheduled, or Future picked from the official table",
+      "observe": "Written reason on the class header",
+      "failure": "Defaulting to @future for new work"
+    },
+    {
+      "step": 2,
+      "transition": "Enqueue only on the success path",
+      "actor": "Developer",
+      "trigger": "System.enqueueJob / executeBatch / schedule",
+      "before": "Job tied to uncommitted DML",
+      "after": "Enqueue after DML that must commit; remember rollback drops Queueable/future",
+      "observe": "AsyncApexJob appears only after commit",
+      "failure": "Enqueue then throw"
+    },
+    {
+      "step": 3,
+      "transition": "Stay inside org async caps",
+      "actor": "Developer",
+      "trigger": "High volume",
+      "before": "Unknown remaining daily async",
+      "after": "Check 5 batch + 100 flex, 100 scheduled, daily 250k-or-licenses×200",
+      "observe": "Limits REST or Setup Apex Jobs / Scheduled Jobs",
+      "failure": "Scheduling from a 200-row trigger"
+    },
+    {
+      "step": 4,
+      "transition": "Test with Test.startTest/stopTest",
+      "actor": "Developer",
+      "trigger": "Need the async to run in a test",
+      "before": "Job still queued",
+      "after": "startTest/stopTest so the job executes in the test context (APEX-016 owns depth)",
+      "observe": "Assertions on LAB_ rows after stopTest",
+      "failure": "SeeAllData to 'see' the job in production"
+    }
+  ],
+  "when_to_use": [
+    "When a trigger must finish quickly and you need Queueable Apex for a callout with sObject state and a job Id.",
+    "When nightly maintenance must scan large volumes via Batch Apex QueryLocator (Guide: up to 50 million) rather than one transaction.",
+    "When work must run on a clock: Scheduled Apex that kicks Batch or Queueable, not a heavy execute body.",
+    "When mixed DML (setup + non-setup) still forces a Future method, with a comment that Queueable is otherwise preferred.",
+    "When chaining follow-up work needs Queueable rather than future-from-future (illegal) or 50-future fan-out.",
+    "When you must cite enqueueJob 50/1, scheduled 100, batch 5+100, and daily async 250,000-or-licenses×200 from Execution Governors and Limits."
+  ],
+  "when_not_to_use": [
+    "Do not use Batch Apex for a single-record callout that Queueable Apex already fits—Flex Queue is a scarce org resource.",
+    "Do not use Future Apex for new designs that need a job Id, sObjects, or chaining; Salesforce recommends Queueable.",
+    "Do not use Scheduled Apex execute as a place to run 150 DML of heavy work; it uses synchronous per-transaction limits.",
+    "Do not System.schedule from an unsynchronized bulk trigger; you can exceed 100 scheduled classes.",
+    "Do not treat async as a way to survive parent rollback—queued Queueable/future jobs are dropped.",
+    "Do not invent daily or batch-size numbers; quote the governors and Batch pages or mark Needs verification."
+  ],
+  "configuration_or_code_location": [
+    "Apex class implementing Queueable, Database.Batchable, or Schedulable; @future methods on a service class.",
+    "Setup → Apex Jobs; Setup → Scheduled Jobs; CronTrigger / AsyncApexJob SOQL.",
+    "Setup → Apex Settings for default Queueable enqueue delay (1–600 seconds) if used.",
+    "Test.startTest / Test.stopTest in the test class (APEX-016)."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox: after LAB_Order__c commits, call an allocator API with the order sObject. Nightly, archive millions of closed LAB_Case__c. Weekly, schedule that archive. No production data.",
+    "inputs": [
+      "Trigger on LAB_Order__c after insert",
+      "External allocator HTTP API",
+      "Closed LAB_Case__c volume too large for one transaction",
+      "API 67.0"
+    ],
+    "decisions": [
+      {
+        "decision": "Queueable for the allocator callout, holding the LAB_Order__c member.",
+        "because": "Official table: job Id, complex types, callout-friendly; recommended over @future.",
+        "rejected": "@future with an sObject argument (illegal) or 50 future fan-out."
+      },
+      {
+        "decision": "Batch with QueryLocator for the archive.",
+        "because": "Large volume and QueryLocator bypass of the usual retrieved-row governor, up to 50 million.",
+        "rejected": "Chaining Queueable with delay 0 and no halt, which the Queueable page warns can exhaust daily async."
+      },
+      {
+        "decision": "Schedulable execute only calls Database.executeBatch.",
+        "because": "Scheduled Apex uses synchronous limits; 100 concurrent scheduled cap; keep execute thin.",
+        "rejected": "SOQL of all cases inside Schedulable.execute."
+      }
+    ],
+    "configuration_or_code": [
+      "System.enqueueJob(new LAB_AllocQueueable(order)); on the success path after DML.",
+      "public class LAB_ArchiveBatch implements Database.Batchable<sObject> with Database.getQueryLocator('SELECT Id FROM LAB_Case__c WHERE IsClosed = true').",
+      "System.schedule('LAB weekly archive', cron, new LAB_ArchiveSched()); in a one-time anonymous script, not a trigger."
+    ],
+    "output": "Allocator job Id visible on Apex Jobs after the order commits. Archive batch shows batches on AsyncApexJob. Weekly CronTrigger exists. A thrown trigger exception creates no allocator job.",
+    "verification": [
+      "Force a trigger exception: no AsyncApexJob for LAB_AllocQueueable.",
+      "Query AsyncApexJob after a successful order: Status moves from Queued/Processing.",
+      "Count CronTrigger for the LAB weekly job does not grow on each order insert."
+    ],
+    "self_explanation": "I matched the official when-to-use table: Queueable for the callout payload, Batch for volume, Scheduled as a thin clock."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; synthetic LAB_ objects; no real endpoints (use a mock in tests; APEX-013 owns mock depth).",
+    "starting_state_checks": [
+      "Apex deploy allowed",
+      "You will not System.schedule in production"
+    ],
+    "steps": [
+      "Implement LAB_AllocQueueable and enqueue it from a LAB_Order__c after-insert trigger on the success path.",
+      "Implement LAB_ArchiveBatch with a QueryLocator and execute that updates a LAB_ checkbox in bulk.",
+      "Implement LAB_ArchiveSched whose execute only executeBatch's the archive class; schedule it once from anonymous Apex with a unique name.",
+      "Write a test with Test.startTest/stopTest that asserts the Queueable's LAB_ field change; abort the scheduled job in cleanup."
+    ],
+    "guided_completion": [
+      "If enqueue happens before a thrown DmlException, the job should be absent—if it is present, you committed.",
+      "If Schedulable.execute performs per-record DML, move that to Batch."
+    ],
+    "independent_challenge": "From the Queueable, chain one child with a delay of 1 minute; explain the 1-job async enqueue limit and the DE/Trial depth of 5.",
+    "evidence": [
+      "AsyncApexJob query screenshot with LAB_ job names",
+      "Written mapping: Queueable vs Batch vs Scheduled vs Future"
+    ],
+    "stop_recovery_cleanup": [
+      "System.abortJob on the LAB schedule",
+      "Delete LAB_ classes"
+    ],
+    "limitations": "This lab does not prove daily 250,000 capacity or true parallel batch contention."
+  },
+  "decision_table": [
+    {
+      "signal": "After a trigger save you need a callout and want to pass the LAB_Order__c sObject plus a job Id.",
+      "choose": "Queueable Apex with System.enqueueJob on the success path.",
+      "not": "@future that takes the sObject, or doing the callout in the trigger after DML.",
+      "why": "Asynchronous Apex + Queueable pages: complex types, job Id, recommended over future."
+    },
+    {
+      "signal": "Nightly maintenance over millions of rows that would exceed a normal SOQL retrieved-row cap.",
+      "choose": "Batch Apex whose start returns a QueryLocator (Guide: up to 50 million).",
+      "not": "One Queueable that queries all rows, or 50 futures from a loop.",
+      "why": "Batch QueryLocator bypasses the usual retrieved-row governor; futures cannot take sObjects and fan-out hits daily async."
+    },
+    {
+      "signal": "The job must run at 02:00 every night.",
+      "choose": "Scheduled Apex whose execute only kicks Batch or Queueable.",
+      "not": "Heavy DML inside Schedulable.execute, or System.schedule from a 200-row trigger.",
+      "why": "Scheduler: 100 concurrent (DE 5), runs as system, execution may delay; scheduled jobs use sync limits."
+    },
+    {
+      "signal": "You must insert a User with a role in the same user gesture as Account DML.",
+      "choose": "Future method (or Queueable) to isolate mixed DML, as the Future Methods topic describes.",
+      "not": "Same-transaction mixed DML, or a new Batch solely for mixed DML.",
+      "why": "Future Methods: isolate DML on different sObject types to avoid mixed DML; still prefer Queueable when it fits."
+    },
+    {
+      "signal": "You are already in Batch execute or a future method and need another background job.",
+      "choose": "Enqueue at most one Queueable (async enqueue limit 1); do not call @future from batch/future (0 allowed).",
+      "not": "50 System.enqueueJob from the execute method, or @future from @future.",
+      "why": "Governors: enqueueJob async limit 1; future allowed 0 in batch and future contexts."
+    },
+    {
+      "signal": "Parent trigger DML might fail after you enqueue.",
+      "choose": "Enqueue only after successful DML / on a path that will commit; accept that rollback drops the job.",
+      "not": "Rely on Apex Jobs to 'always' show the enqueue.",
+      "why": "Queueable and Future pages: jobs queued by a rolled-back transaction are not processed."
+    }
+  ],
+  "limitations": [
+    "Does not teach HTTP mocking (APEX-013) or test.startTest depth (APEX-016) beyond the enqueue pattern.",
+    "Does not replace platform events (APEX-012) for fan-out to external subscribers.",
+    "Elastic async (beta) is cited only as a neighboring governor topic.",
+    "Limit numbers are Summer '26 / API 67.0 from the cited Guide pages."
+  ],
+  "security_notes": [
+    "Scheduled Apex runs as system—permission on the class is not a user-mode substitute (APEX-015).",
+    "Do not put session IDs in Queueable member variables.",
+    "without sharing Batch classes still need an explicit CRUD/FLS story."
+  ],
+  "common_mistakes": [
+    "New code using @future because 'that is how we used to do callouts.'",
+    "Passing sObjects into future methods.",
+    "System.schedule inside a trigger on every row.",
+    "Assuming scheduled Apex gets async CPU (60,000 ms); it uses synchronous limits.",
+    "Enqueue from a transaction that later rolls back, then debugging Apex Jobs.",
+    "Starting multiple child Queueables from one executing job."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "System.LimitException: Too many queueable jobs added to the queue.",
+      "check": [
+        "Sync vs async context (50 vs 1)",
+        "Are you enqueueing in a loop?"
+      ],
+      "do_not_assume": "The Flex Queue is the same cap."
+    },
+    {
+      "symptom": "Batch stays Holding.",
+      "check": [
+        "Are 5 already queued or active?",
+        "Is Holding count near 100?"
+      ],
+      "do_not_assume": "The QueryLocator is wrong."
+    },
+    {
+      "symptom": "Scheduled class will not deploy from Setup UI.",
+      "check": [
+        "Active scheduled jobs referencing the class",
+        "Metadata API deploy path in the Scheduler topic"
+      ],
+      "do_not_assume": "The class failed to compile."
+    },
+    {
+      "symptom": "AsyncApexExecutions Limit exceeded when executeBatch is called.",
+      "check": [
+        "Daily 250,000 or licenses×200 remaining",
+        "Batch start/execute/finish all count"
+      ],
+      "do_not_assume": "Per-transaction CPU is the daily cap."
+    }
+  ],
+  "production_notes": [
+    "Monitor Apex Jobs and remaining daily async before a data-load weekend.",
+    "Prefer one well-named scheduled job that kicks Batch, not a swarm of cron entries.",
+    "No production schedule is authorized by this lab."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Salesforce recommends which async type instead of future methods?",
+      "options": {
+        "A": "Queueable Apex",
+        "B": "Only Batch Apex",
+        "C": "Only Scheduled Apex",
+        "D": "Visualforce constructors"
+      },
+      "answer": "A",
+      "rationale": "Queueable Apex and Asynchronous Apex pages: Salesforce recommends Queueable instead of future methods.",
+      "distractor_explanations": {
+        "B": "Batch is for volume, not the future replacement.",
+        "C": "Scheduled is for the clock.",
+        "D": "VF constructors are not async Apex."
+      },
+      "concept": "Prefer Queueable",
+      "citation_ids": [
+        "SF-APEX-ASYNC",
+        "SF-APEX-QUEUEABLE"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Maximum System.enqueueJob calls in one synchronous Apex transaction?",
+      "options": {
+        "A": "50",
+        "B": "1",
+        "C": "5",
+        "D": "100"
+      },
+      "answer": "A",
+      "rationale": "Governors: 50 enqueueJob in sync; 1 in async.",
+      "distractor_explanations": {
+        "B": "1 is the asynchronous transaction limit.",
+        "C": "5 is concurrent Batch jobs.",
+        "D": "100 is scheduled classes or flex Holding."
+      },
+      "concept": "enqueueJob sync",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "From Batch execute, how many jobs may you System.enqueueJob?",
+      "options": {
+        "A": "1",
+        "B": "50",
+        "C": "100",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "Asynchronous limit for enqueueJob is 1.",
+      "distractor_explanations": {
+        "B": "50 is synchronous.",
+        "C": "100 is not enqueueJob.",
+        "D": "There is a documented cap."
+      },
+      "concept": "enqueueJob async",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Future methods may take which arguments?",
+      "options": {
+        "A": "Primitives, primitive arrays, or primitive collections—not sObjects",
+        "B": "Any sObject",
+        "C": "Only Database.QueryLocator",
+        "D": "Only HttpRequest"
+      },
+      "answer": "A",
+      "rationale": "Future Methods: no sObjects or objects as arguments.",
+      "distractor_explanations": {
+        "B": "sObjects are explicitly disallowed.",
+        "C": "QueryLocator is a Batch start return type.",
+        "D": "HttpRequest is an object."
+      },
+      "concept": "Future signatures",
+      "citation_ids": [
+        "SF-APEX-FUTURE"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "QueryLocator in Batch start is special because:",
+      "options": {
+        "A": "It can return up to 50 million records and bypasses the usual SOQL retrieved-row governor",
+        "B": "It raises CPU to unlimited",
+        "C": "It uses scheduled-Apex limits",
+        "D": "It forbids DML in execute"
+      },
+      "answer": "A",
+      "rationale": "Use Batch Apex: QueryLocator bypasses the retrieved-row limit; example cap 50 million. Iterable does not bypass.",
+      "distractor_explanations": {
+        "B": "CPU still applies per execute (async 60,000 ms on the governors table).",
+        "C": "Batch execute uses async limits, not the scheduled sync note.",
+        "D": "Execute is allowed to DML."
+      },
+      "concept": "QueryLocator",
+      "citation_ids": [
+        "SF-APEX-BATCH"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Maximum scheduled Apex classes concurrently in a non-Developer Edition org?",
+      "options": {
+        "A": "100",
+        "B": "5",
+        "C": "50",
+        "D": "250,000"
+      },
+      "answer": "A",
+      "rationale": "Governors and Scheduler: 100; Developer Edition is 5.",
+      "distractor_explanations": {
+        "B": "5 is Developer Edition.",
+        "C": "50 is enqueueJob sync.",
+        "D": "250,000 is the daily async floor."
+      },
+      "concept": "Scheduled count",
+      "citation_ids": [
+        "SF-APEX-GOV",
+        "SF-APEX-SCHED"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Although scheduled Apex is asynchronous, which limits apply to the scheduled job?",
+      "options": {
+        "A": "Synchronous per-transaction limits",
+        "B": "Unlimited CPU",
+        "C": "Only Flex Queue limits",
+        "D": "No SOQL allowed"
+      },
+      "answer": "A",
+      "rationale": "Governors note: scheduled Apex uses synchronous limits.",
+      "distractor_explanations": {
+        "B": "CPU is 10,000 ms sync on that table.",
+        "C": "Flex Queue is Batch.",
+        "D": "SOQL is allowed within sync caps."
+      },
+      "concept": "Scheduled uses sync limits",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Maximum batch Apex jobs queued or active concurrently, and Holding flex-queue size?",
+      "options": {
+        "A": "5 active/queued and 100 Holding",
+        "B": "50 and 50",
+        "C": "1 and 5",
+        "D": "100 and 5"
+      },
+      "answer": "A",
+      "rationale": "Governors: 5 queued or active; 100 Holding. Async overview repeats the same pair.",
+      "distractor_explanations": {
+        "B": "Those are enqueue numbers, not batch concurrency.",
+        "C": "1 is concurrent start() executions.",
+        "D": "Reversed."
+      },
+      "concept": "Batch concurrency",
+      "citation_ids": [
+        "SF-APEX-GOV",
+        "SF-APEX-ASYNC"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Daily async Apex method executions (batch, future, Queueable, scheduled)?",
+      "options": {
+        "A": "250,000 or applicable licenses × 200, whichever is greater",
+        "B": "Always exactly 10,000",
+        "C": "50 per org lifetime",
+        "D": "Unlimited in production"
+      },
+      "answer": "A",
+      "rationale": "Salesforce Platform Apex Limits table on the governors page.",
+      "distractor_explanations": {
+        "B": "10,000 is not the daily formula.",
+        "C": "50 is enqueueJob.",
+        "D": "There is a licensed daily cap."
+      },
+      "concept": "Daily async",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "If the parent transaction rolls back after System.enqueueJob, the Queueable:",
+      "options": {
+        "A": "Is not processed",
+        "B": "Always runs at delay 0",
+        "C": "Converts to Batch",
+        "D": "Ignores governors"
+      },
+      "answer": "A",
+      "rationale": "Queueable Apex important note.",
+      "distractor_explanations": {
+        "B": "Delay does not survive rollback.",
+        "C": "Job type does not change.",
+        "D": "Governors still exist for jobs that do run."
+      },
+      "concept": "Rollback drops queueable",
+      "citation_ids": [
+        "SF-APEX-QUEUEABLE"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Future methods from a batch or future context: how many are allowed per invocation?",
+      "options": {
+        "A": "0",
+        "B": "50",
+        "C": "100",
+        "D": "5"
+      },
+      "answer": "A",
+      "rationale": "Governors: 0 in batch and future contexts; 50 in queueable context.",
+      "distractor_explanations": {
+        "B": "50 is sync or queueable context.",
+        "C": "Not the future cap.",
+        "D": "5 is DE scheduled or chain depth."
+      },
+      "concept": "Future from batch",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You need mixed-DML isolation (User with role vs Account). Which async feature does the Future Methods topic explicitly call out?",
+      "options": {
+        "A": "Future methods to isolate DML types (Queueable is still the general recommendation for new callout/job-Id work)",
+        "B": "Scheduled Apex cron only",
+        "C": "FOR UPDATE",
+        "D": "Platform events Publish Immediately"
+      },
+      "answer": "A",
+      "rationale": "Future Methods: isolate DML to prevent mixed DML; the same page still says prefer Queueable for most future use cases.",
+      "distractor_explanations": {
+        "B": "Clock scheduling does not isolate mixed DML by itself.",
+        "C": "Locking is APEX-010.",
+        "D": "Platform events are APEX-012."
+      },
+      "concept": "Mixed DML",
+      "citation_ids": [
+        "SF-APEX-FUTURE"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "choice",
+      "front": "Official when-to-use: Queueable?",
+      "back": "Long-running work, job Id, complex types, chaining."
+    },
+    {
+      "id": "F2",
+      "category": "choice",
+      "front": "Official when-to-use: Batch?",
+      "back": "Large volumes / larger query results than a regular transaction; maintenance jobs."
+    },
+    {
+      "id": "F3",
+      "category": "choice",
+      "front": "Official when-to-use: Scheduled?",
+      "back": "Run an Apex class on a specific schedule (often to kick Batch)."
+    },
+    {
+      "id": "F4",
+      "category": "choice",
+      "front": "Official when-to-use: Future?",
+      "back": "Long method, callouts, mixed DML isolation—but prefer Queueable for new work."
+    },
+    {
+      "id": "F5",
+      "category": "limits",
+      "front": "enqueueJob 50 vs 1?",
+      "back": "50 in a synchronous transaction; 1 in an asynchronous transaction."
+    },
+    {
+      "id": "F6",
+      "category": "limits",
+      "front": "Future per invocation?",
+      "back": "50 sync; 0 from batch/future; 50 from queueable."
+    },
+    {
+      "id": "F7",
+      "category": "limits",
+      "front": "Scheduled concurrent classes?",
+      "back": "100, or 5 in Developer Edition."
+    },
+    {
+      "id": "F8",
+      "category": "limits",
+      "front": "Batch active + Holding?",
+      "back": "5 queued or active; 100 Holding in the Flex Queue."
+    },
+    {
+      "id": "F9",
+      "category": "limits",
+      "front": "Daily async formula?",
+      "back": "250,000 or licenses × 200, whichever is greater (shared)."
+    },
+    {
+      "id": "F10",
+      "category": "batch",
+      "front": "QueryLocator row story?",
+      "back": "Bypasses usual retrieved-row governor; Guide example up to 50 million. Iterable does not bypass."
+    },
+    {
+      "id": "F11",
+      "category": "batch",
+      "front": "First execute succeeds, second fails?",
+      "back": "First execute's commits stay; each execute is a discrete transaction."
+    },
+    {
+      "id": "F12",
+      "category": "queueable",
+      "front": "Parent rollback after enqueue?",
+      "back": "Queued Queueable is not processed."
+    },
+    {
+      "id": "F13",
+      "category": "scheduled",
+      "front": "Does scheduled Apex get async CPU?",
+      "back": "No. Governors: scheduled jobs use synchronous per-transaction limits."
+    },
+    {
+      "id": "F14",
+      "category": "future",
+      "front": "Why no sObject args?",
+      "back": "The record can change before the future runs; you would overwrite with stale data. Pass Ids."
+    },
+    {
+      "id": "F15",
+      "category": "chain",
+      "front": "DE/Trial Queueable chain depth?",
+      "back": "Maximum stack depth 5 (four chains after the parent). One child per executing job."
+    },
+    {
+      "id": "F16",
+      "category": "recommend",
+      "front": "New callout with a job Id?",
+      "back": "Queueable, not @future, unless mixed DML or a documented exception."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "When do you use Queueable vs Batch vs Future vs Scheduled?",
+      "answer_30_seconds": "Queueable for job Id, sObjects, chaining, and most callouts. Batch for huge QueryLocator volumes. Scheduled for the clock. Future only for mixed DML or legacy. Salesforce recommends Queueable over future.",
+      "answer_2_minutes": "I start from the Asynchronous Apex table, not from habit. Volume that would blow a normal retrieved-row cap goes to Batch. A clock goes to Schedulable that only kicks Batch. After-save callout with an Account in memory is Queueable. I cite 50/1 enqueue, 5+100 batch, 100 scheduled, and daily 250k-or-licenses×200 from the governors page. I mention parent rollback drops queued jobs so I enqueue on the success path.",
+      "example": "LAB_ order allocator as Queueable; nightly LAB_ case archive as Batch; weekly System.schedule of that batch.",
+      "tradeoffs": [
+        "Flex Queue scarcity vs Queueable flexibility",
+        "Future familiarity vs Queueable features"
+      ],
+      "follow_ups": [
+        "What if we already have @future?",
+        "Where do cursors plus Queueable fit?"
+      ],
+      "weak_answer_warnings": [
+        "Saying they are interchangeable",
+        "Inventing a 200 daily async cap"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why does Salesforce recommend Queueable over future methods?",
+      "answer_30_seconds": "Same use cases plus a job Id, non-primitive members, and chaining. Future is static void primitives only and cannot call future from future.",
+      "answer_2_minutes": "I can monitor AsyncApexJob for Queueable. I can hold a LAB_Order__c. I can chain one child (async enqueue limit 1). Future still matters for mixed DML examples in the Guide. I will not pass sObjects into @future. I will not fan out futures from a queueable without a daily-async plan.",
+      "example": "Replace pingAllocator(Id) @future with LAB_AllocQueueable holding the order.",
+      "tradeoffs": [
+        "Migration cost vs operability",
+        "Primitives vs sObject state"
+      ],
+      "follow_ups": [
+        "What is the DE chain depth?",
+        "How do you delay a Queueable?"
+      ],
+      "weak_answer_warnings": [
+        "Calling future 'deprecated' without the recommendation quote",
+        "Passing sObjects to @future"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "You need to archive 2 million LAB_ cases nightly. Defend Batch over Queueable.",
+      "answer_30_seconds": "Batch QueryLocator can return up to 50 million and bypasses the usual SOQL retrieved-row governor. Each execute resets governors. Queueable is one transaction at a time unless you chain with a halt/delay.",
+      "answer_2_minutes": "I also respect org caps: 5 active batch, 100 Holding. If Flex Queue is saturated, the async overview points at cursors plus Queueable as an alternative—I name that page rather than designing it here. Scheduled Apex kicks the batch at 02:00; execute stays thin because scheduled jobs use sync limits. Daily async counts start/execute/finish.",
+      "example": "LAB_ArchiveBatch start returns getQueryLocator for closed cases; Schedulable only executeBatch's it.",
+      "tradeoffs": [
+        "Batch concurrency vs Queueable parallelism",
+        "Chunk commits vs one Queueable heap"
+      ],
+      "follow_ups": [
+        "What if start uses an Iterable?",
+        "How do you test one execute?"
+      ],
+      "weak_answer_warnings": [
+        "Querying 2 million rows in a trigger",
+        "Claiming Batch is unlimited CPU"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A trigger System.schedules a class for every Account insert. What goes wrong?",
+      "answer_30_seconds": "You can exceed 100 concurrent scheduled Apex jobs. Bulk API and UI mass edits make this worse. The Scheduler topic warns you must guarantee the trigger will not add more than the limit.",
+      "answer_2_minutes": "I use a named singleton schedule, or Platform Events/Queueable for per-record follow-up. I query CronTrigger before scheduling. Developer Edition's 5 is even tighter. I do not hide this in a managed package without a unique job name strategy.",
+      "example": "200-row Data Loader insert creating 200 CronTrigger rows until the 100th throws.",
+      "tradeoffs": [
+        "One cron vs per-row schedules",
+        "Queueable vs Scheduled for follow-up"
+      ],
+      "follow_ups": [
+        "How do you abort extras?",
+        "Does scheduleBatch help?"
+      ],
+      "weak_answer_warnings": [
+        "Saying the platform deduplicates job names automatically without checking"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "Scheduled Apex execute does heavy SOQL/DML. Why is that a trap?",
+      "answer_30_seconds": "Governors: although scheduled Apex is async, synchronous per-transaction limits apply. You get 100 SOQL and 10,000 ms CPU, not the async 200 / 60,000 ms.",
+      "answer_2_minutes": "I keep Schedulable.execute as a dispatcher: Database.executeBatch or enqueueJob. That also keeps the class easier to deploy when jobs are active. I monitor CronTrigger, not only Apex Jobs. Actual execution can delay based on service availability—I do not promise 02:00:00.000.",
+      "example": "LAB_NightlySched.execute only calls Database.executeBatch(new LAB_ArchiveBatch()).",
+      "tradeoffs": [
+        "Thin scheduler vs god execute",
+        "Sync limits vs async limits"
+      ],
+      "follow_ups": [
+        "What is System.scheduleBatch?",
+        "How do you update a scheduled class?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming scheduled jobs get async heap/CPU"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Too many queueable jobs added to the queue. Walk it.",
+      "answer_30_seconds": "Check context: 50 in sync, 1 in async. Loops in triggers enqueue 200 times. From Batch execute you only get one child.",
+      "answer_2_minutes": "I reproduce with Limits.getQueueableJobs(). I collapse to one Queueable that accepts a list of Ids. I do not switch to 50 @future as a workaround—future has its own 50/0/50 matrix and shares daily async. I remember rollback drops jobs, so a retry storm can be a failed parent plus a loop.",
+      "example": "Account trigger enqueueing LAB_AllocQueueable inside for(Account a : Trigger.new).",
+      "tradeoffs": [
+        "One job with a list vs N jobs",
+        "Queueable vs Batch for the list"
+      ],
+      "follow_ups": [
+        "What does getQueueableJobs return?",
+        "Flex Queue vs enqueue cap?"
+      ],
+      "weak_answer_warnings": [
+        "Raising a 'limit in Setup' that does not exist"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "How do daily async executions work, and who shares them?",
+      "answer_30_seconds": "DailyAsyncApexExecutions is 250,000 or licenses × 200, whichever is greater. Batch start, execute, and finish each count. Future, Queueable, and scheduled share the same pool.",
+      "answer_2_minutes": "Batch preemptively checks capacity; the governors page example throws AsyncApexExecutions Limit exceeded if the job needs 10,000 and 9,500 remain. I would query the REST limits resource rather than guessing. Elastic async (beta) is extra throttled capacity—I will not design to it without reading that page. Delay-0 Queueable chains can burn the pool; the Queueable page says to implement a halt.",
+      "example": "A 9,500-remaining org cannot start a 10,000-execute batch.",
+      "tradeoffs": [
+        "Preemptive Batch fail vs silent throttle",
+        "License math vs the 250,000 floor"
+      ],
+      "follow_ups": [
+        "Which licenses count?",
+        "Does Test.startTest consume daily async the same way?"
+      ],
+      "weak_answer_warnings": [
+        "Quoting 10,000 as the daily cap",
+        "Forgetting finish() counts"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "When is @future still the right answer in 2026?",
+      "answer_30_seconds": "When you are isolating mixed DML as in the Future Methods example, or maintaining a documented legacy callout that cannot move yet. New job-Id/callout/sObject work should be Queueable.",
+      "answer_2_minutes": "I still respect future rules: static void, primitives, callout=true, no future-from-future, 0 from batch context. I pass Ids and re-query. I mention the 2,000 unprocessed-request delay warning on the Future page as a fairness issue, not a hard governor. I do not pretend future is gone from the Guide.",
+      "example": "Util.insertUserWithRole as @future while MixedDMLFuture inserts Account, per the Future Methods topic.",
+      "tradeoffs": [
+        "Legacy compatibility vs Queueable rewrite",
+        "Mixed DML vs callout"
+      ],
+      "follow_ups": [
+        "Can Queueable also isolate mixed DML?",
+        "What is callout=true default?"
+      ],
+      "weak_answer_warnings": [
+        "Banning future in interviews as if the Guide deleted it"
+      ]
+    }
+  ]
+}

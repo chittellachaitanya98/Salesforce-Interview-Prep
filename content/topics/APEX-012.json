@@ -1,0 +1,1065 @@
+{
+  "topic_id": "APEX-012",
+  "slug": "platform-events-change-data-capture-and-event-driven-pr",
+  "title": "Platform events, change data capture, and event-driven processing",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-011"
+  ],
+  "objectives": [
+    "Define custom platform events versus Change Data Capture change events using official Developer Guide meanings.",
+    "Choose Publish After Commit versus Publish Immediately and explain subscriber timing and lock risk.",
+    "Contrast event-driven processing with Queueable/Batch (APEX-011) and same-transaction DML (APEX-010).",
+    "Cite EventBus.publish immediately (150) from Execution Governors and Limits; mark other event allocations Needs verification if not on that page."
+  ],
+  "diagnostic_question": "An ERP must hear every LAB_Shipment__c create/update/delete, and a custom 'allocator requested' signal must fire even if the order save later fails. CDC, custom platform event, or Queueable—and which publish behavior?",
+  "definition": "Platform events are secure, scalable messages with custom fields that publishers emit and subscribers receive in near real time. Change Data Capture publishes predefined change events for record create, update, delete, and undelete on selected objects (AccountChangeEvent, Shipment__ChangeEvent). Event-driven processing decouples the writer from the consumer via the event bus instead of a same-transaction DML or a single Queueable worker. ([Platform Events Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_intro.htm); [Change Data Capture Events](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+  "why_it_matters": "Teams confuse CDC (every record change, including ETL) with a custom event (only the signals you publish). Publish Immediately can notify subscribers before the parent save commits and can cause row locks. Interviewers listen for that split.",
+  "sixty_second_explanation": "Airport operations: CDC is the baggage RFID—every time a LAB_ bag moves, a standard scan event fires. A custom platform event is a PA announcement you write ('allocator requested') with your own fields. Publish After Commit waits until the flight is actually closed; Publish Immediately is the PA firing even if the gate later cancels—useful for logs, dangerous for inventory. Subscribers can be Apex triggers, Flow, or Pub/Sub API. EventBus.publish for immediately-published events counts toward 150 per transaction on the governors page. This is not Queueable: many listeners, not one job Id.",
+  "deeper_explanation": [
+    "The Platform Events Developer Guide describes platform events as secure, scalable messages that connect Salesforce and external apps. You define the event and add custom fields; publishers use Flow, Apex, or APIs; subscribers use Flow, Apex triggers, Pub/Sub API, or CometD. Event definitions are metadata; published messages are data on the bus. ([Platform Events intro](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_intro.htm); [Defining Your Custom Platform Event](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_define.htm))",
+    "Change Data Capture publishes change events for create, update, delete, and undelete. Names follow the object: AccountChangeEvent, or Shipment__ChangeEvent for Shipment__c. Enable objects in Setup; you do not invent the schema. CDC is available since API 44.0 for supported objects. ([Change Data Capture Events](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm))",
+    "Publish After Commit (default for many designs) emits the message only if the Apex transaction commits—aligned with APEX-010. Publish Immediately emits even if the transaction later rolls back. Architect guidance: Publish Immediately is useful for logging; using it for business data can let subscribers act on a save that never committed and can cause row locks if those subscribers DML the same rows. ([Apex Transactions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_transaction.htm) for commit; mark extra lock examples Needs verification against current Platform Event Considerations.)",
+    "EventBus.publish for platform events configured to publish immediately counts toward a per-transaction ceiling of 150 on Execution Governors and Limits (same number sync and async). After-commit publishes are listed among DML-counted operations on that page. Do not invent daily event-bus allocations here—those live in Platform Event Allocations and must be re-read; mark Needs verification if you cannot open that table. ([Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+    "Event-driven processing is optional. Same-record updates belong in before-save Flow or the current transaction. One follow-up callout with a job Id is Queueable (APEX-011). CDC or a custom event is for one-to-many, often external, consumers that should not share the writer's governors."
+  ],
+  "mental_model": {
+    "analogy": "Airport operations: CDC is automatic baggage RFID scans; a custom platform event is a PA announcement you write; Publish After Commit waits for the flight to close; Publish Immediately is the PA firing even if the gate cancels.",
+    "useful_mapping": [
+      "RFID scan on every bag move → CDC change event",
+      "PA script you author → custom platform event fields",
+      "flight closed → parent transaction commit",
+      "PA before cancel → Publish Immediately",
+      "ground crews with radios → Apex / Flow / Pub/Sub subscribers",
+      "one dispatcher with a ticket → Queueable (not the bus)",
+      "event definition in Setup → metadata",
+      "messages on the bus → data"
+    ],
+    "where_it_breaks": [
+      "CDC fires for ETL and Batch updates too—not only UI clicks.",
+      "Replay windows and daily event allocations are edition-specific; do not invent hours or counts.",
+      "The airport analogy does not encode CometD vs Pub/Sub API internals."
+    ]
+  },
+  "teach_back_prompt": "Explain CDC versus a custom platform event to an integration lead, then say when Publish Immediately is justified and when it is a lock risk.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: CDC name pattern vs custom event definition."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Publish After Commit vs Immediately with one rollback example."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "EventBus.publish 150 for immediate events; what you will not invent."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "When to refuse events and use Queueable or same-transaction DML."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: event-driven vs async Apex vs transaction."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-PE-INTRO",
+      "title": "Platform Events Developer Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_intro.htm",
+      "supports": "Platform events as secure scalable messages; publish/subscribe options; edition note on the page.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Allocations and replay windows are on neighboring allocation topics—do not invent them."
+    },
+    {
+      "source_id": "SF-PE-DEFINE",
+      "title": "Defining Your Custom Platform Event",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_define.htm",
+      "supports": "Define an event and add custom fields; Customize Application + API Enabled; metadata deployable.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Field-type catalog is on the Fields subtopic."
+    },
+    {
+      "source_id": "SF-PE-CDC",
+      "title": "Change Data Capture Events",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm",
+      "supports": "CDC publishes create/update/delete/undelete; AccountChangeEvent / custom __ChangeEvent naming; API 44.0+.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Supported standard objects are listed in Object Reference, not memorized here."
+    },
+    {
+      "source_id": "SF-APEX-GOV",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "Maximum EventBus.publish calls for immediately published platform events: 150 per transaction. After-commit publish listed among DML-counted operations.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Daily event-bus allocations are not this table; do not invent them."
+    },
+    {
+      "source_id": "SF-APEX-TXN",
+      "title": "Apex Transactions",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_transaction.htm",
+      "supports": "Commit vs rollback of the parent unit—needed to explain After Commit vs Immediately.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define CDC."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Custom platform event",
+        "CDC change event",
+        "Publish after commit",
+        "Publish immediately",
+        "Subscribers",
+        "Not Queueable"
+      ],
+      "accessible_description": "Custom platform event; CDC change event; Publish after commit; Publish immediately; Subscribers; Not Queueable"
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-PE-INTRO",
+        "SF-PE-CDC",
+        "SF-APEX-GOV"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Who should hear this change: bus, job, or same transaction?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Writer[Apex Flow or API writer] --> Choice{What must listeners hear?}\n  Choice -->|Every record CUD undelete on a selected object| CDC[CDC: AccountChangeEvent or Obj__ChangeEvent]\n  Choice -->|A custom signal you design| PE[Custom platform event metadata plus fields]\n  CDC --> Bus[Event bus]\n  PE --> Pub{Publish behavior}\n  Pub -->|After Commit| Commit[Emits only if parent transaction commits]\n  Pub -->|Immediately| Imm[Emits even if parent later rolls back; EventBus.publish counts to 150]\n  Bus --> Sub[Apex trigger Flow Pub/Sub API CometD]",
+      "decision": "flowchart TD\n  Need[Need decoupling?] --> Q1{Same-record field update?}\n  Q1 -->|Yes| Flow[Before-save Flow or current transaction: not an event]\n  Q1 -->|No| Q2{One worker with a job Id or callout?}\n  Q2 -->|Yes| Qable[Queueable or Batch: APEX-011]\n  Q2 -->|Many listeners inside or outside Salesforce| Q3{Every row change including ETL?}\n  Q3 -->|Yes| CDC[Enable CDC on the object]\n  Q3 -->|Only selected business signals| PE[Custom platform event]\n  PE --> Q4{Must subscribers ignore a rolled-back save?}\n  Q4 -->|Yes| After[Publish After Commit]\n  Q4 -->|Need the signal even on failure, e.g. log| Imm[Publish Immediately; watch locks]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Platform events are secure, scalable messages with customizable fields; publishers and subscribers can be Salesforce or external apps via Flow, Apex, or APIs.",
+      "source_ids": [
+        "SF-PE-INTRO",
+        "SF-PE-DEFINE"
+      ],
+      "scope": "Platform event definition",
+      "validation": "Platform Events intro and define topics.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Change Data Capture publishes change events for record create, update, delete, and undelete. Names follow the object (AccountChangeEvent, Custom__ChangeEvent). Available since API 44.0.",
+      "source_ids": [
+        "SF-PE-CDC"
+      ],
+      "scope": "CDC",
+      "validation": "Change Data Capture Events topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "EventBus.publish for immediately published platform events is limited to 150 calls per Apex transaction (sync and async). After-commit publish is listed among DML-counted operations on the governors page.",
+      "source_ids": [
+        "SF-APEX-GOV"
+      ],
+      "scope": "Publish governors",
+      "validation": "Execution Governors and Limits table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "A parent Apex transaction either commits or rolls back as one unit. After-commit events belong on the commit path; immediately published events can be observed even when later DML fails.",
+      "source_ids": [
+        "SF-APEX-TXN",
+        "SF-PE-INTRO"
+      ],
+      "scope": "Publish vs transaction",
+      "validation": "Apex Transactions plus platform-event publish timing.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify EventBus.publish 150 and after-commit-as-DML footnotes on the Summer '26 governors page. Event allocation add-ons change by edition—do not copy unofficial daily counts.",
+  "unresolved_uncertainty": [
+    "Exact high-volume platform event daily allocations and replay retention hours are not quoted here; read current Platform Event Allocations. Needs verification per org edition.",
+    "Full subscriber lock-risk wording should be re-read from current Platform Event Considerations before a design review."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Platform event",
+      "telugu": "Custom bus message with fields you define."
+    },
+    {
+      "english": "Change Data Capture",
+      "telugu": "Automatic change event for create, update, delete, or undelete."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "CDC emits standard change events for create, update, delete, undelete on selected objects. A custom platform event is a message you define. Publish After Commit waits for the parent transaction; Publish Immediately can fire even if that save rolls back. EventBus.publish immediately is 150 per transaction. Many subscribers, not one Queueable.",
+    "two_minutes": "I ask who must hear the signal. Every row change including Batch/ETL: CDC, accepting volume risk. A curated business signal: custom event fields as metadata. One callout worker: Queueable, not the bus. I default to After Commit so subscribers do not act on rolled-back LAB_ orders. I use Immediately only for logs or similar. I cite 150 EventBus.publish for immediate events and refuse to invent daily bus caps. Tests for event triggers are required before production deploy—the Guide says so."
+  },
+  "terminology": [
+    {
+      "term": "platform event",
+      "plain": "A message type you define on the bus.",
+      "precise": "Custom event object with standard plus custom fields. Published from Apex, Flow, or API; subscribed by Apex, Flow, Pub/Sub, CometD.",
+      "example": "LAB_Allocator_Requested__e with OrderId__c.",
+      "non_example": "A custom object insert is not an event publish.",
+      "confusable_neighbor": "CDC change event: platform-defined schema for record changes.",
+      "boundary": "Definition is metadata; payloads are data."
+    },
+    {
+      "term": "Change Data Capture",
+      "plain": "Automatic change events for selected objects.",
+      "precise": "Publishes create, update, delete, undelete. AccountChangeEvent; Custom__ChangeEvent. Enabled in Setup. API 44.0+.",
+      "example": "Enable LAB_Shipment__c to emit LAB_Shipment__ChangeEvent.",
+      "non_example": "A custom __e you authored is not CDC.",
+      "confusable_neighbor": "Outbound message: older point-to-point, not the event bus.",
+      "boundary": "Fires for API/Batch too—not only UI."
+    },
+    {
+      "term": "change event",
+      "plain": "One CDC message about a record change.",
+      "precise": "Includes ChangeEventHeader (change type, entity) plus changed field data as defined for that object.",
+      "example": "Header changeType = UPDATE on LAB_Shipment__ChangeEvent.",
+      "non_example": "A Queueable execute is not a change event.",
+      "confusable_neighbor": "Gap/overflow events: neighboring CDC topics; do not invent their limits.",
+      "boundary": "Subscribe via channel for the object or the all-changes channel."
+    },
+    {
+      "term": "event-driven processing",
+      "plain": "Writers emit; listeners react without sharing the writer's transaction.",
+      "precise": "Decoupled near-real-time integration via the event bus rather than same-save DML or a single async job.",
+      "example": "ERP subscribes to shipment CDC; warehouse Flow subscribes to LAB_Allocator_Requested__e.",
+      "non_example": "Before-save Flow updating the same record.",
+      "confusable_neighbor": "Async Apex: one job, one governor pool.",
+      "boundary": "Does not replace sharing or CRUD on subscriber DML."
+    },
+    {
+      "term": "Publish After Commit",
+      "plain": "Send the event only if the parent save commits.",
+      "precise": "Ties the message to Apex transaction success (APEX-010).",
+      "example": "Order event published after LAB_Order__c insert commits.",
+      "non_example": "Publish Immediately for a log that must survive rollback.",
+      "confusable_neighbor": "Queueable enqueue: also dropped on rollback.",
+      "boundary": "Default choice for business data signals."
+    },
+    {
+      "term": "Publish Immediately",
+      "plain": "Send even if the parent transaction later fails.",
+      "precise": "Useful for logging; dangerous if subscribers DML the same rows (lock/race). Immediate EventBus.publish calls: 150 per transaction.",
+      "example": "LAB_Error_Log__e published in a catch before rethrow.",
+      "non_example": "Using Immediately for inventory decrements.",
+      "confusable_neighbor": "After-commit publish counted as DML on the governors page.",
+      "boundary": "Needs verification of current Considerations wording in the org's API version."
+    },
+    {
+      "term": "EventBus.publish",
+      "plain": "Apex API to publish platform event instances.",
+      "precise": "Immediate publishes: 150 per transaction. After-commit publishes participate in DML counting per the governors footnote.",
+      "example": "EventBus.publish(new LAB_Allocator_Requested__e(OrderId__c = id));",
+      "non_example": "Database.executeBatch is not a publish.",
+      "confusable_neighbor": "Http.callout: request/response, not the bus.",
+      "boundary": "Do not invent a daily EventBus.publish org cap from this method name."
+    },
+    {
+      "term": "subscriber",
+      "plain": "Who receives the message.",
+      "precise": "Apex trigger on the event, Flow, Pub/Sub API, CometD, empApi, event relay. Each subscriber does its own work and governors.",
+      "example": "Apex trigger on LAB_Allocator_Requested__e enqueues Queueable.",
+      "non_example": "A validation rule is not a subscriber.",
+      "confusable_neighbor": "CDC channel vs custom event channel.",
+      "boundary": "Subscriber DML is a new context—do not assume it shares the publisher's savepoint."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose CDC vs custom event vs async Apex",
+      "actor": "Architect + developer",
+      "trigger": "Another system must react",
+      "before": "Point-to-point guess",
+      "after": "CDC for all row changes; custom event for curated signals; Queueable for one worker",
+      "observe": "Written decision in the design note",
+      "failure": "Enabling CDC for a chatty object just to call one Apex class"
+    },
+    {
+      "step": 2,
+      "transition": "Define metadata",
+      "actor": "Admin/developer",
+      "trigger": "Custom event needed",
+      "before": "No __e type",
+      "after": "Platform event + fields, or CDC entity selected in Setup",
+      "observe": "Retrieve the event object; LAB_ only",
+      "failure": "Hard-coding payloads into a custom object used as a queue"
+    },
+    {
+      "step": 3,
+      "transition": "Pick publish behavior",
+      "actor": "Developer",
+      "trigger": "Apex or Flow publish",
+      "before": "Default unknown",
+      "after": "After Commit for business data; Immediately only with a rollback story",
+      "observe": "Failed parent save does not create ERP rows",
+      "failure": "Immediately plus subscriber DML on the same order"
+    },
+    {
+      "step": 4,
+      "transition": "Subscribe and test",
+      "actor": "Developer",
+      "trigger": "Need a consumer",
+      "before": "No coverage",
+      "after": "Apex/Flow subscriber plus tests before deploy",
+      "observe": "Test publishes and asserts LAB_ side effects",
+      "failure": "Deploying an event trigger without tests"
+    }
+  ],
+  "when_to_use": [
+    "When multiple consumers must react to record changes: enable Change Data Capture on that object rather than N triggers calling N Queueables.",
+    "When you need a custom signal with your own fields: define a platform event and publish it from Apex or Flow.",
+    "When the listener must not run if the parent transaction rolls back: Publish After Commit (event-driven processing aligned with APEX-010).",
+    "When a log/diagnostic signal must leave the bus even if DML fails: Publish Immediately, with lock awareness.",
+    "When an external ERP should subscribe via Pub/Sub API instead of polling SOQL.",
+    "When you must cite EventBus.publish 150 for immediate events from Execution Governors and Limits."
+  ],
+  "when_not_to_use": [
+    "Do not use platform events for a same-record field update that before-save Flow already handles.",
+    "Do not use Change Data Capture as a substitute for one Queueable callout—you will publish on every ETL touch.",
+    "Do not use Publish Immediately for inventory or payment signals that must match committed data.",
+    "Do not invent daily event-bus allocations; read Platform Event Allocations or mark Needs verification.",
+    "Do not treat the event bus as a transaction savepoint or FOR UPDATE replacement.",
+    "Do not subscribe in Apex and then DML the publisher's row without a lock/recursion plan."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Integrations → Change Data Capture (entity selection).",
+    "Setup → Platform Events (or Object Manager) for __e definitions.",
+    "Apex: EventBus.publish; trigger on LAB_Allocator_Requested__e or LAB_Shipment__ChangeEvent.",
+    "Metadata retrieve of the event object; tests that publish events."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox: ERP needs every LAB_Shipment__c CUD. Warehouse needs an 'allocator requested' signal only when a LAB_Order__c is submitted—not when a draft save fails validation. No production data.",
+    "inputs": [
+      "LAB_Shipment__c volume includes nightly Batch updates",
+      "LAB_Order__c submit path can fail validation",
+      "ERP uses Pub/Sub API",
+      "Warehouse uses an Apex subscriber"
+    ],
+    "decisions": [
+      {
+        "decision": "Enable CDC on LAB_Shipment__c.",
+        "because": "Official CDC: create/update/delete/undelete with a generated change event.",
+        "rejected": "Custom event published from every shipment trigger (duplicate schema work)."
+      },
+      {
+        "decision": "Custom LAB_Allocator_Requested__e published After Commit from the submit service.",
+        "because": "Curated signal; After Commit hides rolled-back drafts from the warehouse.",
+        "rejected": "Publish Immediately from the catch block for the business signal."
+      },
+      {
+        "decision": "Keep the HTTP callout on a Queueable subscribed or invoked after commit, not in the publisher transaction.",
+        "because": "Event-driven fan-out vs one job Id (APEX-011).",
+        "rejected": "Http.send in the order trigger after publish."
+      }
+    ],
+    "configuration_or_code": [
+      "Select LAB_Shipment__c in Change Data Capture Setup.",
+      "EventBus.publish(new LAB_Allocator_Requested__e(OrderId__c = order.Id)); on the success path of submit().",
+      "Trigger on LAB_Allocator_Requested__e that enqueues LAB_AllocQueueable."
+    ],
+    "output": "Draft order validation failure: no warehouse event. Shipment Batch updates: CDC messages. ERP sees shipment change events without Apex per row in the writer.",
+    "verification": [
+      "Fail validation: warehouse subscriber creates no LAB_ work.",
+      "Successful submit: one __e and one Queueable.",
+      "Batch-update a shipment: CDC event, no allocator event."
+    ],
+    "self_explanation": "CDC for automatic RFID-style changes; custom event for the PA announcement; After Commit so cancelled flights stay quiet."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ objects and LAB_Allocator_Requested__e only.",
+    "starting_state_checks": [
+      "Customize Application permission",
+      "No production event names"
+    ],
+    "steps": [
+      "Create LAB_Allocator_Requested__e with OrderId__c and publish After Commit from a LAB_ service class.",
+      "Write a trigger on the event that inserts a LAB_Work__c row.",
+      "Write a test that publishes the event and asserts LAB_Work__c (APEX-016 style startTest if needed).",
+      "Enable CDC on a LAB_ custom object if the org edition allows; otherwise document the Setup path and skip enablement."
+    ],
+    "guided_completion": [
+      "If a failed parent DML still creates LAB_Work__c, you published Immediately or published after a caught exception that still committed.",
+      "If you cannot enable CDC, do not fake allocations—write Needs verification."
+    ],
+    "independent_challenge": "Switch the event to Publish Immediately, throw after publish, and record whether the subscriber ran. Restore After Commit.",
+    "evidence": [
+      "Test result for After Commit",
+      "One sentence on EventBus.publish 150"
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ event, trigger, and objects"
+    ],
+    "limitations": "Does not prove Pub/Sub API or daily allocations."
+  },
+  "decision_table": [
+    {
+      "signal": "ERP must see every create/update/delete/undelete on LAB_Shipment__c, including Data Loader.",
+      "choose": "Enable Change Data Capture on that object.",
+      "not": "A custom __e published only from the UI button.",
+      "why": "CDC is the official change-event stream for selected objects."
+    },
+    {
+      "signal": "Warehouse should hear only 'allocator requested' with your fields.",
+      "choose": "Define a custom platform event and publish it from the submit service.",
+      "not": "CDC on Order plus a subscriber that filters 90% of noise.",
+      "why": "Custom events exist so you design the payload."
+    },
+    {
+      "signal": "Subscribers must not run if the order save rolls back.",
+      "choose": "Publish After Commit.",
+      "not": "Publish Immediately from the trigger before validation.",
+      "why": "After Commit follows the Apex transaction; Immediately can outlive rollback."
+    },
+    {
+      "signal": "You need a diagnostic breadcrumb even when DML fails.",
+      "choose": "Publish Immediately for a log-style event; keep subscribers read-only.",
+      "not": "Immediately plus subscriber updates on the same LAB_Order__c.",
+      "why": "Architect guidance: Immediately is for logs; subscriber DML risks locks."
+    },
+    {
+      "signal": "Exactly one worker must call an HTTP API with a job Id.",
+      "choose": "Queueable Apex (APEX-011), optionally kicked by an event subscriber.",
+      "not": "CDC with three Apex subscribers each calling Http.send.",
+      "why": "Events fan out; Queueable is one monitored job."
+    },
+    {
+      "signal": "You are counting EventBus.publish in a tight loop for an Immediately event.",
+      "choose": "Stay within 150 publishes per transaction or batch the work.",
+      "not": "Assume unlimited publishes because 'events are async'.",
+      "why": "Governors: 150 EventBus.publish calls for immediately published events."
+    }
+  ],
+  "limitations": [
+    "Does not quote unofficial daily event allocations.",
+    "Does not replace Queueable/Batch choice.",
+    "Does not teach CometD handshake internals.",
+    "Edition availability is on the intro page; reverify."
+  ],
+  "security_notes": [
+    "Event payloads can contain business identifiers—do not put secrets in fields.",
+    "Subscriber Apex still needs sharing/CRUD design (APEX-015).",
+    "Shield encryption of events at rest is a neighboring Setup option."
+  ],
+  "common_mistakes": [
+    "Enabling CDC then wondering why Batch jobs flooded the bus.",
+    "Publish Immediately for inventory.",
+    "Using a custom object as a homemade queue 'because events are hard'.",
+    "Inventing a 24-hour event cap in an interview.",
+    "Forgetting tests on event triggers before production deploy."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "External system acted on an order that never saved.",
+      "check": [
+        "Publish Immediately?",
+        "Did the parent roll back?"
+      ],
+      "do_not_assume": "The ERP invented the Id."
+    },
+    {
+      "symptom": "UNABLE_TO_LOCK_ROW after an event.",
+      "check": [
+        "Subscriber DML on the publisher's row",
+        "Publish Immediately during the same save"
+      ],
+      "do_not_assume": "CDC is broken."
+    },
+    {
+      "symptom": "No CDC events for a custom object.",
+      "check": [
+        "Is the entity selected in Setup?",
+        "Supported object?"
+      ],
+      "do_not_assume": "You must write Apex to emit CDC."
+    },
+    {
+      "symptom": "LimitException on EventBus.publish.",
+      "check": [
+        "Immediate publish count vs 150",
+        "After-commit counting as DML"
+      ],
+      "do_not_assume": "Daily allocation is the per-transaction 150."
+    }
+  ],
+  "production_notes": [
+    "Watch CDC volume before enabling on chatty objects.",
+    "Treat event field changes as API contracts.",
+    "No production bus load is authorized by this lab."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does Change Data Capture publish?",
+      "options": {
+        "A": "Create, update, delete, and undelete change events for selected objects",
+        "B": "Only custom __e you define by hand",
+        "C": "Only email notifications",
+        "D": "Only Queueable job Ids"
+      },
+      "answer": "A",
+      "rationale": "CDC Events topic: CUD and undelete.",
+      "distractor_explanations": {
+        "B": "That is a custom platform event.",
+        "C": "Email is APEX-014.",
+        "D": "Job Ids are AsyncApexJob."
+      },
+      "concept": "CDC meaning",
+      "citation_ids": [
+        "SF-PE-CDC"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Account CDC event name?",
+      "options": {
+        "A": "AccountChangeEvent",
+        "B": "Account__e",
+        "C": "AccountCDC__c",
+        "D": "AccountQueueable"
+      },
+      "answer": "A",
+      "rationale": "StandardObjectNameChangeEvent pattern.",
+      "distractor_explanations": {
+        "B": "__e is a custom platform event suffix.",
+        "C": "Not the CDC name.",
+        "D": "Not an event."
+      },
+      "concept": "CDC naming",
+      "citation_ids": [
+        "SF-PE-CDC"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "EventBus.publish for immediately published platform events per transaction?",
+      "options": {
+        "A": "150",
+        "B": "50",
+        "C": "5",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "Governors table: 150 sync and async.",
+      "distractor_explanations": {
+        "B": "50 is enqueueJob.",
+        "C": "5 is batch concurrency.",
+        "D": "There is a documented cap."
+      },
+      "concept": "Immediate publish cap",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A custom event is Publish Immediately; the parent trigger then throws. What can subscribers see?",
+      "options": {
+        "A": "The event may already be on the bus even though DML rolled back",
+        "B": "Events never publish before commit",
+        "C": "Salesforce deletes all CDC configuration",
+        "D": "The throw is converted to Queueable"
+      },
+      "answer": "A",
+      "rationale": "Immediately is not tied to commit; After Commit is.",
+      "distractor_explanations": {
+        "B": "That describes After Commit.",
+        "C": "Unrelated.",
+        "D": "Exceptions do not convert job types."
+      },
+      "concept": "Publish Immediately",
+      "citation_ids": [
+        "SF-APEX-TXN",
+        "SF-PE-INTRO"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Best fit: one HTTP worker with a job Id after order commit?",
+      "options": {
+        "A": "Queueable Apex, not a bus of many subscribers",
+        "B": "CDC on every object in the org",
+        "C": "Publish Immediately in a loop of 200",
+        "D": "FOR UPDATE only"
+      },
+      "answer": "A",
+      "rationale": "Event-driven is fan-out; Queueable is one monitored job.",
+      "distractor_explanations": {
+        "B": "CDC volume would dwarf one worker.",
+        "C": "Hits 150 and is the wrong tool.",
+        "D": "Locking is not delivery."
+      },
+      "concept": "Events vs Queueable",
+      "citation_ids": [
+        "SF-PE-INTRO"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Who can subscribe to platform events per the intro Guide?",
+      "options": {
+        "A": "Processes/flows, Apex triggers, Pub/Sub API, or CometD clients",
+        "B": "Only SOAP partners",
+        "C": "Only reports",
+        "D": "Only validation rules"
+      },
+      "answer": "A",
+      "rationale": "Platform Events intro subscribe list.",
+      "distractor_explanations": {
+        "B": "Too narrow.",
+        "C": "Reports are not bus subscribers.",
+        "D": "Validation is not subscribe."
+      },
+      "concept": "Subscribers",
+      "citation_ids": [
+        "SF-PE-INTRO"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "CDC versus custom platform event?",
+      "options": {
+        "A": "CDC is predefined record-change schema; custom events have fields you define",
+        "B": "CDC cannot represent deletes",
+        "C": "Custom events only work in Classic",
+        "D": "They are the same metadata type"
+      },
+      "answer": "A",
+      "rationale": "CDC Events vs Defining Your Custom Platform Event.",
+      "distractor_explanations": {
+        "B": "CDC includes delete and undelete.",
+        "C": "Available in Lightning and Classic per the intro.",
+        "D": "Different tools."
+      },
+      "concept": "CDC vs PE",
+      "citation_ids": [
+        "SF-PE-CDC",
+        "SF-PE-DEFINE"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "CDC availability API version mentioned in the CDC Events topic?",
+      "options": {
+        "A": "44.0 and later",
+        "B": "1.0 only",
+        "C": "99.0 only",
+        "D": "CDC has no API version"
+      },
+      "answer": "A",
+      "rationale": "Change events available since API 44.0.",
+      "distractor_explanations": {
+        "B": "Too early.",
+        "C": "Not stated.",
+        "D": "The topic states 44.0."
+      },
+      "concept": "CDC API",
+      "citation_ids": [
+        "SF-PE-CDC"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Nightly Batch updates 50,000 shipments. You enabled CDC. What is the design risk?",
+      "options": {
+        "A": "Every update publishes a change event and can flood allocations/subscribers",
+        "B": "Batch cannot update objects with CDC",
+        "C": "CDC disables Batch",
+        "D": "Events become Queueable automatically"
+      },
+      "answer": "A",
+      "rationale": "CDC publishes for API/Batch/ETL, not only UI.",
+      "distractor_explanations": {
+        "B": "CDC does not block Batch DML.",
+        "C": "False.",
+        "D": "No conversion."
+      },
+      "concept": "CDC volume",
+      "citation_ids": [
+        "SF-PE-CDC"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "After-commit EventBus.publish is listed on the governors page as:",
+      "options": {
+        "A": "Counting toward DML operations when configured to publish after commit",
+        "B": "Free unlimited SOQL",
+        "C": "A scheduled Apex job",
+        "D": "A FOR UPDATE lock"
+      },
+      "answer": "A",
+      "rationale": "DML footnote includes EventBus.publish for after-commit events.",
+      "distractor_explanations": {
+        "B": "Not SOQL.",
+        "C": "Not the scheduler.",
+        "D": "Not locking."
+      },
+      "concept": "After-commit as DML",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Same-record status update before save. First tool?",
+      "options": {
+        "A": "Before-save Flow or in-transaction Apex—not a platform event",
+        "B": "CDC on all objects",
+        "C": "Publish Immediately 150 times",
+        "D": "Scheduled Apex cron for each click"
+      },
+      "answer": "A",
+      "rationale": "Event-driven is for decoupling, not same-row updates.",
+      "distractor_explanations": {
+        "B": "Overkill and noisy.",
+        "C": "Wrong tool and burns 150.",
+        "D": "Clock is APEX-011."
+      },
+      "concept": "When not events",
+      "citation_ids": [
+        "SF-PE-INTRO"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Custom platform event definition requires which Setup permission pair on the define page?",
+      "options": {
+        "A": "Customize Application AND API Enabled",
+        "B": "View All Data only",
+        "C": "Author Apex only",
+        "D": "No permission is documented"
+      },
+      "answer": "A",
+      "rationale": "Defining Your Custom Platform Event user-permissions table.",
+      "distractor_explanations": {
+        "B": "Not the listed pair.",
+        "C": "Not sufficient per that table.",
+        "D": "The table exists."
+      },
+      "concept": "Define permissions",
+      "citation_ids": [
+        "SF-PE-DEFINE"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "pe",
+      "front": "What is a platform event?",
+      "back": "A secure scalable message with fields you define; published and subscribed in near real time."
+    },
+    {
+      "id": "F2",
+      "category": "cdc",
+      "front": "CDC change types?",
+      "back": "Create, update, delete, undelete."
+    },
+    {
+      "id": "F3",
+      "category": "cdc",
+      "front": "Custom object CDC name?",
+      "back": "MyObject__ChangeEvent (Account → AccountChangeEvent)."
+    },
+    {
+      "id": "F4",
+      "category": "pub",
+      "front": "After Commit vs Immediately?",
+      "back": "After Commit waits for the parent transaction; Immediately can emit even if that save later rolls back."
+    },
+    {
+      "id": "F5",
+      "category": "gov",
+      "front": "Immediate EventBus.publish cap?",
+      "back": "150 calls per Apex transaction (governors table)."
+    },
+    {
+      "id": "F6",
+      "category": "gov",
+      "front": "After-commit publish vs DML?",
+      "back": "Listed among DML-counted operations on the governors page."
+    },
+    {
+      "id": "F7",
+      "category": "vs",
+      "front": "CDC vs custom __e?",
+      "back": "CDC is predefined record changes; __e is your schema."
+    },
+    {
+      "id": "F8",
+      "category": "vs",
+      "front": "Event bus vs Queueable?",
+      "back": "Many subscribers vs one job Id / worker."
+    },
+    {
+      "id": "F9",
+      "category": "risk",
+      "front": "CDC + Batch risk?",
+      "back": "Every batch update publishes; allocations and subscribers can flood."
+    },
+    {
+      "id": "F10",
+      "category": "risk",
+      "front": "Immediately + subscriber DML?",
+      "back": "Can act on uncommitted data and contribute to row locks."
+    },
+    {
+      "id": "F11",
+      "category": "sub",
+      "front": "Who can subscribe?",
+      "back": "Flow/process, Apex trigger, Pub/Sub API, CometD."
+    },
+    {
+      "id": "F12",
+      "category": "meta",
+      "front": "Event definition vs messages?",
+      "back": "Definition is metadata; payloads on the bus are data."
+    },
+    {
+      "id": "F13",
+      "category": "api",
+      "front": "CDC since which API?",
+      "back": "44.0 per the CDC Events topic."
+    },
+    {
+      "id": "F14",
+      "category": "choice",
+      "front": "ERP wants every shipment CUD?",
+      "back": "CDC on the shipment object."
+    },
+    {
+      "id": "F15",
+      "category": "choice",
+      "front": "Need a curated signal after a successful submit?",
+      "back": "Custom platform event, Publish After Commit."
+    },
+    {
+      "id": "F16",
+      "category": "test",
+      "front": "Event Apex triggers and deploy?",
+      "back": "Need tests and coverage like other Apex before production deploy."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Platform events versus Change Data Capture?",
+      "answer_30_seconds": "CDC emits standard change events for CUD and undelete on selected objects. A platform event is a custom message you define and publish. Both ride the event bus; the schema and when they fire differ.",
+      "answer_2_minutes": "I use CDC when an ERP must see every LAB_Shipment__c change including Data Loader. I use a custom __e when the payload is a business signal, not a row diff. I mention API 44.0 for CDC and Customize Application plus API Enabled to define events. I do not invent daily allocations.",
+      "example": "AccountChangeEvent vs LAB_Allocator_Requested__e with OrderId__c.",
+      "tradeoffs": [
+        "Volume of CDC vs curated events",
+        "Setup enablement vs Apex publish"
+      ],
+      "follow_ups": [
+        "What is ChangeEventHeader?",
+        "How do you filter CDC?"
+      ],
+      "weak_answer_warnings": [
+        "Calling them the same thing",
+        "Saying CDC cannot delete"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Publish After Commit versus Publish Immediately?",
+      "answer_30_seconds": "After Commit emits only if the Apex transaction commits. Immediately can notify subscribers even if later DML rolls back. Immediate EventBus.publish is 150 per transaction.",
+      "answer_2_minutes": "I default After Commit for business data so warehouses do not allocate stock for a failed order. I use Immediately for log-style events. I warn that subscribers DML'ing the same row can lock. After-commit publish counts as DML per the governors footnote.",
+      "example": "Failed LAB_Order__c validation: After Commit sends nothing; Immediately already fired.",
+      "tradeoffs": [
+        "Log durability vs data consistency",
+        "150 immediate publishes vs DML budget"
+      ],
+      "follow_ups": [
+        "Can Flow set publish behavior?",
+        "What about CDC publish timing?"
+      ],
+      "weak_answer_warnings": [
+        "Saying Immediately waits for commit"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "ERP needs all shipment changes; warehouse needs only submit signals. Design it.",
+      "answer_30_seconds": "CDC on LAB_Shipment__c for the ERP. Custom After Commit event for submit. Queueable for the HTTP allocator if you need a job Id.",
+      "answer_2_minutes": "I refuse CDC-on-Order as the warehouse feed if 90% of updates are drafts. I refuse a trigger HTTP callout. I document that nightly shipment Batch will produce CDC volume. I keep event fields as a versioned contract.",
+      "example": "LAB_Shipment__ChangeEvent to ERP; LAB_Allocator_Requested__e to warehouse trigger → Queueable.",
+      "tradeoffs": [
+        "One bus vs two payloads",
+        "CDC volume vs custom filter"
+      ],
+      "follow_ups": [
+        "Who owns allocations?",
+        "How do you version fields?"
+      ],
+      "weak_answer_warnings": [
+        "One event type for everything"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Subscribers updated an order that later rolled back. What do you check?",
+      "answer_30_seconds": "Publish Immediately, or a subscriber that DML'd mid-save. Move to After Commit and keep subscriber work async.",
+      "answer_2_minutes": "I look at publish behavior, subscriber trigger, and lock errors. I do not blame Pub/Sub first. I add a test that throws after publish and asserts no LAB_Work__c for After Commit.",
+      "example": "Immediately published allocator event created warehouse work for a draft that failed required fields.",
+      "tradeoffs": [
+        "Immediate logs vs immediate business DML",
+        "Subscriber Queueable vs inline DML"
+      ],
+      "follow_ups": [
+        "How do you replay?",
+        "What is empApi?"
+      ],
+      "weak_answer_warnings": [
+        "Calling it a sharing bug"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you refuse platform events entirely?",
+      "answer_30_seconds": "Same-record updates, one Queueable worker, or when CDC volume would drown allocations. Events are for decoupling, not for replacing before-save Flow.",
+      "answer_2_minutes": "I walk AUTO-001 / APEX-011 / this topic. If the only consumer is one Apex class we own, a Queueable is simpler to monitor. If the object is chatty under ETL, I will not enable CDC without a volume review. I will not invent a bus cap to scare the room; I will say Needs verification and open allocations.",
+      "example": "Status formula on the same LAB_Order__c: before-save Flow, not __e.",
+      "tradeoffs": [
+        "Decoupling vs operability",
+        "CDC cost vs polling"
+      ],
+      "follow_ups": [
+        "What about outbound messages?",
+        "Event Relay?"
+      ],
+      "weak_answer_warnings": [
+        "Events for every field update"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "EventBus.publish throws a limit exception. Walk it.",
+      "answer_30_seconds": "If the event is immediate, you may have hit 150 publishes in the transaction. If after commit, you may be hitting DML 150. Daily bus allocations are a different table—do not mix them.",
+      "answer_2_minutes": "I count publishes in the loop, check publish behavior, and look at Limits methods. I batch signals or move to CDC instead of publishing per field. I re-open Execution Governors and Limits rather than quoting a blog.",
+      "example": "Loop of 200 EventBus.publish on an Immediately event during a Data Loader trigger.",
+      "tradeoffs": [
+        "Per-transaction 150 vs daily allocation",
+        "Loop vs one event with a list payload—if the schema allows"
+      ],
+      "follow_ups": [
+        "Which Limits method?",
+        "Does Batch reset the 150?"
+      ],
+      "weak_answer_warnings": [
+        "Quoting 250,000 as EventBus.publish"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "How do events relate to Apex transactions and Queueable?",
+      "answer_30_seconds": "After-commit events follow the transaction. Queueable enqueue also dies on rollback. Immediately events can escape the unit. Subscribers run in their own context, not in your savepoint.",
+      "answer_2_minutes": "I draw three boxes: parent transaction, event bus, subscriber/async. I refuse to say 'events are just async Apex.' I mention EventBus.publish 150 for immediate and DML counting for after-commit. I point APEX-010 for savepoints and APEX-011 for job types.",
+      "example": "Trigger publishes After Commit then enqueueJob; exception: neither event nor job survives.",
+      "tradeoffs": [
+        "Bus fan-out vs job Id",
+        "Immediate escape hatch vs atomicity"
+      ],
+      "follow_ups": [
+        "Do savepoints roll back after-commit publishes?",
+        "CDC in the same save?"
+      ],
+      "weak_answer_warnings": [
+        "Collapsing all async into one word"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "What do you refuse to memorize about event limits?",
+      "answer_30_seconds": "Unofficial daily delivery numbers, replay hours, and add-on packs. I will cite EventBus.publish 150 from the Apex governors page and send allocations to the current Platform Event Allocations topic.",
+      "answer_2_minutes": "Interviewers respect 'I will look it up' more than a fake 25,000. I know where the official tables live. I still know the per-transaction 150 because it is on the Apex governors page we already use for DML and enqueue.",
+      "example": "Someone quotes a 2021 blog daily cap; you open the current allocations page instead.",
+      "tradeoffs": [
+        "Memorized stale numbers vs cited pages",
+        "Per-transaction vs org daily"
+      ],
+      "follow_ups": [
+        "Where is PlatformEventUsageMetric?",
+        "Enhanced usage metrics API 58?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing edition-specific daily counts"
+      ]
+    }
+  ]
+}

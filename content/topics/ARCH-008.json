@@ -1,0 +1,1021 @@
+{
+  "topic_id": "ARCH-008",
+  "slug": "transaction-design-concurrency-locking-and-idempotency",
+  "title": "Transaction design, concurrency, locking, and idempotency",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-007"
+  ],
+  "objectives": [
+    "Define a Salesforce Apex transaction as an atomic DML unit that commits or rolls back together.",
+    "Use FOR UPDATE locking to prevent lost updates, and name the wait, QueryException, DmlException, and callout-release behaviors from the Apex guide.",
+    "Design idempotent retries for integrations and event consumers using unique keys, upsert, or Replay ID—not hope.",
+    "Choose all-or-none DML versus partial Database methods, and savepoints, without inventing unofficial timeout numbers beyond what the locking topic states."
+  ],
+  "diagnostic_question": "Two warehouse users save LAB_Inventory__c Qty__c at once, and a retried platform-event subscriber might insert a second LAB_Shipment__c. What transaction, locking, and idempotency choices do you make before writing Apex?",
+  "definition": "A Salesforce DML transaction is atomic: operations in the boundary commit together or roll back together. Concurrency is multiple clients touching the same rows. Locking with FOR UPDATE serializes writers until the transaction completes. Idempotency means repeating the same business request does not create a second side effect. ([DML Operations As Atomic Transactions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_dml_transactions.htm); [Locking Statements](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_locking_statements.htm))",
+  "why_it_matters": "Interviewers listen for UNABLE_TO_LOCK_ROW, lost updates without FOR UPDATE, and duplicate inserts when an event is replayed. Mixing a long callout while holding locks, or locking parent rows in random order, is how production deadlocks appear. Transaction design is metadata (the class/trigger) plus data (the rows); confusing those is a fail.",
+  "sixty_second_explanation": "Think of a bank night-drop: one sealed bag is one transaction—either the whole bag is counted or none of it is. FOR UPDATE is occupying the counting table so a second teller cannot rewrite the same envelope mid-count. If the first teller steps out to call another bank (an HTTP callout), the Apex guide says those FOR UPDATE locks are released. Idempotency is the bag's serial number: a second drop of the same bag is ignored, which is how you survive event replay and integration retries.",
+  "deeper_explanation": [
+    "The Apex Developer Guide states that DML operations execute within a transaction. All DML in that transaction completes successfully or the entire transaction is rolled back. The boundary can be a trigger, a class method, an anonymous block, a Visualforce/Apex page, or a custom web service method. Calls out to other Apex that fire triggers still participate in the same unit of work until the boundary finishes. ([DML Operations As Atomic Transactions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_dml_transactions.htm))",
+    "FOR UPDATE on an inline SOQL query locks the returned sObjects so other clients cannot update them through code or the UI until the transaction completes. Other clients can still query the locked rows. If another client already holds the lock, Apex waits a maximum of 10 seconds; then a QueryException (on lock) or DmlException (on update) is thrown. You cannot use ORDER BY with FOR UPDATE. ([Locking Statements](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_locking_statements.htm); [FOR UPDATE](https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select_for_update.htm))",
+    "FOR UPDATE locks are automatically released when the transaction makes an HTTP callout. Debug logs show FOR_UPDATE_LOCKS_RELEASE. The locking guide tells you to use caution combining callouts with prior FOR UPDATE queries. Lock records in a consistent order to avoid deadlocks (see Avoiding Deadlocks). ([Locking Statements](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_locking_statements.htm); [Locking Records](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_locking_records.htm))",
+    "Idempotency is not a single Setup toggle. For integrations, upsert on an External ID makes retries safe. For events (ARCH-007), Replay ID plus a unique business key (or a custom unique field) stops a redelivered message from inserting twice. Database methods with allOrNone false allow partial success; DML statements are all-or-none. Savepoints let you roll back part of Apex work. Event Publish Immediately (ARCH-007) is outside this DML atomicity—do not assume a rolled-back transaction un-publishes an Immediate event."
+  ],
+  "mental_model": {
+    "analogy": "Bank night-drop counting table: one sealed bag is one transaction; FOR UPDATE is occupying the table; a callout is leaving the table (locks released); the bag serial number is idempotency.",
+    "useful_mapping": [
+      "transaction boundary → one sealed bag counted together",
+      "DML commit → bag accepted into the vault",
+      "rollback / savepoint → bag returned unopened or last seal broken",
+      "FOR UPDATE → occupying the counting table",
+      "10-second wait → the next teller waits, then QueryException/DmlException",
+      "callout → walking to another bank; locks released",
+      "idempotency key / External ID / Replay ID → bag serial number",
+      "lost update without a lock → two tellers rewriting the same envelope"
+    ],
+    "where_it_breaks": [
+      "The 10-second wait is documented for FOR UPDATE contention; do not invent other timeout numbers.",
+      "UI edits without Apex still contend; FOR UPDATE is an Apex/SOQL tool, not a page-layout setting.",
+      "Idempotency does not replace sharing or FLS.",
+      "Parent-child lock order and ownership skew are neighboring data-architecture concerns (ARCH-003)."
+    ]
+  },
+  "teach_back_prompt": "Explain to a Java developer why Salesforce FOR UPDATE is not synchronized methods, why a callout drops the lock, and how you would make a replayed LAB_ShipmentReady__e insert only one LAB_Shipment__c.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: atomic DML transaction, FOR UPDATE wait, callout releases locks."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given lost-update versus duplicate-event, pick locking versus idempotency."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Walk UNABLE_TO_LOCK_ROW and a deadlock from inconsistent lock order."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Design an upsert External ID plus Replay ID consumer without notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: transaction, concurrency, locking, idempotency, one callout trap."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-TXN",
+      "title": "DML Operations As Atomic Transactions",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_dml_transactions.htm",
+      "supports": "All DML in a transaction commits or rolls back together; trigger/class/anonymous/page/webservice boundaries.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not enumerate governor limits; see ARCH-009."
+    },
+    {
+      "source_id": "SF-APEX-LOCK",
+      "title": "Locking Statements",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_locking_statements.htm",
+      "supports": "FOR UPDATE; 10-second wait; QueryException and DmlException; locks released on callout; other clients may still query.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "ORDER BY cannot combine with FOR UPDATE (also in SOQL FOR UPDATE topic)."
+    },
+    {
+      "source_id": "SF-SOQL-FORUPDATE",
+      "title": "FOR UPDATE (SOQL)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select_for_update.htm",
+      "supports": "Lock returned rows; no ORDER BY with locking queries.",
+      "release_or_version": "SOQL and SOSL Reference",
+      "last_verified": "2026-08-16",
+      "limits": "Applies to Apex SOQL usage described in the topic."
+    },
+    {
+      "source_id": "SF-APEX-LOCKREC",
+      "title": "Locking Records",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_locking_records.htm",
+      "supports": "Locking semantics, SOQL for-loop locking, avoiding deadlocks.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace data-skew design in ARCH-003."
+    },
+    {
+      "source_id": "SF-PE-DECOUPLE",
+      "title": "Decoupled Publishing and Subscription",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_considerations_decoupled_processes.htm",
+      "supports": "Platform event Immediate publish is outside DML atomicity; After Commit ties publish to commit; savepoint notes in PE docs for After Commit.",
+      "release_or_version": "Platform Events Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Event replay idempotency is a consumer design, not a bus guarantee of exactly-once business effects."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide locking and transaction topics",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Atomic DML transaction",
+        "FOR UPDATE 10s wait",
+        "Callout releases locks",
+        "Deadlock order",
+        "Idempotent upsert",
+        "Event replay"
+      ],
+      "accessible_description": "Portrait map: one Apex transaction commits or rolls back; FOR UPDATE serializes writers with a documented 10-second wait; callouts drop locks; idempotency keys stop duplicate side effects on retry."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-TXN",
+        "SF-APEX-LOCK",
+        "SF-SOQL-FORUPDATE",
+        "SF-APEX-LOCKREC"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Who still waits on this row?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Boundary[Transaction boundary: trigger class page service] --> DML[DML unit of work]\n  DML --> Commit[All succeed: commit]\n  DML --> Rollback[Any error: roll back]\n  DML --> Lock[FOR UPDATE held until complete]\n  Lock --> Callout[HTTP callout: locks released]\n  Boundary --> Idem[Idempotency key / External ID / Replay ID]",
+      "decision": "flowchart TD\n  Need[Concurrent writers or retries?] --> Q1{Same row Qty lost-update risk?}\n  Q1 -->|Yes| Lock[SOQL FOR UPDATE then DML in one short transaction]\n  Q1 -->|No| Q2{Duplicate insert if event or API retries?}\n  Q2 -->|Yes| Idem[Upsert External ID or unique business key]\n  Q2 -->|Partial DML wanted| Partial[Database methods allOrNone false]\n  Lock --> Q3{Need a callout in this transaction?}\n  Q3 -->|Yes| Split[Do not hold FOR UPDATE across the callout]\n  Q3 -->|No| Hold[Keep lock until commit]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "DML operations execute in a transaction: all succeed and commit, or an error rolls back the entire transaction. The boundary can be a trigger, class method, anonymous block, Apex page, or custom web service.",
+      "source_ids": ["SF-APEX-TXN"],
+      "scope": "Transaction atomicity",
+      "validation": "DML Operations As Atomic Transactions.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "FOR UPDATE locks queried sObjects against other writers until the transaction completes. Other clients may still query. Wait is a maximum of 10 seconds, then QueryException (lock) or DmlException (update). ORDER BY is not allowed with FOR UPDATE.",
+      "source_ids": ["SF-APEX-LOCK", "SF-SOQL-FORUPDATE"],
+      "scope": "Locking",
+      "validation": "Locking Statements and SOQL FOR UPDATE.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "FOR UPDATE locks are automatically released when making callouts; the debug log records FOR_UPDATE_LOCKS_RELEASE. Use caution combining callouts with prior FOR UPDATE.",
+      "source_ids": ["SF-APEX-LOCK"],
+      "scope": "Callout vs lock",
+      "validation": "Locking Statements callout note.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Publish Immediately platform events are outside Lightning Platform DML atomicity; a rolled-back transaction does not un-publish them. After Commit publishing can participate with savepoints as described in platform event docs.",
+      "source_ids": ["SF-PE-DECOUPLE"],
+      "scope": "Events vs transactions",
+      "validation": "Decoupled publishing topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Deadlocks are avoided by locking records in a consistent order. Idempotent consumers (unique key / upsert / Replay ID handling) are required because event delivery and API retries can repeat a message; the bus does not guarantee exactly-once business effects.",
+      "source_ids": ["SF-APEX-LOCKREC", "SF-PE-DECOUPLE"],
+      "scope": "Deadlocks and idempotency",
+      "validation": "Locking Records deadlock guidance plus event replay reality.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify FOR UPDATE wait wording and callout lock-release behavior against the current Apex Developer Guide for API 67.0 in the target org.",
+  "unresolved_uncertainty": [
+    "Exact Database.setSavepoint nesting limits and mixed DML (setup vs non-setup) rules belong to neighboring Apex topics; confirm current guide pages before quoting limits.",
+    "UNABLE_TO_LOCK_ROW from implicit parent locks during child inserts is data-skew adjacent; quantify only with org evidence."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "FOR UPDATE",
+      "telugu": "ఇతరులు అదే రికార్డు మార్చకుండా లాక్ పెట్టే SOQL."
+    },
+    {
+      "english": "Idempotency",
+      "telugu": "అదే అభ్యర్థన మళ్లీ వస్తే రెండో సారి సైడ్ ఎఫెక్ట్ రాకూడదు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "One Apex transaction is atomic DML. FOR UPDATE serializes writers, waits up to 10 seconds, and drops on callout. Idempotency is a unique key so retries and event replays do not double-insert.",
+    "two_minutes": "I size the transaction to one business unit of work. I lock only the rows I must update, in a stable Id order, and I never hold FOR UPDATE across a callout. Duplicates are a consumer problem: External ID upsert or a unique shipment key plus Replay ID. I do not treat Publish Immediately as part of the DML rollback. I mention deadlocks and row-lock errors as evidence, not as a reason to catch-and-ignore."
+  },
+  "terminology": [
+    {
+      "term": "transaction",
+      "plain": "A bundle of DML that either all lands or all undoes.",
+      "precise": "Apex DML executes as an atomic transaction. The boundary may be a trigger, class method, anonymous block, Apex page, or custom web service. Nested Apex still joins that unit of work.",
+      "example": "A LAB_Order__c insert and LAB_Line__c inserts in one service method commit together.",
+      "non_example": "Two separate UI saves by two users—those are two transactions.",
+      "confusable_neighbor": "Platform event Immediate publish: not the same atomicity.",
+      "boundary": "Governor limits cap how large a transaction can be (ARCH-009)."
+    },
+    {
+      "term": "concurrency",
+      "plain": "Two clients trying to change the same rows at once.",
+      "precise": "Overlapping transactions. Without locking, last-commit-wins can lose Qty updates. Locks serialize writers; they do not merge business intent.",
+      "example": "Two warehouse users decrement LAB_Inventory__c Qty__c.",
+      "non_example": "Two users editing different records.",
+      "confusable_neighbor": "Eventual consistency (ARCH-007): subscriber lag, not two writers on one row.",
+      "boundary": "Record sharing does not prevent two users with access from colliding."
+    },
+    {
+      "term": "locking",
+      "plain": "Holding a row so other writers wait.",
+      "precise": "FOR UPDATE on inline SOQL. Writers wait up to 10 seconds. QueryException on lock timeout; DmlException on update timeout. Other clients can still query. No ORDER BY.",
+      "example": "List<LAB_Inventory__c> rows = [SELECT Id, Qty__c FROM LAB_Inventory__c WHERE Id = :id FOR UPDATE];",
+      "non_example": "A validation rule, which does not serialize writers.",
+      "confusable_neighbor": "with sharing: record visibility, not DML locks.",
+      "boundary": "Implicit locks on parents during child DML are a skew topic."
+    },
+    {
+      "term": "idempotency",
+      "plain": "Doing the same request twice has the same business result as doing it once.",
+      "precise": "Retries, event replays, and duplicate API posts must not create a second shipment, payment, or case. Typical tools: External ID upsert, unique custom fields, and recording Replay ID / request Id.",
+      "example": "Upsert LAB_Shipment__c on External_Id__c = event Replay ID + order Id.",
+      "non_example": "Insert without a unique key and hoping the bus is exactly-once.",
+      "confusable_neighbor": "allOrNone false: partial DML success, not duplicate suppression.",
+      "boundary": "Exactly-once delivery is not a Salesforce event-bus guarantee."
+    },
+    {
+      "term": "savepoint",
+      "plain": "A bookmark so Apex can undo DML after that mark without always failing the whole request.",
+      "precise": "Database.setSavepoint and rollback. Platform event After Commit publishing has documented savepoint interaction; Immediate events are not undone by DML rollback.",
+      "example": "Roll back line inserts but keep a LAB_Error__c log row designed to survive—Needs verification of mixed patterns before copying.",
+      "non_example": "A Salesforce backup or recycle bin restore.",
+      "confusable_neighbor": "Publish Immediately: not rolled back with DML.",
+      "boundary": "Mixed DML (setup vs non-setup) is a separate Apex restriction."
+    },
+    {
+      "term": "UNABLE_TO_LOCK_ROW",
+      "plain": "Someone else still holds the record you need to update.",
+      "precise": "Lock timeout after the documented wait, or implicit lock contention on hot parents. Evidence for lock-order, skew, or FOR UPDATE across a callout.",
+      "example": "Two integrations updating the same LAB_Account__c.",
+      "non_example": "A validation-rule error message.",
+      "confusable_neighbor": "UNABLE_TO_LOCK_ROW versus QUERY_TIMEOUT: different governors.",
+      "boundary": "Do not catch and retry forever without backoff and idempotency."
+    },
+    {
+      "term": "allOrNone",
+      "plain": "Whether one bad row fails the whole DML call.",
+      "precise": "DML statements behave all-or-none. Database.insert/update methods can set allOrNone false for partial success. Design which rows may succeed independently.",
+      "example": "Database.update(rows, false) in a bulk loader with per-row errors.",
+      "non_example": "A Flow fault path, which is not the Database class option.",
+      "confusable_neighbor": "Transaction rollback from an uncaught exception: still all-or-none for the boundary.",
+      "boundary": "Partial success still needs idempotent retries for the failed rows."
+    },
+    {
+      "term": "deadlock",
+      "plain": "Two transactions each wait on a lock the other holds.",
+      "precise": "Avoid by locking records in a consistent order (for example, always by Id). The Locking Records topic calls this out.",
+      "example": "Txn A locks Account then Contact; Txn B locks Contact then Account.",
+      "non_example": "A single-row FOR UPDATE with no other lock.",
+      "confusable_neighbor": "Lock wait timeout: one waiter gave up; not necessarily a cycle.",
+      "boundary": "Lock order is a design standard, not an org setting."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name the unit of work",
+      "actor": "Architect",
+      "trigger": "Requirement updates several records",
+      "before": "Unclear what must commit together",
+      "after": "Written transaction boundary and what may be async",
+      "observe": "One trigger/service versus Queueable split",
+      "failure": "Callout in the middle of FOR UPDATE"
+    },
+    {
+      "step": 2,
+      "transition": "Decide locking",
+      "actor": "Developer",
+      "trigger": "Lost-update or inventory race",
+      "before": "Read-modify-write without lock",
+      "after": "FOR UPDATE on the minimum row set, consistent order",
+      "observe": "Query includes FOR UPDATE; no ORDER BY",
+      "failure": "Locking every Account in the org"
+    },
+    {
+      "step": 3,
+      "transition": "Design idempotency",
+      "actor": "Architect + developer",
+      "trigger": "Events, retries, or Bulk API",
+      "before": "Insert always",
+      "after": "External ID / unique key / Replay ID recorded",
+      "observe": "Second delivery updates or no-ops",
+      "failure": "Catch UNABLE_TO_LOCK_ROW and insert a duplicate"
+    },
+    {
+      "step": 4,
+      "transition": "Prove contention",
+      "actor": "Developer",
+      "trigger": "Sandbox test",
+      "before": "Happy-path only",
+      "after": "Two concurrent tests or a replayed event",
+      "observe": "One winner on Qty; one shipment row",
+      "failure": "Ignoring lock exceptions in empty catch"
+    }
+  ],
+  "when_to_use": [
+    "When two writers can lose an update on the same row: transaction design plus FOR UPDATE locking, not a validation rule.",
+    "When an integration or platform-event consumer can retry: add idempotency (External ID, unique key, Replay ID), not a second insert.",
+    "When you must explain concurrency failures (UNABLE_TO_LOCK_ROW, deadlock): lock order, hot parents, and callout lock release.",
+    "When choosing all-or-none DML versus Database methods for partial success inside one transaction."
+  ],
+  "when_not_to_use": [
+    "Do not use FOR UPDATE locking to replace sharing, FLS, or approval processes.",
+    "Do not hold locking queries across an HTTP callout; the Apex guide releases those locks.",
+    "Do not treat event-driven replay as exactly-once: without idempotency you will double-create records.",
+    "Do not expand this transaction lesson into a governor-limit catalog (ARCH-009) or CDC payload design (ARCH-007)."
+  ],
+  "configuration_or_code_location": [
+    "Apex: [SELECT ... FOR UPDATE], Database.setSavepoint, Database.insert(rows, false).",
+    "Custom field Unique/External ID on LAB_ objects for upsert keys.",
+    "Debug log: FOR_UPDATE_LOCKS_RELEASE on callout.",
+    "Platform event publish behavior (ARCH-007) when mixing events with DML."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox lab: two warehouse sessions decrement LAB_Inventory__c Qty__c for the same SKU, and a retried LAB_ShipmentReady__e must create only one LAB_Shipment__c. No production data.",
+    "inputs": [
+      "Starting Qty__c = 10",
+      "Two concurrent decrement-by-1 operations",
+      "Same event Replay ID delivered twice"
+    ],
+    "decisions": [
+      {
+        "decision": "Query inventory FOR UPDATE, then subtract, then update in the same short transaction.",
+        "because": "The locking guide exists to prevent lost updates / race conditions.",
+        "rejected": "Read Qty, wait, write Qty without a lock"
+      },
+      {
+        "decision": "Do not call out to the warehouse HTTP API while holding that lock.",
+        "because": "Callouts release FOR UPDATE locks.",
+        "rejected": "Lock, callout, then DML"
+      },
+      {
+        "decision": "Upsert LAB_Shipment__c on External_Id__c = ReplayId + OrderId.",
+        "because": "Idempotency survives event replay; insert does not.",
+        "rejected": "Insert a shipment on every delivery"
+      }
+    ],
+    "configuration_or_code": [
+      "LAB_InventoryService.decrement(Id) uses FOR UPDATE.",
+      "LAB_Shipment__c.External_Id__c unique external id.",
+      "Subscriber upserts using the event Replay ID.",
+      "Optional: two anonymous Apex windows or a test with concurrent Queueables—Needs verification of test harness in the org."
+    ],
+    "output": "Qty ends at 8 after two decrements, not 9; one shipment row after two event deliveries.",
+    "verification": [
+      "Qty__c is 8, not 9, after two decrements from 10.",
+      "LAB_Shipment__c count remains 1 after replay.",
+      "No FOR UPDATE plus callout in the same method."
+    ],
+    "self_explanation": "Locking protected the increment; the serial number protected the replay. I did not confuse those two races."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ objects only.",
+    "starting_state_checks": [
+      "You can create Apex and custom fields.",
+      "No production names."
+    ],
+    "steps": [
+      "Create LAB_Inventory__c with Qty__c and a service method that uses FOR UPDATE.",
+      "Create LAB_Shipment__c with a unique External ID and an upsert subscriber stub.",
+      "Write a test that upserts twice with the same External ID and asserts one row.",
+      "Read the Locking Statements callout paragraph and add a class comment forbidding callout-while-locked."
+    ],
+    "guided_completion": [
+      "If Qty can go negative, that is a business rule, not a lock failure.",
+      "If the second upsert inserts, the External ID is not unique or not used."
+    ],
+    "independent_challenge": "Sketch a deadlock with two objects and the Id-order fix.",
+    "evidence": [
+      "Test output showing one shipment row after two upserts.",
+      "Quoted callout lock-release sentence in the class comment."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Apex and objects.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not prove production row-lock rates or Bulk API batching."
+  },
+  "decision_table": [
+    {
+      "signal": "Two users can overwrite each other's Qty on the same inventory row.",
+      "choose": "SOQL FOR UPDATE, then compute, then DML in one short transaction.",
+      "not": "Read Qty into a static variable, pause, write later without a lock.",
+      "why": "Locking Statements exist to prevent race conditions on sObjects."
+    },
+    {
+      "signal": "The same platform event or REST post can arrive twice.",
+      "choose": "Idempotent upsert on an External ID or unique business key (include Replay ID when it is an event).",
+      "not": "Unconditional insert and 'the bus is exactly-once'.",
+      "why": "Retries and replay are expected; duplicate side effects are a design bug."
+    },
+    {
+      "signal": "You need an HTTP callout in the same user action.",
+      "choose": "Finish DML/locks, commit, then call out asynchronously—or call out first without holding FOR UPDATE.",
+      "not": "FOR UPDATE, then callout, then DML on the same locked rows.",
+      "why": "The guide releases FOR UPDATE locks on callout."
+    },
+    {
+      "signal": "Bulk load should accept good rows even if some fail validation.",
+      "choose": "Database methods with allOrNone false, then retry failed Ids idempotently.",
+      "not": "A DML statement that fails the whole batch, then a naive full replay that duplicates successes.",
+      "why": "Partial success and idempotency solve different halves of the retry problem."
+    },
+    {
+      "signal": "Two services lock Account and Contact in opposite order.",
+      "choose": "Document a global lock order (for example, by sObject then Id) and apply it in both.",
+      "not": "Catch deadlock and ignore it.",
+      "why": "Locking Records: avoid deadlocks with consistent lock order."
+    }
+  ],
+  "limitations": [
+    "Does not list CPU, SOQL, or DML governor numbers (ARCH-009).",
+    "Does not design CDC payloads (ARCH-007).",
+    "Does not replace record-sharing design.",
+    "Implicit parent locks under data skew need org-specific evidence."
+  ],
+  "security_notes": [
+    "Locks do not grant extra access; CRUD/FLS and sharing still apply.",
+    "Idempotency keys can be predictable; do not put secrets in External IDs.",
+    "Never log session IDs in retry payloads."
+  ],
+  "common_mistakes": [
+    "FOR UPDATE then callout.",
+    "ORDER BY with FOR UPDATE.",
+    "Inserting on every event replay.",
+    "Empty catch on DmlException lock failures.",
+    "Assuming Immediate platform events roll back with DML."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "UNABLE_TO_LOCK_ROW or QueryException while locking.",
+      "check": [
+        "Who else updates the same Id (including implicit parents)?",
+        "Lock wait exceeded 10 seconds.",
+        "Callout released a lock you still needed."
+      ],
+      "do_not_assume": "The row is corrupt."
+    },
+    {
+      "symptom": "Qty is wrong after two near-simultaneous saves.",
+      "check": [
+        "Missing FOR UPDATE on the read-modify-write.",
+        "Static variables shared across a misunderstanding of transactions."
+      ],
+      "do_not_assume": "A formula field caused it."
+    },
+    {
+      "symptom": "Two LAB_Shipment__c rows for one event Replay ID.",
+      "check": [
+        "External ID uniqueness and upsert versus insert.",
+        "Different keys computed per delivery."
+      ],
+      "do_not_assume": "The event bus duplicated because of a platform bug."
+    }
+  ],
+  "production_notes": [
+    "Trace lock errors in Scale Center later (ARCH-009); this lesson is the code/design fix.",
+    "Keep transactions short; move slow work async after commit.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What happens if one DML operation in an Apex transaction fails with an unhandled error?",
+      "options": {
+        "A": "The entire transaction is rolled back and no data from that transaction is committed",
+        "B": "Only later DML rolls back; earlier DML always stays",
+        "C": "Salesforce ignores DML errors",
+        "D": "Only platform events roll back"
+      },
+      "answer": "A",
+      "rationale": "DML operations execute as atomic transactions: all complete or the transaction rolls back.",
+      "distractor_explanations": {
+        "B": "Atomicity is the whole boundary unless you used savepoints/partial Database methods by design.",
+        "C": "Errors are not ignored.",
+        "D": "Immediate events may already have published (ARCH-007)."
+      },
+      "concept": "Atomic transactions",
+      "citation_ids": ["SF-APEX-TXN"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How long will Apex wait to acquire a FOR UPDATE lock held by another client?",
+      "options": {
+        "A": "A maximum of 10 seconds, then QueryException (or DmlException on update)",
+        "B": "Until the other user logs out",
+        "C": "60 minutes",
+        "D": "FOR UPDATE never waits"
+      },
+      "answer": "A",
+      "rationale": "Locking Statements: wait up to 10 seconds, then QueryException on lock or DmlException on update.",
+      "distractor_explanations": {
+        "B": "Logout is not the documented wait.",
+        "C": "Not the locking topic's number.",
+        "D": "It does wait, then throws."
+      },
+      "concept": "Lock wait",
+      "citation_ids": ["SF-APEX-LOCK"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What happens to FOR UPDATE locks if the transaction performs an HTTP callout?",
+      "options": {
+        "A": "They are automatically released; debug log shows FOR_UPDATE_LOCKS_RELEASE",
+        "B": "They become permanent until reboot",
+        "C": "They convert to sharing rules",
+        "D": "Callouts are illegal in all Apex"
+      },
+      "answer": "A",
+      "rationale": "The Locking Statements topic documents automatic lock release on callout.",
+      "distractor_explanations": {
+        "B": "Locks are transaction-scoped.",
+        "C": "Sharing is unrelated.",
+        "D": "Callouts are allowed with different limits."
+      },
+      "concept": "Callout releases locks",
+      "citation_ids": ["SF-APEX-LOCK"]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which SOQL clause cannot be combined with FOR UPDATE?",
+      "options": {
+        "A": "ORDER BY",
+        "B": "WHERE",
+        "C": "LIMIT",
+        "D": "FROM"
+      },
+      "answer": "A",
+      "rationale": "Both Locking Statements and the SOQL FOR UPDATE topic forbid ORDER BY with locking.",
+      "distractor_explanations": {
+        "B": "WHERE is normal.",
+        "C": "LIMIT is not the documented prohibition.",
+        "D": "FROM is required."
+      },
+      "concept": "ORDER BY",
+      "citation_ids": ["SF-APEX-LOCK", "SF-SOQL-FORUPDATE"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "While a record is locked with FOR UPDATE, what can other clients still do?",
+      "options": {
+        "A": "Query the same records",
+        "B": "Update them through the UI immediately",
+        "C": "Update them through Apex immediately",
+        "D": "Delete the locking user's User record as a fix"
+      },
+      "answer": "A",
+      "rationale": "Other clients can still query locked records; they cannot update until the lock releases.",
+      "distractor_explanations": {
+        "B": "UI updates wait on the lock.",
+        "C": "Apex updates wait or fail after 10 seconds.",
+        "D": "Not a locking remedy."
+      },
+      "concept": "Query while locked",
+      "citation_ids": ["SF-APEX-LOCK"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A platform-event subscriber inserts LAB_Shipment__c and the event is replayed. What prevents two rows?",
+      "options": {
+        "A": "Idempotent upsert on a unique External ID derived from Replay ID / business key",
+        "B": "FOR UPDATE on User",
+        "C": "Turning off CDC",
+        "D": "Using ORDER BY on the event query"
+      },
+      "answer": "A",
+      "rationale": "Event delivery can repeat; idempotency keys stop duplicate side effects. Locking User is irrelevant.",
+      "distractor_explanations": {
+        "B": "Wrong object and wrong race.",
+        "C": "CDC is a different event type.",
+        "D": "ORDER BY is unrelated and illegal with FOR UPDATE anyway."
+      },
+      "concept": "Idempotency",
+      "citation_ids": ["SF-PE-DECOUPLE"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How do you reduce deadlock risk when two transactions lock multiple records?",
+      "options": {
+        "A": "Lock in a consistent order (Locking Records / Avoiding Deadlocks)",
+        "B": "Lock in random order for fairness",
+        "C": "Never use transactions",
+        "D": "Use Publish Immediately instead of DML"
+      },
+      "answer": "A",
+      "rationale": "The Locking Records topic includes avoiding deadlocks via consistent lock order.",
+      "distractor_explanations": {
+        "B": "Random order creates cycles.",
+        "C": "You cannot skip transactions.",
+        "D": "Events do not replace row locks."
+      },
+      "concept": "Deadlocks",
+      "citation_ids": ["SF-APEX-LOCKREC"]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which of these can be an Apex transaction boundary according to the atomic DML topic?",
+      "options": {
+        "A": "A trigger, class method, anonymous block, Apex page, or custom web service method",
+        "B": "Only scheduled jobs",
+        "C": "Only UI button clicks",
+        "D": "Only change sets"
+      },
+      "answer": "A",
+      "rationale": "The guide lists those boundaries explicitly.",
+      "distractor_explanations": {
+        "B": "Too narrow.",
+        "C": "Too narrow.",
+        "D": "Change sets are metadata deploy, not a DML transaction boundary."
+      },
+      "concept": "Transaction boundary",
+      "citation_ids": ["SF-APEX-TXN"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You publish a platform event with Publish Immediately, then the DML rolls back. What should you assume?",
+      "options": {
+        "A": "The Immediate event may already be on the bus; it is not the same as DML atomicity",
+        "B": "The event is always un-published",
+        "C": "FOR UPDATE deletes the event",
+        "D": "Replay ID becomes null"
+      },
+      "answer": "A",
+      "rationale": "Decoupled publishing: Immediate publish is outside the database transaction.",
+      "distractor_explanations": {
+        "B": "That describes After Commit more closely.",
+        "C": "Locks do not delete events.",
+        "D": "Replay ID is assigned to messages that were published."
+      },
+      "concept": "Events vs DML",
+      "citation_ids": ["SF-PE-DECOUPLE"]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Database.update(rows, false) is primarily about which concern?",
+      "options": {
+        "A": "Partial DML success (not allOrNone), which is different from idempotent retries",
+        "B": "FOR UPDATE lock wait",
+        "C": "CDC enablement",
+        "D": "OWD"
+      },
+      "answer": "A",
+      "rationale": "allOrNone false allows some rows to succeed; you still need unique keys if you retry failures.",
+      "distractor_explanations": {
+        "B": "Lock wait is FOR UPDATE.",
+        "C": "CDC is eventing.",
+        "D": "Sharing."
+      },
+      "concept": "allOrNone",
+      "citation_ids": ["SF-APEX-TXN"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates transaction code metadata from business data?",
+      "options": {
+        "A": "The Apex class is metadata; LAB_Inventory__c Qty__c values are business data",
+        "B": "FOR UPDATE is a permission set",
+        "C": "External ID fields are always standard objects",
+        "D": "Savepoints are sandbox types"
+      },
+      "answer": "A",
+      "rationale": "Classes deploy as metadata; row values are data. External IDs are fields (metadata) storing keys (data).",
+      "distractor_explanations": {
+        "B": "FOR UPDATE is SOQL.",
+        "C": "External ID can be custom.",
+        "D": "Savepoints are Apex, not environments."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-APEX-TXN"]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Why lock records in Apex according to the locking guide?",
+      "options": {
+        "A": "To prevent race conditions and other thread-safety problems while updating sObjects",
+        "B": "To grant extra FLS",
+        "C": "To skip governor limits",
+        "D": "To publish CDC faster"
+      },
+      "answer": "A",
+      "rationale": "The opening of Locking Statements / FOR UPDATE states that purpose.",
+      "distractor_explanations": {
+        "B": "Locks are not authorization.",
+        "C": "Locks do not raise limits.",
+        "D": "CDC is independent."
+      },
+      "concept": "Why lock",
+      "citation_ids": ["SF-APEX-LOCK", "SF-SOQL-FORUPDATE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "Apex DML transaction in one sentence?",
+      "back": "All DML in the boundary commits together or the transaction rolls back."
+    },
+    {
+      "id": "F2",
+      "category": "locking",
+      "front": "FOR UPDATE wait timeout?",
+      "back": "Maximum 10 seconds, then QueryException on lock or DmlException on update."
+    },
+    {
+      "id": "F3",
+      "category": "locking",
+      "front": "Callout plus FOR UPDATE?",
+      "back": "Locks are released automatically; log FOR_UPDATE_LOCKS_RELEASE."
+    },
+    {
+      "id": "F4",
+      "category": "locking",
+      "front": "ORDER BY with FOR UPDATE?",
+      "back": "Not allowed. The SOQL FOR UPDATE topic forbids ORDER BY on a locking query."
+    },
+    {
+      "id": "F5",
+      "category": "locking",
+      "front": "Can others query a locked row?",
+      "back": "Yes. They cannot update until the lock releases."
+    },
+    {
+      "id": "F6",
+      "category": "idempotency",
+      "front": "What is idempotency for an event consumer?",
+      "back": "Replaying the same message does not create a second business side effect."
+    },
+    {
+      "id": "F7",
+      "category": "idempotency",
+      "front": "Typical Salesforce idempotency tool?",
+      "back": "Upsert on a unique External ID (often including Replay ID or request Id)."
+    },
+    {
+      "id": "F8",
+      "category": "concurrency",
+      "front": "Lost update without locking?",
+      "back": "Two read-modify-writes; last commit wins and Qty is wrong."
+    },
+    {
+      "id": "F9",
+      "category": "deadlock",
+      "front": "How to avoid deadlocks?",
+      "back": "Lock records in a consistent order."
+    },
+    {
+      "id": "F10",
+      "category": "events",
+      "front": "Immediate platform event after DML rollback?",
+      "back": "It may already have been published; not the same atomicity as DML."
+    },
+    {
+      "id": "F11",
+      "category": "dml",
+      "front": "allOrNone false versus idempotency?",
+      "back": "Partial success lets some rows commit; idempotency stops duplicate retries of those rows."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "Name three transaction boundaries.",
+      "back": "Trigger, class method, anonymous block (also Apex page, custom web service)."
+    },
+    {
+      "id": "F13",
+      "category": "errors",
+      "front": "UNABLE_TO_LOCK_ROW means?",
+      "back": "Another transaction still holds a lock you need for DML."
+    },
+    {
+      "id": "F14",
+      "category": "design",
+      "front": "Should you lock then callout then DML?",
+      "back": "No. The callout drops FOR UPDATE locks."
+    },
+    {
+      "id": "F15",
+      "category": "metadata",
+      "front": "Class versus Qty__c?",
+      "back": "The class is metadata; inventory quantities are business data."
+    },
+    {
+      "id": "F16",
+      "category": "savepoint",
+      "front": "Is a savepoint a sandbox?",
+      "back": "No. It is Database.setSavepoint inside an Apex transaction."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is a Salesforce Apex transaction?",
+      "answer_30_seconds": "A DML unit of work that commits together or rolls back together. The boundary can be a trigger, method, anonymous block, page, or web service.",
+      "answer_2_minutes": "I quote the atomic DML topic. Nested triggers still join the same unit until the boundary finishes. I separate that from Immediate platform events, which can leave the bus even if DML rolls back. I do not recite unofficial governor numbers here; that is ARCH-009.",
+      "example": "LAB_Order__c and LAB_Line__c inserts in one service method.",
+      "tradeoffs": [
+        "Large transaction versus async split",
+        "allOrNone versus partial Database methods"
+      ],
+      "follow_ups": [
+        "What is a savepoint?",
+        "Does a Queueable share the same transaction?"
+      ],
+      "weak_answer_warnings": [
+        "Calling a transaction a 'Salesforce org'"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Explain FOR UPDATE locking, including wait and callouts.",
+      "answer_30_seconds": "SOQL FOR UPDATE stops other writers. Wait up to 10 seconds, then QueryException or DmlException. Other clients can still query. Callouts release the locks. No ORDER BY.",
+      "answer_2_minutes": "I use it for read-modify-write on hot rows like inventory. I keep the transaction short. I lock in Id order to avoid deadlocks. I never callout while holding the lock. I mention the debug log token FOR_UPDATE_LOCKS_RELEASE so the interviewer hears I read the guide.",
+      "example": "Two warehouse users decrement Qty__c on the same LAB_Inventory__c row.",
+      "tradeoffs": [
+        "Lock scope versus throughput",
+        "Sync lock versus async retry"
+      ],
+      "follow_ups": [
+        "What can others still do?",
+        "Implicit parent locks?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing a 60-second lock wait"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Two warehouse users decrement the same Qty. Design it.",
+      "answer_30_seconds": "One transaction: FOR UPDATE the inventory row, subtract, update. Do not read Qty into the UI, wait, and write back without a lock.",
+      "answer_2_minutes": "I show lost-update math: 10-1 and 10-1 both write 9. FOR UPDATE serializes to 8. I refuse a long lock across a warehouse HTTP API. If the API is required, I commit the decrement then call out, or I use a reservation object with its own idempotent key. I test with two concurrent paths in sandbox.",
+      "example": "LAB_InventoryService.decrement uses FOR UPDATE then subtracts Qty__c.",
+      "tradeoffs": [
+        "Pessimistic lock versus compensation records",
+        "User-facing retry versus silent fail"
+      ],
+      "follow_ups": [
+        "What if Qty would go negative?",
+        "Bulk API load at the same time?"
+      ],
+      "weak_answer_warnings": [
+        "A validation rule as the concurrency control"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "An event subscriber creates shipments and Replay ID 55 is delivered twice. What do you do?",
+      "answer_30_seconds": "Treat it as an idempotency problem. Upsert on a unique key that includes Replay ID or a business shipment key. Do not insert blindly.",
+      "answer_2_minutes": "Exactly-once business effects are our job, not the bus's. I store External_Id__c = ReplayId + OrderId, unique, and upsert. I still use locking if two different events hit the same inventory row. I do not catch lock errors and insert a second shipment.",
+      "example": "LAB_Shipment__c upsert on External_Id__c.",
+      "tradeoffs": [
+        "Natural business key versus Replay ID",
+        "Update-in-place versus no-op"
+      ],
+      "follow_ups": [
+        "What if Replay ID is missing?",
+        "Database methods allOrNone?"
+      ],
+      "weak_answer_warnings": [
+        "The event bus is exactly-once so we are fine"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Production shows UNABLE_TO_LOCK_ROW on Account during child inserts. How do you investigate?",
+      "answer_30_seconds": "Look for hot parent Accounts, concurrent integrations, and lock order. This is concurrency and possibly data skew, not a missing validation rule.",
+      "answer_2_minutes": "I identify the parent Id in the error. I check ownership skew and lookup skew (ARCH-003). I check whether two jobs lock Account versus children in opposite order. I shorten transactions and move non-critical work async after commit. I do not add FOR UPDATE on every query 'just in case.' Scale Center belongs to ARCH-009 for evidence, but the fix is transaction design.",
+      "example": "LAB_Account__c with thousands of LAB_Task__c inserts at noon.",
+      "tradeoffs": [
+        "Reparent versus serialize loads",
+        "Batch size versus lock time"
+      ],
+      "follow_ups": [
+        "Would you lock the parent explicitly?",
+        "When is a Queueable the right split?"
+      ],
+      "weak_answer_warnings": [
+        "Deleting the Account to clear the lock"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Apex does FOR UPDATE, callout, then update, and Qty is wrong. Why?",
+      "answer_30_seconds": "The callout released the FOR UPDATE locks. Another transaction could update the row before your later DML.",
+      "answer_2_minutes": "I cite FOR_UPDATE_LOCKS_RELEASE. The fix is to restructure: callout without holding locks, or DML/commit then async callout. If I must re-read after callout, I FOR UPDATE again and re-validate Qty. I add a test comment so the next developer does not 'optimize' it back.",
+      "example": "Inventory lock, HTTP to warehouse, then Qty update.",
+      "tradeoffs": [
+        "Sync callout UX versus lock safety",
+        "Compensation if the callout succeeded and DML later fails"
+      ],
+      "follow_ups": [
+        "Continuation for callouts?",
+        "Idempotency of the HTTP API?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the remote API for a local lost update"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you not use FOR UPDATE?",
+      "answer_30_seconds": "When there is no lost-update race, when you would hold the lock across a callout, or when you are trying to replace sharing. Also avoid locking huge row sets.",
+      "answer_2_minutes": "Locking increases wait and deadlock risk. Idempotency keys do not require FOR UPDATE. Reporting queries should not lock. I use locking for contested write paths. I document lock order. I refuse FOR UPDATE as a performance trick.",
+      "example": "A read-only LWC list of LAB_Inventory__c does not need FOR UPDATE.",
+      "tradeoffs": [
+        "Safety versus throughput",
+        "Pessimistic locks versus business reservations"
+      ],
+      "follow_ups": [
+        "Static variables as a cache?",
+        "Platform Cache (ARCH-009)?"
+      ],
+      "weak_answer_warnings": [
+        "FOR UPDATE on every SOQL in the org"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach transaction, locking, and idempotency with one analogy, then break it.",
+      "answer_30_seconds": "Night-drop bag is a transaction; occupying the counting table is FOR UPDATE; leaving to call another bank drops the lock; bag serial number is idempotency. It breaks on implicit parent locks and governor limits.",
+      "answer_2_minutes": "I walk two races: lost Qty versus duplicate shipment. Interviewers want both. I add the 10-second wait and no ORDER BY so it is not a generic metaphor. I say Immediate events are a second bag that already went down the chute.",
+      "example": "LAB_Inventory decrement plus LAB_Shipment upsert.",
+      "tradeoffs": [
+        "Metaphor versus citing the 10-second wait",
+        "One service versus split async"
+      ],
+      "follow_ups": [
+        "Map savepoints onto the analogy",
+        "Map deadlocks"
+      ],
+      "weak_answer_warnings": [
+        "A generic catalog metaphor with no lock or callout punchline"
+      ]
+    }
+  ]
+}

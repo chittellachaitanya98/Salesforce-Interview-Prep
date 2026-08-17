@@ -1,0 +1,996 @@
+{
+  "topic_id": "SEC-010",
+  "slug": "the-salesforce-security-access-path",
+  "title": "The Salesforce Security Access Path",
+  "track": "Identity, access, and security",
+  "level": "Advanced",
+  "type": "Troubleshooting",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "SEC-001",
+    "SEC-002",
+    "SEC-003",
+    "SEC-004"
+  ],
+  "objectives": [
+    "Walk an end-to-end 'why can or can't this user access this record or feature' diagnosis in a stable order.",
+    "Separate authentication and session failures from license/permission failures from object, field, and record failures.",
+    "Use matching versus non-matching users and records as evidence, and refuse to skip layers.",
+    "Know when later topics (restriction, Apex sharing, Experience Cloud guests, Shield) enter the path without collapsing them into OWD."
+  ],
+  "diagnostic_question": "LAB_AE_East cannot work LAB_Opportunity_Orion. A teammate already opened Sharing Settings. What do you test first, which comparison user and record do you need, and which evidence would send you back to MFA instead of OWD?",
+  "definition": "The Salesforce security access path is a troubleshooting sequence: prove identity and session, then entitlement (user license, profile, permission sets), then object permissions, then field-level security, then record-level access (OWD, role hierarchy, sharing rules, teams, territories, manual sharing). Restriction rules can further filter reads. Apex sharing keywords can diverge from the UI. Experience Cloud guests use a different identity. Shield does not replace this path. ([Control Who Sees What](https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm); [User Permissions](https://help.salesforce.com/s/articleView?id=admin_userperms.htm); [Session Security](https://help.salesforce.com/s/articleView?id=sf.security_overview_sessions.htm); [MFA Glossary](https://help.salesforce.com/s/articleView?id=xcloud.mfa_glossary.htm))",
+  "why_it_matters": "The most common security interview is 'why can't this user see this record?' Jumping to OWD when the user never logged in, or granting Modify All Data to hide a missing FLS, is how orgs get overexposed. A path with comparison tests is how you defend least privilege under pressure.",
+  "sixty_second_explanation": "Think of an airport journey. Authentication is the passport check, including a second scanner (MFA). The boarding pass type is the user license and permission sets. The lounge versus gate is object CRUD—are you even allowed in that terminal. The stamp on your boarding pass that blacks out a meal code is FLS. Which seat you may walk to is record sharing. A permanent extra filter at the jetway is a restriction rule. A staff-only cargo elevator is Apex without sharing. The public arrivals board is the Experience Cloud guest. The vault cameras are Shield—they do not print a boarding pass.",
+  "deeper_explanation": [
+    "Start with authentication. If login never succeeds, stay on credentials, MFA, identity provider, login hours, and IP ranges. A session is the authenticated connection; timeout is not a permission. ([MFA Glossary](https://help.salesforce.com/s/articleView?id=xcloud.mfa_glossary.htm); [Session Security](https://help.salesforce.com/s/articleView?id=sf.security_overview_sessions.htm))",
+    "Then entitlement: one user license, one profile, additive permission sets. Assignment can fail if the license cannot carry the permission. Roles are not profiles. ([User Licenses](https://help.salesforce.com/s/articleView?id=platform.users_understanding_license_types.htm); [Permission Sets](https://help.salesforce.com/s/articleView?id=perm_sets_overview.htm))",
+    "Then the three data gates. Object permissions are the bluntest control. Field permissions protect reports and search, not just layouts. Record access is OWD plus additive sharing; sharing cannot be stricter than OWD. ([Control Who Sees What](https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm))",
+    "If the user can open other records of the same object, do not revoke object Read. Trace OWD, hierarchy, rules, teams, territories, then manual sharing (SEC-004). If they can read via sharing but must not, consider restriction rules (SEC-005).",
+    "If the UI denies a row that Apex returns, inspect with/without/inherited sharing and API version (SEC-006). If the audience is unauthenticated, you are on the guest identity, not internal OWD (SEC-008). Encryption and Event Monitoring do not grant the row (SEC-009)."
+  ],
+  "mental_model": {
+    "analogy": "An airport journey: passport = authentication, boarding-pass class = license/permission sets, terminal access = object CRUD, meal-code blackout = FLS, seat = record sharing, jetway filter = restriction, cargo elevator = Apex without sharing.",
+    "useful_mapping": [
+      "passport + second scanner → authentication / MFA / session",
+      "boarding-pass class → user license, profile, permission sets",
+      "terminal door → object permissions",
+      "meal-code blackout on every screen → FLS (not the seat map printout/layout)",
+      "which seat → OWD and sharing",
+      "jetway embargo → restriction rule",
+      "cargo elevator → Apex without sharing",
+      "arrivals board → Experience Cloud guest",
+      "vault cameras → Shield (not a boarding pass)"
+    ],
+    "where_it_breaks": [
+      "View All / Modify All style permissions can skip ordinary seat assignment; still name them as capability overrides.",
+      "Connected-app IP policy can fail while the passenger already sits in Lightning.",
+      "The airport does not encode every Experience Cloud license SKU."
+    ]
+  },
+  "teach_back_prompt": "Walk LAB_AE_East versus LAB_Opportunity_Orion from passport to seat without opening Sharing Settings first. Name the comparison user and comparison record you would create.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Recite the path: identity, entitlement, object, field, record, then later overlays."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify five tickets onto the path."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why comparison records matter for sharing rules."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "When Apex or guest identity jumps the path."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute whiteboard: why can't this user see this record?"
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-DATA-ACCESS",
+      "title": "Control Who Sees What",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm",
+      "supports": "Object, field, and record layers; profiles/permission sets vs roles; sharing cannot tighten OWD; restriction and scoping notes.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Overview; object-specific sharing options remain in SEC-004 sources."
+    },
+    {
+      "source_id": "SF-HELP-USER-PERMS",
+      "title": "User Permissions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=admin_userperms.htm",
+      "supports": "Task and feature authorization via permission sets and profiles.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every user permission."
+    },
+    {
+      "source_id": "SF-HELP-MFA-GLOSSARY",
+      "title": "Multi-Factor Authentication Glossary",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=xcloud.mfa_glossary.htm",
+      "supports": "Authentication versus least-privilege permissions.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Identity terms, not sharing mechanics."
+    },
+    {
+      "source_id": "SF-HELP-SESSIONS",
+      "title": "Session Security",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_overview_sessions.htm",
+      "supports": "Session as the connection after login; timeout is not a permission grant.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Default two-hour timeout may be overridden in the org."
+    },
+    {
+      "source_id": "SF-HELP-PERM-SETS",
+      "title": "Permission Sets",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=perm_sets_overview.htm",
+      "supports": "Additive functional access without changing the profile.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "License constraints on assignment are in assignment Help."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Identity and session",
+        "License profile permission sets",
+        "Object CRUD",
+        "FLS not layout",
+        "Record sharing stack",
+        "Later overlays: restriction Apex guest Shield"
+      ],
+      "accessible_description": "Vertical airport path from passport to seat with side doors for Apex, guest, and Shield."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-DATA-ACCESS",
+        "SF-HELP-USER-PERMS",
+        "SF-HELP-MFA-GLOSSARY",
+        "SF-HELP-SESSIONS",
+        "SF-HELP-PERM-SETS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Security access path"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Start[Cannot access X] --> Auth[Authentication and session]\n  Auth --> Ent[License profile permission sets]\n  Ent --> Obj[Object permissions]\n  Obj --> FLS[Field-level security]\n  FLS --> Rec[Record sharing OWD roles rules teams territories manual]\n  Rec --> Rest[Restriction if reads must shrink]\n  Rec --> Apex[Apex sharing keywords if UI and code differ]\n  Rec --> Guest[Guest identity if unauthenticated site]\n  Rec --> Shield[Shield does not grant the row]",
+      "decision": "flowchart TD\n  Tix[Ticket] --> Q1{Can they complete login and keep a session?}\n  Q1 -->|No| Auth[MFA IdP hours IP session]\n  Q1 -->|Yes| Q2{Missing a task or object tab?}\n  Q2 -->|Feature| Perm[User permission / license]\n  Q2 -->|No tab| Obj[Object CRUD]\n  Q2 -->|Tab yes field missing in reports| FLS[Field permissions]\n  Q2 -->|Other rows yes this row no| Rec[Sharing stack]\n  Q2 -->|UI no Apex yes| Apex[with without inherited sharing]\n  Q2 -->|Anonymous site| Guest[Guest sharing rules]\n  Q2 -->|They want cameras not a seat| Shield[Event Monitoring is not sharing]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Authentication proves identity; user permissions grant tasks and features; a session is the connection after login and is not a permission grant.",
+      "source_ids": ["SF-HELP-MFA-GLOSSARY", "SF-HELP-USER-PERMS", "SF-HELP-SESSIONS"],
+      "scope": "Identity then authorization",
+      "validation": "MFA Glossary, User Permissions, Session Security.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Permission sets extend functional access without changing the one profile. Profiles and permission sets control object and field access; roles primarily control record-level access.",
+      "source_ids": ["SF-HELP-PERM-SETS", "SF-HELP-DATA-ACCESS"],
+      "scope": "Entitlement vs records",
+      "validation": "Permission Sets and Control Who Sees What.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Object permissions are the bluntest control; field permissions protect more than page layouts; sharing rules cannot be stricter than OWD.",
+      "source_ids": ["SF-HELP-DATA-ACCESS"],
+      "scope": "Three data gates",
+      "validation": "Control Who Sees What.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "The layered model remains current Help. Reverify Setup labels and any View All permission names in the target org.",
+  "unresolved_uncertainty": [
+    "Effective-access calculators and User Access Policies UIs vary by org; use them if present but do not invent a single button name.",
+    "View All / Modify All exact labels: confirm in the org."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Security access path",
+      "telugu": "లాగిన్ నుంచి అనుమతులు, ఆబ్జెక్ట్, ఫీల్డ్, రికార్డ్ వరకు వరుసగా తనిఖీ."
+    },
+    {
+      "english": "Comparison record",
+      "telugu": "అదే ఆబ్జెక్ట్‌లో వేరే రికార్డు, ఏ గేట్ విఫలమైందో తెలుసుకోవడానికి."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I walk identity, then license and permission sets, then object CRUD, then FLS, then the sharing stack. I use a comparison user and record. I do not open OWD first. Apex, guests, restriction, and Shield are side doors, not the first door.",
+    "two_minutes": "Whiteboard: can they log in? If yes, can they use the object? If yes, is the field missing everywhere? If they see other rows, I trace sharing. I never grant Modify All to skip the path. I mention sharing cannot hide below OWD, layouts are not FLS, sessions are not permissions. That is the access path interview."
+  },
+  "terminology": [
+    {
+      "term": "Security access path",
+      "plain": "The ordered checklist for 'why can't they see it.'",
+      "precise": "Identity/session → license/profile/permission sets → object permissions → FLS → record sharing, then overlays.",
+      "example": "LAB_AE_East / LAB_Opportunity_Orion walked top to bottom.",
+      "non_example": "Opening Sharing Settings as step one every time.",
+      "confusable_neighbor": "Order of execution on save (a different path).",
+      "boundary": "This is troubleshooting method, not a single Setup object."
+    },
+    {
+      "term": "Comparison user",
+      "plain": "A second user who should succeed or fail differently.",
+      "precise": "Evidence that isolates the layer: same record, different principal.",
+      "example": "LAB_Peer versus LAB_Manager_East on Orion.",
+      "non_example": "Testing only as System Administrator.",
+      "confusable_neighbor": "Permission-set group.",
+      "boundary": "Always synthetic LAB_ users."
+    },
+    {
+      "term": "Comparison record",
+      "plain": "A second row of the same object.",
+      "precise": "If the user can open Comet but not Orion, the object gate passed; the record gate remains.",
+      "example": "LAB_Opportunity_Comet versus Orion.",
+      "non_example": "A different object such as Account.",
+      "confusable_neighbor": "Record type (presentation), which is not the sharing stack by itself.",
+      "boundary": "Needed to validate sharing rules."
+    },
+    {
+      "term": "Capability gate",
+      "plain": "Can they perform the object or field action at all?",
+      "precise": "Object CRUD and FLS on permission sets/profiles, plus user permissions for tasks.",
+      "example": "No Opportunity tab versus Amount missing in a report.",
+      "non_example": "A missing peer-owned row.",
+      "confusable_neighbor": "Record-level access.",
+      "boundary": "SEC-002 and SEC-003."
+    },
+    {
+      "term": "Record-access path",
+      "plain": "How they reach this row after CRUD exists.",
+      "precise": "OWD, role hierarchy, sharing rules, teams, territories, manual sharing, then restriction.",
+      "example": "Private OWD plus owner-based rule to LAB_Deal_Desk.",
+      "non_example": "MFA.",
+      "confusable_neighbor": "Object Read.",
+      "boundary": "SEC-004/005."
+    },
+    {
+      "term": "Override permission",
+      "plain": "A powerful grant that can skip ordinary row sharing.",
+      "precise": "View All / Modify All style object or user permissions. Confirm names in the org. They are still capability, not a sharing rule.",
+      "example": "A user with a View All-style grant seeing Orion despite Private OWD.",
+      "non_example": "A manual share.",
+      "confusable_neighbor": "without sharing Apex.",
+      "boundary": "Needs verification of exact labels."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Reproduce as the named user",
+      "actor": "Admin",
+      "trigger": "Access ticket",
+      "before": "Admin-only reproduction",
+      "after": "True symptom: login vs tab vs field vs row vs Apex",
+      "observe": "Login History, session, UI as LAB user",
+      "failure": "Opening Sharing Settings first"
+    },
+    {
+      "step": 2,
+      "transition": "Prove identity and entitlement",
+      "actor": "Admin",
+      "trigger": "Session exists or not",
+      "before": "Unknown if they are even in",
+      "after": "MFA/hours/IP versus license/permission set",
+      "observe": "User Access Summary",
+      "failure": "Cloning System Administrator"
+    },
+    {
+      "step": 3,
+      "transition": "Split object, field, record",
+      "actor": "Admin",
+      "trigger": "They are in the app",
+      "before": "One 'visibility' ticket",
+      "after": "CRUD vs FLS vs sharing named",
+      "observe": "Tab, report, comparison record",
+      "failure": "Layout-only FLS proof"
+    },
+    {
+      "step": 4,
+      "transition": "Trace the row, then overlays",
+      "actor": "Admin",
+      "trigger": "Other rows work",
+      "before": "Guessing a random share",
+      "after": "OWD → hierarchy → rules → teams/territories/manual → restriction",
+      "observe": "Matching and non-matching records",
+      "failure": "Apex or guest identity ignored when the channel is code or a public site"
+    }
+  ],
+  "when_to_use": [
+    "When an interview or ticket asks why a user cannot access a record, field, or feature.",
+    "When someone has already opened Sharing Settings and you must walk them back to authentication or object permissions.",
+    "When you need a comparison user and comparison record to prove which security gate failed.",
+    "When Apex, Experience Cloud guests, restriction rules, or Shield are proposed as the first fix for a simple CRUD miss."
+  ],
+  "when_not_to_use": [
+    "Do not use this access-path lesson as a substitute for designing a full OWD model from scratch without the SEC-004 catalog.",
+    "Do not skip authentication when the user never obtained a session.",
+    "Do not grant override permissions to 'make the path shorter' in production.",
+    "Do not treat Event Monitoring or Platform Encryption as a step that grants the row."
+  ],
+  "configuration_or_code_location": [
+    "Login History and Session Management.",
+    "User Access Summary / permission set assignments.",
+    "Permission set object and field settings.",
+    "Sharing Settings, then restriction, Apex class headers, guest profile as indicated by the channel."
+  ],
+  "worked_example": {
+    "scenario": "LAB_AE_East 'cannot see' LAB_Opportunity_Orion. Rumors: OWD, MFA, Apex, guest site. Disposable org with synthetic users LAB_AE_East, LAB_Peer, LAB_Manager_East and records Orion and Comet.",
+    "inputs": [
+      "Unknown actual symptom",
+      "Teammate already in Sharing Settings"
+    ],
+    "decisions": [
+      {
+        "decision": "Reproduce as LAB_AE_East before changing OWD.",
+        "because": "The path starts with identity and the true symptom.",
+        "rejected": "Public Read/Write first"
+      },
+      {
+        "decision": "If login works and other Opportunities open, treat Orion as record-level.",
+        "because": "Object CRUD passed; comparison record Comet is the proof.",
+        "rejected": "Revoking Opportunity Read"
+      },
+      {
+        "decision": "If Amount is missing in a report, fix FLS not sharing.",
+        "because": "Field permissions protect reports.",
+        "rejected": "A sharing rule to hide Amount"
+      },
+      {
+        "decision": "If an LWC shows Orion when Lightning does not, inspect Apex sharing keywords.",
+        "because": "UI and code can diverge (SEC-006).",
+        "rejected": "Assuming OWD is Public because Apex returned a row"
+      }
+    ],
+    "configuration_or_code": [
+      "Login as LAB_AE_East; capture whether a session exists.",
+      "Check Opportunity tab, a report with Amount, Orion versus Comet.",
+      "Only then inspect OWD and shares.",
+      "If LWC involved, read class sharing keywords."
+    ],
+    "output": "A filled path worksheet: layer, result, evidence. One layer changed, not five.",
+    "verification": [
+      "Comparison user LAB_Peer remains denied if that was the design.",
+      "Comparison record Comet still behaves as a non-match for any rule.",
+      "No Modify All was added."
+    ],
+    "self_explanation": "I used the airport order. Sharing Settings was not door one."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable org; LAB users and Opportunities only.",
+    "starting_state_checks": [
+      "Non-production.",
+      "You can log in as two LAB users."
+    ],
+    "steps": [
+      "Write a blank path worksheet: Auth, Entitlement, Object, FLS, Record, Overlay.",
+      "As LAB_AE_East, attempt login, Opportunity tab, Amount report, Orion, Comet.",
+      "Fill each row with pass/fail and evidence before opening Sharing Settings.",
+      "Only then inspect OWD and one share if the record row failed.",
+      "Add a deliberate wrong-layer note: what you refused to change."
+    ],
+    "guided_completion": [
+      "If you changed OWD before checking the tab, undo and restart the worksheet.",
+      "If you tested only as admin, the lab is invalid."
+    ],
+    "independent_challenge": "A second ticket: LWC list includes Orion. Add an Apex overlay row to the same worksheet.",
+    "evidence": [
+      "Completed worksheet with LAB names.",
+      "Comparison record results."
+    ],
+    "stop_recovery_cleanup": [
+      "Revert any OWD change made only for the lab if it was unsafe.",
+      "Deactivate LAB users you created."
+    ],
+    "limitations": "Does not prove every overlay (territories, guest) in one hour."
+  },
+  "decision_table": [
+    {
+      "signal": "User never reaches Lightning; Login History shows failures.",
+      "choose": "Authentication path: MFA, IdP, login hours, IP ranges, session never created.",
+      "not": "Organization-wide defaults.",
+      "why": "No session means record sharing has not been evaluated yet."
+    },
+    {
+      "signal": "User is in; no Opportunity tab; no other Opportunities.",
+      "choose": "Object permissions / license on the permission set or profile.",
+      "not": "A sharing rule.",
+      "why": "Object-level security is the bluntest hide-the-object gate."
+    },
+    {
+      "signal": "User opens Orion but Amount is missing in a report.",
+      "choose": "Field-level security.",
+      "not": "Page layout only, and not a sharing rule.",
+      "why": "FLS protects reports; sharing does not hide fields."
+    },
+    {
+      "signal": "User opens Comet but not Orion.",
+      "choose": "Record-sharing stack in order, with comparison evidence.",
+      "not": "Granting View All to skip the diagnosis.",
+      "why": "CRUD passed; the row is the remaining question."
+    },
+    {
+      "signal": "Lightning denies Orion; an LWC query returns it.",
+      "choose": "Inspect Apex with/without/inherited sharing and API version.",
+      "not": "Assuming OWD is Public.",
+      "why": "Code can elevate record access independently of the UI."
+    }
+  ],
+  "limitations": [
+    "Does not replace deep SEC-004 mechanism choice.",
+    "Overlay topics (restriction, guest, Shield) are pointers, not full redesigns.",
+    "Effective-access UIs vary; reverify."
+  ],
+  "security_notes": [
+    "Never diagnose with production customer records.",
+    "Do not grant override permissions to speed a lab.",
+    "Admin reproduction is not user reproduction."
+  ],
+  "common_mistakes": [
+    "Opening Sharing Settings first.",
+    "Testing only as System Administrator.",
+    "Using a layout as FLS proof.",
+    "Granting Modify All to end the ticket.",
+    "Ignoring Apex or guest when the channel is not internal Lightning."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Works in sandbox, not production.",
+      "check": [
+        "Metadata parity: permission sets, FLS, sharing rules.",
+        "Whether the user is actually the same license and assignments."
+      ],
+      "do_not_assume": "Salesforce is 'different in prod' without a layer diff."
+    },
+    {
+      "symptom": "User sees the record in a report but not the record page.",
+      "check": [
+        "Page layout / Lightning page assignment versus FLS (if the field is the issue).",
+        "Whether the report runs with a different running user."
+      ],
+      "do_not_assume": "OWD flipped between page and report."
+    },
+    {
+      "symptom": "Everyone suddenly sees everything.",
+      "check": [
+        "OWD change, a broad sharing rule, an override permission, Apex without sharing in a global UI.",
+        "Guest sharing rules if a public site is in play."
+      ],
+      "do_not_assume": "A single list-view filter failed."
+    }
+  ],
+  "production_notes": [
+    "Keep a path worksheet in the ticket.",
+    "Change one layer at a time with rollback.",
+    "This lesson does not authorize production sharing or permission changes."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the first question on the security access path?",
+      "options": {
+        "A": "Can the user authenticate and establish a session?",
+        "B": "What is Opportunity OWD?",
+        "C": "Is Platform Encryption on?",
+        "D": "Is the page layout correct?"
+      },
+      "answer": "A",
+      "rationale": "Without identity, later gates are not the first fix.",
+      "distractor_explanations": {
+        "B": "Record layer is later.",
+        "C": "Shield does not grant access.",
+        "D": "Presentation, and not FLS."
+      },
+      "concept": "Start with identity",
+      "citation_ids": ["SF-HELP-MFA-GLOSSARY", "SF-HELP-SESSIONS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Profiles and permission sets versus roles on the path?",
+      "options": {
+        "A": "Object and field capability versus primarily record-level access",
+        "B": "Roles grant CRUD first",
+        "C": "They are interchangeable",
+        "D": "Roles replace MFA"
+      },
+      "answer": "A",
+      "rationale": "Control Who Sees What draws this line.",
+      "distractor_explanations": {
+        "B": "Reversed.",
+        "C": "False.",
+        "D": "Authentication."
+      },
+      "concept": "Capability vs records",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "User opens other Opportunities but not Orion. Which gate?",
+      "options": {
+        "A": "Record-level access",
+        "B": "Object permissions missing",
+        "C": "MFA missing",
+        "D": "User license missing"
+      },
+      "answer": "A",
+      "rationale": "Comparison record proves CRUD exists.",
+      "distractor_explanations": {
+        "B": "They open other rows.",
+        "C": "They are in.",
+        "D": "They use the object."
+      },
+      "concept": "Comparison record",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Amount missing in a report but the Opportunity opens. Gate?",
+      "options": {
+        "A": "Field-level security",
+        "B": "OWD Private",
+        "C": "Login hours",
+        "D": "Guest user sharing rule"
+      },
+      "answer": "A",
+      "rationale": "FLS covers reports; the record gate already passed.",
+      "distractor_explanations": {
+        "B": "They opened the record.",
+        "C": "They are in.",
+        "D": "Internal UI assumed."
+      },
+      "concept": "FLS on the path",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Teammate opens Sharing Settings first for a user who cannot log in. What is wrong?",
+      "options": {
+        "A": "No session means sharing has not been evaluated; stay on authentication",
+        "B": "Sharing Settings always come first",
+        "C": "OWD grants MFA",
+        "D": "Roles replace passwords"
+      },
+      "answer": "A",
+      "rationale": "Path order: identity before records.",
+      "distractor_explanations": {
+        "B": "The anti-pattern this topic exists to stop.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Do not skip identity",
+      "citation_ids": ["SF-HELP-MFA-GLOSSARY", "SF-HELP-SESSIONS"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Lightning hides Orion; LWC lists it. Next overlay?",
+      "options": {
+        "A": "Apex sharing keywords (with/without/inherited) and API version",
+        "B": "Disable MFA",
+        "C": "Page layout",
+        "D": "Classic Encryption"
+      },
+      "answer": "A",
+      "rationale": "UI versus code divergence is the Apex overlay.",
+      "distractor_explanations": {
+        "B": "They are in both channels.",
+        "C": "Not row access.",
+        "D": "Not a grant."
+      },
+      "concept": "Apex overlay",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q7",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Why test as the named user, not System Administrator?",
+      "options": {
+        "A": "Admin overrides hide whether CRUD, FLS, or sharing is actually failing",
+        "B": "Admins cannot open Opportunities",
+        "C": "Admins have no sessions",
+        "D": "Admins skip MFA by definition in Help"
+      },
+      "answer": "A",
+      "rationale": "Comparison and named-user tests are the evidence model.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Not a Help definition here."
+      },
+      "concept": "Named-user test",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Sharing rule to hide Amount. Valid on the path?",
+      "options": {
+        "A": "No. Sharing cannot hide fields and cannot be stricter than OWD",
+        "B": "Yes, that is FLS",
+        "C": "Yes, that is MFA",
+        "D": "Yes, that is a permission set"
+      },
+      "answer": "A",
+      "rationale": "Wrong gate entirely.",
+      "distractor_explanations": {
+        "B": "FLS is field permissions.",
+        "C": "Authentication.",
+        "D": "Capability overlays."
+      },
+      "concept": "Wrong tool",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Anonymous Experience Cloud visitor. Which identity on the path?",
+      "options": {
+        "A": "The site guest user, not an internal role",
+        "B": "System Administrator",
+        "C": "The Automated Process user always",
+        "D": "The identity provider as a profile"
+      },
+      "answer": "A",
+      "rationale": "Guest overlay; do not diagnose as internal OWD first.",
+      "distractor_explanations": {
+        "B": "Admin preview is not guest.",
+        "C": "Not the guest model.",
+        "D": "IdP is authentication for people who log in."
+      },
+      "concept": "Guest overlay",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Session timeout versus missing View Setup on the path?",
+      "options": {
+        "A": "Timeout is session security after login; View Setup is a user permission",
+        "B": "They are the same gate",
+        "C": "Timeout grants View Setup",
+        "D": "View Setup is OWD"
+      },
+      "answer": "A",
+      "rationale": "Identity/session versus entitlement.",
+      "distractor_explanations": {
+        "B": "Different layers.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Session vs permission",
+      "citation_ids": ["SF-HELP-SESSIONS", "SF-HELP-USER-PERMS"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Fastest dangerous skip of the path?",
+      "options": {
+        "A": "Granting View All / Modify All style overrides or cloning System Administrator",
+        "B": "Creating a comparison record",
+        "C": "Reading Login History",
+        "D": "Checking FLS in a report"
+      },
+      "answer": "A",
+      "rationale": "Overrides hide the real gate and overexpose data.",
+      "distractor_explanations": {
+        "B": "Good evidence.",
+        "C": "Correct early step.",
+        "D": "Correct field step."
+      },
+      "concept": "Do not skip with overrides",
+      "citation_ids": ["SF-HELP-DATA-ACCESS", "SF-HELP-USER-PERMS"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where do permission sets sit on the path relative to OWD?",
+      "options": {
+        "A": "Before record sharing: they grant object/field/user capability",
+        "B": "After restriction rules only",
+        "C": "They replace OWD",
+        "D": "They are guest sharing rules"
+      },
+      "answer": "A",
+      "rationale": "Additive functional access comes before which rows.",
+      "distractor_explanations": {
+        "B": "Restriction is a later overlay.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Permission sets before OWD",
+      "citation_ids": ["SF-HELP-PERM-SETS", "SF-HELP-DATA-ACCESS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "order",
+      "front": "Recite the core access path.",
+      "back": "Identity/session → license/profile/permission sets → object CRUD → FLS → record sharing, then overlays."
+    },
+    {
+      "id": "F2",
+      "category": "identity",
+      "front": "No session. First layer?",
+      "back": "Authentication: MFA, IdP, hours, IP—not OWD."
+    },
+    {
+      "id": "F3",
+      "category": "object",
+      "front": "No tab, no rows of that type. Gate?",
+      "back": "Object permissions (and license), not a sharing rule."
+    },
+    {
+      "id": "F4",
+      "category": "fls",
+      "front": "Record opens, field missing in a report. Gate?",
+      "back": "Field-level security, not layout-only and not sharing."
+    },
+    {
+      "id": "F5",
+      "category": "record",
+      "front": "Comet opens, Orion does not. Gate?",
+      "back": "Record-level access. CRUD already passed."
+    },
+    {
+      "id": "F6",
+      "category": "compare",
+      "front": "Why a comparison record?",
+      "back": "It proves whether the object gate passed and whether a sharing rule overmatched."
+    },
+    {
+      "id": "F7",
+      "category": "compare",
+      "front": "Why a comparison user?",
+      "back": "Same record, different principal isolates entitlement versus sharing."
+    },
+    {
+      "id": "F8",
+      "category": "admin",
+      "front": "Why not diagnose only as System Administrator?",
+      "back": "Overrides hide the failing gate."
+    },
+    {
+      "id": "F9",
+      "category": "apex",
+      "front": "UI denies, Apex returns the row. Overlay?",
+      "back": "Sharing keywords on the Apex class, not a proof that OWD is Public."
+    },
+    {
+      "id": "F10",
+      "category": "guest",
+      "front": "Anonymous site visitor identity?",
+      "back": "Site guest user—not an internal role."
+    },
+    {
+      "id": "F11",
+      "category": "shield",
+      "front": "Does Event Monitoring grant the record?",
+      "back": "No. Cameras are not boarding passes."
+    },
+    {
+      "id": "F12",
+      "category": "session",
+      "front": "Timeout vs View Setup?",
+      "back": "Timeout is session security. View Setup is a user permission."
+    },
+    {
+      "id": "F13",
+      "category": "sharing",
+      "front": "Can a sharing rule hide below OWD?",
+      "back": "No. Sharing only widens."
+    },
+    {
+      "id": "F14",
+      "category": "skip",
+      "front": "Dangerous skip?",
+      "back": "Modify All / System Administrator clone to end the ticket."
+    },
+    {
+      "id": "F15",
+      "category": "roles",
+      "front": "Role versus profile on the path?",
+      "back": "Profile/permission sets: capability. Role: record access."
+    },
+    {
+      "id": "F16",
+      "category": "restriction",
+      "front": "When does restriction enter the path?",
+      "back": "After sharing already grants reads that must be permanently further filtered."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk the Salesforce security access path for 'why can't this user see this record?'",
+      "answer_30_seconds": "Reproduce as the user. Login and session first, then license and permission sets, then object CRUD, then FLS, then sharing with a comparison record. Overlays last: restriction, Apex, guest, not Shield as a grant.",
+      "answer_2_minutes": "I refuse Sharing Settings as step one. I write the symptom precisely: login, tab, field, or row. I use LAB_Peer and LAB_Opportunity_Comet as evidence. I cite Help: profiles versus roles, FLS versus layouts, sharing cannot tighten OWD. I mention least privilege: I will not clone System Administrator to skip the walk. That is the advanced troubleshooting answer.",
+      "example": "LAB_AE_East, Orion versus Comet, Amount report, session confirmed.",
+      "tradeoffs": [
+        "Speed of an override vs finding the real gate",
+        "Complete overlays vs time-boxed tickets"
+      ],
+      "follow_ups": [
+        "Where does MFA sit?",
+        "Where does without sharing sit?"
+      ],
+      "weak_answer_warnings": [
+        "OWD first every time"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you keep authentication vs authorization vs sharing from collapsing?",
+      "answer_30_seconds": "Authentication is identity (MFA, IdP, session). Authorization is capability (user permissions, object, FLS). Sharing is which rows. Three questions, three tools.",
+      "answer_2_minutes": "I use the airport story then break it. Passport is not the seat. I give a failed login, a missing Setup permission, and a missing Orion as three tickets. I say session timeout is still authentication-adjacent, not CRUD. That vocabulary is SEC-001 through SEC-004 compressed.",
+      "example": "Three LAB tickets, three layers, no OWD on the MFA ticket.",
+      "tradeoffs": [
+        "One 'access' ticket vs split root causes",
+        "Teaching time vs precision"
+      ],
+      "follow_ups": [
+        "Where do login hours sit?",
+        "Where do permission-set groups sit?"
+      ],
+      "weak_answer_warnings": [
+        "One word 'sharing' for all three"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Whiteboard: LAB_AE_East cannot see Amount on Orion. Stakeholders shout OWD, MFA, and Apex. How do you run the room?",
+      "answer_30_seconds": "I ask whether they open Orion. If yes, OWD is the wrong first shout. I run a report for Amount. If the field is missing there, FLS. MFA is irrelevant if they are in. Apex only if a code channel differs.",
+      "answer_2_minutes": "Situation: noisy war room. Task: one gate. Action: reproduce, comparison record, report proof for FLS, Login History only if they cannot get in. I write the path on the board and tick boxes. Result: we change Amount FLS under least privilege, we do not Public Read/Write Opportunities, we do not disable MFA.",
+      "example": "Orion opens; Amount absent from LAB report; MFA already succeeded.",
+      "tradeoffs": [
+        "Political pressure vs path discipline",
+        "Layout change vs real FLS"
+      ],
+      "follow_ups": [
+        "What if they cannot open Orion either?",
+        "What if the LWC shows Amount?"
+      ],
+      "weak_answer_warnings": [
+        "Changing OWD to satisfy the loudest voice"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Works for you, fails for them. Your evidence plan?",
+      "answer_30_seconds": "I am probably an override user. I log in as them or a LAB twin, use a comparison record, and dump User Access Summary versus mine. I do not grant myself as the template.",
+      "answer_2_minutes": "Situation: admin bias. Task: named-user truth. Action: permission-set diff, FLS diff, role diff, share rows on Orion versus Comet. I look for View All-style grants on me. Result: a layer named with evidence. I still will not clone System Administrator onto them so it 'works like me.'",
+      "example": "You have Modify All; LAB_AE_East does not; Orion hidden for them, visible for you.",
+      "tradeoffs": [
+        "Login-as versus a dedicated LAB twin",
+        "Speed vs least privilege"
+      ],
+      "follow_ups": [
+        "Is login-as allowed in this org?",
+        "What is User Access Summary?"
+      ],
+      "weak_answer_warnings": [
+        "Copy my profile to them"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Sandbox good, production bad. How does the path help?",
+      "answer_30_seconds": "Same path, environment diff: assignments, FLS, sharing metadata, licenses, and whether the user even exists the same way. Not 'Salesforce is different.'",
+      "answer_2_minutes": "I walk each layer in both orgs. Permission set missing in prod is more common than a platform bug. OWD might differ after a partial deploy. Login hours might exist only in prod. I use the worksheet as a diff, not a vibe. Result: one layer's metadata parity fix, not a panic OWD change in production.",
+      "example": "LAB_Delete_Leads assigned in sandbox, not in production; object Delete fails only in prod.",
+      "tradeoffs": [
+        "Hotfix in prod vs deploy the permission set",
+        "Data differences vs metadata differences"
+      ],
+      "follow_ups": [
+        "How do you compare FLS at scale?",
+        "Change sets versus source-driven?"
+      ],
+      "weak_answer_warnings": [
+        "Public OWD in production to match sandbox data volume"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "design",
+      "question": "When do overlays (restriction, Apex, guest, Shield) enter an interview answer?",
+      "answer_30_seconds": "After the core path. Restriction when shared reads must shrink. Apex when UI and code disagree. Guest when unauthenticated. Shield never grants the row.",
+      "answer_2_minutes": "I show judgment about scope. If the interviewer only asked about a sales user in Lightning, I may mention overlays in one sentence so they know I will not forget them, then finish the core path. If the channel is an LWC or a public site, I promote that overlay earlier. That is advanced: knowing which door, not listing every SEC topic as if they were equal first steps.",
+      "example": "Lightning sales user: core path. Public FAQ: guest overlay immediately after identifying the audience.",
+      "tradeoffs": [
+        "Completeness vs signal",
+        "Interview timeboxing"
+      ],
+      "follow_ups": [
+        "Where does connected-app IP sit?",
+        "Where does without sharing sit?"
+      ],
+      "weak_answer_warnings": [
+        "Starting with Shield on a missing tab"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Everyone can suddenly see every Opportunity. Path for a blast-radius incident?",
+      "answer_30_seconds": "Check OWD, a new broad sharing rule, an override permission on a permission-set group, Apex without sharing in a global UI, or a guest rule if public. Roll back the matching layer; do not add more shares.",
+      "answer_2_minutes": "Situation: overexposure. Task: find the widening path, not add another. Action: Sharing Settings history, recently deployed permission sets, guest access report if a site exists, LWC controllers. Comparison: a peer who should have been denied. Result: we revert the one widening change and re-test denied users. Encryption will not save a Public OWD in the UI.",
+      "example": "A criteria sharing rule with empty criteria deployed overnight.",
+      "tradeoffs": [
+        "Immediate OWD tighten vs finding the actual new grant",
+        "Taking a site private vs fixing a guest rule"
+      ],
+      "follow_ups": [
+        "How do you find who deployed it?",
+        "What is Setup Audit Trail?"
+      ],
+      "weak_answer_warnings": [
+        "Adding restriction on top without identifying the grant"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the airport access path, then break it.",
+      "answer_30_seconds": "Passport is authentication, boarding-pass class is permission sets, terminal is object CRUD, meal-code blackout is FLS, seat is sharing. It breaks for View All overrides, connected-app IP failures while seated, and guest identities that never got a passport.",
+      "answer_2_minutes": "I walk LAB_AE_East from curb to seat. I show Comet as another seat in the same terminal. I then break the airport: cargo elevator Apex, arrivals-board guest, vault cameras Shield. I close with the worksheet: never start at the seat map if they are still in the taxi (no session).",
+      "example": "Orion versus Comet, Amount report, refused Modify All, optional LWC overlay.",
+      "tradeoffs": [
+        "Memorable story vs Help citations",
+        "Overlays vs core path"
+      ],
+      "follow_ups": [
+        "Where do login hours sit in the airport?",
+        "Where does restriction sit?"
+      ],
+      "weak_answer_warnings": [
+        "A generic teaching metaphor",
+        "OWD as step one"
+      ]
+    }
+  ]
+}

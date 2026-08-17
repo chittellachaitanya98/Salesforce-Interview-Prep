@@ -1,0 +1,958 @@
+{
+  "topic_id": "SEC-003",
+  "slug": "object-permissions-field-level-security-and-record-leve",
+  "title": "Object permissions, field-level security, and record-level access",
+  "track": "Identity, access, and security",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "SEC-002"
+  ],
+  "objectives": [
+    "Name the three data-access layers: object permissions, field-level security, and record-level access.",
+    "Explain that profiles and permission sets grant object and field capability, while roles and sharing decide which records.",
+    "Diagnose 'cannot see Amount' as field-level security, not a missing share, when the record already opens.",
+    "Refuse to treat page layouts as field-level security."
+  ],
+  "diagnostic_question": "LAB_Rep opens LAB_Opportunity_Orion but cannot see Amount and cannot edit Stage. Another user cannot find Orion at all. Which layer is each symptom, and what would you not change first?",
+  "definition": "Salesforce data access has three gates. Object permissions (Create, Read, Update, Delete) are the bluntest control: they decide whether a user can act on any record of that type. Field-level security—field permissions—controls whether a user can see or edit a field's value, including in lists, reports, and search. Record-level access then decides which individual records a user can view or edit after those gates pass. ([Control Who Sees What](https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm))",
+  "why_it_matters": "A visibility ticket is often one sentence and three different layers. Fixing the wrong layer overexposes an object, hides a field for the wrong reason, or never opens the record. Interviewers listen for the order: object, then field, then record—and for the page-layout trap.",
+  "sixty_second_explanation": "Think of a hospital ward. Object permissions are whether your badge allows the cardiology ward at all. Field-level security is whether you may read the medication line on a chart. Record-level access is which patient rooms you may enter. A curtain on the chart holder (page layout) can hide a line on one screen without locking the field in reports. Sharing which rooms you enter is the next lesson; this one is the three gates.",
+  "deeper_explanation": [
+    "Object-level security, or object permissions, is the bluntest way to control data access. You can prevent a user from seeing, creating, editing, or deleting any instance of an object type by using object permissions. You specify them in permission sets and profiles. ([Control Who Sees What](https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm))",
+    "Field-level security, or field permissions, controls whether a user can see, edit, and delete the value for a particular field. Field permissions control visibility in related lists, list views, reports, and search results. To ensure a user cannot access a field, use field permissions. Page layouts only control visibility on detail and edit pages. ([Control Who Sees What](https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm))",
+    "Record-level sharing settings, user roles, and sharing rules control the individual records users can view and edit. Permission sets and profiles control object and field access; roles primarily control record-level access. Sharing rules only widen access above organization-wide defaults; they cannot be stricter than OWD. The sharing stack itself is SEC-004. ([Control Who Sees What](https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm))",
+    "A user needs both a permitted object or field action and a record-access path. A share cannot create missing Read on Opportunity or missing FLS on Amount."
+  ],
+  "mental_model": {
+    "analogy": "A hospital ward: badge-for-the-ward is object permissions, chart-line visibility is field-level security, which patient rooms you may enter is record-level access.",
+    "useful_mapping": [
+      "ward badge → object CRUD",
+      "medication line on the chart → field-level security",
+      "curtain on one clipboard → page layout (not FLS)",
+      "which rooms → record-level access (OWD, roles, sharing)",
+      "permission set / profile → who issues ward and chart rights",
+      "role → primarily which rooms, not the ward badge"
+    ],
+    "where_it_breaks": [
+      "View All / Modify All style object permissions can bypass the room-by-room model; treat those as Needs verification of exact names and impact in the org.",
+      "The hospital does not encode restriction rules (SEC-005) or Apex sharing keywords (SEC-006)."
+    ]
+  },
+  "teach_back_prompt": "Without saying CRUD, explain why LAB_Rep can open a deal and still miss Amount, and why removing Amount from a page layout is not enough.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Draw object, field, and record gates and one symptom for each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Page layout vs FLS: what each hides."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why a share cannot repair missing object Read."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Troubleshoot: record opens, field missing, edit blocked."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: three layers, then hand off to OWD."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-DATA-ACCESS",
+      "title": "Control Who Sees What",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm",
+      "supports": "Object permissions, field permissions vs page layouts, and record-level access via roles and sharing.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace the detailed OWD and sharing-rule articles in SEC-004."
+    },
+    {
+      "source_id": "SF-HELP-PERM-SETS",
+      "title": "Permission Sets",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=perm_sets_overview.htm",
+      "supports": "Object, field, and user permissions are configured in permission sets.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Assignment still requires a supporting license (SEC-002)."
+    },
+    {
+      "source_id": "SF-HELP-USER-PERMS",
+      "title": "User Permissions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=admin_userperms.htm",
+      "supports": "User permissions are tasks and features, distinct from object and field permissions.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "User permissions are not record shares."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Object permissions first",
+        "Field-level security next",
+        "Record-level access last",
+        "Page layout is not FLS",
+        "Profiles and permission sets grant capability",
+        "Roles are record-oriented"
+      ],
+      "accessible_description": "Three stacked gates: object CRUD, field permissions, then record access, with page layout called out as weaker than FLS."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-DATA-ACCESS",
+        "SF-HELP-PERM-SETS",
+        "SF-HELP-USER-PERMS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Object, field, then record"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  User[User] --> Obj[Object permissions CRUD]\n  Obj -->|No Read| Stop1[No records of that type]\n  Obj -->|Read| FLS[Field-level security]\n  FLS -->|Field hidden| Reports[Hidden in reports lists and search]\n  FLS --> Rec[Record-level access]\n  Rec --> OWD[OWD roles sharing: SEC-004]\n  Layout[Page layout] -.->|Detail and edit pages only| FLS",
+      "decision": "flowchart TD\n  Symptom[Access symptom] --> Q1{Can they act on the object at all?}\n  Q1 -->|No| Obj[Object permission on permission set or profile]\n  Q1 -->|Yes| Q2{Record opens but a field is missing?}\n  Q2 -->|Yes| FLS[Field-level security, not page layout alone]\n  Q2 -->|Record never found| Rec[Record-level access: SEC-004]\n  Q2 -->|Task like View Setup| UserPerm[User permission: SEC-002]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Object permissions are the bluntest data-access control and can prevent any create, read, edit, or delete of that object type. They are specified in permission sets and profiles.",
+      "source_ids": ["SF-HELP-DATA-ACCESS"],
+      "scope": "Object layer",
+      "validation": "Control Who Sees What, object-level security section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Field permissions control field visibility in related lists, list views, reports, and search. Page layouts only control visibility on detail and edit pages.",
+      "source_ids": ["SF-HELP-DATA-ACCESS"],
+      "scope": "Field layer",
+      "validation": "Control Who Sees What, field-level security section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Record-level sharing settings, roles, and sharing rules control which individual records a user can view or edit. Roles are not a substitute for object or field permissions.",
+      "source_ids": ["SF-HELP-DATA-ACCESS"],
+      "scope": "Record layer",
+      "validation": "Control Who Sees What.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Sharing rules give more access and cannot be stricter than organization-wide defaults.",
+      "source_ids": ["SF-HELP-DATA-ACCESS"],
+      "scope": "Boundary toward SEC-004",
+      "validation": "Control Who Sees What sharing-rules paragraph.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "The three-layer model remains the Control Who Sees What teaching. Reverify permission-set vs profile UI in the target org.",
+  "unresolved_uncertainty": [
+    "Exact names and impact of View All / Modify All style permissions should be confirmed in current Help for the target object.",
+    "Which standard objects support which sharing defaults is org- and edition-sensitive (SEC-004)."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Object permissions",
+      "telugu": "Object CRUD anumati."
+    },
+    {
+      "english": "Field-level security",
+      "telugu": "Field viluva kanipinchadam."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Object permissions decide if you can use the type. Field-level security decides if a field is visible or editable anywhere, not just on the layout. Record-level access decides which rows. A share cannot invent missing CRUD or FLS.",
+    "two_minutes": "I diagnose in order. If the user cannot see any Opportunity, I check object Read. If they open Orion but miss Amount, I check field permissions and I do not trust a page-layout change. If they have Read and FLS but still miss Orion, I hand off to OWD, roles, and sharing. Profiles and permission sets own the first two gates; roles own the third primarily."
+  },
+  "terminology": [
+    {
+      "term": "Object permissions",
+      "plain": "Whether you can create, read, update, or delete that type of record at all.",
+      "precise": "Object-level security specified in permission sets and profiles. The bluntest data-access control.",
+      "example": "LAB_Rep has Opportunity Read and Update, not Delete.",
+      "non_example": "A sharing rule granting one Opportunity is not an object permission.",
+      "confusable_neighbor": "User permission: tasks and features such as View Setup.",
+      "boundary": "View All / Modify All style grants are neighboring; confirm names in org Help."
+    },
+    {
+      "term": "Field-level security",
+      "plain": "Whether a field's value is visible or editable for that user.",
+      "precise": "Field permissions that apply in related lists, list views, reports, and search, not only on a page layout.",
+      "example": "Amount hidden from LAB_Rep in reports as well as on the record page.",
+      "non_example": "Removing Amount from a page layout while leaving FLS readable.",
+      "confusable_neighbor": "Page layout: detail and edit page presentation only.",
+      "boundary": "Encryption (SEC-009) is not FLS."
+    },
+    {
+      "term": "Record-level access",
+      "plain": "Which individual records you can open after object Read exists.",
+      "precise": "Controlled by organization-wide defaults, roles, sharing rules, and related sharing mechanisms taught in SEC-004.",
+      "example": "LAB_Rep has Opportunity Read but cannot open a peer-owned Private deal.",
+      "non_example": "Missing Amount on a record they already opened.",
+      "confusable_neighbor": "Object Read: capability on the type, not a specific row.",
+      "boundary": "This lesson names the layer; SEC-004 designs the stack."
+    },
+    {
+      "term": "Page layout",
+      "plain": "What fields appear on the detail and edit pages.",
+      "precise": "Layouts control visibility on detail and edit pages only. They are not as protective as field permissions.",
+      "example": "Amount off the LAB_Rep layout but still in a report if FLS allows.",
+      "non_example": "Using a layout to 'secure' a salary field for all channels.",
+      "confusable_neighbor": "Dynamic Forms: presentation, still not FLS.",
+      "boundary": "Lightning record pages are presentation (DATA/APP tracks)."
+    },
+    {
+      "term": "CRUD",
+      "plain": "Create, Read, Update, Delete on an object.",
+      "precise": "The object-permission actions that decide whether any instance of the type can be acted on.",
+      "example": "Lead Delete granted in a permission set.",
+      "non_example": "Manual sharing of one Lead.",
+      "confusable_neighbor": "User permission: org feature, not object CRUD.",
+      "boundary": "Apex user-mode enforcement is SEC-006."
+    },
+    {
+      "term": "Field permission",
+      "plain": "The FLS setting for one field.",
+      "precise": "Controls seeing, editing, and deleting the field value across the app surfaces listed in Help.",
+      "example": "Amount: readable, not editable for LAB_Rep.",
+      "non_example": "A validation rule that blocks Stage changes.",
+      "confusable_neighbor": "Validation rule: data quality, not FLS.",
+      "boundary": "Configured on permission sets and profiles."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Check object permissions",
+      "actor": "Admin",
+      "trigger": "User cannot use the type",
+      "before": "Unknown capability",
+      "after": "CRUD known",
+      "observe": "Permission set or profile object settings",
+      "failure": "Opening Sharing Settings first"
+    },
+    {
+      "step": 2,
+      "transition": "Check field-level security",
+      "actor": "Admin",
+      "trigger": "Record opens, field missing or read-only",
+      "before": "Object Read present",
+      "after": "Field permission known",
+      "observe": "Field hidden in a report as well as the page",
+      "failure": "Only editing the page layout"
+    },
+    {
+      "step": 3,
+      "transition": "Check record-level access",
+      "actor": "Admin",
+      "trigger": "Object and field look correct; one record missing",
+      "before": "Capability gates pass",
+      "after": "Hand off to SEC-004",
+      "observe": "User cannot find the record in search",
+      "failure": "Granting object View All to hide a sharing design without analysis"
+    },
+    {
+      "step": 4,
+      "transition": "Prove with two users",
+      "actor": "Admin",
+      "trigger": "Design review",
+      "before": "One user tested",
+      "after": "Comparison user with same records, different FLS or CRUD",
+      "observe": "LAB_Rep vs LAB_Manager on Orion and Amount",
+      "failure": "Testing only as System Administrator"
+    }
+  ],
+  "when_to_use": [
+    "When a ticket mixes object permissions, field-level security, and record-level access in one sentence.",
+    "When a user opens a record but a field is missing in reports as well as on the page.",
+    "When you must decide whether to grant object CRUD, change FLS, or leave the issue to sharing.",
+    "When someone claims a page layout is enough to secure a field."
+  ],
+  "when_not_to_use": [
+    "Do not use this three-layer lesson to design the full OWD, role hierarchy, and sharing-rule stack (SEC-004).",
+    "Do not treat field-level security as Shield Platform Encryption (SEC-009).",
+    "Do not grant object-wide access to fix one missing record.",
+    "Do not use object permissions to solve an authentication or session failure (SEC-001)."
+  ],
+  "configuration_or_code_location": [
+    "Permission set or profile → Object Settings for CRUD and FLS.",
+    "Object Manager → field → field-level security (UI path can vary; reverify).",
+    "Sharing Settings only after the capability gates pass.",
+    "A report or list view to prove FLS beyond the page layout."
+  ],
+  "worked_example": {
+    "scenario": "LAB_Rep can open LAB_Opportunity_Orion. Amount is missing everywhere, including a LAB report. Stage is visible but not editable. LAB_Peer cannot find Orion at all. Disposable org, synthetic data.",
+    "inputs": [
+      "LAB_Rep has Opportunity Read",
+      "Amount should stay hidden from LAB_Rep",
+      "Stage edit is a separate object-Update plus field-edit question",
+      "LAB_Peer missing the record is a sharing question"
+    ],
+    "decisions": [
+      {
+        "decision": "Treat Amount as field-level security, not a share and not a layout-only change.",
+        "because": "Help says field permissions protect reports and search, unlike page layouts.",
+        "rejected": "Remove Amount from the layout and call the field secure"
+      },
+      {
+        "decision": "Check Opportunity Update and Stage field edit before adding a sharing rule for LAB_Rep.",
+        "because": "The record already opens; capability is the gate.",
+        "rejected": "Public Read/Write OWD so they can 'edit more'"
+      },
+      {
+        "decision": "Send LAB_Peer's missing record to the sharing stack without changing LAB_Rep FLS.",
+        "because": "Different layer, different user.",
+        "rejected": "Give both users Modify All Data"
+      }
+    ],
+    "configuration_or_code": [
+      "As LAB_Rep, open Orion and run a LAB report that includes Amount.",
+      "Inspect Amount field permissions on LAB_Rep's permission set.",
+      "Inspect Opportunity Update and Stage FLS if edit is required.",
+      "For LAB_Peer, confirm Opportunity Read exists, then stop for SEC-004."
+    ],
+    "output": "Amount remains FLS-hidden for LAB_Rep. Stage edit follows Update plus field edit. LAB_Peer's record gap is documented as record-level, not FLS.",
+    "verification": [
+      "Amount absent from LAB_Rep's report when FLS hides it.",
+      "Amount still absent after a layout change that adds the field—if FLS remains hidden.",
+      "LAB_Peer still cannot find Orion if only FLS was changed."
+    ],
+    "self_explanation": "I split three symptoms into three layers and refused a single Modify All Data fix."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable org; LAB_ users and LAB_Opportunity_Orion only.",
+    "starting_state_checks": [
+      "Non-production.",
+      "You can assign object and field permissions on a permission set."
+    ],
+    "steps": [
+      "Create LAB_Rep and LAB_Peer with Opportunity Read.",
+      "Hide Amount from LAB_Rep via field permissions; leave it visible for a comparison user.",
+      "As LAB_Rep, confirm Amount is missing on the record and in a report.",
+      "Add Amount to the page layout if it was missing, and confirm FLS still hides it from LAB_Rep.",
+      "Document LAB_Peer's missing record as a record-level follow-up, not an FLS change."
+    ],
+    "guided_completion": [
+      "If Amount appears in the report, FLS is not hidden.",
+      "If you only changed a layout, you have not secured the field."
+    ],
+    "independent_challenge": "Make Stage read-only for LAB_Rep via field permissions while keeping Opportunity Update, then explain the difference to a teammate.",
+    "evidence": [
+      "Report screenshot with LAB_ names showing Amount present or absent.",
+      "Permission set field-permission settings for Amount."
+    ],
+    "stop_recovery_cleanup": [
+      "Remove LAB users and LAB records.",
+      "Do not change production FLS."
+    ],
+    "limitations": "Does not implement sharing rules or restriction rules."
+  },
+  "decision_table": [
+    {
+      "signal": "User cannot see any records of the type and tabs/search show nothing.",
+      "choose": "Inspect object Read on the permission set or profile.",
+      "not": "A sharing rule first.",
+      "why": "Object permissions are the bluntest gate; a share cannot create missing Read."
+    },
+    {
+      "signal": "User opens the record but a field is missing in the report too.",
+      "choose": "Field-level security for that field.",
+      "not": "Page layout only.",
+      "why": "Field permissions apply to reports, lists, and search; layouts do not."
+    },
+    {
+      "signal": "User opens the record and sees the field but cannot edit it.",
+      "choose": "Check object Update and the field's edit permission.",
+      "not": "Organization-wide defaults.",
+      "why": "The record path already works; this is capability."
+    },
+    {
+      "signal": "User has object Read and needed FLS but cannot find one record.",
+      "choose": "Record-level access analysis (SEC-004).",
+      "not": "Another object permission on a second profile.",
+      "why": "Capability gates passed; remaining question is which rows."
+    }
+  ],
+  "limitations": [
+    "Does not enumerate every OWD value or sharing-rule type.",
+    "Does not cover restriction rules or Apex sharing keywords.",
+    "View All / Modify All impact should be reverified in current Help."
+  ],
+  "security_notes": [
+    "Do not rely on page layouts to protect sensitive fields.",
+    "Object-wide grants have a large blast radius compared with one record share.",
+    "Use only synthetic LAB_ field values."
+  ],
+  "common_mistakes": [
+    "Calling a layout change field-level security.",
+    "Using a sharing rule to hide a field.",
+    "Granting object access to fix one missing record.",
+    "Testing only as an administrator."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Field missing on the page but present in a report.",
+      "check": [
+        "Page layout or Lightning record page assignment.",
+        "FLS is not the hider if the report shows the value."
+      ],
+      "do_not_assume": "FLS is broken."
+    },
+    {
+      "symptom": "Field missing on the page and in reports.",
+      "check": [
+        "Field permissions on every assigned permission set and the profile.",
+        "A comparison user who should see the field."
+      ],
+      "do_not_assume": "A sharing rule hides fields."
+    },
+    {
+      "symptom": "Insufficient privileges on save.",
+      "check": [
+        "Object Update/Create/Delete.",
+        "Field edit permission on the changed fields."
+      ],
+      "do_not_assume": "OWD is the first cause when the record already opened."
+    }
+  ],
+  "production_notes": [
+    "Review FLS for sensitive fields in reports, not only on record pages.",
+    "Promote permission-set FLS through the same release process as other metadata.",
+    "This lesson does not authorize production permission changes."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the bluntest way to control data access in Control Who Sees What?",
+      "options": {
+        "A": "Object permissions",
+        "B": "Page layouts",
+        "C": "Manual sharing",
+        "D": "Session timeout"
+      },
+      "answer": "A",
+      "rationale": "Object-level security is described as the bluntest control.",
+      "distractor_explanations": {
+        "B": "Layouts are presentation.",
+        "C": "Manual sharing is record-scoped.",
+        "D": "Sessions are authentication-adjacent."
+      },
+      "concept": "Object permissions",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do field permissions hide a field besides the record page?",
+      "options": {
+        "A": "Related lists, list views, reports, and search results",
+        "B": "Only Classic page layouts",
+        "C": "Only organization-wide defaults",
+        "D": "Only MFA challenges"
+      },
+      "answer": "A",
+      "rationale": "Help lists those surfaces for field-permission visibility.",
+      "distractor_explanations": {
+        "B": "FLS is not Classic-only.",
+        "C": "OWD is record access.",
+        "D": "MFA is authentication."
+      },
+      "concept": "FLS surfaces",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What do page layouts control compared with field permissions?",
+      "options": {
+        "A": "Visibility on detail and edit pages only",
+        "B": "Report and search visibility",
+        "C": "Organization-wide defaults",
+        "D": "Identity-provider assertions"
+      },
+      "answer": "A",
+      "rationale": "Help: page layouts only control visibility on detail and edit pages.",
+      "distractor_explanations": {
+        "B": "That is FLS.",
+        "C": "OWD is record baseline.",
+        "D": "SSO is authentication."
+      },
+      "concept": "Layout vs FLS",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "LAB_Rep opens Orion but Amount is missing in a report. First layer?",
+      "options": {
+        "A": "Field-level security",
+        "B": "Organization-wide defaults",
+        "C": "MFA registration",
+        "D": "A second profile"
+      },
+      "answer": "A",
+      "rationale": "The record is reachable; the field is missing on a non-layout surface.",
+      "distractor_explanations": {
+        "B": "OWD would block the record.",
+        "C": "They are already in.",
+        "D": "Users have one profile; FLS lives on the existing kit plus permission sets."
+      },
+      "concept": "FLS diagnosis",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Can a sharing rule hide records that OWD already makes visible?",
+      "options": {
+        "A": "No. Sharing rules only give more access and cannot be stricter than OWD",
+        "B": "Yes. Sharing rules always subtract access",
+        "C": "Yes, if the page layout is blank",
+        "D": "Only for field-level security"
+      },
+      "answer": "A",
+      "rationale": "Control Who Sees What: sharing rules cannot be stricter than organization-wide defaults.",
+      "distractor_explanations": {
+        "B": "They are additive.",
+        "C": "Layouts do not set OWD.",
+        "D": "Sharing is not FLS."
+      },
+      "concept": "Sharing cannot tighten OWD",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Who primarily controls record-level access versus object and field access?",
+      "options": {
+        "A": "Roles (and sharing) versus permission sets and profiles",
+        "B": "MFA versus session timeout",
+        "C": "Page layouts versus compact layouts",
+        "D": "Identity providers versus service providers"
+      },
+      "answer": "A",
+      "rationale": "Help: permission sets and profiles control object and field access; roles primarily control record-level access.",
+      "distractor_explanations": {
+        "B": "Authentication/session.",
+        "C": "Presentation.",
+        "D": "SSO."
+      },
+      "concept": "Role vs profile",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A stakeholder wants Amount hidden 'by taking it off the layout.' Risk?",
+      "options": {
+        "A": "The field can still appear in reports, lists, and search if FLS allows",
+        "B": "Layouts encrypt the field at rest",
+        "C": "Layouts change OWD to Private",
+        "D": "Layouts revoke the user license"
+      },
+      "answer": "A",
+      "rationale": "Layouts are weaker than field permissions.",
+      "distractor_explanations": {
+        "B": "Encryption is Shield (SEC-009).",
+        "C": "OWD is independent.",
+        "D": "Licenses are SEC-002."
+      },
+      "concept": "Layout is not security",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "User has no Opportunity tab and cannot search Opportunities. Likely first check?",
+      "options": {
+        "A": "Object permissions (and tab settings) on the permission set or profile",
+        "B": "A manual share on one Opportunity",
+        "C": "Session High Assurance",
+        "D": "Restriction rules only"
+      },
+      "answer": "A",
+      "rationale": "Help notes you can hide tabs and objects so users do not know the type exists—object-level control.",
+      "distractor_explanations": {
+        "B": "A share cannot create missing object access.",
+        "C": "Session is not object CRUD.",
+        "D": "Restriction rules further scope already-readable records (SEC-005)."
+      },
+      "concept": "Hidden object",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Object permission versus user permission?",
+      "options": {
+        "A": "Object permission is CRUD on a type; user permission is a task or feature such as API Enabled",
+        "B": "They are the same metadata",
+        "C": "User permissions set OWD",
+        "D": "Object permissions authenticate MFA"
+      },
+      "answer": "A",
+      "rationale": "User Permissions Help vs Control Who Sees What object section.",
+      "distractor_explanations": {
+        "B": "Different catalogs.",
+        "C": "OWD is sharing.",
+        "D": "MFA is authentication."
+      },
+      "concept": "Object vs user permission",
+      "citation_ids": ["SF-HELP-DATA-ACCESS", "SF-HELP-USER-PERMS"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Record opens; save fails with insufficient privileges on Stage. What do you inspect?",
+      "options": {
+        "A": "Opportunity Update and Stage field-edit permission",
+        "B": "MFA verification methods",
+        "C": "Whether Salesforce is the identity provider",
+        "D": "Session timeout only"
+      },
+      "answer": "A",
+      "rationale": "Capability on object and field; the record path already worked.",
+      "distractor_explanations": {
+        "B": "They are logged in.",
+        "C": "SSO is unrelated to Stage edit.",
+        "D": "Timeout would log them out, not fail a save privilege."
+      },
+      "concept": "Edit privilege",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Why check a report when testing FLS?",
+      "options": {
+        "A": "Field permissions apply to reports; a layout test alone can lie",
+        "B": "Reports ignore all security",
+        "C": "Reports set organization-wide defaults",
+        "D": "Reports replace permission sets"
+      },
+      "answer": "A",
+      "rationale": "Help lists reports as an FLS surface.",
+      "distractor_explanations": {
+        "B": "Reports honor FLS.",
+        "C": "OWD is independent.",
+        "D": "Reports are not an authorization store."
+      },
+      "concept": "Prove FLS beyond the page",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which fix belongs in SEC-004 rather than this three-layer lesson?",
+      "options": {
+        "A": "Choosing Private OWD plus a sharing rule for a repeatable population",
+        "B": "Granting Opportunity Read on a permission set",
+        "C": "Hiding Amount with field permissions",
+        "D": "Explaining that layouts are not FLS"
+      },
+      "answer": "A",
+      "rationale": "OWD and sharing-rule design is the next topic; this lesson only names the record layer.",
+      "distractor_explanations": {
+        "B": "Object permission is in scope.",
+        "C": "FLS is in scope.",
+        "D": "Layout trap is in scope."
+      },
+      "concept": "Hand off to sharing",
+      "citation_ids": ["SF-HELP-DATA-ACCESS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "object",
+      "front": "What do object permissions decide?",
+      "back": "Whether the user can create, read, update, or delete any instance of that object type."
+    },
+    {
+      "id": "F2",
+      "category": "fls",
+      "front": "What does field-level security control?",
+      "back": "Whether the user can see, edit, or delete a field's value, including in reports and search."
+    },
+    {
+      "id": "F3",
+      "category": "record",
+      "front": "What is record-level access?",
+      "back": "Which individual records the user can view or edit after object capability exists."
+    },
+    {
+      "id": "F4",
+      "category": "layout",
+      "front": "Page layout vs FLS?",
+      "back": "Layouts hide fields on detail/edit pages only. FLS protects lists, reports, and search too."
+    },
+    {
+      "id": "F5",
+      "category": "boundary",
+      "front": "Can a share create missing object Read?",
+      "back": "No. Object permissions and record access are different gates."
+    },
+    {
+      "id": "F6",
+      "category": "boundary",
+      "front": "Can a sharing rule be stricter than OWD?",
+      "back": "No. Sharing rules only widen access."
+    },
+    {
+      "id": "F7",
+      "category": "actors",
+      "front": "Who grants object and field access?",
+      "back": "Permission sets and profiles."
+    },
+    {
+      "id": "F8",
+      "category": "actors",
+      "front": "What do roles primarily control?",
+      "back": "Record-level access through the hierarchy and related sharing, not object CRUD."
+    },
+    {
+      "id": "F9",
+      "category": "scenario",
+      "front": "Record opens, field missing in a report. Layer?",
+      "back": "Field-level security."
+    },
+    {
+      "id": "F10",
+      "category": "scenario",
+      "front": "Object Read present, one record missing. Layer?",
+      "back": "Record-level access (SEC-004)."
+    },
+    {
+      "id": "F11",
+      "category": "scenario",
+      "front": "No tab and no search hits for the object. Layer?",
+      "back": "Object permissions (and tab settings), the bluntest gate."
+    },
+    {
+      "id": "F12",
+      "category": "compare",
+      "front": "Object permission vs user permission?",
+      "back": "CRUD on a type versus a task/feature such as API Enabled."
+    },
+    {
+      "id": "F13",
+      "category": "test",
+      "front": "Why test FLS in a report?",
+      "back": "To prove the field is protected beyond the page layout."
+    },
+    {
+      "id": "F14",
+      "category": "test",
+      "front": "Why not test only as System Administrator?",
+      "back": "Admins bypass the gates you are trying to prove."
+    },
+    {
+      "id": "F15",
+      "category": "mistake",
+      "front": "Using OWD to hide Amount. Why wrong?",
+      "back": "OWD hides or shows records, not a field on a record the user can already open."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk the three Salesforce data-access layers.",
+      "answer_30_seconds": "Object permissions are CRUD on the type. Field-level security is field visibility and edit across reports and search, not just the layout. Record-level access is which rows, via OWD, roles, and sharing.",
+      "answer_2_minutes": "I quote Control Who Sees What. Object permissions are the bluntest gate and live on permission sets and profiles. Field permissions protect more surfaces than a page layout. Record access is a separate stack I will design in the next topic. I always say a share cannot invent missing CRUD or FLS. That sentence is the interview closer.",
+      "example": "LAB_Rep: Opportunity Read yes, Amount FLS hidden, Orion visible; LAB_Peer: Read yes, Orion not visible—record layer.",
+      "tradeoffs": [
+        "Blunt object deny vs surgical FLS",
+        "Layout convenience vs real field protection"
+      ],
+      "follow_ups": [
+        "Where do user permissions sit?",
+        "What cannot a sharing rule do to OWD?"
+      ],
+      "weak_answer_warnings": [
+        "Merging FLS into sharing"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why are page layouts not field-level security?",
+      "answer_30_seconds": "Layouts only affect detail and edit pages. Field permissions also apply to lists, reports, and search. To keep a user from accessing a field, use FLS.",
+      "answer_2_minutes": "I treat layout work as UX. If a compliance stakeholder says 'take salary off the page,' I still inspect field permissions and run a report as that user. If the report shows the value, the field is not protected. I do not claim Dynamic Forms change that boundary unless current Help says so—I would mark that Needs verification.",
+      "example": "Amount added back to the LAB_Rep layout still hidden in their report when FLS is off.",
+      "tradeoffs": [
+        "Faster layout edit vs incomplete protection",
+        "Hiding UI clutter vs hiding data"
+      ],
+      "follow_ups": [
+        "What about list views?",
+        "What about API access?"
+      ],
+      "weak_answer_warnings": [
+        "Calling the layout a security control"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "User can open the Opportunity but cannot see Amount or edit Stage. Diagnose.",
+      "answer_30_seconds": "Record access already worked. I check Amount FLS and Opportunity Update plus Stage field-edit. I do not change OWD.",
+      "answer_2_minutes": "I reproduce as the user. Amount missing in a report means FLS, not layout. Stage visible but not editable means Update and/or field-edit. I compare a user who should edit Stage. I keep sharing out of the fix. If they had not found the record, I would have switched layers.",
+      "example": "LAB_Rep on Orion: Amount FLS hidden; Stage read-only because field-edit is off while object Update is on.",
+      "tradeoffs": [
+        "Granting object Update vs only field-edit",
+        "Hiding Amount vs encrypting Amount"
+      ],
+      "follow_ups": [
+        "How would View All change this?",
+        "What if API still returns Amount?"
+      ],
+      "weak_answer_warnings": [
+        "Opening Sharing Settings first"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A teammate wants Public Read/Write so a user can 'see the Amount field.' Response?",
+      "answer_30_seconds": "OWD does not grant field permissions. If the record already opens, I fix FLS. If the record does not open, I still would not jump to Public Read/Write without a sharing design.",
+      "answer_2_minutes": "I separate the ask. Amount is a field. Public Read/Write is a record baseline that can expose every row. That violates least privilege and does not make a hidden field appear if FLS is off. I would demonstrate a report as the user. Then, if records are missing, I schedule the SEC-004 conversation instead of opening the object to the world.",
+      "example": "LAB_Rep already opens Orion; Amount still hidden after a reckless OWD change because FLS never moved.",
+      "tradeoffs": [
+        "Wide OWD vs FLS precision",
+        "Speed vs blast radius"
+      ],
+      "follow_ups": [
+        "What is the correct sharing design if the record is missing?",
+        "How do you prove FLS independently?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to Public Read/Write for a field issue"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "How do profiles, permission sets, and roles map onto the three layers?",
+      "answer_30_seconds": "Profiles and permission sets grant object and field capability. Roles primarily drive record-level access. I do not assign a role to grant Delete on Lead.",
+      "answer_2_minutes": "I keep SEC-002 in the answer: one profile, additive permission sets. Those stores hold CRUD and FLS. Roles sit on the record path with OWD and sharing rules. Interviewers bait a single 'access' word. I split capability versus row visibility. User permissions such as View Setup stay in a fourth bucket so I do not call them object permissions.",
+      "example": "LAB_Analyst: Lead Delete in a permission set; East role only for hierarchy tests, not for Delete.",
+      "tradeoffs": [
+        "Permission-set FLS vs profile FLS",
+        "Role design vs sharing rules"
+      ],
+      "follow_ups": [
+        "Where is FLS configured today?",
+        "What is a permission-set group’s role here?"
+      ],
+      "weak_answer_warnings": [
+        "Roles grant CRUD"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Field is missing on the page but present in a report. What is going on?",
+      "answer_30_seconds": "FLS is allowing the field. The page layout or Lightning record page is not showing it. I do not tighten sharing.",
+      "answer_2_minutes": "I use the Help distinction as a diagnostic. Report visibility means field permissions are open. I inspect layout assignment, record type, and the Lightning page. I still ask whether the field should be in the report; if not, I close FLS rather than only the layout. I test as the intended user, not as admin.",
+      "example": "LAB_Rep layout omits Amount; their LAB report still shows Amount until FLS is changed.",
+      "tradeoffs": [
+        "UX cleanup vs data protection",
+        "Record-page assignment vs FLS"
+      ],
+      "follow_ups": [
+        "What about list views?",
+        "What about search?"
+      ],
+      "weak_answer_warnings": [
+        "Calling it a sharing bug"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When do you stop this topic and start the sharing stack?",
+      "answer_30_seconds": "When object CRUD and needed FLS are correct and the user still cannot reach a specific record. Then OWD, roles, and sharing rules own the work.",
+      "answer_2_minutes": "I write a one-line proof: 'capability yes, row no.' That sentence is the handoff. I will mention that sharing cannot tighten OWD, so if everyone already sees every row, a sharing rule will not hide one. Restriction rules are a later narrowing tool. I do not start Apex without sharing in this admin conversation.",
+      "example": "LAB_Peer has Opportunity Read and Amount FLS; Orion still missing → SEC-004.",
+      "tradeoffs": [
+        "Staying in capability vs jumping to sharing too early",
+        "View All as a blunt bypass vs a real sharing design"
+      ],
+      "follow_ups": [
+        "What if View All is already on?",
+        "Where do restriction rules sit?"
+      ],
+      "weak_answer_warnings": [
+        "Designing OWD inside the FLS answer"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the three layers with a hospital analogy, then break it.",
+      "answer_30_seconds": "Ward badge is object permissions, chart lines are FLS, rooms are records. It breaks for View All-style grants and for restriction rules that further hide rooms you could already enter.",
+      "answer_2_minutes": "I walk LAB_Rep through the ward. I show a curtain (layout) that does not hide the lab system (report). I show a room they cannot enter (record access) even with a ward badge. I then say Apex, encryption, and guest users are other buildings. I finish with least privilege: do not hand out a master ward key because one room was locked.",
+      "example": "LAB_Rep has the Opportunity ward badge, Amount line hidden, Orion room open; LAB_Peer has the badge but not the Orion room.",
+      "tradeoffs": [
+        "Memorable teaching vs precise Help nouns",
+        "Blunt object deny vs many FLS exceptions"
+      ],
+      "follow_ups": [
+        "Where does page layout sit in the hospital?",
+        "Where does a role sit?"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer filler",
+        "Never breaking the analogy"
+      ]
+    }
+  ]
+}

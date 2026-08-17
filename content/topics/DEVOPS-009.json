@@ -1,0 +1,211 @@
+{
+  "topic_id": "DEVOPS-009",
+  "slug": "destructive-changes-dependency-analysis-feature-toggles",
+  "title": "Destructive changes, dependency analysis, feature toggles, and release safety",
+  "track": "Development lifecycle and DevOps",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": ["DEVOPS-008"],
+  "objectives": [
+    "Describe destructive changes as metadata deletes declared in pre/post manifests, not as omitting a file from Git.",
+    "Run dependency analysis before deleting objects, fields, or Apex that other metadata or data still need.",
+    "Use feature toggles (often custom metadata type flags) so you can deploy dark and enable later.",
+    "Order releases for safety: additive deploy, toggle on, later destructive change—not delete-first in production."
+  ],
+  "diagnostic_question": "You must remove LAB_OldGate__c, but a Flow, a report, and 200 rows still use it. Do you omit the object from Git, add destructiveChanges, toggle first, or abort—and what evidence changes your mind?",
+  "definition": "Destructive changes delete metadata components during a Metadata API/CLI deploy using manifests such as destructiveChangesPre.xml and destructiveChangesPost.xml. Omitting a file from Git does not delete it from the org. Dependency analysis finds metadata and data that still reference the component. Feature toggles (often custom metadata type records) hide behavior so a release can ship safely before a delete. Release safety is the order and evidence that keep production consistent. ([project deploy start](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html); [Understanding Metadata API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_api_intro.htm); [Unlocked Packages](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_unlocked_pkg_intro.htm))",
+  "why_it_matters": "Deleting a field that still has data or Flow references fails the deploy or strands users. Interviewers want pre versus post destructive manifests, Git omit ≠ delete, and toggle-then-remove as a safety pattern.",
+  "sixty_second_explanation": "Think of a controlled demolition. destructiveChanges.xml is the blast plan: pre-charges fire before new steel goes up, post-charges after. Dependency analysis is checking load-bearing walls (Flows, Apex, data). Feature toggles are leaving the charges unarmed until visitors are out. Release safety is evacuate, add the new structure, switch traffic, then demolish. Walking away without a blast plan (just deleting the file in Git) does not bring the old wall down.",
+  "deeper_explanation": [
+    "CLI project deploy start accepts --pre-destructive-changes and --post-destructive-changes pointing at manifests of components to delete before or after the deploy. --purge-on-delete can hard-delete some components instead of sending them to the Recycle Bin—use with care. --ignore-warnings is sometimes used in CI when deleting a component that is already gone; it is not a substitute for analysis. ([project deploy start](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html))",
+    "Metadata API deletes customization, not business rows by itself. You cannot safely destroy an object that still has dependents. Analyze: Apex, Flows, layouts, reports, permission sets, and record counts. Change sets are a weak delete channel compared with explicit destructive manifests.",
+    "Feature toggles for Salesforce metadata are often Custom Metadata Type records (configuration that deploys with metadata—DEVOPS-001). Deploy the new path dark, enable the flag in a controlled org, then remove the old path in a later destructive release. Unlocked packages can deprecate metadata and move it—read that guide before promising in-place deletes.",
+    "Release safety order: (1) additive metadata, (2) toggle/migrate data if needed, (3) destructive metadata. Never delete-first in production. Git revert does not undelete unless you deploy the old XML and may not restore data. Failed deploys should roll back; successful deletes may be gone."
+  ],
+  "mental_model": {
+    "analogy": "Controlled demolition: pre/post blast plans, load-bearing dependency checks, unarmed charges as feature toggles, evacuate-then-demolish as release safety. Deleting a file in Git is not a blast.",
+    "useful_mapping": [
+      "destructiveChangesPre.xml → charges before new steel",
+      "destructiveChangesPost.xml → charges after new steel is up",
+      "dependency analysis → load-bearing walls",
+      "feature toggle / CMDT → unarmed charge / dark feature",
+      "additive deploy first → build the new structure",
+      "Git omit without manifest → wall still standing in the org",
+      "purge-on-delete → skip the Recycle Bin (dangerous)",
+      "data rows on the object → people still in the building"
+    ],
+    "where_it_breaks": [
+      "Some metadata types cannot be deleted via Metadata API (Coverage).",
+      "Recycle Bin and purge behavior is type-specific.",
+      "Package deprecate/move is not the same as unpackaged destructive XML.",
+      "Toggles do not replace tests or approvals."
+    ]
+  },
+  "teach_back_prompt": "Explain why removing a component from Git does not delete it, when you would use pre versus post destructive manifests, and how a CMDT toggle improves release safety.",
+  "review_schedule": [
+    {"interval": "1 day", "prompt": "pre versus post destructive flags on project deploy start."},
+    {"interval": "3 days", "prompt": "List five dependency types before deleting a field."},
+    {"interval": "7 days", "prompt": "Toggle-then-delete sequence."},
+    {"interval": "14 days", "prompt": "Git omit versus destructive manifest."},
+    {"interval": "30 days", "prompt": "Two-minute interview: demolition order."}
+  ],
+  "sources": [
+    {"source_id": "SF-CLI-DEPLOY", "title": "project deploy start", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html", "supports": "pre/post destructive change manifests; purge-on-delete; ignore-warnings note for already-absent deletes; never ignore-errors on production.", "release_or_version": "Salesforce CLI Command Reference", "last_verified": "2026-08-16", "limits": "Does not list every type that supports delete."},
+    {"source_id": "SF-META-INTRO", "title": "Understanding Metadata API", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_api_intro.htm", "supports": "Metadata API deletes customization information, not business data directly.", "release_or_version": "Metadata API Developer Guide / Summer '26", "last_verified": "2026-08-16", "limits": "Unsupported types cannot be deleted this way either."},
+    {"source_id": "SF-UNLOCKED", "title": "Unlocked Packages", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_unlocked_pkg_intro.htm", "supports": "Unlocked packages can deprecate metadata and migrate it to another package; source-driven deletes are still planned.", "release_or_version": "Salesforce DX Developer Guide / Summer '26", "last_verified": "2026-08-16", "limits": "Deprecate/migrate steps are their own procedure."},
+    {"source_id": "SF-MD-COVERAGE", "title": "Metadata Coverage", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_supported_mdapi_types.htm", "supports": "Whether a type can be deleted via Metadata API or packaging is coverage-sensitive.", "release_or_version": "Salesforce DX Developer Guide / Summer '26", "last_verified": "2026-08-16", "limits": "Use the live coverage report for a type."}
+  ],
+  "videos": [{"status": "not_verified", "title": "No verified official exact-topic video claimed in this pack", "channel": "Prefer CLI deploy destructive flags and Metadata API intro", "url": "", "language": "English", "duration": "", "level": "Advanced", "teaches_well": "", "gaps": "Needs verification before recommending a specific recording.", "free_or_paid": "Unknown", "last_verified": "2026-08-16"}],
+  "visuals": {
+    "infographic": {"format": "4:5 SVG", "size": "1600x2000", "zones": ["Git omit is not delete", "Pre vs post manifests", "Dependencies", "Toggles", "Data still in the building", "Coverage"], "accessible_description": "Portrait of destructive metadata deploys: manifests, dependencies, toggles, and safe order."},
+    "cheat_sheet": {"format": "A4 HTML", "source_footer": ["SF-CLI-DEPLOY", "SF-META-INTRO", "SF-UNLOCKED", "SF-MD-COVERAGE"]},
+    "system_map": {"format": "zoomable SVG", "title": "Additive then toggle then destructive"},
+    "mermaid": {
+      "structure": "flowchart TD\n  Git[Git source] --> Add[Additive metadata deploy]\n  Add --> Toggle[Feature toggle / CMDT]\n  Toggle --> Dep[Dependency analysis]\n  Dep --> Pre[destructiveChangesPre.xml]\n  Pre --> Deploy[project deploy start]\n  Deploy --> Post[destructiveChangesPost.xml]\n  Data[Business rows] -.->|may block or strand| Dep",
+      "decision": "flowchart TD\n  Want[Want a component gone from production?] --> Q1{Still referenced or has data?}\n  Q1 -->|Yes| Stop[Migrate or toggle; do not delete yet]\n  Q1 -->|No, Coverage allows delete| Q2{Must it vanish before new metadata?}\n  Q2 -->|Yes| Pre[pre-destructive-changes]\n  Q2 -->|After new metadata| Post[post-destructive-changes]\n  Want2[Only deleted the file in Git?] --> NoDel[Org still has it; add a destructive manifest]"
+    }
+  },
+  "claims": [
+    {"claim_id": "C-001", "claim": "project deploy start supports --pre-destructive-changes and --post-destructive-changes manifests to delete components before or after the deploy. Never use --ignore-errors on production.", "source_ids": ["SF-CLI-DEPLOY"], "scope": "Destructive CLI flags", "validation": "project deploy start flag table.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-002", "claim": "Metadata API deletes customization metadata, not business data directly. Record rows on an object are a separate pipeline and a dependency on delete.", "source_ids": ["SF-META-INTRO"], "scope": "Deletes vs data", "validation": "Understanding Metadata API.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-003", "claim": "Unlocked packages support deprecating metadata and moving it to a new package as a planned alternative to naive deletes.", "source_ids": ["SF-UNLOCKED"], "scope": "Package deprecate", "validation": "Migrate Deprecated Metadata from Unlocked Packages (guide family).", "last_verified": "2026-08-16"},
+    {"claim_id": "C-004", "claim": "Metadata Coverage determines whether a type can be deleted through Metadata API or packaging channels.", "source_ids": ["SF-MD-COVERAGE"], "scope": "Coverage for deletes", "validation": "Metadata Coverage topic.", "last_verified": "2026-08-16"}
+  ],
+  "changed_in_release": "Destructive flag names are current as of the CLI reference verification. Recycle Bin / purge behavior is type- and release-sensitive.",
+  "unresolved_uncertainty": ["Exact hard-delete semantics of --purge-on-delete per type.", "Whether a given Flow version must be deactivated before delete."],
+  "telugu_glossary": [{"english": "Destructive change", "telugu": "డిప్లాయ్‌లో మెటాడేటాను తొలగించే మానిఫెస్ట్."}, {"english": "Feature toggle", "telugu": "కొత్త ప్రవర్తనను ఆపి ఉంచే కాన్ఫిగ్ జెండా."}],
+  "interview_explanation": {
+    "thirty_seconds": "Omitting a file from Git does not delete org metadata. Use pre or post destructive manifests on deploy. Analyze dependents and data first. Toggle new behavior on, then demolish. Coverage may forbid the delete.",
+    "two_minutes": "I draw the order: additive, toggle, migrate data, destructive. I pick pre when the old component would collide with the new, post when the new must exist first. I refuse ignore-errors. I mention unlocked deprecate/move as a packaging path. I keep business rows on a data plan."
+  },
+  "terminology": [
+    {"term": "destructive change", "plain": "A declared metadata delete in a deploy.", "precise": "Components listed in destructiveChangesPre.xml or destructiveChangesPost.xml and passed to project deploy start.", "example": "Delete LAB_OldGate__c after its replacement exists.", "non_example": "Deleting the XML locally and deploying the rest of force-app.", "confusable_neighbor": "Data Loader delete of rows.", "boundary": "Coverage may not allow the type."},
+    {"term": "pre-destructive changes", "plain": "Deletes that fire before the new metadata upserts.", "precise": "--pre-destructive-changes manifest. Use when the old component must be gone before the new one can deploy.", "example": "Rename-by-replace patterns that cannot coexist.", "non_example": "Deleting a field that the incoming Apex still references.", "confusable_neighbor": "post-destructive changes.", "boundary": "Test the order in a scratch org."},
+    {"term": "post-destructive changes", "plain": "Deletes that fire after the new metadata is in.", "precise": "--post-destructive-changes manifest. Use when callers must move to the new component first.", "example": "Delete LAB_OldHelper after LAB_NewHelper is deployed and referenced.", "non_example": "Pre-deleting the only class the new Flow calls.", "confusable_neighbor": "pre-destructive changes.", "boundary": "Still need dependency analysis."},
+    {"term": "dependency analysis", "plain": "Finding what still leans on the wall you want to drop.", "precise": "Search Apex, Flows, layouts, reports, permission sets, packages, and record counts before a destructive deploy.", "example": "Where is LAB_OldGate__c referenced? 200 rows and one Flow.", "non_example": "Deleting because Git grep is clean in one package directory while another directory still references it.", "confusable_neighbor": "Code coverage.", "boundary": "Setup 'Where is this used?' plus source search."},
+    {"term": "feature toggle", "plain": "A config flag that keeps new behavior dark.", "precise": "Often a custom metadata type record deployed with metadata. Enables release safety: ship code, enable later, delete later.", "example": "LAB_BoardingKillSwitch__mdt.Enabled__c false in production until UAT signs off.", "non_example": "Commenting out Apex on a laptop and never deploying.", "confusable_neighbor": "Custom setting; confirm retrieve coverage.", "boundary": "Toggle is not a substitute for tests."},
+    {"term": "release safety", "plain": "The order and evidence that keep production consistent during deletes.", "precise": "Additive first, toggle/migrate, destructive last; Coverage checked; no ignore-errors; rollback plan for failed jobs.", "example": "Three-sprint plan to retire LAB_OldGate__c.", "non_example": "Friday delete-first of a field with data.", "confusable_neighbor": "CAB approval (DEVOPS-007).", "boundary": "Safety is technical order plus governance."},
+    {"term": "purge-on-delete", "plain": "Skip the Recycle Bin for deleted components.", "precise": "CLI flag for destructive manifests. Dangerous; type-specific. Needs verification per component.", "example": "CI deleting a scratch-only label that should not linger.", "non_example": "Default first try on a production field.", "confusable_neighbor": "Data hard delete.", "boundary": "Prefer Recycle Bin until you know you need purge."},
+    {"term": "Git omit", "plain": "Removing source without a delete manifest.", "precise": "The org retains the component. Source-driven truth requires an explicit destructive deploy to match Git.", "example": "Deleted LAB_Old.cls in Git; production still has the class.", "non_example": "A complete destructive deploy that removes it.", "confusable_neighbor": ".forceignore, which skips retrieve/deploy, also not a delete.", "boundary": "Ignore files can hide the component from future deploys without deleting it."}
+  ],
+  "mechanics": [
+    {"step": 1, "transition": "Inventory dependents", "actor": "Developer", "trigger": "Desire to delete", "before": "Guessing Git grep is enough", "after": "List of metadata and data dependents", "observe": "Written inventory", "failure": "Delete-first in production"},
+    {"step": 2, "transition": "Ship additive + toggle", "actor": "Release owner", "trigger": "Replacement exists", "before": "Old path only", "after": "New metadata dark or flagged", "observe": "CMDT false in prod", "failure": "Deleting the old path in the same untested zip"},
+    {"step": 3, "transition": "Choose pre vs post", "actor": "Developer", "trigger": "Ready to demolish", "before": "One undifferentiated delete list", "after": "Pre or post manifest justified", "observe": "Scratch org rehearsal", "failure": "Pre-delete of a component the new Apex still calls"},
+    {"step": 4, "transition": "Deploy destructive with gates", "actor": "Pipeline", "trigger": "Approval", "before": "Unrehearsed blast", "after": "Delete succeeds or fails closed", "observe": "Deploy report; no ignore-errors", "failure": "Ignoring warnings that hide missing-component confusion without a policy"}
+  ],
+  "when_to_use": [
+    "When a metadata component must be deleted from an org using a destructive changes manifest on deploy.",
+    "When Git no longer contains a class but the org still does, and you need an explicit delete.",
+    "When dependency analysis shows Flows, Apex, or data still using the component.",
+    "When a feature toggle / CMDT flag should keep new behavior dark until release safety checks pass.",
+    "When choosing pre-destructive versus post-destructive order relative to the incoming package."
+  ],
+  "when_not_to_use": [
+    "Do not use a destructive manifest to delete business Account rows (use a data tool after schema allows).",
+    "Do not treat omitting files from Git as a production delete.",
+    "Do not delete-first when a toggle-and-migrate sequence is safer.",
+    "Do not use --ignore-errors on production to force a partial demolition.",
+    "Do not skip Metadata Coverage for the type you plan to delete."
+  ],
+  "configuration_or_code_location": [
+    "destructiveChangesPre.xml / destructiveChangesPost.xml next to the deploy job.",
+    "sf project deploy start --pre-destructive-changes ... --post-destructive-changes ...",
+    "Custom metadata type records for toggles in the DX project.",
+    "Where-is-this-used in Setup plus repository search."
+  ],
+  "worked_example": {
+    "scenario": "Retire LAB_OldGate__c. Replacement LAB_Gate__c is in Git. A Flow still points at the old object. 50 synthetic rows exist in UAT. Production has more. Not AppExchange.",
+    "inputs": ["Old and new custom objects", "Flow dependency", "Rows on the old object"],
+    "decisions": [
+      {"decision": "Do not omit LAB_OldGate__c from Git and hope.", "because": "The org would keep the object.", "rejected": "Silent Git delete as the release"},
+      {"decision": "Point the Flow at LAB_Gate__c, deploy additive, toggle if needed, migrate rows with a data plan.", "because": "Dependencies and data are still in the building.", "rejected": "Destructive-first Friday deploy"},
+      {"decision": "Later post-destructive delete of LAB_OldGate__c after dependents are gone, rehearsed in a scratch org.", "because": "Post order keeps the new object first.", "rejected": "pre-delete while the Flow still references the old object"}
+    ],
+    "configuration_or_code": [
+      "Sprint 1: deploy new object + Flow change + CMDT flag.",
+      "Sprint 2: data migrate LAB_ rows (DEVOPS-001).",
+      "Sprint 3: destructiveChangesPost.xml CustomObject LAB_OldGate__c with deploy start."
+    ],
+    "output": "Old object removed only after callers and data moved. Git matches the org.",
+    "verification": ["Where-is-this-used empty.", "Scratch rehearsal of the destructive job.", "Production row count on old object zero or accepted archive."],
+    "self_explanation": "I treated demolition as a sequenced metadata-and-data program, not a Git omit."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable scratch org. LAB_ metadata only. No production data.",
+    "starting_state_checks": ["You can deploy and delete LAB_ components.", "You will not purge production."],
+    "steps": [
+      "Deploy two LAB_ Apex classes where one calls the other.",
+      "Attempt a pre-destructive delete of the callee while the caller still references it; record the failure.",
+      "Deploy a caller that no longer references it, then post-destructive delete the callee.",
+      "Write why a Git-only delete would have left the class in the org."
+    ],
+    "guided_completion": ["If delete succeeds unexpectedly, confirm you actually targeted the org you think.", "Do not use ignore-errors to hide the first failure."],
+    "independent_challenge": "Add a CMDT toggle name you would use to keep a Flow path dark.",
+    "evidence": ["Failing then succeeding destructive deploy logs with LAB_ names.", "One sentence: Git omit is not delete."],
+    "stop_recovery_cleanup": ["Delete remaining LAB_ metadata.", "Do not use purge-on-delete in production."],
+    "limitations": "Will not prove every Coverage delete gap."
+  },
+  "decision_table": [
+    {"signal": "Component removed from Git but still in the org.", "choose": "Add a destructive manifest to the deploy.", "not": "Assuming the next source-dir deploy deletes it.", "why": "Deploy upserts listed source; it does not delete omitted files by default."},
+    {"signal": "New metadata cannot coexist with the old name.", "choose": "pre-destructive-changes, rehearsed in a scratch org.", "not": "Guessing post will be fine.", "why": "Pre fires before the incoming upserts."},
+    {"signal": "Callers must move to a new class first.", "choose": "Deploy the new class, retarget callers, then post-destructive the old class.", "not": "Pre-delete the callee.", "why": "The incoming deploy would fail compile/references."},
+    {"signal": "Rows or Flows still use the object.", "choose": "Migrate and retarget; delay destructive.", "not": "purge-on-delete to be 'clean.'", "why": "Metadata delete is not a data archive plan; dependents block safety."},
+    {"signal": "Behavior must ship before business wants it on.", "choose": "CMDT/feature toggle deployed with metadata, default off.", "not": "Deleting the old path in the same untested production zip.", "why": "Toggles provide release safety without immediate demolition."}
+  ],
+  "limitations": ["Not every type is deletable.", "Purge semantics vary.", "Package deprecate is a separate procedure.", "No production delete authorized."],
+  "security_notes": ["Deletes can drop FLS surfaces and Apex that enforced rules.", "Purge may be irreversible.", "Toggles must not hide required security checks."],
+  "common_mistakes": ["Git omit as delete.", "Delete-first with live dependents.", "ignore-errors on a destructive production job.", "Forgetting data on the object.", "Pre vs post reversed."],
+  "troubleshooting": [
+    {"symptom": "Delete fails because of a Flow reference.", "check": ["Dependency analysis.", "Retarget or deactivate per current Flow rules, then retry."], "do_not_assume": "The manifest is ignored."},
+    {"symptom": "Git lacks the class; org still has it after deploy.", "check": ["No destructive manifest.", ".forceignore hiding it from retrieve but not deleting."], "do_not_assume": "Source-dir deploy deletes extras."},
+    {"symptom": "Warning that the component to delete was missing.", "check": ["Already deleted; ignore-warnings policy for CI only.", "Wrong API name."], "do_not_assume": "Production should use ignore-errors."}
+  ],
+  "production_notes": ["Rehearse destructive jobs in scratch/UAT.", "Never ignore-errors.", "Keep a restore plan for metadata XML; data may be gone.", "This lesson does not authorize production deletes."],
+  "mcqs": [
+    {"id": "Q1", "category": "recall", "difficulty": "Foundation", "prompt": "Does removing a component from Git delete it from the org on the next source deploy?", "options": {"A": "No. You need a destructive changes manifest on the deploy", "B": "Yes, always", "C": "Yes, if the file is Apex only", "D": "Yes, if you used a change set name Delete"}, "answer": "A", "rationale": "CLI destructive flags exist because omitted source is not a delete.", "distractor_explanations": {"B": "Common false belief.", "C": "No special Apex omit-delete.", "D": "Naming is not a manifest."}, "concept": "Git omit", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q2", "category": "recall", "difficulty": "Foundation", "prompt": "Which flags pass delete manifests?", "options": {"A": "--pre-destructive-changes and --post-destructive-changes", "B": "--ignore-errors only", "C": "--target-org only", "D": "--json only"}, "answer": "A", "rationale": "project deploy start flag table.", "distractor_explanations": {"B": "Forbidden on production.", "C": "Aiming, not deleting.", "D": "Output format."}, "concept": "Flags", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q3", "category": "application", "difficulty": "Intermediate", "prompt": "When pre-destructive versus post?", "options": {"A": "Pre deletes before incoming upserts; post after. Choose based on coexistence and references", "B": "They are identical", "C": "Post always runs first", "D": "Pre is only for data rows"}, "answer": "A", "rationale": "Flag descriptions: delete before vs after the deploy.", "distractor_explanations": {"B": "Order differs.", "C": "Opposite.", "D": "Metadata deletes, not row dumps."}, "concept": "Order", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q4", "category": "application", "difficulty": "Intermediate", "prompt": "Metadata API destructive deploy deletes what?", "options": {"A": "Customization metadata, not business data by itself", "B": "All Account rows automatically", "C": "The Git remote", "D": "Dev Hub allocations"}, "answer": "A", "rationale": "Metadata API does not work directly with business data.", "distractor_explanations": {"B": "Data tool needed.", "C": "VCS.", "D": "Scratch limits."}, "concept": "Not data", "citation_ids": ["SF-META-INTRO"]},
+    {"id": "Q5", "category": "recall", "difficulty": "Foundation", "prompt": "Where do you check if a type can be deleted via API/packaging?", "options": {"A": "Metadata Coverage", "B": "Apex Test Execution only", "C": "Data Loader mapping", "D": "OWD"}, "answer": "A", "rationale": "Coverage is channel truth including deletes.", "distractor_explanations": {"B": "Tests.", "C": "Data.", "D": "Sharing."}, "concept": "Coverage", "citation_ids": ["SF-MD-COVERAGE"]},
+    {"id": "Q6", "category": "scenario", "difficulty": "Intermediate", "prompt": "Flow and rows still use an object you want gone. First move?", "options": {"A": "Retarget the Flow and plan data migration; delay destructive", "B": "purge-on-delete tonight", "C": "ignore-errors", "D": "Delete only in Git"}, "answer": "A", "rationale": "Dependency analysis and data are load-bearing.", "distractor_explanations": {"B": "Dangerous and premature.", "C": "Forbidden pattern.", "D": "Org keeps the object."}, "concept": "Dependents", "citation_ids": ["SF-CLI-DEPLOY", "SF-META-INTRO"]},
+    {"id": "Q7", "category": "application", "difficulty": "Intermediate", "prompt": "Feature toggle in this track is often?", "options": {"A": "A custom metadata type flag deployed with metadata", "B": "A production User password", "C": "A change-set connection", "D": "A scratch duration"}, "answer": "A", "rationale": "CMDT is configuration on the metadata pipeline (DEVOPS-001) used as a dark-launch flag.", "distractor_explanations": {"B": "Secret.", "C": "Channel.", "D": "Environment."}, "concept": "Toggle", "citation_ids": ["SF-META-INTRO"]},
+    {"id": "Q8", "category": "scenario", "difficulty": "Intermediate", "prompt": "Unlocked package alternative to naive delete?", "options": {"A": "Deprecate metadata and migrate it to another package per the unlocked guide", "B": "Always ignore-errors", "C": "Convert the package to a change set", "D": "Store deletes in Account rows"}, "answer": "A", "rationale": "Unlocked guide family includes migrating deprecated metadata.", "distractor_explanations": {"B": "Dangerous.", "C": "Wrong channel.", "D": "Data."}, "concept": "Deprecate", "citation_ids": ["SF-UNLOCKED"]},
+    {"id": "Q9", "category": "recall", "difficulty": "Foundation", "prompt": "ignore-errors on a production destructive deploy?", "options": {"A": "Never; can leave an inconsistent org", "B": "Required for all deletes", "C": "Replaces the destructive manifest", "D": "Deletes Git history"}, "answer": "A", "rationale": "Same production flag rule as other deploys.", "distractor_explanations": {"B": "Opposite.", "C": "You still need the manifest.", "D": "Unrelated."}, "concept": "No ignore-errors", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q10", "category": "application", "difficulty": "Intermediate", "prompt": "Safe default order?", "options": {"A": "Additive deploy, toggle/migrate, then destructive", "B": "Destructive first always", "C": "Git omit, then data delete, then metadata", "D": "Production clicks only"}, "answer": "A", "rationale": "Release safety: new structure, move traffic, then demolish.", "distractor_explanations": {"B": "Leaves callers stranded.", "C": "Git omit is not delete.", "D": "Not source-driven."}, "concept": "Order", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q11", "category": "scenario", "difficulty": "Intermediate", "prompt": ".forceignore of a component means it is deleted in the org?", "options": {"A": "No. Ignore skips sync; it does not demolish org metadata", "B": "Yes, always", "C": "Yes, if listed twice", "D": "Yes, on production only"}, "answer": "A", "rationale": "Ignore files exclude from retrieve/deploy; destructive manifests delete.", "distractor_explanations": {"B": "False.", "C": "Nonsense.", "D": "No special prod omit."}, "concept": "forceignore", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q12", "category": "scenario", "difficulty": "Intermediate", "prompt": "Why rehearse destructive changes in a scratch org?", "options": {"A": "Expiration is fine; you learn pre/post failures without compromising production", "B": "Scratch orgs cannot run deploys", "C": "Scratch orgs are production", "D": "Destructive flags work only in production"}, "answer": "A", "rationale": "Disposable source-driven orgs are the demolition sandbox.", "distractor_explanations": {"B": "They are deploy targets.", "C": "They are not.", "D": "Flags work in any authorized org."}, "concept": "Rehearse", "citation_ids": ["SF-CLI-DEPLOY"]}
+  ],
+  "flashcards": [
+    {"id": "F1", "category": "omit", "front": "Git omit delete org metadata?", "back": "No. Use destructive change manifests on deploy."},
+    {"id": "F2", "category": "flags", "front": "Two destructive flags?", "back": "--pre-destructive-changes and --post-destructive-changes."},
+    {"id": "F3", "category": "pre", "front": "When pre-destructive?", "back": "When the old component must be gone before new metadata upserts."},
+    {"id": "F4", "category": "post", "front": "When post-destructive?", "back": "When new metadata must exist and callers retarget before the old component dies."},
+    {"id": "F5", "category": "data", "front": "Does metadata delete remove Account rows?", "back": "Not by itself. Data is a separate pipeline and a dependency."},
+    {"id": "F6", "category": "toggle", "front": "Typical Salesforce feature toggle here?", "back": "Custom metadata type flag deployed with metadata, default off."},
+    {"id": "F7", "category": "order", "front": "Release-safety order?", "back": "Additive, toggle/migrate, destructive last."},
+    {"id": "F8", "category": "coverage", "front": "Can every type be deleted via API?", "back": "No. Check Metadata Coverage."},
+    {"id": "F9", "category": "ignore", "front": "ignore-errors on production deletes?", "back": "Never. Partial success can leave an inconsistent org."},
+    {"id": "F10", "category": "forceignore", "front": ".forceignore equal to delete?", "back": "No. It skips sync; the org may still have the component."},
+    {"id": "F11", "category": "purge", "front": "purge-on-delete?", "back": "Hard-delete behavior skipping Recycle Bin; dangerous and type-specific."},
+    {"id": "F12", "category": "unlocked", "front": "Unlocked alternative to naive delete?", "back": "Deprecate and migrate metadata to another package per the guide."},
+    {"id": "F13", "category": "deps", "front": "Name four dependency places.", "back": "Apex, Flow, layouts/reports, permission sets, plus data row counts."},
+    {"id": "F14", "category": "ci", "front": "Missing-component warning on delete?", "back": "May already be gone; ignore-warnings is a CI policy, not ignore-errors."},
+    {"id": "F15", "category": "rehearse", "front": "Where to rehearse demolition?", "back": "Scratch org or disposable sandbox, never first try in production."}
+  ],
+  "interview_questions": [
+    {"id": "I1", "category": "foundational", "question": "How do you delete metadata in a source-driven project?", "answer_30_seconds": "You do not just delete the file in Git. You add a pre or post destructive manifest and deploy it with CLI. Check Coverage and dependents.", "answer_2_minutes": "I explain upsert-versus-delete. I pick pre vs post. I refuse ignore-errors. I mention data as a separate blocker. I may mention unlocked deprecate/move.", "example": "destructiveChangesPost.xml lists ApexClass LAB_OldHelper after the new helper is deployed.", "tradeoffs": ["One zip vs two releases", "Purge vs Recycle Bin"], "follow_ups": ["What is purge-on-delete?", "Change set deletes?"], "weak_answer_warnings": ["Git delete is org delete"]},
+    {"id": "I2", "category": "foundational", "question": "Pre versus post destructive changes?", "answer_30_seconds": "Pre runs before incoming metadata; post after. If the old component blocks the new, pre. If callers need the new first, post.", "answer_2_minutes": "I always rehearse in a scratch org because the failure mode is compile or dependency errors. I document the choice in the release ticket. I do not mix data deletes into those XML files.", "example": "Cannot have two components with the same unique name: pre. Replace a helper class: post.", "tradeoffs": ["Rename-in-place vs replace", "One deploy vs sequenced deploys"], "follow_ups": ["Can both flags be used together?", "What about global Apex?"], "weak_answer_warnings": ["They are the same flag"]},
+    {"id": "I3", "category": "scenario", "question": "Field still on a Flow and has rows. Delete plan?", "answer_30_seconds": "Do not destructive-first. Retarget the Flow, migrate or archive rows, then delete the field in a later post-destructive job.", "answer_2_minutes": "I use where-is-this-used plus Git search. I add a toggle if the new field path is not ready. I keep Metadata API off the row archive. I warn that field deletes can be delayed by data volume—Needs verification of current special-behavior Help.", "example": "LAB_OldStatus__c on a Flow; new LAB_Status__c; migrate values; then destructive field delete.", "tradeoffs": ["Hide the field vs delete", "Two-release vs one risky zip"], "follow_ups": ["What about formula references?", "Reporting snapshots?"], "weak_answer_warnings": ["purge-on-delete tonight"]},
+    {"id": "I4", "category": "scenario", "question": "Why feature toggles in a Salesforce metadata release?", "answer_30_seconds": "So you can deploy Apex/Flow dark, enable with a CMDT flag after UAT, and only later destroy the old path. That is release safety.", "answer_2_minutes": "Toggles are configuration metadata, not Account rows. I default them off in production. I still test both flag states. I do not use toggles to skip quality gates or hide security. I remove dead paths so toggles do not live forever.", "example": "LAB_UseNewBoarding__mdt false during deploy week, true after CAB, old Flow deleted next sprint.", "tradeoffs": ["Toggle debt vs safer deploys", "CMDT vs custom permission"], "follow_ups": ["Who flips the flag?", "Custom permission instead?"], "weak_answer_warnings": ["Toggle replaces tests"]},
+    {"id": "I5", "category": "design", "question": "Design a three-sprint retirement of an object.", "answer_30_seconds": "Sprint 1 additive replacement and toggle. Sprint 2 retarget automation and migrate data. Sprint 3 post-destructive delete after Coverage and rehearsal.", "answer_2_minutes": "I name owners for metadata versus data. I keep Git matching each sprint. I add a rollback that cannot undelete data. I include permission sets so access does not depend on the dying object. I rehearse destructive in scratch.", "example": "LAB_OldGate__c retirement with LAB_Gate__c replacement as in the worked example.", "tradeoffs": ["Longer calendar vs weekend heroics", "Archive object vs hard delete"], "follow_ups": ["Who signs the data migration?", "Unlocked deprecate instead?"], "weak_answer_warnings": ["One production zip for all three"]},
+    {"id": "I6", "category": "foundational", "question": "How do unlocked packages change the delete conversation?", "answer_30_seconds": "You may deprecate and migrate metadata between packages instead of only unpackaged destructive XML. Coverage still applies. VCS remains truth.", "answer_2_minutes": "I would not uninstall a package to delete one field. I read the deprecate/migrate topic before promising. Org-dependent packages complicate deletes of unpackaged dependents. I still need a destructive story for unpackaged leftovers.", "example": "Move LAB_ helper from package A (deprecated) to package B, then install both in order.", "tradeoffs": ["Package migrate vs unpackaged destructive", "Subscriber-editable unlocked risk"], "follow_ups": ["Can you delete a namespaced 2GP component?", "Push uninstall?"], "weak_answer_warnings": ["Uninstall the unlocked package to drop one field always"]},
+    {"id": "I7", "category": "troubleshooting", "question": "Destructive deploy warns the component was not found. What now?", "answer_30_seconds": "It may already be gone. Confirm API name and org. CI may use ignore-warnings. Do not flip ignore-errors. Do not assume Git is wrong.", "answer_2_minutes": "I retrieve the type. If absent, the delete is idempotent enough for CI with a documented warning policy. If present under another name, I fix the manifest. I check package versus unpackaged. I still run tests.", "example": "LAB_OldHelper already deleted in UAT; production job warns; we proceed only after confirming production still has it or not.", "tradeoffs": ["Fail CI on warnings vs ignore-warnings", "Idempotent deletes"], "follow_ups": ["Does ignore-warnings hide real compile errors?", "How do you diff org vs Git?"], "weak_answer_warnings": ["ignore-errors to clear warnings"]},
+    {"id": "I8", "category": "challenge", "question": "A release manager says 'just like dropping a table in SQL.' Correct them.", "answer_30_seconds": "Salesforce metadata delete is a controlled demolition with manifests, dependents, and maybe data left in the building. Git omit is not DROP TABLE. Coverage may forbid it.", "answer_2_minutes": "I map schema metadata versus rows. DROP TABLE would also drop data; Metadata API will not silently archive Accounts. Flows and Apex are load-bearing. We sequence additive, toggle, migrate, destructive. We rehearse in a scratch org, not production.", "example": "SQL instinct to drop LAB_OldGate__c; Salesforce plan is three sprints plus a post-destructive manifest.", "tradeoffs": ["DBA mental model vs platform metadata", "Speed vs stranded automation"], "follow_ups": ["What about hard-delete of rows?", "Custom field type change special behavior?"], "weak_answer_warnings": ["It's just SQL", "Git omit equals org delete"]}
+  ]
+}

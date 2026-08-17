@@ -1,0 +1,994 @@
+{
+  "topic_id": "PROG-007",
+  "slug": "pseudocode-debugging-mindset-clean-code-and-separation-",
+  "title": "Pseudocode, debugging mindset, clean code, and separation of concerns",
+  "track": "Programming foundations for Salesforce",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "PROG-006"
+  ],
+  "objectives": [
+    "Write short pseudocode before Apex or LWC so the algorithm is testable in words.",
+    "Debug with evidence: reproduce, read debug logs, change one hypothesis.",
+    "Keep methods small, named, and free of mixed UI/DML/HTTP in one blob.",
+    "Separate concerns so a trigger, a service, and a UI each have one job."
+  ],
+  "diagnostic_question": "A trigger, an LWC, and a callout are jammed into one method that 'sometimes' fails. Before you open Setup, what pseudocode would you write, what would you look for in a debug log, and how would you split the concerns?",
+  "definition": "Pseudocode is the algorithm in plain structured language before syntax. A debugging mindset reproduces the fault, gathers logs, and tests one hypothesis. Clean code is readable, small, and intention-revealing. Separation of concerns puts UI, business rules, and persistence in different places so a change in one does not rewrite the others. Salesforce debugging uses the Developer Console and debug logs; unhandled exceptions can email developers. ([Debugging Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging.htm); [Well-Architected: Easy](https://architect.salesforce.com/well-architected/easy))",
+  "why_it_matters": "Interviewers watch you debug live. Guessing, System.debug spam without a question, 400-line triggers, and mixing HTML, DML, and HTTP in one method are fail signals. Clean separation is how orgs survive the next admin and the next governor.",
+  "sixty_second_explanation": "Think of an aircraft preflight and avionics split. Pseudocode is the walkaround checklist in words before you start the engine. Debugging is isolating which instrument lied: reproduce the fault, read the recorder (debug log), change one thing. Clean code is labeled wiring someone else can trace at 3 a.m. Separation of concerns is airframe versus avionics versus cabin: the trigger is not the in-flight movie system. You do not reroute hydraulic lines to fix a reading light.",
+  "deeper_explanation": [
+    "Pseudocode is not Apex and not a stakeholder email. It names inputs, steps, branches, and outputs so you can review the algorithm with an admin before types and governors. If you cannot write it, you do not yet understand the requirement (PROG-001–005 ideas in words).",
+    "Debugging Apex: Developer Console and debug logs. Exception statements and custom exceptions help. Unhandled exceptions can email developers. A mindset: reproduce with LAB_ data, read the log for the failing line, form one hypothesis, change one thing, re-run. Do not guess org 'corruption'. ([Debugging Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging.htm))",
+    "Clean code here means: names that match PROG-001–004 vocabulary, small methods (PROG-002), no empty catch, no innerHTML of JSON (PROG-006), tests that assert behavior. It is not a religious formatter war.",
+    "Separation of concerns: UI (LWC) calls a service class; the trigger is thin; HTTP callouts are not inside a loop in the trigger. Well-Architected Easy emphasizes maintainable, understandable solutions—modularity over one mega-class. ([Well-Architected: Easy](https://architect.salesforce.com/well-architected/easy))"
+  ],
+  "mental_model": {
+    "analogy": "Aircraft preflight and avionics split: checklist in words (pseudocode), flight recorder plus one-hypothesis isolation (debugging), labeled wiring (clean code), airframe vs avionics vs cabin (separation of concerns).",
+    "useful_mapping": [
+      "pseudocode → walkaround checklist before engine start",
+      "reproduce → fly the same pattern again with LAB_ data",
+      "debug log → flight recorder",
+      "one hypothesis → isolate one instrument",
+      "clean code → labeled wiring at 3 a.m.",
+      "separation of concerns → airframe / avionics / cabin",
+      "mega-trigger → rerouting hydraulics to fix a reading light",
+      "empty catch → covering a warning light with tape"
+    ],
+    "where_it_breaks": [
+      "Debug logs have size and retention limits; they are not an infinite recorder.",
+      "Unhandled exception emails are not a substitute for tests.",
+      "Well-Architected Easy is broader than code formatting.",
+      "This lesson does not replace APEX-017 production diagnosis tooling."
+    ]
+  },
+  "teach_back_prompt": "Using the preflight, explain pseudocode versus a debug log, then split a fat trigger into UI, service, and DML concerns. Name where the aircraft analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Write five lines of pseudocode for 'first open Case Id' from PROG-002."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "List the debug loop: reproduce, log, hypothesis, one change, re-run."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Name three smells: empty catch, SOQL in loop, UI+DML+HTTP in one method."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Sketch a thin trigger plus service class without writing production code."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: pseudocode, debugging, clean code, separation of concerns."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-DEBUG",
+      "title": "Debugging Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging.htm",
+      "supports": "Debug with Developer Console and debug logs; exceptions aid debugging; unhandled exceptions can email developers.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace the full Debug Log field reference."
+    },
+    {
+      "source_id": "SF-WA-EASY",
+      "title": "Salesforce Well-Architected: Easy",
+      "type": "Official architecture guidance",
+      "url": "https://architect.salesforce.com/well-architected/easy",
+      "supports": "Maintainable, understandable solutions; avoid accidental complexity—supports clean, separated designs.",
+      "release_or_version": "Salesforce Architects Well-Architected",
+      "last_verified": "2026-08-16",
+      "limits": "Easy is a pillar with many patterns; this lesson takes maintainability, not every pattern."
+    },
+    {
+      "source_id": "SF-APEX-EXCEPTIONS",
+      "title": "Exception Statements",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_statements.htm",
+      "supports": "try/catch/finally as structured failure handling rather than silent empty catch.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Not a style guide by itself."
+    },
+    {
+      "source_id": "SF-LWC-HTML",
+      "title": "HTML Templates",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-html.html",
+      "supports": "UI concern belongs in the template; do not fight the DOM from a mixed server blob.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "UI-only; DML remains Apex."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Developer Guide and Well-Architected over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Pseudocode first",
+        "Reproduce then log",
+        "One hypothesis",
+        "Small named methods",
+        "UI vs service vs DML",
+        "No empty catch"
+      ],
+      "accessible_description": "Portrait map: write pseudocode, debug with logs, keep code clean, split UI/service/data concerns."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-DEBUG",
+        "SF-WA-EASY",
+        "SF-APEX-EXCEPTIONS",
+        "SF-LWC-HTML"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "From checklist to separated modules"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Pseudo[Pseudocode algorithm] --> Build[Small clean methods]\n  Build --> UI[LWC / template concern]\n  Build --> Svc[Service / business concern]\n  Build --> Data[DML / query concern]\n  Fail[Unexpected result] --> Repro[Reproduce with LAB_ data]\n  Repro --> Log[Debug log / Developer Console]\n  Log --> Hyp[One hypothesis]\n  Hyp --> Fix[One change then re-run]",
+      "decision": "flowchart TD\n  Need[Stuck or starting?] --> Q1{Do you have the algorithm in words?}\n  Q1 -->|No| Pseudo[Write pseudocode first]\n  Q1 -->|Yes failing| Q2{Can you reproduce?}\n  Q2 -->|No| Repro[Narrow LAB_ steps]\n  Q2 -->|Yes| Log[Read debug log]\n  Log --> Q3{Where does the concern belong?}\n  Q3 -->|UI| LWC[LWC template/JS]\n  Q3 -->|Rules| Svc[Apex service class]\n  Q3 -->|Data| Dml[Selector or DML method]\n  Q3 -->|Guessing| Stop[Do not add empty catch or more System.debug without a question]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Apex debugging uses the Developer Console and debug logs. Exceptions help debugging. Unhandled exceptions can email developers.",
+      "source_ids": ["SF-APEX-DEBUG"],
+      "scope": "Debugging mindset",
+      "validation": "Debugging Apex page.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Well-Architected Easy pushes maintainable, understandable solutions and avoiding accidental complexity—supporting small, separated designs over mega-classes.",
+      "source_ids": ["SF-WA-EASY"],
+      "scope": "Clean code and separation of concerns",
+      "validation": "Salesforce Well-Architected Easy pillar.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Structured exception handling (try/catch/finally) is for recovery and cleanup, not empty catch that hides faults you should debug.",
+      "source_ids": ["SF-APEX-EXCEPTIONS"],
+      "scope": "Debugging and clean code",
+      "validation": "Exception Statements contrasted with empty-catch anti-pattern taught in PROG-002.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "UI structure belongs in the LWC template; let LWC manipulate the DOM. Server DML and HTTP do not belong in the same undifferentiated blob as markup.",
+      "source_ids": ["SF-LWC-HTML"],
+      "scope": "Separation of concerns",
+      "validation": "HTML Templates best practice plus layering with Apex services.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Debug log UI and Well-Architected pages evolve. Reverify Developer Console steps in the target org; do not invent click-paths.",
+  "unresolved_uncertainty": [
+    "Exact debug-log retention days and maximum log size are org/edition sensitive—cite the current Debug Log guide before quoting numbers."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Pseudocode",
+      "telugu": "సింటాక్స్ లేకుండా అల్గోరిథం మాటల్లో."
+    },
+    {
+      "english": "Debug log",
+      "telugu": "ఏ లైన్ ఎక్కడ జరిగిందో రికార్డర్."
+    },
+    {
+      "english": "Separation of concerns",
+      "telugu": "UI, రూల్స్, DML వేరు వేరు చోట్ల."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I write pseudocode first. I debug by reproducing and reading logs, one hypothesis at a time. Clean code is small named methods. I separate LWC, service, and DML so a UI change does not rewrite the trigger.",
+    "two_minutes": "If I cannot say the steps in words, I am not ready to type Apex. When it fails I reproduce with LAB_ data, open the debug log, and change one thing. I refuse empty catch. I keep triggers thin and put rules in a service class. I keep HTML in the template. Well-Architected Easy is my maintainability north star, not a license to over-abstract."
+  },
+  "terminology": [
+    {
+      "term": "pseudocode",
+      "plain": "The walkaround checklist: steps in words before Apex syntax.",
+      "precise": "Structured natural language: inputs, branches, loops, outputs. Not compilable and not a substitute for tests.",
+      "example": "FOR each case IF closed THEN skip ELSE return id BREAK",
+      "non_example": "A Jira ticket with no steps.",
+      "confusable_neighbor": "Apex comments that only repeat the next line.",
+      "boundary": "Flow diagrams can complement; this lesson wants written steps."
+    },
+    {
+      "term": "debugging mindset",
+      "plain": "Reproduce, read evidence, one hypothesis, one change.",
+      "precise": "Use Developer Console and debug logs. Do not guess. Exceptions and logs are evidence. Unhandled exceptions may email developers.",
+      "example": "Re-run the LAB_ test, open the log, find the NullPointer line, initialize the list.",
+      "non_example": "Adding random System.debug in production without a question.",
+      "confusable_neighbor": "Unit tests: they prevent regressions; debugging diagnoses a live failure.",
+      "boundary": "Checkpoints and production log analysis are APEX-017."
+    },
+    {
+      "term": "debug log",
+      "plain": "The flight recorder of an Apex request.",
+      "precise": "Platform log of execution. Read it instead of imagining the path. Size/retention: Needs verification in current Debug Log docs.",
+      "example": "A log showing EXCEPTION_THROWN at LAB_CasePicker line 12.",
+      "non_example": "Setup Audit Trail is not a debug log.",
+      "confusable_neighbor": "Browser console: client JS, not Apex.",
+      "boundary": "Trace flags and log levels: confirm current Setup names; do not invent clicks."
+    },
+    {
+      "term": "clean code",
+      "plain": "Labeled wiring: names, small methods, no hidden traps.",
+      "precise": "Intention-revealing names, one job per method, no empty catch, tests for behavior. Aligns with maintainable Easy solutions.",
+      "example": "pickFirstOpenId(List<Case> rows) instead of doStuff(List<SObject> x).",
+      "non_example": "A 400-line trigger named Handler1.",
+      "confusable_neighbor": "Prettier/formatting only: necessary but not sufficient.",
+      "boundary": "Not a demand to apply every academic SOLID letter in a 20-line class."
+    },
+    {
+      "term": "separation of concerns",
+      "plain": "Airframe, avionics, cabin: each part one job.",
+      "precise": "UI in LWC templates, business rules in Apex services, DML/queries in a small data module, HTTP callouts not mixed into UI event handlers.",
+      "example": "Trigger calls LAB_CaseService.onBeforeInsert(rows); LWC calls the same service via Apex.",
+      "non_example": "One method that queries, callouts, DML, and builds HTML.",
+      "confusable_neighbor": "Microservices: org modularity is not automatically a new runtime.",
+      "boundary": "Trigger frameworks are APEX-009; this is the idea."
+    },
+    {
+      "term": "hypothesis",
+      "plain": "One testable guess about the fault.",
+      "precise": "After reading the log, state 'the list is null at line 12' and change only that. Multiple simultaneous changes hide the cause.",
+      "example": "Hypothesis: AccountId is null so the map get returns null.",
+      "non_example": "Rewrite the class while also changing the trigger and the LWC.",
+      "confusable_neighbor": "A requirement change pretending to be a bug.",
+      "boundary": "If the log contradicts the hypothesis, discard the hypothesis."
+    },
+    {
+      "term": "reproduce",
+      "plain": "Make the failure happen again on purpose with LAB_ data.",
+      "precise": "Same user context, same record shape, non-production. If you cannot reproduce, you cannot verify a fix.",
+      "example": "Test method that inserts a closed Case then calls pick().",
+      "non_example": "Waiting for a customer to hit production again.",
+      "confusable_neighbor": "Load test: different goal.",
+      "boundary": "Do not use real personal data to reproduce."
+    },
+    {
+      "term": "thin trigger",
+      "plain": "A trigger that only forwards context to a class.",
+      "precise": "Separation of concerns: the trigger is not the service. Bulk collections still apply (PROG-004).",
+      "example": "trigger LAB_Case on Case (before insert) { LAB_CaseService.beforeInsert(Trigger.new); }",
+      "non_example": "SOQL and callouts pasted in the trigger body.",
+      "confusable_neighbor": "Disabled trigger: not the same as thin.",
+      "boundary": "Full trigger framework is APEX-009."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Write the checklist",
+      "actor": "Developer",
+      "trigger": "New behavior",
+      "before": "Jumping into syntax",
+      "after": "Pseudocode with inputs, branches, outputs",
+      "observe": "An admin can read it",
+      "failure": "Coding while discovering the rule"
+    },
+    {
+      "step": 2,
+      "transition": "Build in layers",
+      "actor": "Developer",
+      "trigger": "Pseudocode agreed",
+      "before": "One mega method",
+      "after": "UI / service / data methods named from the checklist",
+      "observe": "Each method has one job",
+      "failure": "HTML strings plus DML plus HTTP together"
+    },
+    {
+      "step": 3,
+      "transition": "Reproduce and log",
+      "actor": "Developer",
+      "trigger": "Unexpected result",
+      "before": "Guessing",
+      "after": "LAB_ reproduction and a debug log",
+      "observe": "EXCEPTION_THROWN or the last USER_DEBUG that answers the hypothesis",
+      "failure": "Empty catch or production System.debug spam"
+    },
+    {
+      "step": 4,
+      "transition": "One change",
+      "actor": "Developer",
+      "trigger": "Hypothesis stated",
+      "before": "Three simultaneous edits",
+      "after": "Single fix, re-run, keep or discard",
+      "observe": "Test now passes; log matches",
+      "failure": "Rewriting the architecture in the same commit as a null check"
+    }
+  ],
+  "when_to_use": [
+    "When starting a feature: write pseudocode before Apex or LWC so the algorithm is reviewable.",
+    "When a failure is unclear: use a debugging mindset with debug logs instead of guessing.",
+    "When a method mixes UI, DML, and HTTP: apply clean code and split concerns.",
+    "When a trigger is growing: separate concerns into a service class rather than more lines in the trigger."
+  ],
+  "when_not_to_use": [
+    "Do not use this pseudocode lesson as a substitute for unit tests and coverage (APEX-016).",
+    "Do not treat clean code as a reason to build a six-layer framework for a three-line script.",
+    "Do not debug production with real customer PII in logs.",
+    "Do not empty-catch exceptions to make the debug log look clean."
+  ],
+  "configuration_or_code_location": [
+    "Developer Console or VS Code for debug logs in a sandbox.",
+    "Apex trigger file kept thin; service class beside it.",
+    "LWC template for UI concern.",
+    "Test class as the reproduce harness."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox 'close case' path fails intermittently. Today the logic lives in a 120-line trigger that also builds an email HTML string and performs a callout. No production data.",
+    "inputs": [
+      "Case closed in UI",
+      "Need notify job only when Status becomes Closed",
+      "Need to find why some closes throw NullPointerException"
+    ],
+    "decisions": [
+      {
+        "decision": "Write pseudocode: IF isChanged to Closed AND contact email present THEN enqueue notify ELSE skip.",
+        "because": "The algorithm was never agreed; comments in the trigger contradicted the callout.",
+        "rejected": "Adding more ifs without stating the rule"
+      },
+      {
+        "decision": "Reproduce in a test with a Case that has a null ContactEmail; read the debug log for the NPE line.",
+        "because": "Debugging Apex is logs plus exceptions, not guessing.",
+        "rejected": "catch (Exception e) {} to hide the NPE"
+      },
+      {
+        "decision": "Thin trigger → LAB_CaseService.closePath(rows); LWC stays a button; callout in a Queueable.",
+        "because": "Separation of concerns and PROG-005 async; Easy maintainability.",
+        "rejected": "More HTML concatenation in the trigger"
+      }
+    ],
+    "configuration_or_code": [
+      "Pseudocode block in the service class header as comments of the algorithm, not of each brace.",
+      "trigger LAB_Case on Case (after update) { LAB_CaseService.afterUpdate(Trigger.new, Trigger.oldMap); }",
+      "Test: Case without email asserts no enqueue and no exception; Case with email asserts enqueue.",
+      "Debug log used once to confirm the NPE was ContactEmail null, then the null check is the one change."
+    ],
+    "output": "NPE gone; trigger thin; notify async; algorithm readable in pseudocode.",
+    "verification": [
+      "Test without email does not throw.",
+      "Trigger file has no HTTP and no HTML strings.",
+      "Log no longer shows EXCEPTION_THROWN on the close path."
+    ],
+    "self_explanation": "I wrote the checklist, reproduced, read the recorder, then split cabin (UI), avionics (service), and comms (Queueable)."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ Apex only.",
+    "starting_state_checks": [
+      "Can create a trigger, class, and test.",
+      "Can open a debug log in Developer Console or equivalent."
+    ],
+    "steps": [
+      "Write five lines of pseudocode for pick-first-open-Case as comments in LAB_DebugLab.",
+      "Implement a tiny method that NPEs on a null list; run a test; open the debug log and note the exception line.",
+      "Fix with one change (null check or empty list); re-run.",
+      "Move any DML you added into a separate method from the 'format message' method to show separation of concerns."
+    ],
+    "guided_completion": [
+      "If you cannot find the exception in the log, the trace flag may not include Apex—Needs verification of current log-level UI; try running from a test which always produces a log in Developer Console.",
+      "If you 'fixed' it with empty catch, revert that."
+    ],
+    "independent_challenge": "Write pseudocode for the Pay idempotency path from PROG-005 in comments only—no new DML.",
+    "evidence": [
+      "Screenshot or paste of the EXCEPTION_THROWN line before the fix.",
+      "Two methods with different concerns after the split."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_DebugLab and any LAB_ trigger.",
+      "Turn off extra trace flags. Do not debug production."
+    ],
+    "limitations": "Does not teach every debug-log filter or checkpoint."
+  },
+  "decision_table": [
+    {
+      "signal": "You cannot yet explain the branches to an admin.",
+      "choose": "Pseudocode first, then types and classes.",
+      "not": "A 200-line trigger while discovering the rule.",
+      "why": "If the algorithm is not in words, syntax will hide the requirement."
+    },
+    {
+      "signal": "Intermittent failure, no failing test.",
+      "choose": "Reproduce with LAB_ data and read a debug log; one hypothesis.",
+      "not": "Empty catch or scattershot System.debug in production.",
+      "why": "Debugging Apex is Console and logs; exceptions are evidence."
+    },
+    {
+      "signal": "A method builds HTML, performs DML, and calls HTTP.",
+      "choose": "Split UI, service, and callout concerns into separate units.",
+      "not": "More comments in the same method.",
+      "why": "Easy/maintainable design; LWC owns UI; Apex services own rules; async owns callouts."
+    },
+    {
+      "signal": "Trigger file keeps growing with business rules.",
+      "choose": "Thin trigger plus a service class (separation of concerns).",
+      "not": "A second trigger on the same object for the next if.",
+      "why": "One job per unit; later trigger frameworks build on this split."
+    }
+  ],
+  "limitations": [
+    "Not a full debug-log field encyclopedia.",
+    "Not a complete trigger framework.",
+    "Not Well-Architected in full (Trusted/Easy/Adaptable).",
+    "Log size/retention numbers are Needs verification."
+  ],
+  "security_notes": [
+    "Do not log personal data or secrets in debug logs.",
+    "Do not reproduce production bugs with real PII in a scratch org copy unless policy allows synthetic data only—this handbook uses LAB_ only.",
+    "Trace flags on users can capture sensitive DML—use sandbox."
+  ],
+  "common_mistakes": [
+    "Coding before pseudocode.",
+    "Empty catch as debugging.",
+    "Three changes at once.",
+    "HTML in a trigger.",
+    "Debugging only in production."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "No debug log appears.",
+      "check": [
+        "Did the request run in this org?",
+        "Is a trace flag or test execution producing a log?",
+        "Did you look at browser console by mistake?"
+      ],
+      "do_not_assume": "Apex did not run."
+    },
+    {
+      "symptom": "Fix works in anonymous Apex, fails in trigger.",
+      "check": [
+        "Different concern/context (bulk, recursion).",
+        "Reproduce in a test that fires the trigger."
+      ],
+      "do_not_assume": "The service class is unused; maybe the trigger never calls it."
+    },
+    {
+      "symptom": "Log is huge and unreadable.",
+      "check": [
+        "Narrow the reproduction.",
+        "Stop logging entire collections of records."
+      ],
+      "do_not_assume": "More System.debug is always better."
+    }
+  ],
+  "production_notes": [
+    "Do not leave verbose debug on in production.",
+    "Prefer tests as the reproduce harness.",
+    "No production trace flags from this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where does the Debugging Apex page tell you to debug?",
+      "options": {
+        "A": "Developer Console and debug logs",
+        "B": "CSS files",
+        "C": "Git tags only",
+        "D": "Formula fields"
+      },
+      "answer": "A",
+      "rationale": "Apex provides debugging support via Developer Console and debug logs.",
+      "distractor_explanations": {
+        "B": "Wrong layer.",
+        "C": "Source history, not runtime.",
+        "D": "Not Apex debugging."
+      },
+      "concept": "debugging",
+      "citation_ids": ["SF-APEX-DEBUG"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is pseudocode in this lesson?",
+      "options": {
+        "A": "The algorithm in structured words before syntax",
+        "B": "Anonymous Apex",
+        "C": "A debug log",
+        "D": "A REST resource"
+      },
+      "answer": "A",
+      "rationale": "Pseudocode is the checklist in words.",
+      "distractor_explanations": {
+        "B": "That is real Apex.",
+        "C": "That is evidence of a run.",
+        "D": "Wrong topic."
+      },
+      "concept": "pseudocode",
+      "citation_ids": ["SF-WA-EASY"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A method catches Exception with an empty body so the log looks clean. Clean code?",
+      "options": {
+        "A": "No; empty catch hides the fault you should debug",
+        "B": "Yes; silent is always cleaner",
+        "C": "Yes if the method is virtual",
+        "D": "Only if the trigger is thin"
+      },
+      "answer": "A",
+      "rationale": "try/catch is for recovery; empty catch is an anti-pattern from PROG-002 and Exception Statements.",
+      "distractor_explanations": {
+        "B": "Opposite of a debugging mindset.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "clean code",
+      "citation_ids": ["SF-APEX-EXCEPTIONS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "UI markup mixed with DML and HTTP in one Apex method. What principle is violated?",
+      "options": {
+        "A": "Separation of concerns",
+        "B": "HTTP status 200",
+        "C": "Git fast-forward",
+        "D": "CSS specificity"
+      },
+      "answer": "A",
+      "rationale": "UI, rules, and persistence/callouts should be different units.",
+      "distractor_explanations": {
+        "B": "Not a status code issue.",
+        "C": "Git.",
+        "D": "CSS."
+      },
+      "concept": "separation of concerns",
+      "citation_ids": ["SF-WA-EASY", "SF-LWC-HTML"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Unhandled Apex exceptions can do what, per Debugging Apex?",
+      "options": {
+        "A": "Email developers",
+        "B": "Deploy to production automatically",
+        "C": "Rewrite the LWC template",
+        "D": "Create a Git branch"
+      },
+      "answer": "A",
+      "rationale": "Apex sends emails to developers for unhandled exceptions.",
+      "distractor_explanations": {
+        "B": "No.",
+        "C": "No.",
+        "D": "No."
+      },
+      "concept": "debugging",
+      "citation_ids": ["SF-APEX-DEBUG"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Well-Architected Easy emphasizes what relevant idea?",
+      "options": {
+        "A": "Maintainable, understandable solutions and avoiding accidental complexity",
+        "B": "Always write Batch Apex",
+        "C": "Always use innerHTML",
+        "D": "Skip tests"
+      },
+      "answer": "A",
+      "rationale": "Easy is the maintainability pillar used here for clean, separated design.",
+      "distractor_explanations": {
+        "B": "Not the lesson.",
+        "C": "Opposite of LWC guidance.",
+        "D": "Opposite."
+      },
+      "concept": "clean code",
+      "citation_ids": ["SF-WA-EASY"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "NPE in a trigger, no test. First debugging move?",
+      "options": {
+        "A": "Reproduce with LAB_ data and read the debug log",
+        "B": "Empty catch on Exception",
+        "C": "Push to production to see if it persists",
+        "D": "Rewrite CSS"
+      },
+      "answer": "A",
+      "rationale": "Reproduce plus logs is the mindset; Developer Console/debug logs are official tools.",
+      "distractor_explanations": {
+        "B": "Hides evidence.",
+        "C": "Unsafe and unclear.",
+        "D": "Wrong layer."
+      },
+      "concept": "debugging mindset",
+      "citation_ids": ["SF-APEX-DEBUG"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You change the null check, the query, and the LWC at once. Problem?",
+      "options": {
+        "A": "You cannot tell which change fixed or broke it—violate one-hypothesis",
+        "B": "Apex forbids multiple files",
+        "C": "Git cannot commit more than one file",
+        "D": "Well-Architected forbids LWC"
+      },
+      "answer": "A",
+      "rationale": "Debugging mindset: one hypothesis, one change.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "debugging mindset",
+      "citation_ids": ["SF-APEX-DEBUG"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Pseudocode versus Apex?",
+      "options": {
+        "A": "Pseudocode is words for the algorithm; Apex is the typed implementation",
+        "B": "They compile the same",
+        "C": "Pseudocode runs on the client DOM",
+        "D": "Apex cannot implement pseudocode"
+      },
+      "answer": "A",
+      "rationale": "Checklist then engine start.",
+      "distractor_explanations": {
+        "B": "Pseudocode is not compiled.",
+        "C": "No.",
+        "D": "Apex is how you implement it."
+      },
+      "concept": "pseudocode",
+      "citation_ids": ["SF-WA-EASY"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Thin trigger versus business rules in the trigger body?",
+      "options": {
+        "A": "Thin trigger forwards to a service—separation of concerns",
+        "B": "They are required to be identical by Apex",
+        "C": "Thin trigger cannot be bulkified",
+        "D": "Business rules must live in CSS"
+      },
+      "answer": "A",
+      "rationale": "One job per unit; services are testable without the trigger file.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "The service still uses collections.",
+        "D": "CSS is presentation."
+      },
+      "concept": "separation of concerns",
+      "citation_ids": ["SF-WA-EASY"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Where should LWC markup live if we separate concerns?",
+      "options": {
+        "A": "The HTML template, letting LWC update the DOM",
+        "B": "Inside an Apex trigger as concatenated strings",
+        "C": "In a debug log",
+        "D": "In a Git tag message only"
+      },
+      "answer": "A",
+      "rationale": "HTML Templates plus SoC.",
+      "distractor_explanations": {
+        "B": "Mixes concerns.",
+        "C": "Logs are evidence.",
+        "D": "Source control is not the UI."
+      },
+      "concept": "separation of concerns",
+      "citation_ids": ["SF-LWC-HTML"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You cannot explain the branches to an admin. Next step?",
+      "options": {
+        "A": "Write pseudocode until the branches are obvious",
+        "B": "Add another trigger",
+        "C": "Disable logging",
+        "D": "Mark the class global"
+      },
+      "answer": "A",
+      "rationale": "If the algorithm is unclear in words, code will not clarify it.",
+      "distractor_explanations": {
+        "B": "Adds complexity.",
+        "C": "Removes evidence.",
+        "D": "Access modifier, wrong tool."
+      },
+      "concept": "pseudocode",
+      "citation_ids": ["SF-WA-EASY"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "What is pseudocode here?",
+      "back": "Structured words for inputs, branches, and outputs before Apex syntax."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "Name the debugging loop.",
+      "back": "Reproduce, read the debug log, one hypothesis, one change, re-run."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "Official Apex debugging tools named in the guide?",
+      "back": "Developer Console and debug logs; exceptions also aid debugging."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "What is clean code in this lesson?",
+      "back": "Small named methods, no empty catch, intention-revealing names, tests."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "What is separation of concerns here?",
+      "back": "UI, business rules, and DML/HTTP live in different units."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "Cannot explain branches to an admin?",
+      "back": "Write pseudocode before adding Apex."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "Intermittent NPE, no test?",
+      "back": "Reproduce with LAB_ data and read a debug log."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "HTML + DML + HTTP in one method?",
+      "back": "Split concerns; LWC for UI, service for rules, async for callouts."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "Growing trigger file?",
+      "back": "Thin trigger that calls a service class."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "Empty catch to hide a log line?",
+      "back": "Refuse it. That is not debugging and not clean code."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "May debug logs contain personal data?",
+      "back": "They can—do not log PII or secrets; use LAB_ data in sandbox."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Production System.debug of a full Contact list?",
+      "back": "Avoid. Logs are not a safe dump of customer records."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "Is this lesson a full trigger framework?",
+      "back": "No. Thin trigger plus service is the idea; frameworks are a later Apex topic."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Browser console versus Apex debug log?",
+      "back": "Console is client JS. Debug log is server Apex execution."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Three edits at once, bug remains. What went wrong?",
+      "back": "You cannot isolate the hypothesis. Revert and change one thing."
+    },
+    {
+      "id": "F16",
+      "category": "terminology",
+      "front": "Unhandled exceptions may do what?",
+      "back": "Email developers, per the Debugging Apex page—not a substitute for tests."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain pseudocode, debugging mindset, clean code, and separation of concerns for Salesforce.",
+      "answer_30_seconds": "Pseudocode is the algorithm in words. Debug by reproducing and reading logs, one hypothesis at a time. Clean code is small named methods. Separate UI, services, and DML.",
+      "answer_2_minutes": "I will not type Apex until I can say the branches. When it fails I reproduce with LAB_ data and open the debug log. I refuse empty catch. I keep triggers thin and LWC templates in charge of markup. Well-Architected Easy is maintainability, not a mega-framework.",
+      "example": "LAB_CaseService after a thin trigger; NPE found in the log then one null check.",
+      "tradeoffs": [
+        "Speed of typing vs reviewable algorithm",
+        "Layers vs over-abstraction"
+      ],
+      "follow_ups": [
+        "What is a thin trigger?",
+        "Debug log versus browser console?"
+      ],
+      "weak_answer_warnings": [
+        "Guessing without logs"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you debug a NullPointerException in Apex in an interview whiteboard?",
+      "answer_30_seconds": "Reproduce, open the debug log, find the line, hypothesize the null, initialize or null-check, re-run one change.",
+      "answer_2_minutes": "I write a test that recreates the shape. I do not start in production. I use Developer Console/logs as the guide says. I name the variable from PROG-001—unassigned is null. I do not empty-catch. If the log is huge I narrow the reproduction. I mention unhandled exception emails exist but tests are better.",
+      "example": "List never new'ed; log shows NPE on add; one new List<Id>() fix.",
+      "tradeoffs": [
+        "More logging vs a failing test"
+      ],
+      "follow_ups": [
+        "Checkpoints?",
+        "Trace flags?"
+      ],
+      "weak_answer_warnings": [
+        "I would add catch Exception and return"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A 120-line trigger builds HTML, DML, and a callout. How do you separate concerns?",
+      "answer_30_seconds": "Thin trigger to a service; LWC/template for UI; Queueable for HTTP; DML in one place.",
+      "answer_2_minutes": "I write pseudocode for when notify should fire. I extract LAB_CaseService. I move HTML out of Apex if an LWC or email template should own it. I async the callout (PROG-005). I add tests per branch. I do not build a six-layer framework the same afternoon. Easy means understandable, not fashionable.",
+      "example": "Sandbox LAB_Case after-update trigger calls LAB_CaseService; HTML and the notify callout leave the trigger.",
+      "tradeoffs": [
+        "Email template vs string HTML",
+        "Queueable vs future"
+      ],
+      "follow_ups": [
+        "Recursion?",
+        "Two triggers on Case?"
+      ],
+      "weak_answer_warnings": [
+        "Just add comments in the 120 lines"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Admin cannot follow your method names. Clean code response?",
+      "answer_30_seconds": "Rename to intention-revealing names from the pseudocode. Split doStuff into pickFirstOpenId.",
+      "answer_2_minutes": "Clean code is for the next human at 3 a.m. I map names to PROG vocabulary: list, set, map, transaction. I delete comments that only repeat the code. I keep methods short enough to test. I do not rename everything in the same commit as a functional fix if I am still debugging—that mixes hypotheses.",
+      "example": "doStuff(List<SObject> x) becomes pickFirstOpenId(List<Case> rows).",
+      "tradeoffs": [
+        "Rename commit vs behavior commit"
+      ],
+      "follow_ups": [
+        "When is a comment still useful?",
+        "Apex doc comments?"
+      ],
+      "weak_answer_warnings": [
+        "Names do not matter in Salesforce"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "No debug log after a UI click. Checklist?",
+      "answer_30_seconds": "Confirm the request hit Apex, you are not looking at the browser console, and a test or trace actually produced a log.",
+      "answer_2_minutes": "Client versus server (PROG-005): the click might have failed in JS. I run a test that calls the service directly. I check I opened the org's debug log, not Chrome. I do not invent Setup click-paths if unsure—Needs verification of current trace-flag UI. I never enable verbose logs in production for this lesson.",
+      "example": "LWC handler name mismatch so Apex never ran; console shows the client error.",
+      "tradeoffs": [
+        "Test harness vs UI reproduce"
+      ],
+      "follow_ups": [
+        "Log levels?",
+        "Log size limits?"
+      ],
+      "weak_answer_warnings": [
+        "Salesforce logging is broken"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Fix works in anonymous Apex, fails when the user clicks. How does SoC help?",
+      "answer_30_seconds": "Anonymous is not the trigger or LWC path. Reproduce in the real concern: test that fires the trigger or the @AuraEnabled method.",
+      "answer_2_minutes": "Different entry points are different transactions and sharing. I do not debug only the happy anonymous block. I add a test around the service the trigger calls. I read the log for the click's request. I check client state versus server (PROG-005). I keep the service callable from both UI and trigger so I do not duplicate rules.",
+      "example": "Anonymous uses a new List; the trigger passed Trigger.new with null fields.",
+      "tradeoffs": [
+        "Duplicate logic vs one service"
+      ],
+      "follow_ups": [
+        "with sharing?",
+        "SeeAllData?"
+      ],
+      "weak_answer_warnings": [
+        "Users should only use anonymous Apex"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When is extra separation of concerns too much?",
+      "answer_30_seconds": "When a three-line script gets six layers and no one can find the rule. Easy means understandable.",
+      "answer_2_minutes": "Well-Architected Easy fights accidental complexity. I split when UI, rules, and I/O actually change for different reasons. I do not create interfaces for a single implementor on a lab class. I still write pseudocode for tiny jobs—it is cheap. I still debug with logs. Over-architecture is not clean code.",
+      "example": "A one-off anonymous data fix does not need a trigger framework.",
+      "tradeoffs": [
+        "Reuse vs YAGNI"
+      ],
+      "follow_ups": [
+        "When do you add an interface (PROG-003)?",
+        "Package boundaries?"
+      ],
+      "weak_answer_warnings": [
+        "Enterprise patterns for every trigger on day one"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this with the aircraft preflight analogy and where it breaks.",
+      "answer_30_seconds": "Checklist is pseudocode, recorder is the debug log, labeled wiring is clean code, airframe/avionics/cabin is SoC. Logs are not infinite and emails are not tests.",
+      "answer_2_minutes": "I walk around the aircraft in words before start. When a light fails I reproduce, read the recorder, and change one instrument. I do not tape over warning lights (empty catch). I do not reroute hydraulics to fix a cabin light (mega-trigger). I then say debug logs have limits, Well-Architected Easy is broader than formatting, and production PII must not fill the recorder.",
+      "example": "Thin LAB_Case trigger plus service plus log of the NPE line.",
+      "tradeoffs": [
+        "Analogy vs opening a real log"
+      ],
+      "follow_ups": [
+        "Map unit tests",
+        "Map checkpoints"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphor"
+      ]
+    }
+  ]
+}

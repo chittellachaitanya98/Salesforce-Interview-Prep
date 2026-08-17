@@ -1,0 +1,992 @@
+{
+  "topic_id": "APEX-001",
+  "slug": "apex-syntax-types-classes-methods-properties-access-mod",
+  "title": "Apex syntax, types, classes, methods, properties, access modifiers, and annotations",
+  "track": "Apex and database programming",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 35,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "PROG-007"
+  ],
+  "objectives": [
+    "Explain Apex as a strongly typed, object-oriented language that runs on the Salesforce Platform server.",
+    "Define a class, method, property, and access modifier using official Apex Developer Guide meanings.",
+    "Choose private, protected, public, or global for a method or class and explain why Apex public is not Java public.",
+    "Recognize when an annotation or sharing keyword changes visibility or execution, and when a later topic owns the detail."
+  ],
+  "diagnostic_question": "A teammate wants a helper class other packaged Apex can call, another method only this class should use, and a REST entry that outside apps will invoke. Before reading, which access modifiers would you reach for, and what would you check if compilation fails?",
+  "definition": "Apex is a strongly typed, object-oriented programming language that executes flow and transaction control on the Salesforce Platform server, together with API calls. Classes group methods and variables; access modifiers decide who can see them; annotations mark special platform behavior. ([Apex Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm); [Access Modifiers](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_access_modifiers.htm))",
+  "why_it_matters": "Wrong modifiers leak internals across a package or block a SOAP/REST entry. Treating Apex public like Java public is a common interview fail. Interviewers also listen for whether you know a class is metadata deployed to the org, while the records it queries are business data.",
+  "sixty_second_explanation": "Think of an Apex class as a locked workshop on Salesforce's server. Tools on the private bench stay in this room. Public tools are for other workshops in the same building (namespace/package). Global tools are the public loading dock other buildings may call—and the whole workshop must be marked global too. Annotations are stamped work orders: they tell the platform this method is a test, a future job, or an invocable action. Do not confuse the workshop blueprint (the class, metadata) with the parts it machines (records).",
+  "deeper_explanation": [
+    "The Apex Developer Guide describes Apex as strongly typed and object-oriented, running on the platform server with API calls. It is not browser JavaScript and not a substitute for Flow when a declarative path already fits. ([Apex Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm))",
+    "A top-level class declaration must use an access modifier such as public or global. Inner classes default to private if you omit a modifier. You may nest inner classes only one level deep. Optional modifiers include virtual and abstract; with sharing, without sharing, and inherited sharing set the sharing mode of the class. ([Apex Class Definition](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_defining.htm))",
+    "Methods and variables default to private: visible only inside the defining class. public in Apex means accessible to Apex in the same application/package (namespace), not 'everyone everywhere' as in Java. global is the Java-like public: any Apex that can see the class may call it, including SOAP API and other packages, and the containing class must also be global. protected is for instance members visible to inner classes and subclasses. ([Access Modifiers](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_access_modifiers.htm))",
+    "A method needs a return type (or void), a name, parentheses, at most 32 parameters, and a body. Arguments are passed by value. In API version 65.0 and later, abstract or override methods require protected, public, or global—private is invalid because an implementing class could not see them. ([Class Methods](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_defining_methods.htm); [Access Modifiers](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_access_modifiers.htm))",
+    "Annotations such as @IsTest, @AuraEnabled, @InvocableMethod, and @future are later-topic mechanics. This lesson only needs the idea that an annotation is metadata on a class or method that the platform reads. Numeric governor limits belong to APEX-007; async job types belong to APEX-011."
+  ],
+  "mental_model": {
+    "analogy": "A locked workshop in one building of a campus: private = this room, public = this building's other rooms, global = the campus loading dock, protected = the apprentice rooms that extend this shop.",
+    "useful_mapping": [
+      "class → workshop blueprint (Apex metadata)",
+      "method → a named job the workshop can perform",
+      "property / member variable → a labeled bin on the bench",
+      "private → only this class's code",
+      "public → other Apex in the same namespace/package",
+      "global → callers outside that application, including SOAP; class must be global too",
+      "annotation → a stamped work order the platform honors",
+      "records queried by the class → parts being machined (business data), not the blueprint"
+    ],
+    "where_it_breaks": [
+      "Apex public is not Java public; interviewers listen for that distinction.",
+      "global is a packaging/API contract, not a performance or security shortcut.",
+      "with sharing does not replace CRUD/FLS checks; APEX-014 owns that.",
+      "The analogy does not encode governor limits, trigger order, or async job choice."
+    ]
+  },
+  "teach_back_prompt": "Without saying only 'public means public,' explain Apex private, public, and global to a Java developer, then name one place the Java analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, write private vs public vs global and one sentence on why Apex public is not Java public."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given four call sites (same class, same package, managed package, SOAP), pick a modifier for each."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain top-level vs inner class modifier rules and where abstract/override private fails on API 65+."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a compile error 'method must be global' from a webservice or REST class without opening notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: class as metadata vs records as data, plus one sharing-keyword boundary."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-DEVGUIDE",
+      "title": "Apex Developer Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm",
+      "supports": "Apex as a strongly typed, object-oriented server language that executes transaction control with API calls.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Guide content is versioned; reverify the API version of the class under discussion."
+    },
+    {
+      "source_id": "SF-APEX-CLASSDEF",
+      "title": "Apex Class Definition",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_defining.htm",
+      "supports": "Top-level classes require public or global; inner classes default private; one-level nesting; virtual/abstract; sharing keywords.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Sharing keywords and abstract/override rules are version-sensitive."
+    },
+    {
+      "source_id": "SF-APEX-ACCESS",
+      "title": "Access Modifiers",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_access_modifiers.htm",
+      "supports": "Default private; Apex public vs Java public; global requires a global class; protected for subclasses; API 65+ abstract/override visibility.",
+      "release_or_version": "Apex Developer Guide / API 65.0+ behavior called out",
+      "last_verified": "2026-08-16",
+      "limits": "NamespaceAccessible and 2GP package visibility are neighboring concerns; do not invent package-version numbers."
+    },
+    {
+      "source_id": "SF-APEX-METHODS",
+      "title": "Class Methods",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_defining_methods.htm",
+      "supports": "Method signature, void vs return type, maximum 32 parameters, pass-by-value, override on virtual/abstract classes.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not enumerate governor limits; see APEX-007."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Apex runs on the server",
+        "Class vs method vs property",
+        "private public global",
+        "Java public trap",
+        "Metadata vs records",
+        "When not to write Apex"
+      ],
+      "accessible_description": "Portrait map: Apex executes on the Salesforce server; a class holds methods and properties; access modifiers widen from private to global; Apex public is package-scoped; the class is metadata and queried rows are data."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-DEVGUIDE",
+        "SF-APEX-CLASSDEF",
+        "SF-APEX-ACCESS",
+        "SF-APEX-METHODS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Who can call this Apex member?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Apex[Apex class metadata] --> Members[Methods and properties]\n  Members --> Priv[private: this class only]\n  Members --> Prot[protected: inner classes and subclasses]\n  Members --> Pub[public: same namespace or package]\n  Members --> Glob[global: other apps and SOAP if class is global]\n  Apex --> Share[with sharing / without sharing / inherited sharing]\n  Apex --> Data[SOQL/DML on records: business data]",
+      "decision": "flowchart TD\n  Need[Need Apex?] --> Q1{Can Flow or formula do it safely?}\n  Q1 -->|Yes| Flow[Stay declarative: AUTO-001]\n  Q1 -->|No| Q2{Who must call this member?}\n  Q2 -->|Only this class| Priv[private]\n  Q2 -->|Other Apex in this package| Pub[public]\n  Q2 -->|Subclass hook| Prot[protected]\n  Q2 -->|Other package SOAP or REST contract| Glob[global class and member]\n  Q2 -->|Async or bulk later| Later[APEX-011 job type: not this lesson]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Apex is a strongly typed, object-oriented language that runs on the Salesforce Platform server with API calls.",
+      "source_ids": ["SF-APEX-DEVGUIDE"],
+      "scope": "Language definition",
+      "validation": "Apex Developer Guide opening definition.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Top-level Apex classes must declare public or global; inner classes default to private; inner classes nest only one level.",
+      "source_ids": ["SF-APEX-CLASSDEF"],
+      "scope": "Class definition",
+      "validation": "Apex Class Definition access-modifier rules.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Methods and variables default to private. Apex public is package/namespace visibility, not Java public. global is required for SOAP/other-application callers and the containing class must be global.",
+      "source_ids": ["SF-APEX-ACCESS"],
+      "scope": "Access modifiers",
+      "validation": "Access Modifiers topic in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "A method declares a return type or void, at most 32 parameters, and receives arguments by value. From API 65.0, abstract or override methods cannot be private.",
+      "source_ids": ["SF-APEX-METHODS", "SF-APEX-ACCESS"],
+      "scope": "Methods and versioned visibility",
+      "validation": "Class Methods and Access Modifiers versioned behavior notes.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "API 65.0+ abstract/override methods require protected, public, or global. Reverify the class API version in the target org.",
+  "unresolved_uncertainty": [
+    "Exact packaging behavior of @NamespaceAccessible across 2GP versions is out of this topic; confirm in current packaging docs before a managed-package interview deep-dive."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Access modifier",
+      "telugu": "ఎవరు ఈ Apex సభ్యుని పిలవవచ్చో చెప్పే కీలు."
+    },
+    {
+      "english": "Apex class",
+      "telugu": "సర్వర్ మీద నడిచే కోడ్ వర్క్‌షాప్ బ్లూప్రింట్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Apex is strongly typed server code. Members default to private. public means same package, not Java public. global is the cross-application contract and the class must be global too. The class is metadata; the rows it queries are data.",
+    "two_minutes": "I start from call site: same class, same namespace, subclass, or external SOAP/package. That maps to private, public, protected, or global. I never mark global 'just in case.' Top-level classes need public or global. Inner classes default private. If an abstract method fails to compile on API 65+, I check that it is not private. I separate this lesson from governors, triggers, and Queueable choice."
+  },
+  "terminology": [
+    {
+      "term": "Apex",
+      "plain": "Salesforce's server-side programming language.",
+      "precise": "A strongly typed, object-oriented language that executes transaction and flow control on the Salesforce Platform server together with API calls.",
+      "example": "A LAB_AccountHelper class that updates synthetic LAB_ Account rows in a sandbox.",
+      "non_example": "A Lightning web component's JavaScript file, which runs in the browser, not as Apex.",
+      "confusable_neighbor": "Flow: declarative automation that may call Apex but is not Apex syntax.",
+      "boundary": "This lesson is language and visibility; governors, SOQL, and async jobs are later Apex topics."
+    },
+    {
+      "term": "class",
+      "plain": "A named blueprint that holds methods and variables.",
+      "precise": "An Apex type you define. Top-level classes must be public or global. Inner classes default to private and nest only one level.",
+      "example": "public class LAB_DiscountService { }",
+      "non_example": "A trigger file is not a class definition even though it can contain Apex statements.",
+      "confusable_neighbor": "sObject type: a data-model type such as Account, not an Apex class you authored.",
+      "boundary": "Class definition and sharing keywords are in scope; trigger frameworks are APEX-009."
+    },
+    {
+      "term": "method",
+      "plain": "A named action the class can run, with inputs and maybe a return value.",
+      "precise": "A member with optional modifiers, a return type or void, up to 32 parameters, and a body. Arguments are passed by value.",
+      "example": "public static Decimal LAB_rate(Decimal amount) { return amount; }",
+      "non_example": "A formula field is not an Apex method.",
+      "confusable_neighbor": "Constructor: special initializer, not a general-purpose method with an arbitrary name.",
+      "boundary": "Async method annotations such as @future are introduced only as annotations; job choice is APEX-011."
+    },
+    {
+      "term": "property",
+      "plain": "A typed value stored on the class or an instance.",
+      "precise": "A member variable (and related get/set syntax) that holds state for the class or instance; default visibility is private.",
+      "example": "private Integer LAB_retryCount;",
+      "non_example": "A custom object field Account.Name is sObject data, not an Apex property.",
+      "confusable_neighbor": "Custom metadata type field: configuration data, not an Apex member.",
+      "boundary": "Instance vs static lifetime continues in later programming topics."
+    },
+    {
+      "term": "access modifier",
+      "plain": "The keyword that says who is allowed to use a class, method, or variable.",
+      "precise": "private (default for members), protected, public (same application/package), or global (any Apex that can see the class, including SOAP). global members require a global class.",
+      "example": "private helper vs global webservice method on a global class.",
+      "non_example": "A profile permission is authorization for a user, not an Apex access modifier.",
+      "confusable_neighbor": "with sharing: record visibility for the running user, not member visibility between Apex types.",
+      "boundary": "CRUD/FLS and user mode are APEX-014."
+    },
+    {
+      "term": "Apex public",
+      "plain": "Visible to other Apex in this package or namespace—not to the whole world.",
+      "precise": "The Access Modifiers guide states that Apex public is not the same as Java public; use global when you need Java-like public reach, including SOAP.",
+      "example": "public class LAB_InvoiceMath used by other classes in the same unlocked package.",
+      "non_example": "Exposing a SOAP API with only public on the class typically fails the 'must be global' contract.",
+      "confusable_neighbor": "global: cross-application and SOAP visibility.",
+      "boundary": "@NamespaceAccessible packaging detail is neighboring, not fully specified here."
+    },
+    {
+      "term": "global",
+      "plain": "Callable from Apex outside this application, including SOAP, if the class is also global.",
+      "precise": "global methods and variables can be used by any Apex that has access to the class. The containing class must be global. Webservice methods require a global class.",
+      "example": "global class LAB_PricingApi with a global method intended for another package.",
+      "non_example": "Marking a one-off helper global 'for convenience' creates a long-lived API surface.",
+      "confusable_neighbor": "public: same-package reach only.",
+      "boundary": "Connected-app OAuth is INT-004, not solved by global."
+    },
+    {
+      "term": "annotation",
+      "plain": "A stamp on a class or method that tells the platform to treat it specially.",
+      "precise": "Apex annotations such as @IsTest change how the platform discovers or runs the member. This lesson treats them as metadata on code, not as a catalog of every annotation.",
+      "example": "@IsTest on a test class so it does not count as production Apex in the usual packaging sense.",
+      "non_example": "A validation-rule error message is not an Apex annotation.",
+      "confusable_neighbor": "Access modifier: who may call the member, not which platform feature hosts it.",
+      "boundary": "Do not memorize an unofficial annotation list here; look up the current Developer Guide when a specific annotation is in play."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide if Apex is the right tool",
+      "actor": "Developer + admin",
+      "trigger": "A requirement looks like code",
+      "before": "Flow, formula, or validation may still fit",
+      "after": "Apex class candidate or stay declarative",
+      "observe": "Written reason Flow cannot meet the need",
+      "failure": "Writing Apex for a before-save field update Flow already covers"
+    },
+    {
+      "step": 2,
+      "transition": "Declare the class",
+      "actor": "Developer",
+      "trigger": "Apex is justified",
+      "before": "No type exists",
+      "after": "public or global top-level class in the target API version",
+      "observe": "Class compiles in the sandbox; API version visible on the class",
+      "failure": "Omitting a top-level access modifier"
+    },
+    {
+      "step": 3,
+      "transition": "Choose member visibility",
+      "actor": "Developer",
+      "trigger": "Methods and properties added",
+      "before": "Default private",
+      "after": "private, protected, public, or global matched to call sites",
+      "observe": "Call from the intended class or package succeeds; unintended callers fail to compile",
+      "failure": "Using global because public 'felt too small'"
+    },
+    {
+      "step": 4,
+      "transition": "Keep metadata and data apart",
+      "actor": "Developer + reviewer",
+      "trigger": "Class queries or updates records",
+      "before": "Blueprint vs rows mixed in conversation",
+      "after": "Deploy the class as metadata; operate LAB_ records as data",
+      "observe": "Retrieve/deploy of the .cls file vs a Data Loader row count",
+      "failure": "Assuming deploying a class inserts business records"
+    }
+  ],
+  "when_to_use": [
+    "When you must name Apex types, methods, and access modifiers in an interview or design review.",
+    "When choosing private, public, protected, or global for a helper, subclass hook, or SOAP/package contract.",
+    "When a compile error mentions global, abstract, override, or access, and you need the official modifier rules.",
+    "When explaining that an Apex class is metadata while SOQL results are business data."
+  ],
+  "when_not_to_use": [
+    "Do not use this Apex classes-and-methods lesson as a substitute for Flow vs Apex product choice (AUTO-001) or Queueable vs Batch (APEX-011).",
+    "Do not treat Apex access modifiers as a governor-limit catalog (APEX-007) or trigger order-of-execution map (APEX-010).",
+    "Do not give a Java visibility lecture that ignores Apex public versus Java public, or that skips class, method, and property syntax.",
+    "Do not use Apex class examples to justify production org edits, real customer data, or unapproved deployments."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Apex Classes, or an sfdx retrieve of classes/*.cls, in a disposable sandbox.",
+    "Class header: public/global, optional with sharing, API version on the class metadata.",
+    "Method header: modifiers, return type, name, parameter list.",
+    "Developer Console or VS Code problems pane for compile errors about access and global."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab needs LAB_DiscountService used by other Apex in the same unlocked package, a private rounding helper, and a global method another package will call for a published contract. No production data.",
+    "inputs": [
+      "Same-package callers for calculate()",
+      "Internal roundToCent() that must not leak",
+      "Cross-package quote() on a documented API",
+      "API version 67.0 on the class"
+    ],
+    "decisions": [
+      {
+        "decision": "Keep roundToCent private.",
+        "because": "Only this class should call it; default private already matches.",
+        "rejected": "Make it public for 'future reuse'"
+      },
+      {
+        "decision": "Make calculate public on a public class.",
+        "because": "Other Apex in this package needs it; Apex public is package/namespace reach.",
+        "rejected": "Mark it global without an external contract"
+      },
+      {
+        "decision": "Put quote on a global class as a global method.",
+        "because": "The Access Modifiers guide requires global on both member and containing class for cross-application/SOAP-style reach.",
+        "rejected": "public class with a global method only"
+      }
+    ],
+    "configuration_or_code": [
+      "public class LAB_DiscountService { private Decimal roundToCent(Decimal n) { return n.setScale(2); } public Decimal calculate(Decimal n) { return roundToCent(n); } }",
+      "Separate global class LAB_DiscountApi { global static Decimal quote(Decimal n) { return new LAB_DiscountService().calculate(n); } } — Needs verification of exact packaging/namespace rules in the target package type.",
+      "Compile both in sandbox; attempt an illegal caller to prove private fails."
+    ],
+    "output": "Same-package Apex compiles against calculate; private helper is invisible; global API class compiles for the documented contract.",
+    "verification": [
+      "Private helper referenced from another class fails to compile.",
+      "public calculate is callable from another class in the same package.",
+      "Class API version is 67.0 on the metadata."
+    ],
+    "self_explanation": "Visibility followed the call site. I did not use global as a default. I treated the classes as metadata and used only LAB_ names."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable Developer sandbox or scratch org; synthetic LAB_ classes only.",
+    "starting_state_checks": [
+      "No production aliases in the class names.",
+      "You can create Apex classes in this org."
+    ],
+    "steps": [
+      "Create public class LAB_DiscountService with a private helper and a public method.",
+      "Create a second class in the same org that calls the public method.",
+      "Confirm a call to the private helper from the second class fails.",
+      "Read the Access Modifiers guide note on Apex public versus Java public and write one sentence in the class comment."
+    ],
+    "guided_completion": [
+      "If the second class compiles against the private helper, the helper is not private.",
+      "If you added global without a documented external caller, remove it."
+    ],
+    "independent_challenge": "Add a protected instance method on a virtual class and a subclass in the same file set; explain who can call it.",
+    "evidence": [
+      "Compile success/failure screenshots or CLI output with LAB_ names only.",
+      "One written sentence: Apex public is not Java public."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Apex classes from the sandbox.",
+      "Do not deploy these classes to production."
+    ],
+    "limitations": "This lab does not prove managed-package versioning, SOAP, or governor behavior."
+  },
+  "decision_table": [
+    {
+      "signal": "Only this class's methods should call the helper.",
+      "choose": "private method or omit the modifier (members default private).",
+      "not": "public or global 'in case we need it later'.",
+      "why": "Default private matches the Access Modifiers guide and keeps the surface small."
+    },
+    {
+      "signal": "Other Apex in this unlocked package or namespace must call it.",
+      "choose": "public class and public method.",
+      "not": "global, unless a cross-application or SOAP contract exists.",
+      "why": "Apex public is package/namespace visibility, not Java public."
+    },
+    {
+      "signal": "A subclass must override a hook.",
+      "choose": "protected instance method on a virtual or abstract class, API 65+ not private.",
+      "not": "private abstract/override (invalid on API 65.0+).",
+      "why": "The implementing class cannot see a private abstract method."
+    },
+    {
+      "signal": "Another package or SOAP/web service must call this entry.",
+      "choose": "global class and global method (webservice requires global class).",
+      "not": "public class hoping SOAP will ignore the modifier.",
+      "why": "The guide requires global on the member and the containing class for that reach."
+    }
+  ],
+  "limitations": [
+    "Does not list governor limits, SOQL, or DML patterns.",
+    "Does not choose Queueable, Batch, Future, or Scheduled.",
+    "Does not replace CRUD/FLS or with sharing design.",
+    "Edition, API version, and packaging can change compile rules; reverify the class version."
+  ],
+  "security_notes": [
+    "global widens the callable surface; treat it as an API contract.",
+    "with sharing is not an access modifier for members.",
+    "Never log secrets, session IDs, or real customer data in examples."
+  ],
+  "common_mistakes": [
+    "Saying Apex public means the same as Java public.",
+    "Marking helpers global by habit.",
+    "Omitting global on the class while marking a webservice method global.",
+    "Using a private abstract method on API 65+.",
+    "Calling the Apex class 'data' and the Account rows 'code'."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Compile error that a webservice or global method's class must be global.",
+      "check": [
+        "Mark the top-level class global as well as the member.",
+        "Confirm the caller actually needs cross-application reach."
+      ],
+      "do_not_assume": "public on the class is enough for SOAP."
+    },
+    {
+      "symptom": "Another class cannot see a helper method.",
+      "check": [
+        "The helper is private by default.",
+        "Widen to public only if the caller is in-package Apex."
+      ],
+      "do_not_assume": "The method is missing; it may be intentionally hidden."
+    },
+    {
+      "symptom": "Abstract method compile error about access.",
+      "check": [
+        "Class API version is 65.0 or later.",
+        "Abstract/override is protected, public, or global."
+      ],
+      "do_not_assume": "The method body is the problem."
+    }
+  ],
+  "production_notes": [
+    "Review global members as published APIs before packaging.",
+    "Match class API version to the behaviors you rely on, especially 65+ abstract rules.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where does Apex execute according to the Apex Developer Guide?",
+      "options": {
+        "A": "On the Salesforce Platform server, with transaction control and API calls",
+        "B": "Only in the browser next to LWC JavaScript",
+        "C": "Only inside a Flow interview, never as its own class",
+        "D": "Only in Salesforce Classic"
+      },
+      "answer": "A",
+      "rationale": "The guide defines Apex as a strongly typed server language that executes flow and transaction control on the platform with API calls.",
+      "distractor_explanations": {
+        "B": "LWC JavaScript is client-side; Apex is server-side.",
+        "C": "Flow may invoke Apex; Apex still exists as classes.",
+        "D": "Apex is not limited to Classic."
+      },
+      "concept": "Apex runtime",
+      "citation_ids": ["SF-APEX-DEVGUIDE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "If you omit an access modifier on an Apex method, what is the default?",
+      "options": {
+        "A": "private",
+        "B": "public",
+        "C": "global",
+        "D": "protected"
+      },
+      "answer": "A",
+      "rationale": "Methods and variables default to private—visible only in the defining class.",
+      "distractor_explanations": {
+        "B": "public must be specified for same-package reach.",
+        "C": "global is explicit and wider.",
+        "D": "protected is explicit and used for inheritance."
+      },
+      "concept": "Default visibility",
+      "citation_ids": ["SF-APEX-ACCESS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why is Apex public not the same as Java public?",
+      "options": {
+        "A": "Apex public is same-application/package visibility; Java-like public reach uses global",
+        "B": "Apex public is always world-visible and Java public is package-private",
+        "C": "Apex has no public keyword",
+        "D": "Apex public only applies to inner classes"
+      },
+      "answer": "A",
+      "rationale": "The Access Modifiers guide says Apex public was defined differently from Java to keep applications separate; use global for Java-like public reach.",
+      "distractor_explanations": {
+        "B": "That reverses the two languages.",
+        "C": "public is a standard Apex modifier.",
+        "D": "public applies to classes and members, not only inner classes."
+      },
+      "concept": "Apex public vs Java public",
+      "citation_ids": ["SF-APEX-ACCESS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A webservice method is declared global. What else does the Access Modifiers / class-definition guidance require?",
+      "options": {
+        "A": "The containing class must also be global",
+        "B": "The method must be private",
+        "C": "The class must be an inner class",
+        "D": "The method must return void"
+      },
+      "answer": "A",
+      "rationale": "If a method is global, the outer class must be global. Webservice methods require a global class.",
+      "distractor_explanations": {
+        "B": "webservice entries are not private.",
+        "C": "Top-level global classes are the usual container.",
+        "D": "Return type is independent of global."
+      },
+      "concept": "global class pairing",
+      "citation_ids": ["SF-APEX-ACCESS", "SF-APEX-CLASSDEF"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What access modifier must a top-level Apex class use?",
+      "options": {
+        "A": "public or global",
+        "B": "private only",
+        "C": "protected only",
+        "D": "None; top-level classes default to private"
+      },
+      "answer": "A",
+      "rationale": "Top-level class declarations must use public or global. private is for inner classes (or @IsTest top-level test classes in the cited inner-class note).",
+      "distractor_explanations": {
+        "B": "private is not the required top-level production-class modifier.",
+        "C": "protected is for instance members, not the usual top-level class modifier.",
+        "D": "Top-level classes cannot omit the modifier the way inner classes can."
+      },
+      "concept": "Top-level class modifiers",
+      "citation_ids": ["SF-APEX-CLASSDEF"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How deep can Apex inner classes nest?",
+      "options": {
+        "A": "One level",
+        "B": "Unlimited",
+        "C": "Exactly three levels",
+        "D": "Inner classes are illegal"
+      },
+      "answer": "A",
+      "rationale": "You can only have inner classes one level deep.",
+      "distractor_explanations": {
+        "B": "Java-style deep nesting is not allowed.",
+        "C": "The documented limit is one level.",
+        "D": "Inner classes are allowed, with a depth of one."
+      },
+      "concept": "Inner classes",
+      "citation_ids": ["SF-APEX-CLASSDEF"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "On API version 65.0+, which is invalid for an abstract method?",
+      "options": {
+        "A": "Leaving it private (the default) so implementers cannot see it",
+        "B": "Declaring it public on an abstract class",
+        "C": "Declaring it protected",
+        "D": "Declaring it global on a global abstract class"
+      },
+      "answer": "A",
+      "rationale": "From API 65.0, abstract or override methods require protected, public, or global. Private is invalid because implementers could not access it.",
+      "distractor_explanations": {
+        "B": "public is allowed.",
+        "C": "protected is allowed.",
+        "D": "global is allowed when the class is global."
+      },
+      "concept": "API 65 abstract visibility",
+      "citation_ids": ["SF-APEX-ACCESS", "SF-APEX-METHODS"]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the documented maximum number of input parameters for an Apex method?",
+      "options": {
+        "A": "32",
+        "B": "8",
+        "C": "255",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "A method can have only 32 input parameters.",
+      "distractor_explanations": {
+        "B": "8 is not the documented cap.",
+        "C": "255 is not the method-parameter cap in this guide section.",
+        "D": "There is a documented maximum of 32."
+      },
+      "concept": "Method parameters",
+      "citation_ids": ["SF-APEX-METHODS"]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Apex method arguments are passed how?",
+      "options": {
+        "A": "By value",
+        "B": "Always by reference like Java objects exclusively",
+        "C": "By name only",
+        "D": "They cannot take parameters"
+      },
+      "answer": "A",
+      "rationale": "The Class Methods topic covers passing arguments by value (and discusses the related reference behavior for some types in that same chapter). The interview-safe official headline is pass by value as documented.",
+      "distractor_explanations": {
+        "B": "Do not import Java argument rules wholesale.",
+        "C": "Apex does not use Python-style pass-by-name.",
+        "D": "Methods may take up to 32 parameters."
+      },
+      "concept": "Pass by value",
+      "citation_ids": ["SF-APEX-METHODS"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You need a hook only subclasses should override. Which modifier matches the Access Modifiers guide?",
+      "options": {
+        "A": "protected on an instance method of a virtual or abstract class",
+        "B": "private on a static method",
+        "C": "global on an inner class by default",
+        "D": "public on a trigger"
+      },
+      "answer": "A",
+      "rationale": "protected is for instance methods and member variables visible to inner classes and subclasses.",
+      "distractor_explanations": {
+        "B": "private static is not an override hook for subclasses.",
+        "C": "Inner classes default private, not global.",
+        "D": "Triggers are not class access modifiers."
+      },
+      "concept": "protected",
+      "citation_ids": ["SF-APEX-ACCESS"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates Apex class metadata from business data?",
+      "options": {
+        "A": "Deploying LAB_DiscountService.cls does not insert Account records",
+        "B": "Every Apex class is stored as an Account row",
+        "C": "SOQL results are metadata and the .cls file is business data",
+        "D": "Access modifiers change org-wide defaults"
+      },
+      "answer": "A",
+      "rationale": "The class is code metadata. Records queried or inserted are business data. This is the same metadata-vs-data split used across the handbook.",
+      "distractor_explanations": {
+        "B": "Classes are not Account rows.",
+        "C": "That reverses the two.",
+        "D": "OWD is a sharing setting, not an Apex modifier."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-APEX-DEVGUIDE"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A requirement is a simple field update on the same record before save. What should you consider before writing an Apex class?",
+      "options": {
+        "A": "A before-save record-triggered Flow may already fit; Apex is not automatic",
+        "B": "Always write a global Apex class first",
+        "C": "Only JavaScript can update records",
+        "D": "Validation rules cannot run on save"
+      },
+      "answer": "A",
+      "rationale": "AUTO-001 owns tool choice. This lesson still expects you not to default to Apex for same-record updates Flow can do.",
+      "distractor_explanations": {
+        "B": "global is a visibility contract, not a default architecture.",
+        "C": "Apex and Flow both update records on the server.",
+        "D": "Validation rules are a separate save-order concern."
+      },
+      "concept": "When not to write Apex",
+      "citation_ids": ["SF-APEX-DEVGUIDE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is Apex, in one official sentence?",
+      "back": "A strongly typed, object-oriented language that runs on the Salesforce Platform server with transaction control and API calls."
+    },
+    {
+      "id": "F2",
+      "category": "modifiers",
+      "front": "Default access for an Apex method or variable?",
+      "back": "private — only the defining class."
+    },
+    {
+      "id": "F3",
+      "category": "modifiers",
+      "front": "Apex public vs Java public?",
+      "back": "Apex public is same application/package. Java-like public reach uses global."
+    },
+    {
+      "id": "F4",
+      "category": "modifiers",
+      "front": "When must a class be global?",
+      "back": "When it contains global members or webservice methods; the containing class must be global."
+    },
+    {
+      "id": "F5",
+      "category": "class",
+      "front": "Required modifier on a typical top-level Apex class?",
+      "back": "A top-level Apex class must be declared public or global; omitting that modifier will not compile."
+    },
+    {
+      "id": "F6",
+      "category": "class",
+      "front": "Inner class nesting limit?",
+      "back": "One level deep. Inner classes default to private."
+    },
+    {
+      "id": "F7",
+      "category": "methods",
+      "front": "Max Apex method parameters?",
+      "back": "An Apex method can declare at most 32 parameters; arguments are passed by value."
+    },
+    {
+      "id": "F8",
+      "category": "methods",
+      "front": "API 65+ abstract/override cannot be…?",
+      "back": "private. Use protected, public, or global."
+    },
+    {
+      "id": "F9",
+      "category": "modifiers",
+      "front": "What is protected for?",
+      "back": "Instance methods and member variables visible to inner classes and subclasses."
+    },
+    {
+      "id": "F10",
+      "category": "boundary",
+      "front": "Class vs records?",
+      "back": "The .cls file is metadata. Queried or inserted rows are business data."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Is with sharing an access modifier for who can call a method?",
+      "back": "No. It sets record-sharing mode for the class. Member visibility is private/public/global/protected."
+    },
+    {
+      "id": "F12",
+      "category": "annotation",
+      "front": "What is an Apex annotation in this lesson?",
+      "back": "A platform stamp on a class or method (for example @IsTest), not an access modifier."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Helper used only inside one class?",
+      "back": "Keep it private (the default)."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Other Apex in this package must call it?",
+      "back": "public, not global, unless you have a cross-application contract."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "SOAP or another package must call it?",
+      "back": "global method on a global class."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is Apex, and where does it run?",
+      "answer_30_seconds": "Apex is Salesforce's strongly typed, object-oriented language. It runs on the platform server, not in the browser, and participates in transactions and API calls.",
+      "answer_2_minutes": "I quote the Developer Guide: Apex executes flow and transaction control on the Salesforce Platform server. I contrast it with LWC JavaScript and with Flow. I mention that a class is metadata we deploy, while the records it queries are data. I do not recite unofficial governor numbers unless I am in the limits topic.",
+      "example": "LAB_DiscountService.calculate runs in a sandbox transaction when another Apex class calls it.",
+      "tradeoffs": [
+        "Apex vs Flow for the same requirement",
+        "Server logic vs client LWC"
+      ],
+      "follow_ups": [
+        "When would you refuse to write Apex?",
+        "What API version is on the class?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Apex 'Java in the browser'",
+        "Confusing Apex with formula fields"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Explain private, public, and global in Apex.",
+      "answer_30_seconds": "Members default to private. public is other Apex in this package. global is cross-application and SOAP, and the class must be global too. Apex public is not Java public.",
+      "answer_2_minutes": "I map each modifier to a call site. Same class: private. Same namespace/package: public. Subclass hook: protected. Other package or webservice: global on both member and class. I mention the guide's explicit Java comparison so the interviewer hears I did not import Java rules blindly.",
+      "example": "private roundToCent, public calculate in-package, global quote for a published API.",
+      "tradeoffs": [
+        "Small surface vs reusable API",
+        "public vs global packaging cost"
+      ],
+      "follow_ups": [
+        "What is protected for?",
+        "What happens if only the method is global?"
+      ],
+      "weak_answer_warnings": [
+        "Equating public with Java public",
+        "Defaulting everything to global"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A SOAP/webservice method compiles except for an error that the class must be global. What do you do?",
+      "answer_30_seconds": "Mark the containing top-level class global as well. Webservice methods require a global class. Then confirm we actually need that external contract.",
+      "answer_2_minutes": "I treat the error as a pairing rule from the Access Modifiers and class-definition topics: global members live on global classes. I check whether SOAP is required; if the caller is only in-package Apex, I would drop webservice/global and use public instead. I would not 'fix' it by making every helper global.",
+      "example": "global class LAB_PricingApi { webservice static Decimal quote(Decimal n) { ... } }",
+      "tradeoffs": [
+        "Published SOAP surface vs in-package public method",
+        "API stability vs convenience"
+      ],
+      "follow_ups": [
+        "How would you version this later?",
+        "Who owns the WSDL contract?"
+      ],
+      "weak_answer_warnings": [
+        "Ignoring the class-level global requirement"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "An abstract method fails to compile on a class set to API 65. What do you check first?",
+      "answer_30_seconds": "Whether the abstract method is private. From API 65.0, abstract and override methods need protected, public, or global.",
+      "answer_2_minutes": "I read the class API version. If it is 65 or later, a missing modifier defaults to private, which is illegal for abstract/override because implementers cannot see it. I add protected or public as the design requires. I do not blindly lower the API version to hide the error without a versioning plan.",
+      "example": "abstract class LAB_Hook { abstract protected void beforeSave(); }",
+      "tradeoffs": [
+        "Staying on API 65+ vs pinning an older version",
+        "protected hook vs public hook"
+      ],
+      "follow_ups": [
+        "What is override used with?",
+        "Can inner classes be abstract in the same way?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the method body instead of visibility"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you not write an Apex class at all?",
+      "answer_30_seconds": "When a formula, validation rule, or before-save Flow already implements the same-record rule safely. Apex is a tool, not the default.",
+      "answer_2_minutes": "I separate this language topic from AUTO-001, but interviewers still expect judgment. Same-row updates, simple requiredness, and many approvals are declarative. I write Apex when I need transaction control, complex branching, or a reusable service other Apex must call. I still apply access modifiers correctly when I do write it.",
+      "example": "Updating a LAB_ status field on the same Opportunity can be before-save Flow; a multi-object split with callouts is not this lesson's job but is not a formula.",
+      "tradeoffs": [
+        "Declarative speed vs coded flexibility",
+        "Admin-owned Flow vs developer-owned class"
+      ],
+      "follow_ups": [
+        "What if Flow hits limits?",
+        "Who maintains the class?"
+      ],
+      "weak_answer_warnings": [
+        "Apex for every field update"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do you explain an Apex class versus the records it queries?",
+      "answer_30_seconds": "The class is metadata we deploy. Account rows it queries or inserts are business data. Deploying a class does not load records.",
+      "answer_2_minutes": "I keep the same split as DATA-001 and DEVOPS-001. Source control owns the .cls. Data tools own records. Tests create synthetic LAB_ data; they do not prove production data migration. Access modifiers on the class do not replace sharing or CRUD.",
+      "example": "sfdx deploy of LAB_DiscountService.cls leaves Account empty until a test or loader inserts LAB_ rows.",
+      "tradeoffs": [
+        "Metadata deploy vs data migrate",
+        "Test data vs production data"
+      ],
+      "follow_ups": [
+        "Where does with sharing fit?",
+        "What is a destructive change?"
+      ],
+      "weak_answer_warnings": [
+        "Calling SOQL results 'the class'"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Another class cannot call your helper. Walk the diagnosis.",
+      "answer_30_seconds": "Check whether the helper is private. If the caller is in-package Apex, public may be enough. If it is another package, you need a global contract, not a quiet public.",
+      "answer_2_minutes": "I reproduce the compile error. I look at the helper modifier, the caller's namespace, and whether we intended an API. I do not flip to global to silence the error. I also check inner-class defaults and whether someone expected Java public behavior.",
+      "example": "LAB_OtherService calling LAB_DiscountService.roundToCent fails because roundToCent is private.",
+      "tradeoffs": [
+        "Encapsulation vs reuse",
+        "public API vs global API"
+      ],
+      "follow_ups": [
+        "How do you test the intended caller?",
+        "Would you use inner classes here?"
+      ],
+      "weak_answer_warnings": [
+        "Changing to global immediately"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "A Java developer joins the team. What Apex visibility trap do you teach first?",
+      "answer_30_seconds": "Apex public is not Java public. If they need world-like reach, that is global, and it is an API decision.",
+      "answer_2_minutes": "I show the Access Modifiers paragraph that states the difference explicitly. I walk three call sites on a whiteboard: same class, same package, other package. I add that top-level classes must be public or global, inner classes default private, and abstract methods cannot hide as private on API 65+. I warn that global is hard to shrink later.",
+      "example": "They mark a helper public expecting other managed packages to call it; those packages still cannot see it without a global/namespace design.",
+      "tradeoffs": [
+        "Java muscle memory vs Apex packaging",
+        "Convenience vs published API"
+      ],
+      "follow_ups": [
+        "What is @NamespaceAccessible?",
+        "How do 2GP versions interact? (Mark needs verification.)"
+      ],
+      "weak_answer_warnings": [
+        "Teaching Java visibility as if it were Apex"
+      ]
+    }
+  ]
+}

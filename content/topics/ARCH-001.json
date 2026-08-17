@@ -1,0 +1,989 @@
+{
+  "topic_id": "ARCH-001",
+  "slug": "salesforce-well-architected-trusted-easy-and-adaptable",
+  "title": "Salesforce Well-Architected: Trusted, Easy, and Adaptable",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "SEC-010"
+  ],
+  "objectives": [
+    "State Salesforce Well-Architected as Trusted, Easy, and Adaptable compass points for Customer 360 architecture trade-offs.",
+    "Map Trusted to secure, compliant, and reliable; Easy to intentional, automated, and engaging; Adaptable to resilient and composable.",
+    "Use the framework to score a design in a review, not as a substitute for edition-specific feature lists or numeric governor tables.",
+    "Separate Well-Architected guidance (how healthy solutions behave) from metadata you deploy and records you operate."
+  ],
+  "diagnostic_question": "A stakeholder wants a custom Apex service, a new sharing model, and a same-week production cutover. Before reading, which Well-Architected pillar would you check first—Trusted, Easy, or Adaptable—and what evidence would change the sequence?",
+  "definition": "Salesforce Well-Architected is the Architecture Center framework that shows what healthy Customer 360 solutions look like and where to spend design time. It is organized so solutions are Trusted (protect stakeholders), Easy (deliver value fast), and Adaptable (evolve with the business). Architects use those three capabilities as compass points when evaluating trade-offs. ([Well-Architected Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/overview))",
+  "why_it_matters": "Interviewers listen for whether you can defend a design against all three pillars, not only security or only speed. A solution that is reliable to a programmer but unmaintainable for the org administrator is not Easy. A solution that ships this sprint but cannot change next quarter is not Adaptable. Skipping Trusted is an integrity failure, not a style choice.",
+  "sixty_second_explanation": "Treat Well-Architected as three harbor compasses, not a feature catalog. Trusted asks whether the berth is safe: secure access, compliant handling, reliable operations. Easy asks whether the crew can work without a 400-page manual: intentional scope, healthy automation, engaging UX. Adaptable asks whether berths can be reassigned when weather or cargo changes: resilient operations and composable units. You return to those compasses when two good options collide.",
+  "deeper_explanation": [
+    "The Well-Architected Overview states that the framework shares prescriptive patterns and anti-patterns from product teams and implementation experts. The top level is what solutions should be: Trusted, Easy, and Adaptable. The second level details considerations, patterns, and anti-patterns under those capabilities. ([Well-Architected Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/overview))",
+    "A Trusted solution protects the business and stakeholders. It is secure (control access and protect data), compliant (legal, ethical, accessible), and reliable (available, performant, scalable). Trusted planning asks about risk tolerance, data classification, system-of-record role, regulations, and whether Salesforce is business-critical. ([Trusted Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/trusted-overview))",
+    "An Easy solution delivers value fast. It is intentional (strategy, maintainability, readability), automated (efficiency and data integrity), and engaging (streamlined, helpful experiences). Easy is not 'fewer clicks at any cost': a design that only a programmer can own fails Easy even if it is technically reliable. ([Easy Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/easy-overview.html))",
+    "An Adaptable solution evolves with the business. It is resilient (application lifecycle, incident response, continuity) and composable (separation of concerns, interoperability, packageability). Profound change is in scope: Adaptable is not only disaster recovery. ([Adaptable Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/adaptable-overview))",
+    "Well-Architected is guidance metadata for how you think. The objects, flows, and Apex you deploy remain org metadata; the rows those tools operate on remain business data. This topic does not replace SEC sharing design, AUTO tool choice, or numeric Salesforce Limits documentation."
+  ],
+  "mental_model": {
+    "analogy": "A harbor traffic-control tower with three compasses: Trusted keeps hulls, manifests, and channels safe; Easy lets pilots berth without a 400-page form; Adaptable reassigns berths when weather or cargo changes.",
+    "useful_mapping": [
+      "Trusted compass → secure, compliant, reliable protection of stakeholders",
+      "Easy compass → intentional, automated, engaging delivery of value",
+      "Adaptable compass → resilient operations and composable units",
+      "Second-level patterns → channel markers under each compass",
+      "Anti-patterns → wrecks the tower publishes so you do not repeat them",
+      "Trade-off conversation → two good headings that still need a compass choice"
+    ],
+    "where_it_breaks": [
+      "A harbor has one physical channel; a Salesforce org is multi-tenant software with edition, license, and package gates the analogy does not encode.",
+      "Compasses do not list governor-limit numbers; cite current Limits documentation when a numeric cap is in play.",
+      "Trusted is not only login: compliance and reliability sit beside security.",
+      "Easy is not 'no Apex': it is value plus maintainability for the people who will own the solution."
+    ]
+  },
+  "teach_back_prompt": "Without listing product names, explain Trusted, Easy, and Adaptable to a delivery manager, then name one place the harbor-compass analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, write Trusted / Easy / Adaptable and one second-level word under each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Score a LAB_ design against all three Well-Architected pillars and name the weakest."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain why a technically reliable Apex service can still fail Easy."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a trade-off where Trusted and Easy pull opposite directions; state the compass you chose and why."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: Well-Architected as compasses, not a feature checklist, plus one Adaptable example."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-WA-OVERVIEW",
+      "title": "Salesforce Well-Architected Overview",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/overview",
+      "supports": "Framework organized around Trusted, Easy, and Adaptable as compass points for architectural trade-offs; two-level structure of capabilities then patterns.",
+      "release_or_version": "Well-Architected / Architecture Center",
+      "last_verified": "2026-08-16",
+      "limits": "Prescriptive guidance, not a substitute for edition-specific Help or Limits cheat sheets."
+    },
+    {
+      "source_id": "SF-WA-TRUSTED",
+      "title": "Trusted | Well-Architected",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/trusted-overview",
+      "supports": "Trusted solutions are secure, compliant, and reliable; planning questions for risk, data, and criticality.",
+      "release_or_version": "Well-Architected Trusted",
+      "last_verified": "2026-08-16",
+      "limits": "Does not enumerate every sharing feature; SEC topics own those mechanics."
+    },
+    {
+      "source_id": "SF-WA-EASY",
+      "title": "Easy | Well-Architected",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/easy-overview.html",
+      "supports": "Easy solutions are intentional, automated, and engaging; Easy can fail when only a programmer can maintain the design.",
+      "release_or_version": "Well-Architected Easy",
+      "last_verified": "2026-08-16",
+      "limits": "Does not choose Flow versus Apex for a specific requirement; AUTO-001 and ARCH-005 own that boundary."
+    },
+    {
+      "source_id": "SF-WA-ADAPTABLE",
+      "title": "Adaptable | Well-Architected",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/adaptable-overview",
+      "supports": "Adaptable solutions are resilient and composable; they handle change from small requests to profound business shifts.",
+      "release_or_version": "Well-Architected Adaptable",
+      "last_verified": "2026-08-16",
+      "limits": "Does not specify a particular CI tool or package type as mandatory."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Well-Architected Architecture Center pages over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Three compasses",
+        "Trusted secure compliant reliable",
+        "Easy intentional automated engaging",
+        "Adaptable resilient composable",
+        "Trade-off, not checklist",
+        "Where the harbor analogy breaks"
+      ],
+      "accessible_description": "Portrait map of Salesforce Well-Architected: Trusted, Easy, and Adaptable as compasses; second-level attributes under each; a trade-off note that Easy is not the same as no code."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-WA-OVERVIEW",
+        "SF-WA-TRUSTED",
+        "SF-WA-EASY",
+        "SF-WA-ADAPTABLE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Well-Architected capability map"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  WA[Well-Architected compasses] --> Trusted[Trusted: protect stakeholders]\n  WA --> Easy[Easy: deliver value fast]\n  WA --> Adaptable[Adaptable: evolve with the business]\n  Trusted --> Secure[Secure]\n  Trusted --> Compliant[Compliant]\n  Trusted --> Reliable[Reliable]\n  Easy --> Intentional[Intentional]\n  Easy --> Automated[Automated]\n  Easy --> Engaging[Engaging]\n  Adaptable --> Resilient[Resilient]\n  Adaptable --> Composable[Composable]",
+      "decision": "flowchart TD\n  Need[Design review?] --> Q1{Does the design expose data, identity, or availability risk?}\n  Q1 -->|Yes first| Trusted[Score Trusted: secure, compliant, reliable]\n  Q1 -->|No acute risk| Q2{Can the owning admin or team maintain it?}\n  Q2 -->|No| EasyFail[Fails Easy even if it compiles]\n  Q2 -->|Yes| Q3{Can this change next quarter without a rewrite?}\n  Q3 -->|No| AdaptFail[Fails Adaptable: not composable or resilient]\n  Q3 -->|Yes| Pass[Defend all three compasses in the review]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Salesforce Well-Architected is organized around Trusted, Easy, and Adaptable. Architects return to those capabilities as compass points when evaluating trade-offs.",
+      "source_ids": ["SF-WA-OVERVIEW"],
+      "scope": "Framework definition",
+      "validation": "Well-Architected Overview opening and compass-point language.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "A Trusted solution protects business and stakeholders and is secure, compliant, and reliable.",
+      "source_ids": ["SF-WA-TRUSTED"],
+      "scope": "Trusted pillar",
+      "validation": "Trusted Overview definition and second-level attributes.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "An Easy solution delivers value fast and is intentional, automated, and engaging. A design that only a programmer can own can fail Easy even if it is technically reliable.",
+      "source_ids": ["SF-WA-EASY"],
+      "scope": "Easy pillar",
+      "validation": "Easy Overview definition and the programmer-versus-administrator maintainability warning.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "An Adaptable solution evolves with the business and is resilient and composable.",
+      "source_ids": ["SF-WA-ADAPTABLE"],
+      "scope": "Adaptable pillar",
+      "validation": "Adaptable Overview definition and second-level attributes.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Architecture Center Well-Architected pages remain the canonical structure; reverify second-level pattern pages if a named anti-pattern is cited in an interview.",
+  "unresolved_uncertainty": [
+    "Exact UI names of Well-Architected assessment tools can change; confirm the current Architecture Center tools page before claiming a specific scoring product.",
+    "Edition, license, and managed-package availability of a recommended pattern are org-specific; do not treat Well-Architected as a feature entitlement list."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Well-Architected",
+      "telugu": "ఆరోగ్యకరమైన సొల్యూషన్‌లు ఎలా ఉండాలో చూపే ఆర్కిటెక్చర్ కంపాస్ ఫ్రేమ్‌వర్క్."
+    },
+    {
+      "english": "Trusted",
+      "telugu": "వాటాదారులను కాపాడే సురక్షిత, అనుకూల, నమ్మదగిన సొల్యూషన్."
+    },
+    {
+      "english": "Easy",
+      "telugu": "విలువను త్వరగా ఇచ్చే ఉద్దేశపూర్వక, ఆటోమేటెడ్, ఆకర్షణీయ డిజైన్."
+    },
+    {
+      "english": "Adaptable",
+      "telugu": "వ్యాపారంతో పాటు మారగల స్థితిస్థాపక, కంపోజబుల్ సొల్యూషన్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Well-Architected is three compasses: Trusted protects stakeholders, Easy delivers value people can own, Adaptable lets the design change. I score a design against all three instead of listing products.",
+    "two_minutes": "I start from the Overview: Trusted, Easy, and Adaptable are the top level; patterns sit underneath. Trusted is secure, compliant, reliable. Easy is intentional, automated, engaging—and it can fail if only a programmer can maintain it. Adaptable is resilient and composable. I treat the framework as design guidance, not a governor-limit table, and I keep metadata we deploy separate from records we operate."
+  },
+  "terminology": [
+    {
+      "term": "Salesforce Well-Architected",
+      "plain": "The official architecture framework for healthy Customer 360 solutions.",
+      "precise": "A two-level framework whose top capabilities are Trusted, Easy, and Adaptable, used as compass points for trade-offs, with patterns and anti-patterns underneath.",
+      "example": "Scoring a LAB_ intake design against Trusted, Easy, and Adaptable before choosing Apex.",
+      "non_example": "A Trailhead badge list or a Limits cheat sheet used as if it were the framework.",
+      "confusable_neighbor": "Salesforce Well-Architected Tools / patterns explorer: supporting catalogs, not the three compasses themselves.",
+      "boundary": "This lesson is the three-pillar map; later ARCH topics apply it to data, security, automation, and integration."
+    },
+    {
+      "term": "Trusted",
+      "plain": "The design protects people, the business, and the data.",
+      "precise": "A Trusted solution is secure, compliant, and reliable: access control and data protection, legal and ethical adherence plus accessibility, and availability, performance, and scalability.",
+      "example": "Refusing to store unrestricted government IDs in a LAB_ object until classification and encryption needs are named.",
+      "non_example": "Equating Trusted with 'we turned on MFA' and ignoring reliability or compliance.",
+      "confusable_neighbor": "Authentication (SEC-001): proving identity is one Secure concern, not the whole Trusted pillar.",
+      "boundary": "Sharing mechanics remain SEC topics; Trusted is the architecture lens over them."
+    },
+    {
+      "term": "Easy",
+      "plain": "The design delivers value quickly and people can actually run it.",
+      "precise": "An Easy solution is intentional, automated, and engaging. Easy architectures may require harder trade-off talks because a programmer-only design is not Easy even if it is reliable.",
+      "example": "Choosing a documented record-triggered Flow an admin can read over an undocumented trigger farm for the same LAB_ status update.",
+      "non_example": "Calling a solution Easy because it shipped in two days with no owner and no documentation.",
+      "confusable_neighbor": "User experience polish alone: Engaging is one Easy attribute, not a substitute for maintainability.",
+      "boundary": "Flow versus Apex product choice is AUTO-001 / ARCH-005; Easy is the ownership and value test."
+    },
+    {
+      "term": "Adaptable",
+      "plain": "The design can change when the business changes.",
+      "precise": "An Adaptable solution is resilient (lifecycle, incident response, continuity) and composable (separation of concerns, interoperability, packageability).",
+      "example": "Putting LAB_ pricing rules in custom metadata so a new region does not require rewriting a hard-coded Apex class.",
+      "non_example": "A single 4,000-line trigger that 'works today' with no package or interface boundary.",
+      "confusable_neighbor": "High availability: Reliability is Trusted; resilience and composability are Adaptable.",
+      "boundary": "Event-driven architecture is ARCH-007; this lesson only needs the Adaptable compass."
+    },
+    {
+      "term": "compass points",
+      "plain": "The three headings you return to when two good options collide.",
+      "precise": "The Overview describes Trusted, Easy, and Adaptable as compass points that guide decision making across complex architectural details and trade-offs.",
+      "example": "Fast custom code versus an admin-owned Flow: Easy versus a Trusted reliability concern, decided explicitly.",
+      "non_example": "Treating the three words as a slide title with no decision.",
+      "confusable_neighbor": "Product roadmap themes that reuse the same adjectives without the Well-Architected second-level attributes.",
+      "boundary": "Compasses do not replace numbered Salesforce Limits; cite Limits docs when a cap is required."
+    },
+    {
+      "term": "pattern versus anti-pattern",
+      "plain": "A published healthy approach versus a wreck to avoid.",
+      "precise": "The second Well-Architected level documents considerations, patterns to build, and anti-patterns to avoid under Trusted, Easy, and Adaptable.",
+      "example": "Citing a Well-Architected anti-pattern for unreadable automation instead of inventing a personal 'best practice.'",
+      "non_example": "A blog anecdote treated as an official anti-pattern without a framework citation.",
+      "confusable_neighbor": "Integration Patterns (ARCH-006): a different official catalog for request/reply and fire-and-forget.",
+      "boundary": "Quote the current Architecture Center page; do not invent anti-pattern names."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name the outcome",
+      "actor": "Architect + product owner",
+      "trigger": "A solution or change request",
+      "before": "A list of features with no health test",
+      "after": "A written business outcome and risk context",
+      "observe": "One paragraph on who is protected, who must own the design, and what must be able to change",
+      "failure": "Jumping to objects or Apex before Trusted, Easy, and Adaptable are named"
+    },
+    {
+      "step": 2,
+      "transition": "Score Trusted",
+      "actor": "Architect + security/compliance partners",
+      "trigger": "Outcome is named",
+      "before": "Unknown data class, identity model, or criticality",
+      "after": "Secure, compliant, and reliable questions answered or parked as risks",
+      "observe": "Data classification note, access actors, availability expectation",
+      "failure": "Treating MFA as the entire Trusted pillar"
+    },
+    {
+      "step": 3,
+      "transition": "Score Easy",
+      "actor": "Architect + admin/maintenance team",
+      "trigger": "Trusted risks are visible",
+      "before": "A technically clever option with no owner",
+      "after": "Intentional scope, automation that people can maintain, engaging path for users",
+      "observe": "Named owner skill set and a readable design note",
+      "failure": "Calling a programmer-only service Easy because it is fast to demo"
+    },
+    {
+      "step": 4,
+      "transition": "Score Adaptable and decide the trade-off",
+      "actor": "Architect + delivery lead",
+      "trigger": "Easy score exists",
+      "before": "A one-way implementation",
+      "after": "Resilience and composition choices, plus an explicit compass decision when pillars conflict",
+      "observe": "Lifecycle/test plan and a seam that can change (metadata, package, interface)",
+      "failure": "Shipping a monolith and calling it Adaptable because 'we can rewrite it later'"
+    }
+  ],
+  "when_to_use": [
+    "When an interview or design review asks you to judge a Salesforce solution as Trusted, Easy, and Adaptable rather than as a feature dump.",
+    "When two technically valid options collide and you need Well-Architected compass points to explain the trade-off.",
+    "When a design is reliable in code but the administrator cannot maintain it—use Easy as the explicit fail.",
+    "When a stakeholder wants a one-way build and you need Adaptable language for lifecycle, incident response, or composability."
+  ],
+  "when_not_to_use": [
+    "Do not use Well-Architected as a substitute for org-specific edition, license, or managed-package entitlement checks.",
+    "Do not treat Trusted, Easy, and Adaptable as a numeric governor-limit table; cite current Limits documentation for caps.",
+    "Do not collapse Well-Architected into only security, or only UX polish, and skip the other compasses.",
+    "Do not use this topic to pick Flow versus Apex, sharing rules, or an integration pattern—those are later ARCH and AUTO/SEC/INT lessons."
+  ],
+  "configuration_or_code_location": [
+    "Salesforce Architecture Center: Well-Architected Overview and Trusted / Easy / Adaptable pages.",
+    "Solution design notes and ADR-style records in the team wiki—not a Setup menu named Well-Architected.",
+    "Org metadata (objects, flows, Apex) remains the implementation; the framework is the scoring lens.",
+    "LAB_ sandbox designs only; this lesson does not authorize production cutover."
+  ],
+  "worked_example": {
+    "scenario": "A LAB_ nonprofit sandbox wants same-week Apex to auto-close LAB_Case rows from an email parser, store unrestricted ID numbers on the case, and skip tests so 'Easy' can mean fast. No production data.",
+    "inputs": [
+      "Unclassified identity data on LAB_Case",
+      "Admin team that does not read Apex",
+      "Seasonal volume spikes named by the stakeholder",
+      "Request to skip automated tests"
+    ],
+    "decisions": [
+      {
+        "decision": "Fail Trusted until identity data is classified and access is designed.",
+        "because": "Trusted requires secure data handling and compliance context before storage choices.",
+        "rejected": "Store unrestricted IDs on LAB_Case because the parser is convenient"
+      },
+      {
+        "decision": "Fail Easy for undocumented Apex the admin team cannot maintain.",
+        "because": "Easy Overview warns that a programmer-only design is not well-architected to be Easy.",
+        "rejected": "Call the design Easy solely because it would ship this week"
+      },
+      {
+        "decision": "Fail Adaptable for skipped tests and no lifecycle plan.",
+        "because": "Resilient Adaptable architectures include testing strategy and the ability to change safely.",
+        "rejected": "Skip tests and rewrite later"
+      }
+    ],
+    "configuration_or_code": [
+      "Write a one-page LAB_ score: Trusted / Easy / Adaptable with evidence, not a Setup click-path.",
+      "Park Apex until data class, owner skill, and a test strategy exist.",
+      "Keep synthetic LAB_Case rows only; do not import real constituent files."
+    ],
+    "output": "A written refusal to ship the parser as requested, with a sequenced plan: classify data (Trusted), choose an owner-fit automation (Easy), add tests and a change seam (Adaptable).",
+    "verification": [
+      "The score names all three Well-Architected compasses with at least one second-level word each.",
+      "Identity storage is not approved in the lab notes.",
+      "No production org or real constituent file is used."
+    ],
+    "self_explanation": "I used Well-Architected as compasses. Speed without Trusted and without an owner is not Easy. Skipping tests is not Adaptable."
+  },
+  "hands_on_lab": {
+    "environment": "Architecture review on paper or wiki plus optional disposable sandbox; synthetic LAB_ names only.",
+    "starting_state_checks": [
+      "You can open the official Well-Architected Overview page.",
+      "You are not using production data or production login."
+    ],
+    "steps": [
+      "Read the Well-Architected Overview and write Trusted, Easy, and Adaptable in your own words.",
+      "Pick a LAB_ design (for example a custom object plus Apex notification) and score each pillar with one second-level attribute.",
+      "Record one trade-off where two pillars conflict and which compass you chose.",
+      "State one place the harbor-compass analogy breaks for this org."
+    ],
+    "guided_completion": [
+      "If your score mentions only security, add Easy and Adaptable evidence.",
+      "If you claimed a numeric limit, replace it with a citation or mark Needs verification."
+    ],
+    "independent_challenge": "Rewrite the LAB_ design so Easy improves without weakening Trusted, and name the Adaptable seam you added.",
+    "evidence": [
+      "A one-page score with three pillars and a trade-off sentence.",
+      "URLs of the Overview plus the one pillar page you used most."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ notes if they contain any real personal data.",
+      "Do not deploy a 'Well-Architected' custom object to production as a souvenir."
+    ],
+    "limitations": "This lab scores architecture thinking; it does not prove org entitlements or governor numbers."
+  },
+  "decision_table": [
+    {
+      "signal": "The design stores sensitive data, widens access, or is business-critical under load.",
+      "choose": "Score Trusted first: secure, compliant, and reliable questions with named stakeholders.",
+      "not": "Start with UX polish or a same-week Apex demo and treat Trusted as a later hardening pass.",
+      "why": "The Trusted Overview calls protecting stakeholders essential; compliance and reliability sit beside security."
+    },
+    {
+      "signal": "Only a specialist developer can change the solution, but an administrator must own it.",
+      "choose": "Call out an Easy failure and redesign for maintainability and readability.",
+      "not": "Declare the design Easy because the demo was fast.",
+      "why": "Easy Overview states a programmer-only design would not be well-architected to be Easy."
+    },
+    {
+      "signal": "The business expects the process to change next quarter or after an incident.",
+      "choose": "Design for Adaptable: tests, lifecycle, and a composable seam.",
+      "not": "Hard-code a monolith and promise a rewrite.",
+      "why": "Adaptable Overview centers resilient operations and composable units that can be swapped."
+    },
+    {
+      "signal": "Two options are both technically valid and the team is arguing products.",
+      "choose": "Return to Trusted, Easy, and Adaptable compass points and record the trade-off.",
+      "not": "Pick the tool the loudest engineer likes without a pillar score.",
+      "why": "The Overview tells architects to use the three capabilities as compass points for trade-offs."
+    }
+  ],
+  "limitations": [
+    "Well-Architected does not grant features; edition and license still apply.",
+    "The framework does not publish a single numeric scale threshold for 'large'.",
+    "Second-level pattern pages evolve; reverify before quoting an anti-pattern name.",
+    "This topic does not replace SEC, AUTO, or integration pattern catalogs."
+  ],
+  "security_notes": [
+    "Trusted includes data classification before storage; do not put real personal data in LAB_ examples.",
+    "Secure is necessary but not sufficient for Trusted: compliance and reliability still apply.",
+    "Scoring a design is not permission to open production sharing or identity settings."
+  ],
+  "common_mistakes": [
+    "Treating Well-Architected as a Salesforce product you enable in Setup.",
+    "Collapsing Trusted into MFA only.",
+    "Calling a design Easy because it shipped quickly with no owner.",
+    "Confusing Trusted reliability with Adaptable resilience.",
+    "Inventing governor numbers while 'using' the framework."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Reviewers say the architecture 'feels off' but cannot name a defect.",
+      "check": [
+        "Score Trusted, Easy, and Adaptable with one second-level word each.",
+        "Ask who owns the solution after go-live."
+      ],
+      "do_not_assume": "The org edition is broken."
+    },
+    {
+      "symptom": "A technically correct Apex service is rejected by the architecture board.",
+      "check": [
+        "Easy: can an admin maintain it?",
+        "Adaptable: is there a test and change seam?",
+        "Trusted: was data class skipped?"
+      ],
+      "do_not_assume": "The board 'hates code'."
+    },
+    {
+      "symptom": "Stakeholders want to skip security review to go faster.",
+      "check": [
+        "Trusted Overview: protecting stakeholders is essential.",
+        "Name the data and access risk in writing."
+      ],
+      "do_not_assume": "Easy outranks Trusted."
+    }
+  ],
+  "production_notes": [
+    "Keep Well-Architected scores with the design record so later changes can re-score.",
+    "Do not ship LAB_ scoring objects to production.",
+    "Reverify Architecture Center URLs at the next release if you quote second-level patterns."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What are the three top-level capabilities of Salesforce Well-Architected?",
+      "options": {
+        "A": "Trusted, Easy, and Adaptable",
+        "B": "Profile, Permission Set, and Role",
+        "C": "Flow, Apex, and LWC",
+        "D": "Sandbox, Production, and Scratch org"
+      },
+      "answer": "A",
+      "rationale": "The Overview organizes the framework around Trusted, Easy, and Adaptable.",
+      "distractor_explanations": {
+        "B": "Those are security configuration tools, not the Well-Architected top level.",
+        "C": "Those are implementation tools scored by the framework.",
+        "D": "Those are environments, not architecture compasses."
+      },
+      "concept": "Well-Architected pillars",
+      "citation_ids": ["SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "According to the Overview, how should architects use Trusted, Easy, and Adaptable when details conflict?",
+      "options": {
+        "A": "As compass points for trade-off decisions",
+        "B": "As Setup checkboxes that enable the framework",
+        "C": "As replacements for Salesforce Limits documentation",
+        "D": "As names of three standard objects"
+      },
+      "answer": "A",
+      "rationale": "The Overview describes the three capabilities as compass points for architectural trade-offs.",
+      "distractor_explanations": {
+        "B": "Well-Architected is not a Setup product switch.",
+        "C": "Numeric limits stay in Limits documentation.",
+        "D": "They are capabilities, not objects."
+      },
+      "concept": "Compass points",
+      "citation_ids": ["SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "A Trusted solution is described as which trio?",
+      "options": {
+        "A": "Secure, compliant, and reliable",
+        "B": "Intentional, automated, and engaging",
+        "C": "Resilient and composable only",
+        "D": "Fast, cheap, and undocumented"
+      },
+      "answer": "A",
+      "rationale": "Trusted Overview: secure, compliant, and reliable.",
+      "distractor_explanations": {
+        "B": "That trio is Easy.",
+        "C": "Those attributes are Adaptable.",
+        "D": "That is an anti-goal, not Trusted."
+      },
+      "concept": "Trusted attributes",
+      "citation_ids": ["SF-WA-TRUSTED"]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "An Easy solution is described as which trio?",
+      "options": {
+        "A": "Intentional, automated, and engaging",
+        "B": "Secure, compliant, and reliable",
+        "C": "Batch, Queueable, and Scheduled",
+        "D": "OWD, role, and sharing rule"
+      },
+      "answer": "A",
+      "rationale": "Easy Overview: intentional, automated, and engaging.",
+      "distractor_explanations": {
+        "B": "That trio is Trusted.",
+        "C": "Those are Apex job types, not Easy attributes.",
+        "D": "Those are sharing layers."
+      },
+      "concept": "Easy attributes",
+      "citation_ids": ["SF-WA-EASY"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "An Adaptable solution is described as which pair?",
+      "options": {
+        "A": "Resilient and composable",
+        "B": "Secure and engaging",
+        "C": "Synchronous and batch",
+        "D": "Standard and custom objects"
+      },
+      "answer": "A",
+      "rationale": "Adaptable Overview: resilient and composable.",
+      "distractor_explanations": {
+        "B": "Those mix Trusted and Easy.",
+        "C": "Those are integration timings.",
+        "D": "Object origin is a data-model concern."
+      },
+      "concept": "Adaptable attributes",
+      "citation_ids": ["SF-WA-ADAPTABLE"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A design is technically reliable but only a programmer can maintain it. Which Well-Architected judgment matches Easy Overview?",
+      "options": {
+        "A": "It can fail Easy even if a programmer finds it reliable",
+        "B": "It automatically passes Easy because it compiled",
+        "C": "It fails Trusted only",
+        "D": "Easy does not consider maintainability"
+      },
+      "answer": "A",
+      "rationale": "Easy Overview warns that a solution simple for a programmer but not for an administrator would not be well-architected to be Easy.",
+      "distractor_explanations": {
+        "B": "Compilation is not the Easy test.",
+        "C": "The cited failure mode is Easy, not Trusted.",
+        "D": "Maintainability is an Intentional attribute under Easy."
+      },
+      "concept": "Easy maintainability",
+      "citation_ids": ["SF-WA-EASY"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which question belongs to Trusted planning rather than Easy UX?",
+      "options": {
+        "A": "What data moves in and out, and is Salesforce a system of record for regulated data?",
+        "B": "Which accent color should the app use?",
+        "C": "Which emoji should the success toast show?",
+        "D": "How many dashboard components look pretty?"
+      },
+      "answer": "A",
+      "rationale": "Trusted Overview asks about data moving through the system, specialized security or compliance, and whether Salesforce is business-critical.",
+      "distractor_explanations": {
+        "B": "Visual theme is not the Trusted data question.",
+        "C": "Toast chrome is UX polish.",
+        "D": "Dashboard aesthetics are not Trusted planning."
+      },
+      "concept": "Trusted planning",
+      "citation_ids": ["SF-WA-TRUSTED"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Putting a hard-coded regional rule in a 4,000-line trigger with no tests most directly weakens which pillar?",
+      "options": {
+        "A": "Adaptable (resilient lifecycle and composable units)",
+        "B": "Only the choice of standard versus custom object",
+        "C": "Only MFA configuration",
+        "D": "Only report chart types"
+      },
+      "answer": "A",
+      "rationale": "Adaptable centers testing strategy, lifecycle, and composability. A monolith without tests is the opposite.",
+      "distractor_explanations": {
+        "B": "Object origin is not the cited failure.",
+        "C": "MFA is a Trusted Secure concern, not this trigger shape.",
+        "D": "Charts are unrelated."
+      },
+      "concept": "Adaptable failure",
+      "citation_ids": ["SF-WA-ADAPTABLE"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Stakeholders want to skip security review to hit a demo date. What is the Well-Architected response?",
+      "options": {
+        "A": "Trusted is essential; do not trade away stakeholder protection for demo speed",
+        "B": "Easy always outranks Trusted",
+        "C": "Adaptable means skipping reviews",
+        "D": "Well-Architected does not discuss protection of stakeholders"
+      },
+      "answer": "A",
+      "rationale": "Trusted Overview states nothing is more essential to a well-architected solution than being Trusted.",
+      "distractor_explanations": {
+        "B": "Compasses inform trade-offs; they do not rank Easy over safety.",
+        "C": "Adaptable includes incident response, not skipped controls.",
+        "D": "Trusted is defined as protecting business and stakeholders."
+      },
+      "concept": "Trusted priority",
+      "citation_ids": ["SF-WA-TRUSTED", "SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A team argues Flow versus Apex for a LAB_ status update. What should Well-Architected contribute before AUTO-001 tool choice?",
+      "options": {
+        "A": "Score who must own it (Easy), what data is at risk (Trusted), and whether the rule will change (Adaptable)",
+        "B": "Always choose Apex because architects write code",
+        "C": "Always choose Flow because Easy means no code ever",
+        "D": "Ignore ownership and only compare governor numbers you invent"
+      },
+      "answer": "A",
+      "rationale": "The framework is compasses for trade-offs; it does not itself pick Flow or Apex, and it does not invent limits.",
+      "distractor_explanations": {
+        "B": "Architects are not required to default to Apex.",
+        "C": "Easy is maintainability and value, not a ban on Apex.",
+        "D": "Do not invent scale numbers."
+      },
+      "concept": "Framework versus tool choice",
+      "citation_ids": ["SF-WA-OVERVIEW", "SF-WA-EASY"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How does Well-Architected guidance differ from org metadata?",
+      "options": {
+        "A": "The framework is a scoring lens; objects, flows, and Apex you deploy are metadata, and records remain business data",
+        "B": "Well-Architected is a custom object Salesforce creates in every org",
+        "C": "Scoring a design inserts Account rows",
+        "D": "The Overview page is stored as a User record"
+      },
+      "answer": "A",
+      "rationale": "The handbook keeps design guidance separate from deployed metadata and operated records.",
+      "distractor_explanations": {
+        "B": "There is no universal Well-Architected object.",
+        "C": "A score does not create business records.",
+        "D": "Documentation is not a User row."
+      },
+      "concept": "Guidance versus metadata",
+      "citation_ids": ["SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Trusted reliability versus Adaptable resilience—what is the clean split?",
+      "options": {
+        "A": "Reliability is operating dependably (Trusted); resilience is handling change, incidents, and continuity (Adaptable)",
+        "B": "They are identical words in the Overview",
+        "C": "Reliability is only UX; resilience is only MFA",
+        "D": "Resilience is a sharing rule type"
+      },
+      "answer": "A",
+      "rationale": "Trusted Reliable covers availability, performance, and scalability. Adaptable Resilient covers lifecycle, incident response, and continuity.",
+      "distractor_explanations": {
+        "B": "The framework separates the words across pillars.",
+        "C": "That mix is wrong on both sides.",
+        "D": "Sharing rules are not resilience."
+      },
+      "concept": "Reliable vs resilient",
+      "citation_ids": ["SF-WA-TRUSTED", "SF-WA-ADAPTABLE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is Salesforce Well-Architected in one sentence?",
+      "back": "The Architecture Center framework for healthy Customer 360 solutions organized as Trusted, Easy, and Adaptable compasses."
+    },
+    {
+      "id": "F2",
+      "category": "trusted",
+      "front": "Trusted second-level trio?",
+      "back": "Secure, compliant, and reliable."
+    },
+    {
+      "id": "F3",
+      "category": "easy",
+      "front": "Easy second-level trio?",
+      "back": "Intentional, automated, and engaging."
+    },
+    {
+      "id": "F4",
+      "category": "adaptable",
+      "front": "Adaptable second-level pair?",
+      "back": "Resilient and composable."
+    },
+    {
+      "id": "F5",
+      "category": "definition",
+      "front": "Why call the pillars compass points?",
+      "back": "When architectural details and trade-offs conflict, return to Trusted, Easy, and Adaptable to decide."
+    },
+    {
+      "id": "F6",
+      "category": "easy",
+      "front": "Can a reliable Apex service still fail Easy?",
+      "back": "Yes. If only a programmer can own it, Easy Overview says it is not well-architected to be Easy."
+    },
+    {
+      "id": "F7",
+      "category": "trusted",
+      "front": "Name one Trusted planning question.",
+      "back": "What data moves in and out, and does it have specialized security, compliance, or ethical needs?"
+    },
+    {
+      "id": "F8",
+      "category": "adaptable",
+      "front": "Name one Adaptable resilient concern.",
+      "back": "Application lifecycle, incident response, or continuity planning."
+    },
+    {
+      "id": "F9",
+      "category": "adaptable",
+      "front": "Name one Adaptable composable concern.",
+      "back": "Separation of concerns, interoperability, or packageability."
+    },
+    {
+      "id": "F10",
+      "category": "boundary",
+      "front": "Is Well-Architected a Setup feature you enable?",
+      "back": "No. It is architecture guidance. Org metadata is still objects, automation, and code you deploy."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Does Well-Architected replace Limits documentation?",
+      "back": "No. Do not invent scale numbers; cite current Salesforce Limits docs when a cap matters."
+    },
+    {
+      "id": "F12",
+      "category": "compare",
+      "front": "Trusted reliability vs Adaptable resilience?",
+      "back": "Reliability is dependable operation now. Resilience is recovering and changing when disruption hits."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Stakeholders skip security review for a demo. Which pillar?",
+      "back": "Trusted. Protecting stakeholders is essential; Easy speed does not outrank it."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Hard-coded monolith, no tests, rewrite later. Which pillar fails?",
+      "back": "Adaptable: missing lifecycle testing and composable units."
+    },
+    {
+      "id": "F15",
+      "category": "decision",
+      "front": "Two valid tools, loud debate. What do you do?",
+      "back": "Score Trusted, Easy, and Adaptable and record the trade-off instead of picking by volume."
+    },
+    {
+      "id": "F16",
+      "category": "analogy",
+      "front": "Where does the harbor-compass analogy break?",
+      "back": "A Salesforce org is multi-tenant software with edition and license gates; compasses do not encode governor numbers."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is Salesforce Well-Architected, and how do you use it in a design review?",
+      "answer_30_seconds": "It is the official framework that healthy Customer 360 solutions are Trusted, Easy, and Adaptable. I score a design against those compasses instead of listing products.",
+      "answer_2_minutes": "The Overview says Trusted protects stakeholders, Easy delivers value fast, and Adaptable evolves with the business. Underneath are patterns and anti-patterns. In a review I ask Trusted questions about data and criticality, Easy questions about who maintains the design, and Adaptable questions about tests and seams. I do not treat the framework as a Setup switch or a limits table.",
+      "example": "Scoring a LAB_ email parser that wanted to store IDs and skip tests: fail Trusted, Easy, and Adaptable with evidence.",
+      "tradeoffs": [
+        "Speed of demo vs Trusted protection",
+        "Programmer elegance vs Easy ownership"
+      ],
+      "follow_ups": [
+        "What sits under Trusted?",
+        "When would you still choose Apex?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Well-Architected a managed package you install",
+        "Listing only security controls"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Explain Trusted, Easy, and Adaptable without product names.",
+      "answer_30_seconds": "Trusted means the solution protects people and operates dependably. Easy means value arrives fast and humans can run it. Adaptable means it can change and recover.",
+      "answer_2_minutes": "Trusted is secure, compliant, reliable. Easy is intentional, automated, engaging—including maintainability, so a clever service nobody else can edit fails Easy. Adaptable is resilient and composable: lifecycle, incidents, continuity, and units that can be swapped. I keep reliability (Trusted) distinct from resilience (Adaptable).",
+      "example": "A harbor tower: safety of the channel, a berth assignment the pilot can follow, and the ability to reassign berths in a storm.",
+      "tradeoffs": [
+        "Reliable now vs changeable later",
+        "Automation volume vs readability"
+      ],
+      "follow_ups": [
+        "Where does the analogy break?",
+        "What is composable?"
+      ],
+      "weak_answer_warnings": [
+        "Using a labeled-drawer or library story",
+        "Merging Easy with 'no code ever'"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A technically excellent Apex service is rejected because admins cannot maintain it. Defend the board.",
+      "answer_30_seconds": "Easy Overview says a design that is simple for a programmer but not for the administrator is not well-architected to be Easy. Reliability alone does not pass.",
+      "answer_2_minutes": "I separate Trusted reliability from Easy maintainability. If the org's operating model is admin-owned automation, undocumented Apex fails Easy even if tests pass. I would look for a more readable seam—Flow plus a small invocable, custom metadata, or a documented service with an admin-facing contract. I would not insult the board as anti-code; I would show an ownership model.",
+      "example": "LAB_ status updates: a before-save Flow the admin can read versus a trigger farm with no comments.",
+      "tradeoffs": [
+        "Code flexibility vs admin ownership",
+        "One service versus many flows"
+      ],
+      "follow_ups": [
+        "What if Flow cannot meet the rule?",
+        "How do you document Apex so Easy still passes?"
+      ],
+      "weak_answer_warnings": [
+        "Insisting Apex always wins because architects code"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Leadership wants production this week and will 'add security later.' How do you answer?",
+      "answer_30_seconds": "Trusted is essential. I will not store unclassified data or skip access design to hit a demo. Easy speed does not outrank protecting stakeholders.",
+      "answer_2_minutes": "I quote the Trusted planning questions: data classification, system-of-record role, regulations, criticality. I offer a thinner first slice that is still Trusted—synthetic LAB_ data, restricted fields, no production identities. I put the security work on the roadmap so Adaptable lifecycle is honest. I do not invent that a particular encryption product is mandatory without org evidence.",
+      "example": "Refuse unrestricted ID numbers on LAB_Case; allow a status-only parser in sandbox with classified fields later.",
+      "tradeoffs": [
+        "Demo date vs stakeholder protection",
+        "Thin slice vs full parser"
+      ],
+      "follow_ups": [
+        "What is the minimum Trusted evidence?",
+        "Who signs the risk?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to harden after production load of real IDs"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "The solution works in a demo org and collapses after the first seasonal spike. Which pillar did you under-score?",
+      "answer_30_seconds": "Trusted reliability—availability, performance, scalability—and possibly Adaptable continuity. I would not call it only a UI problem.",
+      "answer_2_minutes": "Trusted Reliable asks whether the system operates dependably under a range of conditions, including growth. I look for volume assumptions that were never written, missing tests, and a lack of monitoring. I cite Limits documentation rather than inventing a record-count threshold. If the team cannot recover, Adaptable incident response is also weak.",
+      "example": "LAB_ campaign creates a burst of cases; an unbulkified automation that was fine with ten demo rows fails under a larger sandbox load. Exact limits: Needs verification in current Limits docs.",
+      "tradeoffs": [
+        "Demo data vs representative volume",
+        "Trusted scale vs Easy delivery date"
+      ],
+      "follow_ups": [
+        "What evidence of volume do you collect?",
+        "How is this different from ownership skew (ARCH-003)?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing a million-row cutoff as if Well-Architected published it"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Reviewers cannot name a defect but 'do not trust the design.' How do you diagnose?",
+      "answer_30_seconds": "I force a written Trusted / Easy / Adaptable score with one second-level word each. Vague unease usually hides missing ownership, data class, or a change seam.",
+      "answer_2_minutes": "I ask who is protected, who maintains the solution, and what happens when the process changes. I check whether the team used anti-patterns from the framework or only tribal taste. I separate metadata they will deploy from records they will load. If the unease is sharing, I send that to SEC rather than pretending Well-Architected replaced OWD design.",
+      "example": "A LAB_ LWC looks engaging (Easy) but stores extra copies of contact emails (Trusted data) with no package boundary (Adaptable).",
+      "tradeoffs": [
+        "Taste-based review vs framework score",
+        "Pillar language vs product argument"
+      ],
+      "follow_ups": [
+        "Which pillar was blank?",
+        "What anti-pattern page did you open?"
+      ],
+      "weak_answer_warnings": [
+        "Hand-wavy 'it depends' with no score"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you accept a less 'clever' design because of Well-Architected?",
+      "answer_30_seconds": "When the clever option fails Easy ownership or Adaptable composability, even if it is technically Trusted-reliable for a specialist.",
+      "answer_2_minutes": "I look at the operating model. If administrators must change rules weekly, custom metadata or Flow may beat a brilliant but opaque algorithm. If packages must ship independently, I invest in separation of concerns. I still refuse options that fail Trusted. The Overview exists exactly so those trade-offs are spoken, not hidden inside a code preference.",
+      "example": "Choosing readable Flow plus invocable Apex over a single undocumented trigger that does everything.",
+      "tradeoffs": [
+        "Cleverness vs readability",
+        "One deployable vs many packages"
+      ],
+      "follow_ups": [
+        "What if the admin team is actually a product engineering team?",
+        "How do you record the decision?"
+      ],
+      "weak_answer_warnings": [
+        "Always picking the least technical option regardless of Trusted"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach Well-Architected to a Java architect in two minutes without Salesforce jargon soup.",
+      "answer_30_seconds": "It is a health model: protect people, ship value humans can operate, and keep the system changeable. We use those three tests when two good designs collide.",
+      "answer_2_minutes": "I map Trusted to security, compliance, and operational reliability; Easy to intentional scope and operable automation; Adaptable to resilience and modularity. I warn that Salesforce Easy is not 'no code,' and Trusted is not 'SSO only.' I show the harbor compasses and immediately say the analogy breaks on multi-tenant licenses and governor limits, which we cite from Limits docs rather than inventing. Then I score one LAB_ story live so they see the method.",
+      "example": "LAB_ intake: classify data, pick an owner-fit automation, add tests and a metadata seam.",
+      "tradeoffs": [
+        "Enterprise architecture frameworks vs Salesforce Well-Architected wording",
+        "Physical analogies vs multi-tenant reality"
+      ],
+      "follow_ups": [
+        "How does this relate to Well-Architected Tools?",
+        "What is out of scope for ARCH-001?"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer analogy",
+        "Reciting product SKUs instead of pillars"
+      ]
+    }
+  ]
+}

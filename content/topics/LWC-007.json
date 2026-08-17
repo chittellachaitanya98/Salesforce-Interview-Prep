@@ -1,0 +1,982 @@
+{
+  "topic_id": "LWC-007",
+  "slug": "loading-empty-success-and-error-states",
+  "title": "Loading, empty, success, and error states",
+  "track": "Lightning Web Components",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-006"
+  ],
+  "objectives": [
+    "Map a wire or Apex call to distinct loading, empty, success, and error states instead of a single spinner-or-crash UI.",
+    "Explain why both data and error start undefined, and why that is not an error state.",
+    "Handle Lightning Data Service and Apex errors with the documented body shapes, not a generic try-catch around @wire.",
+    "Choose errorCallback, inline template messages, or a toast without mixing those layers."
+  ],
+  "diagnostic_question": "A wired getRecord shows a blank card, then a red toast, then nothing. Before reading, how would you tell loading from empty from a real error, and what would you inspect first on the wire payload?",
+  "definition": "Loading, empty, success, and error states are the four user-visible outcomes of an asynchronous LWC data call. The Lightning Web Components Developer Guide models wire results as an object with hardcoded data and error properties: both start undefined before the wire fires; later exactly one is populated. Empty is a successful payload with no rows to show, not a failed request. ([Handle Errors in Lightning Data Service](https://developer.salesforce.com/docs/platform/lwc/guide/data-error.html); [Understand the Wire Service](https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service-about.html))",
+  "why_it_matters": "Interviewers fail candidates who treat a blank screen as an Apex bug, or who wrap @wire in try-catch and call it error handling. Users also cannot recover if every failure is an unhandled 'A Component Error has occurred!' popup. Distinct states keep LDS, Apex, and template logic honest.",
+  "sixty_second_explanation": "Think of a restaurant pass window. Loading is the ticket still in the kitchen. Empty is the rail with no tickets and the kitchen confirming 'nothing to plate.' Success is the plated dish. Error is the dish sent back with a note. Before the first ticket prints, the rail is blank—that is not a complaint. In LWC, data and error both undefined means the wire has not provisioned yet.",
+  "deeper_explanation": [
+    "The wire service provisions an immutable stream. On construction, a wired property's default is { data: undefined, error: undefined }. That is not an error state; the adapter has not fired or its config is incomplete (an undefined reactive $param also keeps both undefined). ([Understand the Wire Service](https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service-about.html))",
+    "When provisioning succeeds, data is set and error stays undefined. When the adapter cannot supply data, error is set and data is undefined. The Guide recommends an if (data) / else if (error) function so you never treat the initial undefined pair as failure. ([Handle Errors in Lightning Data Service](https://developer.salesforce.com/docs/platform/lwc/guide/data-error.html))",
+    "LDS errors include invalid record Id, missing required fields, offline when the record is not cached, and sharing or visibility changes. error.body shape depends on the API: UI API reads often return an array; UI API writes, Apex, and network errors often return an object. Reduce that payload to a user-readable string instead of JSON.stringify-ing the whole FetchResponse. ([Handle Errors](https://developer.salesforce.com/docs/platform/lwc/guide/data-error.html); [Work with Errors](https://developer.salesforce.com/docs/platform/lwc/guide/data-error-types.html))",
+    "try-catch around connectedCallback does not catch later async failures; put try-catch inside the callback or promise. Unhandled synchronous errors bubble to parents and then the app popup. errorCallback() is an LWC error-boundary hook for descendant lifecycle and template-declared handlers, not for handlers attached with addEventListener. ([errorCallback](https://developer.salesforce.com/docs/platform/lwc/guide/create-lifecycle-hooks-error.html))",
+    "Empty is a success path: data is present and length is zero (or the record has no child rows). Show a dedicated empty illustration and a next action. Do not reuse the error template. Loading uses a spinner or skeleton only while data and error remain undefined after a complete config, or while a tracked isLoading flag is true for imperative Apex."
+  ],
+  "mental_model": {
+    "analogy": "A restaurant pass window: tickets in the kitchen, an empty rail after the kitchen says 'nothing to plate,' a plated dish, and a returned plate with a note.",
+    "useful_mapping": [
+      "ticket still cooking → loading (data and error still undefined, or isLoading true)",
+      "kitchen confirms no orders → empty success (data present, zero rows)",
+      "plated dish → success (render fields or a list)",
+      "returned plate with a note → error (error populated; show a recoverable message)",
+      "blank rail before first ticket prints → not an error",
+      "head chef catching a dropped plate in the dining room → errorCallback on a parent boundary"
+    ],
+    "where_it_breaks": [
+      "A kitchen always knows when an order exists; a wire with an undefined $recordId never fires, so the rail stays blank forever.",
+      "errorCallback does not catch programmatically assigned listeners the way a human chef would still see a dropped plate.",
+      "A toast is a shouted announcement, not a replacement for an inline empty or error region on the card itself."
+    ]
+  },
+  "teach_back_prompt": "Without using a catalog metaphor, walk a teammate through loading versus empty versus error on a wired list, then name one place the restaurant-pass analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: what do data and error look like before the first wire provision?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given four screenshots (spinner, 'no records', table, red message), name the state and the check you would run."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain why try-catch around @wire is the wrong tool, and when errorCallback applies."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk an LDS error.body that is an array versus an Apex error.body that is an object."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: four states, one empty-vs-error example, one async try-catch trap."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-DATA-ERROR",
+      "title": "Handle Errors in Lightning Data Service",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-error.html",
+      "supports": "LDS wire errors; data/error properties; try-catch vs async; error.body shapes; recommend else if (error).",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not enumerate every UI API status code."
+    },
+    {
+      "source_id": "SF-LWC-WIRE-ABOUT",
+      "title": "Understand the Wire Service",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service-about.html",
+      "supports": "Default undefined data/error; incomplete config never provisions; provision vs fetch; cache may skip the network.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "GraphQL uses errors (plural); mark that adapter separately."
+    },
+    {
+      "source_id": "SF-LWC-ERROR-TYPES",
+      "title": "Work with Errors",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-error-types.html",
+      "supports": "JS vs LDS vs Apex errors; unhandled errors bubble to the app or console; display a corrective message.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Toast modules are detailed in LWC-008."
+    },
+    {
+      "source_id": "SF-LWC-ERRORCALLBACK",
+      "title": "Handle Component Errors (errorCallback)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-lifecycle-hooks-error.html",
+      "supports": "errorCallback captures descendant lifecycle and template-declared handler errors; not addEventListener handlers; unmounts the failing subtree.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace LDS error property handling."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Four states",
+        "data and error undefined",
+        "Empty is success",
+        "error.body shapes",
+        "errorCallback boundary",
+        "Do not try-catch @wire"
+      ],
+      "accessible_description": "Portrait map of LWC loading, empty, success, and error: wire starts with both properties undefined; empty is a zero-row success; error uses documented body shapes; a parent errorCallback is a last-resort boundary."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-DATA-ERROR",
+        "SF-LWC-WIRE-ABOUT",
+        "SF-LWC-ERRORCALLBACK"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Wire payload to template state"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Wire[Wire or imperative Apex] --> Payload{data and error}\n  Payload -->|both undefined| Load[Loading or not yet fired]\n  Payload -->|data set error undefined| Check{data length or fields}\n  Check -->|rows or record present| Success[Success template]\n  Check -->|zero rows| Empty[Empty template]\n  Payload -->|error set data undefined| Err[Error template or toast]\n  Child[Unhandled child throw] --> Boundary[Parent errorCallback]",
+      "decision": "flowchart TD\n  Need[Need a UI for async data?] --> Q1{Have data and error both undefined?}\n  Q1 -->|Yes and config complete| Spin[Show loading spinner or skeleton]\n  Q1 -->|Yes and $param missing| Wait[Do not call it error; fix the config]\n  Q1 -->|No| Q2{Is error populated?}\n  Q2 -->|Yes| ShowErr[Inline error plus optional toast]\n  Q2 -->|No data empty| Empty[Empty state with a next action]\n  Q2 -->|No data present| Success[Render the success view]\n  Q3{Unhandled descendant throw?} -->|Yes| Boundary[errorCallback parent]\n  Q3 -->|Programmatic addEventListener| Console[Not caught by errorCallback]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Before the wire fires, data and error are both undefined; that is not an error state.",
+      "source_ids": ["SF-LWC-WIRE-ABOUT", "SF-LWC-DATA-ERROR"],
+      "scope": "Wire lifecycle",
+      "validation": "Wire Service default value and Handle Errors note on first fire.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Wired functions should use if (data) and else if (error); data and error are hardcoded API property names.",
+      "source_ids": ["SF-LWC-DATA-ERROR", "SF-LWC-WIRE-ABOUT"],
+      "scope": "Wire error handling",
+      "validation": "Handle Errors in LDS recommended pattern; Wire Service syntax.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "try-catch around a single transaction does not catch later async callbacks; put try-catch inside the callback.",
+      "source_ids": ["SF-LWC-DATA-ERROR"],
+      "scope": "Async JavaScript",
+      "validation": "Errors in Asynchronous JavaScript section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "errorCallback captures descendant lifecycle and template-declared handler errors, not handlers assigned with addEventListener.",
+      "source_ids": ["SF-LWC-ERRORCALLBACK"],
+      "scope": "Error boundaries",
+      "validation": "Handle Component Errors topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "error.body shape depends on the API: UI API reads often array; UI API writes, Apex, and network errors often object.",
+      "source_ids": ["SF-LWC-DATA-ERROR"],
+      "scope": "Error payload",
+      "validation": "Body Payload section of Handle Errors in LDS.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "lwc:if / lwc:elseif / lwc:else remain the current conditional directives; if:true is legacy. Reverify template directives against the Summer '26 LWC Developer Guide.",
+  "unresolved_uncertainty": [
+    "Exact default client cache duration for cacheable Apex is not assumed here; the caching guide says not to hard-code it (LWC-011).",
+    "Needs verification: whether a specific lightning-spinner variant is required versus a custom skeleton for loading."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Loading state",
+      "telugu": "డేటా ఇంకా రాకముందు చూపే స్పిన్నర్ లేదా వెయిటింగ్ వీక్షణ."
+    },
+    {
+      "english": "Empty state",
+      "telugu": "కాల్ విజయవంతం కానీ చూపించడానికి రికార్డులు లేవు."
+    },
+    {
+      "english": "Error state",
+      "telugu": "వైర్ లేదా Apex విఫలమైనప్పుడు చూపే సరిచేసే సందేశం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I split async UI into loading, empty, success, and error. Both data and error start undefined—that is not failure. Empty is a successful zero-row payload. I handle error with else if (error), not try-catch around @wire.",
+    "two_minutes": "I start from the wire lifecycle: incomplete $config never fires; then loading; then either data or error. I reduce error.body based on array versus object. Empty gets its own template and a next action. Unhandled descendant throws go to errorCallback; addEventListener errors do not. I never show a toast instead of an inline empty region on a list card."
+  },
+  "terminology": [
+    {
+      "term": "loading state",
+      "plain": "The UI shown while the component is waiting for data that has not arrived yet.",
+      "precise": "Typically data and error are both still undefined after a complete wire config, or a tracked isLoading flag is true for imperative Apex. Render a spinner or skeleton, not an error.",
+      "example": "lightning-spinner over a LAB_ case list while getRelatedListRecords has not provisioned.",
+      "non_example": "A finished query that returned zero Cases—that is empty, not loading.",
+      "confusable_neighbor": "Empty state: success with nothing to show.",
+      "boundary": "This lesson owns the four UI states; LDS wire mechanics are LWC-006."
+    },
+    {
+      "term": "empty state",
+      "plain": "The UI when the request worked but there is nothing to display.",
+      "precise": "data is populated and represents zero rows or a missing optional related list. It is a success path, not an error path.",
+      "example": "A LAB_ Account with no open Cases shows 'No open cases' plus a New Case action.",
+      "non_example": "A 404 from getRecord because the Id is invalid—that is error.",
+      "confusable_neighbor": "Loading: still waiting, not confirmed empty.",
+      "boundary": "Do not reuse the error template for empty lists."
+    },
+    {
+      "term": "success state",
+      "plain": "The UI when usable data arrived and you render it.",
+      "precise": "error is undefined and data holds the record or collection you asked for. Mutate only a shallow copy; wire data is treated as immutable.",
+      "example": "A LAB_ Contact card showing Name and Email from getRecord.",
+      "non_example": "Showing stale spinner after data arrived.",
+      "confusable_neighbor": "Empty: success with zero rows.",
+      "boundary": "Create/update/delete are imperative; this lesson is about presenting the result."
+    },
+    {
+      "term": "error state",
+      "plain": "The UI when the adapter or Apex could not supply data.",
+      "precise": "error is populated and data is undefined. Reduce error.body (array or object) to a short corrective message. Optionally toast; still keep an inline region on the card.",
+      "example": "User cannot see a LAB_ Opportunity: show 'You do not have access' rather than a stack trace.",
+      "non_example": "data=[] for a related list—that is empty success.",
+      "confusable_neighbor": "errorCallback: unhandled descendant throws, not the wire error property.",
+      "boundary": "Toast module choice is LWC-008."
+    },
+    {
+      "term": "error.body",
+      "plain": "The payload inside a wire or LDS error that actually describes what failed.",
+      "precise": "UI API reads often return an array of objects; UI API writes, Apex, and network errors often return an object. status and statusText sit beside body on the FetchResponse-like error.",
+      "example": "reduceErrors() joining field-level messages from a write error object.",
+      "non_example": "JSON.stringify(error) dumped into the template.",
+      "confusable_neighbor": "JavaScript Error.message from a local throw.",
+      "boundary": "Do not invent status-code catalogs; read the payload you got."
+    },
+    {
+      "term": "errorCallback",
+      "plain": "A parent hook that catches throws from its descendant tree and can show a fallback view.",
+      "precise": "Captures errors in descendant lifecycle hooks or template-declared handlers. The failing subtree unmounts. Handlers added with addEventListener are not captured.",
+      "example": "c-lab-error-boundary wrapping a chart that throws in renderedCallback.",
+      "non_example": "else if (error) on a wired function—that is the wire error property.",
+      "confusable_neighbor": "try-catch in an async callback.",
+      "boundary": "Not a substitute for LDS error handling."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Complete the wire config",
+      "actor": "Developer",
+      "trigger": "Component constructs",
+      "before": "data and error undefined",
+      "after": "Adapter may fire only when every $param has a value",
+      "observe": "Both properties stay undefined if recordId is still undefined",
+      "failure": "Calling the blank screen an Apex outage"
+    },
+    {
+      "step": 2,
+      "transition": "Render loading",
+      "actor": "Template",
+      "trigger": "Config complete, no provision yet, or isLoading true",
+      "before": "User sees a hole in the page",
+      "after": "Spinner or skeleton in the same card chrome",
+      "observe": "lwc:if={isLoading} without treating it as error",
+      "failure": "Hiding the whole page behind a full-screen spinner for a sidebar widget"
+    },
+    {
+      "step": 3,
+      "transition": "Branch data versus error",
+      "actor": "Wired function",
+      "trigger": "Adapter provisions",
+      "before": "Unknown outcome",
+      "after": "if (data) then empty-or-success; else if (error) then reduce body",
+      "observe": "Exactly one of data or error populated",
+      "failure": "try-catch around the @wire decorator"
+    },
+    {
+      "step": 4,
+      "transition": "Show empty or success or error",
+      "actor": "Template",
+      "trigger": "Branch decided",
+      "before": "Generic card",
+      "after": "Dedicated empty copy, record UI, or recoverable error",
+      "observe": "Empty has a next action; error has a corrective message",
+      "failure": "Reusing the error banner for zero-row lists"
+    }
+  ],
+  "when_to_use": [
+    "When a Lightning web component loads Salesforce data asynchronously and must show loading, empty, success, and error states separately.",
+    "When a wired list returns zero rows and you need an empty success template rather than an error banner.",
+    "When an LDS or Apex error.body must be reduced to a user-readable error state instead of a stack dump.",
+    "When diagnosing a blank card: loading that never finished versus a missing $recordId versus a true error."
+  ],
+  "when_not_to_use": [
+    "Do not use this loading-and-error-states lesson as a substitute for choosing LDS versus Apex (LWC-006) or toast versus modal (LWC-008).",
+    "Do not treat a successful empty list as an error state, or wrap @wire in try-catch and call that error handling.",
+    "Do not rely on errorCallback to display LDS sharing failures that already arrive on the error property.",
+    "Do not design production loading UX with real customer data; use sandbox LAB_ records only."
+  ],
+  "configuration_or_code_location": [
+    "Component HTML: lwc:if branches for isLoading, hasData, isEmpty, hasError.",
+    "Component JS: wired function with { data, error } and optional tracked isLoading for imperative Apex.",
+    "Optional parent: errorCallback plus a fallback template.",
+    "lwc-recipes: lds* and apex* components for patterns—Needs verification of exact recipe names in the current repo."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox LAB_ Account record page hosts labOpenCases. The wire is getRelatedListRecords for Cases. Interviewers want four distinct UIs: spinner, no open cases, a short list, and an access error. No production data.",
+    "inputs": [
+      "recordId from the page (may be undefined on first render)",
+      "Related list of open Cases",
+      "A user without Case read access for the error path"
+    ],
+    "decisions": [
+      {
+        "decision": "Keep a loading branch while data and error are both undefined and recordId is set.",
+        "because": "The Guide treats that pair as not-yet-provisioned, not failure.",
+        "rejected": "Show 'Something went wrong' immediately on construct"
+      },
+      {
+        "decision": "When data.records.length === 0, render an empty success state with a New Case action.",
+        "because": "Empty is success with nothing to plate, not an error.",
+        "rejected": "Reuse the error template for zero rows"
+      },
+      {
+        "decision": "On error, reduce error.body and show an inline message; do not throw.",
+        "because": "Unhandled throws become the app popup; LDS already gave an error property.",
+        "rejected": "throw error from the wired function"
+      }
+    ],
+    "configuration_or_code": [
+      "@wire(getRelatedListRecords, { parentRecordId: '$recordId', ... }) wiredCases({ data, error }) { if (data) { this.cases = data.records; this.errorMessage = undefined; } else if (error) { this.cases = undefined; this.errorMessage = reduceBody(error); } }",
+      "Template: spinner if recordId && !cases && !errorMessage; empty if cases && cases.length===0; list if length>0; error text if errorMessage.",
+      "Do not wrap the @wire in try-catch."
+    ],
+    "output": "Four mutually exclusive templates; blank-before-fire is loading only after recordId exists.",
+    "verification": [
+      "With recordId undefined, no error banner appears.",
+      "Account with zero Cases shows the empty copy, not an error.",
+      "A user without access sees the reduced error message.",
+      "A child throw in a nested chart is caught only if a parent implements errorCallback."
+    ],
+    "self_explanation": "I treated empty as success and the undefined pair as loading-or-not-fired. I did not invent try-catch around the wire."
+  },
+  "hands_on_lab": {
+    "environment": "Scratch org or Developer sandbox; LAB_ LWC only; synthetic Account/Case.",
+    "starting_state_checks": [
+      "You can deploy an LWC to this org.",
+      "No production aliases in the component name."
+    ],
+    "steps": [
+      "Create labOpenCases with a wired related-list (or Apex list) of Cases for an Account Id.",
+      "Add four template branches: loading, empty, success list, error message using if (data) / else if (error).",
+      "Prove a missing recordId does not show the error branch.",
+      "Force an invalid Id or a user without access and confirm the error branch shows a reduced message, not a raw object."
+    ],
+    "guided_completion": [
+      "If zero Cases show the error banner, empty is misclassified.",
+      "If construct shows an error before recordId exists, you treated undefined/undefined as failure."
+    ],
+    "independent_challenge": "Wrap a child that throws in renderedCallback with errorCallback and show a fallback; document that the wire error path still uses else if (error).",
+    "evidence": [
+      "Screenshot or HTML of four mutually exclusive states with LAB_ names.",
+      "Note that try-catch is not around the @wire decorator."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete the LAB_ component from the sandbox.",
+      "Do not deploy to production."
+    ],
+    "limitations": "This lab does not prove Lightning Out, GraphQL errors (plural), or toast module choice."
+  },
+  "decision_table": [
+    {
+      "signal": "recordId still undefined on first render; both data and error are undefined.",
+      "choose": "Treat as not-fired loading or render nothing; do not show an error banner.",
+      "not": "Declare an error state because the card looks blank.",
+      "why": "The wire does not provision until config is complete; undefined/undefined is documented."
+    },
+    {
+      "signal": "Wire returns data with zero related records.",
+      "choose": "Empty success template with a next action such as New Case.",
+      "not": "The same red error state used for Apex exceptions.",
+      "why": "Empty is a successful payload, not a failed request."
+    },
+    {
+      "signal": "Wire returns error because of sharing, invalid Id, or Apex exception.",
+      "choose": "else if (error), reduce error.body, inline recoverable message.",
+      "not": "try-catch around @wire or throw to force the app popup.",
+      "why": "The Guide recommends the else if pattern and documents async try-catch limits."
+    },
+    {
+      "signal": "A nested child throws in a lifecycle hook and the whole page shows 'A Component Error has occurred!'",
+      "choose": "Parent errorCallback boundary with a fallback view.",
+      "not": "Assume the wire error property will catch it, or rely on addEventListener handlers being captured.",
+      "why": "errorCallback is for descendant lifecycle/template handlers; it is not LDS error handling."
+    }
+  ],
+  "limitations": [
+    "Does not choose LDS versus Apex, or toast versus modal.",
+    "Does not list every UI API status code.",
+    "GraphQL wire adapters use errors (plural); do not copy this lesson's property name blindly.",
+    "errorCallback does not catch programmatically assigned listeners."
+  ],
+  "security_notes": [
+    "Never dump stack traces, session IDs, or raw error.body JSON to end users.",
+    "A sharing error is an authorization outcome; do not retry in a loop.",
+    "Do not log real customer payloads in examples."
+  ],
+  "common_mistakes": [
+    "Treating data===undefined as an error on first render.",
+    "Showing an error banner for a successful empty list.",
+    "Wrapping @wire in try-catch.",
+    "JSON.stringify(error) in the UI.",
+    "Expecting errorCallback to handle LDS error properties."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Spinner never stops and no error appears.",
+      "check": [
+        "Is a $ reactive param still undefined so the wire never fires?",
+        "Did you forget else if (error) and leave isLoading true?"
+      ],
+      "do_not_assume": "Apex is hung; the adapter may never have been called."
+    },
+    {
+      "symptom": "Users with no rows see a red error card.",
+      "check": [
+        "Is data an empty array rather than error populated?",
+        "Split empty from error in the template."
+      ],
+      "do_not_assume": "The related list query failed."
+    },
+    {
+      "symptom": "App modal 'A Component Error has occurred!'",
+      "check": [
+        "Unhandled throw in a child; consider errorCallback.",
+        "Was the handler attached with addEventListener? Then errorCallback will not catch it."
+      ],
+      "do_not_assume": "The wire error property is broken."
+    }
+  ],
+  "production_notes": [
+    "Keep empty copy and error copy as metadata-friendly text, not hardcoded secrets.",
+    "Do not poll refreshApex to fake a loading loop (LWC-011).",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Before an LWC wire adapter fires, what are the documented default values of data and error?",
+      "options": {
+        "A": "Both are undefined",
+        "B": "data is [] and error is null",
+        "C": "data is {} and error is a blank Error",
+        "D": "Only error is undefined; data is an empty string"
+      },
+      "answer": "A",
+      "rationale": "The wire service assigns a default object with data and error properties of undefined.",
+      "distractor_explanations": {
+        "B": "Empty array would already be a provisioned success payload.",
+        "C": "That would look like an error object the framework did not create.",
+        "D": "Both properties start undefined."
+      },
+      "concept": "Wire default payload",
+      "citation_ids": ["SF-LWC-WIRE-ABOUT"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which pattern does the LWC Developer Guide recommend on a wired function?",
+      "options": {
+        "A": "if (data) { ... } else if (error) { ... }",
+        "B": "try { @wire(...) } catch (e) { ... }",
+        "C": "if (!data) { treat as error immediately }",
+        "D": "Ignore error and only read data"
+      },
+      "answer": "A",
+      "rationale": "Handle Errors in LDS recommends including the else if block for errors on wire functions.",
+      "distractor_explanations": {
+        "B": "@wire is a decorator; try-catch around it does not catch provisioning errors.",
+        "C": "Missing data on first render is not an error.",
+        "D": "The Guide stores provisioning failures on error."
+      },
+      "concept": "Wired function branching",
+      "citation_ids": ["SF-LWC-DATA-ERROR"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A related-list wire returns data.records as []. Which UI state is correct?",
+      "options": {
+        "A": "Empty success state",
+        "B": "Error state",
+        "C": "Loading state forever",
+        "D": "errorCallback fallback"
+      },
+      "answer": "A",
+      "rationale": "A provisioned empty collection is success with nothing to show, not an error.",
+      "distractor_explanations": {
+        "B": "error would be populated if the adapter failed.",
+        "C": "Data arrived; loading is over.",
+        "D": "No throw occurred."
+      },
+      "concept": "Empty versus error",
+      "citation_ids": ["SF-LWC-WIRE-ABOUT", "SF-LWC-ERROR-TYPES"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why does try-catch in connectedCallback miss an error thrown inside setTimeout?",
+      "options": {
+        "A": "try-catch handles only the current synchronous transaction, not a later callback",
+        "B": "LWC forbids try-catch",
+        "C": "setTimeout always succeeds",
+        "D": "errorCallback replaces try-catch everywhere"
+      },
+      "answer": "A",
+      "rationale": "The Handle Errors topic shows that try-catch must sit inside the async callback.",
+      "distractor_explanations": {
+        "B": "try-catch is valid JavaScript in LWC.",
+        "C": "The Guide's example throws in the timeout.",
+        "D": "errorCallback is a descendant boundary, not a global replacement."
+      },
+      "concept": "Async try-catch",
+      "citation_ids": ["SF-LWC-DATA-ERROR"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which errors does errorCallback capture?",
+      "options": {
+        "A": "Descendant lifecycle and template-declared handler errors",
+        "B": "Only LDS wire error properties",
+        "C": "Only addEventListener handlers",
+        "D": "Only Apex governor limits"
+      },
+      "answer": "A",
+      "rationale": "errorCallback is an error-boundary hook for descendant lifecycle and template-declared handlers.",
+      "distractor_explanations": {
+        "B": "Wire errors arrive on the error property.",
+        "C": "Those are explicitly not captured.",
+        "D": "Governors are a server topic, not this hook."
+      },
+      "concept": "errorCallback",
+      "citation_ids": ["SF-LWC-ERRORCALLBACK"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "getRecord fails because the user cannot see the record. Where should the component look first?",
+      "options": {
+        "A": "The error property from the wire, then reduce error.body",
+        "B": "errorCallback on the same component",
+        "C": "A try-catch around the @wire decorator",
+        "D": "The empty-state template"
+      },
+      "answer": "A",
+      "rationale": "Sharing and visibility failures are LDS errors provisioned on error.",
+      "distractor_explanations": {
+        "B": "No throw is required for a wire error.",
+        "C": "Decorators are not wrapped in try-catch.",
+        "D": "Empty is for successful zero-row data."
+      },
+      "concept": "LDS sharing error",
+      "citation_ids": ["SF-LWC-DATA-ERROR"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "For UI API read operations such as getRecord, how is error.body commonly shaped?",
+      "options": {
+        "A": "An array of objects",
+        "B": "Always a string",
+        "C": "Always null",
+        "D": "A GraphQL errors array only"
+      },
+      "answer": "A",
+      "rationale": "The Handle Errors topic states UI API reads return error.body as an array of objects.",
+      "distractor_explanations": {
+        "B": "You reduce the array to a string for display.",
+        "C": "A failed read has a body.",
+        "D": "GraphQL is a different adapter."
+      },
+      "concept": "error.body shape",
+      "citation_ids": ["SF-LWC-DATA-ERROR"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A child component throws in renderedCallback. The page shows 'A Component Error has occurred!' What is the Guide's more elegant option?",
+      "options": {
+        "A": "A parent errorCallback that renders an alternative view",
+        "B": "Mark the child @AuraEnabled",
+        "C": "Disable Lightning Web Security",
+        "D": "Convert the throw into an empty state"
+      },
+      "answer": "A",
+      "rationale": "Unhandled errors bubble to the enclosing app; errorCallback lets you log and show a fallback.",
+      "distractor_explanations": {
+        "B": "@AuraEnabled is Apex exposure.",
+        "C": "LWS is LWC-010 and does not replace error boundaries.",
+        "D": "A throw is not an empty list."
+      },
+      "concept": "Unhandled component error",
+      "citation_ids": ["SF-LWC-ERROR-TYPES", "SF-LWC-ERRORCALLBACK"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A wired property stays {data: undefined, error: undefined} even after the page loads. First check?",
+      "options": {
+        "A": "A reactive $ config property is still undefined so the adapter never provisions",
+        "B": "Jest is not installed",
+        "C": "The component must be Aura",
+        "D": "errorCallback swallowed the data"
+      },
+      "answer": "A",
+      "rationale": "If a configuration property is undefined, the wire service does not provision data.",
+      "distractor_explanations": {
+        "B": "Jest is unrelated to runtime provisioning.",
+        "C": "This is an LWC wire.",
+        "D": "errorCallback does not eat wire payloads."
+      },
+      "concept": "Incomplete wire config",
+      "citation_ids": ["SF-LWC-WIRE-ABOUT"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How does a loading state differ from an empty state on a Case list?",
+      "options": {
+        "A": "Loading means data has not arrived; empty means data arrived with zero Cases",
+        "B": "They are identical templates",
+        "C": "Empty means the wire threw; loading means Apex succeeded",
+        "D": "Loading is only for toasts"
+      },
+      "answer": "A",
+      "rationale": "Loading waits; empty is a successful zero-row payload.",
+      "distractor_explanations": {
+        "B": "Users need different copy and actions.",
+        "C": "That reverses the meanings.",
+        "D": "Toasts are a notification channel, not the loading definition."
+      },
+      "concept": "Loading versus empty",
+      "citation_ids": ["SF-LWC-WIRE-ABOUT"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Apex write operations versus UI API getRecord: what does the Guide say about error.body?",
+      "options": {
+        "A": "Apex often returns an object; UI API reads often return an array",
+        "B": "Both are always strings",
+        "C": "Apex never returns a body",
+        "D": "Both are always arrays"
+      },
+      "answer": "A",
+      "rationale": "Body Payload documents those two common shapes.",
+      "distractor_explanations": {
+        "B": "You reduce whatever you receive.",
+        "C": "Apex errors include a body object.",
+        "D": "Writes and Apex are described as objects."
+      },
+      "concept": "Body payload differences",
+      "citation_ids": ["SF-LWC-DATA-ERROR"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You attach onclick in JavaScript with addEventListener and the handler throws. Does errorCallback run?",
+      "options": {
+        "A": "No; the Guide says errorCallback is not called for that assignment style",
+        "B": "Yes, always",
+        "C": "Only if cacheable=true",
+        "D": "Only in Aura"
+      },
+      "answer": "A",
+      "rationale": "errorCallback is not called when the handler is assigned via addEventListener.",
+      "distractor_explanations": {
+        "B": "Template-declared handlers are the captured case.",
+        "C": "Caching is unrelated.",
+        "D": "This is an LWC lifecycle rule."
+      },
+      "concept": "errorCallback limits",
+      "citation_ids": ["SF-LWC-ERRORCALLBACK"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "Default data and error before the first wire provision?",
+      "back": "Both are undefined. That pair is not an error state."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "What is an LWC empty state?",
+      "back": "A successful payload with nothing to render, such as zero related records."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "Recommended wired-function branch?",
+      "back": "if (data) handle success or empty; else if (error) handle failure."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "Why not try-catch around @wire?",
+      "back": "Provisioning is async; try-catch only covers the current synchronous transaction."
+    },
+    {
+      "id": "F5",
+      "category": "decision",
+      "front": "Blank card and recordId still undefined. Error?",
+      "back": "No. Incomplete config means the wire may never fire. Do not show error."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "data.records is []. Which template?",
+      "back": "Empty success with a next action, not the error banner."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "User lacks sharing on the record. Which property?",
+      "back": "The wire error property. Reduce error.body; do not throw."
+    },
+    {
+      "id": "F8",
+      "category": "limitation_security",
+      "front": "Should users see raw error.body JSON?",
+      "back": "No. Reduce to a short corrective message; never dump stacks or secrets."
+    },
+    {
+      "id": "F9",
+      "category": "limitation_security",
+      "front": "What does errorCallback not catch?",
+      "back": "Handlers assigned with addEventListener, and ordinary LDS error properties."
+    },
+    {
+      "id": "F10",
+      "category": "scenario",
+      "front": "UI API getRecord error.body typical shape?",
+      "back": "An array of objects. Apex and many writes use an object instead."
+    },
+    {
+      "id": "F11",
+      "category": "scenario",
+      "front": "App popup 'A Component Error has occurred!' means?",
+      "back": "An unhandled throw reached the enclosing app. Consider a parent errorCallback."
+    },
+    {
+      "id": "F12",
+      "category": "terminology",
+      "front": "Hardcoded wire result property names?",
+      "back": "data and error for most adapters. GraphQL uses errors (plural)."
+    },
+    {
+      "id": "F13",
+      "category": "decision",
+      "front": "Imperative Apex still in flight. How to show loading?",
+      "back": "A tracked isLoading flag around the promise, then the same four UI states."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Spinner never ends. First wire check?",
+      "back": "A $ reactive parameter is still undefined, so the adapter never provisioned."
+    },
+    {
+      "id": "F15",
+      "category": "terminology",
+      "front": "Where should try-catch live for setTimeout throws?",
+      "back": "Inside the callback, not around the code that schedules the timeout."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain loading, empty, success, and error states in an LWC that uses @wire.",
+      "answer_30_seconds": "Loading is waiting (often data and error still undefined). Empty is success with zero rows. Success renders data. Error is the error property, not a blank first paint.",
+      "answer_2_minutes": "I walk the wire lifecycle. Both properties start undefined. If a $param is missing, I do not call it an error. When data arrives I split empty versus populated. When error arrives I reduce error.body. I keep four templates so users can tell 'still working' from 'nothing here' from 'you cannot see this.'",
+      "example": "labOpenCases: spinner, 'No open cases', a list, or an access message on a LAB_ Account.",
+      "tradeoffs": [
+        "Inline error versus toast",
+        "Skeleton versus spinner"
+      ],
+      "follow_ups": [
+        "What if GraphQL is used?",
+        "Where does errorCallback fit?"
+      ],
+      "weak_answer_warnings": [
+        "Calling a blank first render an Apex failure"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why is an empty list not an error state?",
+      "answer_30_seconds": "The adapter succeeded and provisioned data. Zero rows is a business outcome. Error means the adapter could not supply data.",
+      "answer_2_minutes": "Interviewers listen for whether you punish users with a red banner when they simply have no Cases. Empty should offer a next action. Error should explain access, validation, or a server failure. Mixing them trains users to ignore real failures.",
+      "example": "New LAB_ Account with no Cases: empty copy plus New Case, not 'Something went wrong.'",
+      "tradeoffs": [
+        "One generic banner versus two templates",
+        "Empty illustration versus a short sentence"
+      ],
+      "follow_ups": [
+        "Would you still log empty to a monitoring tool?",
+        "How do you test empty in Jest?"
+      ],
+      "weak_answer_warnings": [
+        "if (!data.length) show error"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A card is blank. The developer says Apex is down. How do you diagnose loading versus error?",
+      "answer_30_seconds": "Inspect whether recordId is set and whether both data and error are still undefined. Incomplete config never fires the wire.",
+      "answer_2_minutes": "I log or inspect the wired property. Undefined/undefined with a missing $id is a loading-or-not-fired bug in the parent. If error is set, I reduce the body. If data is [], I switch to empty. I do not restart the org before checking config completeness.",
+      "example": "Child rendered before the page set recordId; spinner or blank, not an Apex outage.",
+      "tradeoffs": [
+        "Render nothing versus a spinner while Id is missing",
+        "Parent-supplied Id versus @api setter timing"
+      ],
+      "follow_ups": [
+        "How do quick actions pass recordId?",
+        "Would you use a wired property or function?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Apex without reading the payload"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Where do you put try-catch for LWC async work?",
+      "answer_30_seconds": "Inside the callback or promise, not around connectedCallback scheduling, and not around the @wire decorator.",
+      "answer_2_minutes": "The Guide's setTimeout example is the interview answer: the outer try-catch ends before the callback runs. For wires I use else if (error). For imperative Apex I await in try/catch inside the handler. For descendant throws I consider errorCallback.",
+      "example": "createRecord in an async handler with try/catch, plus a loading flag around the await.",
+      "tradeoffs": [
+        "Inline catch versus boundary",
+        "Toast versus inline error"
+      ],
+      "follow_ups": [
+        "Does errorCallback catch this handler?",
+        "What is reduceErrors?"
+      ],
+      "weak_answer_warnings": [
+        "try { @wire(getRecord) }"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Users see 'A Component Error has occurred!' instead of your error state. What happened?",
+      "answer_30_seconds": "An unhandled throw left the component. The enclosing app showed the popup. Wire errors on the error property would not do that by themselves.",
+      "answer_2_minutes": "I ask whether someone threw from a wired function or a lifecycle hook. I add a parent errorCallback for descendant lifecycle failures. I keep LDS failures on the error property without throwing. I check addEventListener, which errorCallback will not catch.",
+      "example": "A chart child throws in renderedCallback; the record page dies unless a boundary wraps it.",
+      "tradeoffs": [
+        "App-wide boundary versus per-widget boundary",
+        "Log-and-fallback versus fail loud in a sandbox"
+      ],
+      "follow_ups": [
+        "What arguments does errorCallback receive?",
+        "Does the failing child stay in the DOM?"
+      ],
+      "weak_answer_warnings": [
+        "Calling the popup an LDS error.body"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "error.body is sometimes an array and sometimes an object. How do you display it?",
+      "answer_30_seconds": "Branch on Array.isArray(error.body) versus object, collect messages, join them. Do not stringify the whole FetchResponse.",
+      "answer_2_minutes": "The Guide documents UI API reads as arrays and writes, Apex, and network errors as objects. A helper like lwc-recipes reduceErrors exists for that reason. I still write a user-facing sentence, not field-API soup, and I never show secrets from the payload.",
+      "example": "getRecord 404 array versus createRecord field-level object on a LAB_ Account.",
+      "tradeoffs": [
+        "Shared reducer versus per-adapter formatting",
+        "Field-level detail versus one sentence"
+      ],
+      "follow_ups": [
+        "What are status and statusText?",
+        "How do you test both shapes in Jest?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming body is always a string"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you not put a full-page spinner on loading?",
+      "answer_30_seconds": "When only a region is loading. A sidebar list should skeleton in place so the rest of the record page stays usable.",
+      "answer_2_minutes": "Loading is a state of that query, not of the whole Lightning page. Blocking the record header because related Cases are still wiring is poor UX and hides other errors. I keep loading inside the card. I also avoid treating missing recordId as a page-level error.",
+      "example": "labOpenCases spinner inside its card while Highlights Panel already rendered.",
+      "tradeoffs": [
+        "Regional spinner versus page blocker",
+        "Skeleton versus indefinite spinner"
+      ],
+      "follow_ups": [
+        "What about initial page bootstrap?",
+        "How does this change on mobile?"
+      ],
+      "weak_answer_warnings": [
+        "One org-wide spinner for every wire"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach empty versus error without jargon, then name where your analogy breaks.",
+      "answer_30_seconds": "Empty is the kitchen saying there are no tickets. Error is a dish sent back. A blank rail before the first ticket prints is not a complaint—that is still waiting.",
+      "answer_2_minutes": "I use the pass-window mapping, then break it: if the ticket Id never arrives, the kitchen is never asked, so the rail stays blank forever. That is a missing $recordId, not an empty kitchen. I also note errorCallback is a dining-room catch, not the wire's error property.",
+      "example": "Stakeholder demo: zero Cases versus a user who cannot read Case.",
+      "tradeoffs": [
+        "Analogy speed versus precise payload talk",
+        "Toast shout versus inline note on the plate"
+      ],
+      "follow_ups": [
+        "Show the four templates",
+        "Where does a toast belong?"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer metaphor",
+        "Collapsing empty into error"
+      ]
+    }
+  ]
+}

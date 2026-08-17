@@ -1,0 +1,1057 @@
+{
+  "topic_id": "DATA-011",
+  "slug": "global-object-specific-and-quick-actions",
+  "title": "Global, object-specific, and quick actions",
+  "track": "Data model and configuration",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-010"
+  ],
+  "objectives": [
+    "Define a quick action as a reusable action users launch from Lightning and mobile action bars.",
+    "Choose a global action when the work is not tied to a specific record; choose an object-specific action when it is.",
+    "Place actions on page layouts or Lightning pages (including Dynamic Actions) separately from creating the action metadata.",
+    "Refuse an action when the need is a validation rule, a formula field, or a full custom app."
+  ],
+  "diagnostic_question": "Users need a one-tap Create Inspection from a property, a Create Vendor that works from the header with no record open, and a Log a Call on the property. Which are global versus object-specific quick actions, and where do you add them so they appear?",
+  "definition": "Quick actions are actions users launch from Lightning Experience and the Salesforce mobile app to create or update records, log calls, or open custom UI. Global actions are not tied to a particular object or record and are managed on the global publisher layout. Object-specific actions belong to an object and can create records automatically related to the current record. Creating an action is metadata; showing it requires adding it to a page layout's Salesforce Mobile and Lightning Experience Actions or to a Lightning page (including Dynamic Actions). ([Actions Overview](https://help.salesforce.com/s/articleView?id=platform.actions_overview.htm); [Global Actions](https://help.salesforce.com/s/articleView?id=platform.actions_global.htm); [Object-Specific Actions](https://help.salesforce.com/s/articleView?id=platform.actions_objectspecific.htm); [Page Layouts](https://help.salesforce.com/s/articleView?id=customize_layout.htm))",
+  "why_it_matters": "Interviewers listen for global versus object-specific, and for 'I created it but it does not show' because the action was never added to a layout or Lightning page. An object-specific Create can prefill the relationship to the current record; a global Create cannot. Actions are not validation rules and not FLS.",
+  "sixty_second_explanation": "Think of a hotel. A global quick action is the lobby kiosk—any guest can create a wake-up request without being in a room. An object-specific quick action is the in-room phone that already knows this stay: Create Inspection from this property. The quick action is the labeled button itself. Hanging the button on the wall is the page layout or Lightning page. A security gate (validation) still stops a bad suitcase even if the button is huge.",
+  "deeper_explanation": [
+    "Actions Overview Help frames quick actions as productivity shortcuts in Lightning and mobile. Types typically include create, update, log a call, and custom (Visualforce, Aura, LWC, or Flow)—confirm the current type list in the create-action wizard rather than inventing types. ([Actions Overview](https://help.salesforce.com/s/articleView?id=platform.actions_overview.htm))",
+    "Global actions live independently of a record. They are added to the global publisher layout (and can also appear in other supported action lists). A global Create cannot automatically relate to 'this' record because there may be no this. ([Global Actions](https://help.salesforce.com/s/articleView?id=platform.actions_global.htm))",
+    "Object-specific actions are created on an object. A create action can set the new record's relationship to the current record. They appear when you add them to that object's page layout action section or to the object's Lightning record page. ([Object-Specific Actions](https://help.salesforce.com/s/articleView?id=platform.actions_objectspecific.htm); [Page Layouts](https://help.salesforce.com/s/articleView?id=customize_layout.htm))",
+    "Dynamic Actions on a Lightning record page can show or hide actions with visibility rules, similar in spirit to Dynamic Forms (DATA-009). Exact availability is object- and release-sensitive—Needs verification. Until then, the layout action bar is the usual assignment surface.",
+    "Action layouts choose which fields appear on the create/update form. That is not the object's page layout and not FLS. Validation rules still fire on save from an action."
+  ],
+  "mental_model": {
+    "analogy": "A hotel: global actions are lobby kiosks, object-specific actions are in-room phones that already know the stay, and the page layout or Lightning page is the wall you hang the button on.",
+    "useful_mapping": [
+      "quick action → the labeled button",
+      "global action → lobby kiosk, no room context",
+      "object-specific action → in-room phone bound to this property",
+      "action layout → which fields the form asks for",
+      "page layout action bar → hanging the button on that room style",
+      "global publisher layout → hanging buttons in the lobby",
+      "validation rule → the security gate that still runs on save"
+    ],
+    "where_it_breaks": [
+      "Some actions open Flow or LWC, which is more than a paper button.",
+      "Dynamic Actions assignment is not a physical wall—confirm current App Builder labels.",
+      "Publisher layouts in Classic Chatter are a neighboring historical surface.",
+      "The analogy does not encode every action type in the wizard."
+    ]
+  },
+  "teach_back_prompt": "Explain global versus object-specific quick actions, then why an action can exist in Setup and still be invisible on the record.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Global vs object-specific in one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Create Inspection from Property: which action type and where do you add it?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Created but not visible: which layout did you forget?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Action layout vs page layout vs FLS."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: when not to use an action."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-ACTOVER",
+      "title": "Actions Overview",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.actions_overview.htm",
+      "supports": "Quick actions as Lightning and mobile productivity actions; types and where actions appear at a high level.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-ACTGLOBAL",
+      "title": "Global Actions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.actions_global.htm",
+      "supports": "Global actions are not tied to a specific object or record; used from global publisher / supported global action lists.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-ACTOBJ",
+      "title": "Object-Specific Actions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.actions_objectspecific.htm",
+      "supports": "Actions created on an object; can create records related to the current record.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-LAYOUT",
+      "title": "Page Layouts",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=customize_layout.htm",
+      "supports": "Layouts customize content including actions for Lightning and mobile record pages.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Quick action button",
+        "Global no record",
+        "Object-specific this record",
+        "Add to layout or Lightning page",
+        "Action layout fields",
+        "Validation still runs"
+      ],
+      "accessible_description": "Global actions have no record context; object-specific actions do; both must be added to a layout or Lightning page to appear."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-ACTOVER",
+        "SF-HELP-ACTGLOBAL",
+        "SF-HELP-ACTOBJ",
+        "SF-HELP-LAYOUT"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Create action metadata → add to publisher or record action bar → user launches form"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  QA[Quick action] --> G[Global: no record context]\n  QA --> O[Object-specific: this record]\n  G --> GPL[Global publisher layout]\n  O --> PL[Object page layout action bar]\n  O --> LRP[Lightning record page / Dynamic Actions]\n  QA --> AL[Action layout fields]",
+      "decision": "flowchart TD\n  Need[Need a shortcut] --> Q1{Must it know the current record?}\n  Q1 -->|No| G[Global quick action]\n  Q1 -->|Yes| O[Object-specific quick action]\n  G --> Q2{Where will it show?}\n  Q2 --> GPL[Add to global publisher layout]\n  O --> Q3{Create related child?}\n  Q3 -->|Yes| Rel[Object-specific create with relationship]\n  Need --> Q4{Need a hard stop not a button?}\n  Q4 -->|Yes| VR[Validation rule DATA-010]",
+      "sequence": "sequenceDiagram\n  participant User\n  participant Property\n  participant Action\n  User->>Property: Open record\n  User->>Action: Object-specific Create Inspection\n  Action->>Action: Prefill Property lookup\n  Action-->>User: Validation still runs on save"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Quick actions are Lightning and mobile actions for tasks such as create, update, and log a call. Creating the action is not enough; it must be added to a layout or Lightning page to appear.",
+      "source_ids": [
+        "SF-HELP-ACTOVER",
+        "SF-HELP-LAYOUT"
+      ],
+      "scope": "Quick actions and placement",
+      "validation": "Actions Overview plus Page Layouts action customization.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Global actions are not tied to a particular object or record and are managed with the global publisher layout.",
+      "source_ids": [
+        "SF-HELP-ACTGLOBAL",
+        "SF-HELP-ACTOVER"
+      ],
+      "scope": "Global actions",
+      "validation": "Global Actions Help plus overview.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Object-specific actions are created on an object and can create records related to the current record.",
+      "source_ids": [
+        "SF-HELP-ACTOBJ",
+        "SF-HELP-ACTOVER"
+      ],
+      "scope": "Object-specific actions",
+      "validation": "Object-Specific Actions Help plus overview.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "The action layout chooses fields on the action form. The object's page layout and field-level security are different surfaces. Validation rules still apply when the action saves.",
+      "source_ids": [
+        "SF-HELP-LAYOUT",
+        "SF-HELP-ACTOBJ"
+      ],
+      "scope": "Action layout vs page layout",
+      "validation": "Page Layouts plus object-specific action forms.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Dynamic Actions, action types, and Lightning action-bar UI are release-sensitive. Reverify Actions Overview for Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact default action-bar contents after a layout is customized, and Dynamic Actions object coverage, are Needs verification in the target org.",
+    "Classic publisher-layout leftovers should be confirmed if the org still uses Classic Chatter."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Global action",
+      "telugu": "A quick action with no current-record context."
+    },
+    {
+      "english": "Object-specific action",
+      "telugu": "A quick action that belongs to an object and this record."
+    },
+    {
+      "english": "Action layout",
+      "telugu": "The fields shown on the action's create or update form."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Quick actions are Lightning and mobile shortcuts. Global actions have no record context and live on the global publisher layout. Object-specific actions belong to an object and can relate creates to this record. You must add the action to a layout or Lightning page or it will not show.",
+    "two_minutes": "Create Inspection is object-specific on Property so the lookup prefills. Create Vendor from the header with no record is global. Log a Call on Property is object-specific. I add them to the action bar. I design the action layout fields. I do not replace validation with a button. I mention Dynamic Actions as a Lightning visibility option—Needs verification for the object."
+  },
+  "terminology": [
+    {
+      "term": "quick action",
+      "plain": "A shortcut button in Lightning or mobile.",
+      "precise": "An action users launch to create or update records, log a call, or open custom UI. Metadata plus placement.",
+      "example": "LAB_NewInspection action on Property.",
+      "non_example": "A formula field.",
+      "confusable_neighbor": "Custom button/link: older related feature, neighboring.",
+      "boundary": "Must be placed to appear."
+    },
+    {
+      "term": "global action",
+      "plain": "A shortcut with no current record.",
+      "precise": "Not tied to a particular object or record. Assigned via the global publisher layout and other supported global lists.",
+      "example": "Create Vendor from the app header.",
+      "non_example": "Create Inspection that must parent to this property.",
+      "confusable_neighbor": "Global publisher layout: the lobby wall.",
+      "boundary": "Cannot auto-relate to this record."
+    },
+    {
+      "term": "object-specific action",
+      "plain": "A shortcut that belongs to an object.",
+      "precise": "Created on an object; can create a related record for the current row; placed on that object's layouts or Lightning page.",
+      "example": "Create Inspection from LAB_Property__c.",
+      "non_example": "A global Create Inspection with a blank lookup.",
+      "confusable_neighbor": "Related list New button: similar idea, different surface.",
+      "boundary": "Still needs layout placement."
+    },
+    {
+      "term": "global publisher layout",
+      "plain": "Where global actions are hung.",
+      "precise": "The layout that controls which global actions appear in global action areas.",
+      "example": "Added LAB_NewVendor to the global publisher layout.",
+      "non_example": "The Property page layout.",
+      "confusable_neighbor": "Lightning app navigation: different surface.",
+      "boundary": "Forgetting this is why global actions vanish."
+    },
+    {
+      "term": "action layout",
+      "plain": "Fields on the action form.",
+      "precise": "The field arrangement for that action's create or update screen, not the object's page layout.",
+      "example": "Inspection action asks only Date and Type.",
+      "non_example": "The full Inspection page layout.",
+      "confusable_neighbor": "Compact layout: highlights, not the action form.",
+      "boundary": "FLS still applies to those fields."
+    },
+    {
+      "term": "Lightning action bar",
+      "plain": "Where record actions show in Lightning.",
+      "precise": "The Salesforce Mobile and Lightning Experience Actions section of the page layout, or actions added on the Lightning record page.",
+      "example": "Create Inspection visible on the Property highlight panel actions.",
+      "non_example": "A related list column.",
+      "confusable_neighbor": "Dynamic Actions: page-assigned visibility—Needs verification.",
+      "boundary": "Override the default action list when you customize it."
+    },
+    {
+      "term": "prefilled relationship",
+      "plain": "The new child already points at this record.",
+      "precise": "Object-specific create actions can set the relationship to the current record; global creates cannot.",
+      "example": "Inspection.Property__c filled from the Property action.",
+      "non_example": "User must search Property on a global create.",
+      "confusable_neighbor": "Default field values: a different feature (DATA-002).",
+      "boundary": "This is the usual reason to pick object-specific."
+    },
+    {
+      "term": "Dynamic Actions",
+      "plain": "Actions assigned on the Lightning page with visibility rules.",
+      "precise": "A Lightning alternative to the layout action list. Availability is object- and release-sensitive—Needs verification.",
+      "example": "Show Create Inspection only when Status is Occupied.",
+      "non_example": "A validation rule.",
+      "confusable_neighbor": "Dynamic Forms: fields, not actions.",
+      "boundary": "Do not promise it on every object."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide global vs object-specific",
+      "actor": "Admin",
+      "trigger": "Need a shortcut",
+      "before": "Wrong context",
+      "after": "Global if no record; object-specific if this record matters",
+      "observe": "Written choice",
+      "failure": "Global create for a child that must parent to this record"
+    },
+    {
+      "step": 2,
+      "transition": "Create the action and action layout",
+      "actor": "Admin",
+      "trigger": "Type chosen",
+      "before": "No metadata",
+      "after": "Action exists with the right target object and fields",
+      "observe": "Preview the form in Setup",
+      "failure": "Dumping the entire page layout onto the action"
+    },
+    {
+      "step": 3,
+      "transition": "Place the action",
+      "actor": "Admin",
+      "trigger": "Action exists but is invisible",
+      "before": "Forgotten layout",
+      "after": "Global publisher layout or object action bar / Lightning page",
+      "observe": "User sees the button",
+      "failure": "Creating a second action instead of placing the first"
+    },
+    {
+      "step": 4,
+      "transition": "Prove save quality",
+      "actor": "Admin",
+      "trigger": "Action used",
+      "before": "Assuming the button bypasses rules",
+      "after": "Validation still blocks bad LAB_ rows",
+      "observe": "Error message from DATA-010 appears",
+      "failure": "Removing validation because the action 'is simple'"
+    }
+  ],
+  "when_to_use": [
+    "When users need a Lightning or mobile quick action to create or update a record or log a call.",
+    "When the shortcut must know the current record—use an object-specific action so the relationship can prefill.",
+    "When the shortcut must work from the header with no record open—use a global action and the global publisher layout.",
+    "When you must place an existing action on a page layout or Lightning page so it becomes visible.",
+    "When the action form should show a short action layout, not the full page layout."
+  ],
+  "when_not_to_use": [
+    "Do not use a global action when the new record must automatically relate to the current record.",
+    "Do not use an action as a substitute for a validation rule, formula field, or roll-up.",
+    "Do not assume creating the action metadata makes it visible without layout or Lightning placement.",
+    "Do not use an action to hide fields from the API (that is FLS) or to replace record types.",
+    "Do not build a full custom app as a quick action when a record page or Flow screen is the real need—confirm tool choice."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Global Actions, or Object Manager → Buttons, Links, and Actions.",
+    "Global publisher layout; object page layout → Salesforce Mobile and Lightning Experience Actions.",
+    "Lightning App Builder → Dynamic Actions if offered.",
+    "Action layout editor on the action itself."
+  ],
+  "worked_example": {
+    "scenario": "Facilities wants Create Inspection from a property (relationship filled), Create Vendor from the app header with no property open, and Log a Call on the property. Sandbox only.",
+    "inputs": [
+      "LAB_Property__c, LAB_Inspection__c, LAB_Vendor__c",
+      "Lightning Experience",
+      "Synthetic users"
+    ],
+    "decisions": [
+      {
+        "decision": "Object-specific Create Inspection on Property.",
+        "because": "Must prefill the property relationship.",
+        "rejected": "Global Create Inspection"
+      },
+      {
+        "decision": "Global Create Vendor on the global publisher layout.",
+        "because": "No current record is required.",
+        "rejected": "Object-specific Vendor action hidden on Property only"
+      },
+      {
+        "decision": "Object-specific Log a Call on Property, added to the action bar.",
+        "because": "The call belongs to this record.",
+        "rejected": "Creating the action and never placing it"
+      }
+    ],
+    "configuration_or_code": [
+      "Create the three actions; slim the inspection action layout.",
+      "Add Inspection and Log a Call to the Property layout action section.",
+      "Add Create Vendor to the global publisher layout."
+    ],
+    "output": "Three visible buttons with the right context; validation still applies.",
+    "verification": [
+      "Inspection created from Property has Property__c populated.",
+      "Vendor can be created from the header with no record open.",
+      "An action omitted from the layout does not appear."
+    ],
+    "self_explanation": "I matched lobby versus in-room, then I hung the buttons on the correct wall."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ objects.",
+    "starting_state_checks": [
+      "Lightning Experience on.",
+      "You can create actions and edit layouts."
+    ],
+    "steps": [
+      "Create an object-specific create action on LAB_Property__c targeting a child.",
+      "Create a global create action for an independent object.",
+      "Place each on the correct layout; leave a copy unplaced to see it missing.",
+      "Save a LAB_ row through the object-specific action and confirm the relationship."
+    ],
+    "guided_completion": [
+      "If the button is missing, open the layout action section or global publisher layout.",
+      "If the lookup is blank, you used a global action."
+    ],
+    "independent_challenge": "Trim the action layout to three fields and prove the object's page layout did not shrink.",
+    "evidence": [
+      "Screenshots of both buttons.",
+      "A child record with the parent filled."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ actions and records.",
+      "Do not deploy."
+    ],
+    "limitations": "Does not prove every Dynamic Actions object."
+  },
+  "decision_table": [
+    {
+      "signal": "Create a child that must point at the open record.",
+      "choose": "Object-specific create quick action on the parent, then add it to the parent's action bar.",
+      "not": "A global create action.",
+      "why": "Only object-specific actions have this-record context to prefill the relationship."
+    },
+    {
+      "signal": "Create a record from the header with no record open.",
+      "choose": "Global quick action on the global publisher layout.",
+      "not": "An object-specific action that only exists on Property.",
+      "why": "Global actions are not tied to a particular object or record."
+    },
+    {
+      "signal": "Action exists in Setup but users cannot see it.",
+      "choose": "Add it to the page layout action section, Lightning page, or global publisher layout.",
+      "not": "Recreate the action with a new name.",
+      "why": "Placement is separate from action metadata."
+    },
+    {
+      "signal": "Need a hard stop when Region is blank on Commercial.",
+      "choose": "Validation rule (DATA-010), not an action.",
+      "not": "A quick action that simply omits Region.",
+      "why": "Users and APIs can still save other ways; validation is the gate."
+    },
+    {
+      "signal": "Need different action visibility by Status on the Lightning page.",
+      "choose": "Dynamic Actions with a visibility rule if the object supports them; otherwise separate layouts.",
+      "not": "A new object for each Status.",
+      "why": "Dynamic Actions are a Lightning assignment option; object support is Needs verification."
+    }
+  ],
+  "limitations": [
+    "Full action-type catalog is wizard-specific.",
+    "Dynamic Actions coverage is unverified here.",
+    "Classic publisher behavior is neighboring.",
+    "Does not replace Flow screen design."
+  ],
+  "security_notes": [
+    "Actions do not bypass FLS or validation.",
+    "An action layout can omit a field the API can still set.",
+    "Do not put secrets in action predefined values."
+  ],
+  "common_mistakes": [
+    "Creating an action and forgetting to place it.",
+    "Using a global action when the child must relate to this record.",
+    "Confusing action layout with page layout.",
+    "Thinking actions replace validation.",
+    "Assuming Dynamic Actions exist on every object."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Action is in Setup but missing on the record.",
+      "check": [
+        "Page layout Salesforce Mobile and Lightning Experience Actions.",
+        "Lightning page Dynamic Actions if enabled.",
+        "The user is on the assigned layout."
+      ],
+      "do_not_assume": "The action failed to save."
+    },
+    {
+      "symptom": "Create form does not fill the parent lookup.",
+      "check": [
+        "The action is object-specific on that parent.",
+        "The relationship field is on the action layout or set as a predefined value."
+      ],
+      "do_not_assume": "The lookup field is broken."
+    },
+    {
+      "symptom": "Global action missing from the header.",
+      "check": [
+        "Global publisher layout includes it.",
+        "The app uses that publisher layout."
+      ],
+      "do_not_assume": "Global actions appear automatically."
+    }
+  ],
+  "production_notes": [
+    "Actions and layouts are metadata; test each app and profile.",
+    "Customizing the action bar replaces defaults—re-add standard actions you still need.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is a global action tied to?",
+      "options": {
+        "A": "Not a particular object or record",
+        "B": "Always the Account object",
+        "C": "Always the current record",
+        "D": "A roll-up summary"
+      },
+      "answer": "A",
+      "rationale": "Global Actions Help: not tied to a particular object or record.",
+      "distractor_explanations": {
+        "B": "They are global.",
+        "C": "That is object-specific.",
+        "D": "Unrelated."
+      },
+      "concept": "Global definition",
+      "citation_ids": [
+        "SF-HELP-ACTGLOBAL",
+        "SF-HELP-ACTOVER"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What can an object-specific create action do that a global create cannot?",
+      "options": {
+        "A": "Create a record related to the current record",
+        "B": "Bypass validation rules",
+        "C": "Replace FLS",
+        "D": "Create a compact layout"
+      },
+      "answer": "A",
+      "rationale": "Object-specific actions can create records related to the current record.",
+      "distractor_explanations": {
+        "B": "Validation still runs.",
+        "C": "FLS still applies.",
+        "D": "Unrelated."
+      },
+      "concept": "Related create",
+      "citation_ids": [
+        "SF-HELP-ACTOBJ",
+        "SF-HELP-ACTOVER"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Create Inspection from an open Property. Which action?",
+      "options": {
+        "A": "Object-specific quick action on Property",
+        "B": "Global action only",
+        "C": "A validation rule",
+        "D": "A compact layout"
+      },
+      "answer": "A",
+      "rationale": "This-record context is object-specific.",
+      "distractor_explanations": {
+        "B": "Global has no this record.",
+        "C": "Validation is a gate.",
+        "D": "Header fields only."
+      },
+      "concept": "Inspection from property",
+      "citation_ids": [
+        "SF-HELP-ACTOBJ",
+        "SF-HELP-ACTGLOBAL"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Create Vendor from the header with no record open. Which action?",
+      "options": {
+        "A": "Global quick action on the global publisher layout",
+        "B": "Object-specific on Property only",
+        "C": "A roll-up",
+        "D": "A record type"
+      },
+      "answer": "A",
+      "rationale": "No record context: global plus publisher layout.",
+      "distractor_explanations": {
+        "B": "Would be invisible without a Property record.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Header create",
+      "citation_ids": [
+        "SF-HELP-ACTGLOBAL",
+        "SF-HELP-ACTOVER"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Action exists but users cannot see it. First check?",
+      "options": {
+        "A": "Whether it was added to the page layout action bar, Lightning page, or global publisher layout",
+        "B": "Whether the object has a formula field",
+        "C": "Whether OwnerId is missing",
+        "D": "Whether the org API is 11.0"
+      },
+      "answer": "A",
+      "rationale": "Placement is separate from creation.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Unrelated unless MD.",
+        "D": "Unrelated."
+      },
+      "concept": "Placement",
+      "citation_ids": [
+        "SF-HELP-LAYOUT",
+        "SF-HELP-ACTOVER"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is an action layout?",
+      "options": {
+        "A": "The fields on that action's create or update form",
+        "B": "The object's compact layout",
+        "C": "The role hierarchy",
+        "D": "A named credential"
+      },
+      "answer": "A",
+      "rationale": "Action forms have their own field layout.",
+      "distractor_explanations": {
+        "B": "Compact is highlights.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Action layout",
+      "citation_ids": [
+        "SF-HELP-ACTOBJ",
+        "SF-HELP-LAYOUT"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Does saving through a quick action skip validation rules?",
+      "options": {
+        "A": "No. Validation rules still apply on save",
+        "B": "Yes, always",
+        "C": "Yes, if the action is global",
+        "D": "Yes, if the action layout omits the field"
+      },
+      "answer": "A",
+      "rationale": "Actions are a UI path, not a bypass.",
+      "distractor_explanations": {
+        "B": "They do not skip validation.",
+        "C": "Global does not bypass.",
+        "D": "Omitting a field is not a bypass of a rule that still sees the record."
+      },
+      "concept": "Validation still runs",
+      "citation_ids": [
+        "SF-HELP-ACTOVER",
+        "SF-HELP-LAYOUT"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do you typically add object-specific Lightning/mobile actions on a layout?",
+      "options": {
+        "A": "The Salesforce Mobile and Lightning Experience Actions section of the page layout",
+        "B": "The master picklist",
+        "C": "A roll-up filter",
+        "D": "Named credentials"
+      },
+      "answer": "A",
+      "rationale": "Page layouts customize those actions for Lightning and mobile.",
+      "distractor_explanations": {
+        "B": "DATA-008.",
+        "C": "DATA-007.",
+        "D": "DATA-012."
+      },
+      "concept": "Layout section",
+      "citation_ids": [
+        "SF-HELP-LAYOUT",
+        "SF-HELP-ACTOBJ"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Need to hide Create Inspection unless Status is Occupied.",
+      "options": {
+        "A": "Dynamic Actions visibility if supported, or a different layout; not a new object",
+        "B": "A global action",
+        "C": "A dummy owner",
+        "D": "A JunctionIdList"
+      },
+      "answer": "A",
+      "rationale": "Visibility is a Lightning/layout assignment problem.",
+      "distractor_explanations": {
+        "B": "Global ignores this record's Status.",
+        "C": "Skew anti-pattern.",
+        "D": "Unrelated."
+      },
+      "concept": "Visibility",
+      "citation_ids": [
+        "SF-HELP-ACTOVER",
+        "SF-HELP-LAYOUT"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Quick action versus validation rule?",
+      "options": {
+        "A": "An action is a shortcut; a validation rule is a save gate when a formula is true",
+        "B": "They are the same metadata",
+        "C": "Actions replace all validation",
+        "D": "Validation creates buttons"
+      },
+      "answer": "A",
+      "rationale": "Different jobs from DATA-010 vs this topic.",
+      "distractor_explanations": {
+        "B": "They are not the same.",
+        "C": "Actions do not replace gates.",
+        "D": "Validation does not create buttons."
+      },
+      "concept": "Action vs validation",
+      "citation_ids": [
+        "SF-HELP-ACTOVER",
+        "SF-HELP-LAYOUT"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Who uses the global publisher layout?",
+      "options": {
+        "A": "Global actions that should appear in global action areas",
+        "B": "Only roll-up summaries",
+        "C": "Only compact layouts",
+        "D": "Only External IDs"
+      },
+      "answer": "A",
+      "rationale": "Global actions are managed with the global publisher layout.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Publisher layout",
+      "citation_ids": [
+        "SF-HELP-ACTGLOBAL",
+        "SF-HELP-ACTOVER"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Customizing the Lightning action bar on a layout does what to defaults?",
+      "options": {
+        "A": "You take over the list and must re-add standard actions you still want—Needs verification of exact default set",
+        "B": "Nothing; defaults always remain",
+        "C": "It deletes the object",
+        "D": "It converts lookups to master-detail"
+      },
+      "answer": "A",
+      "rationale": "Customizing the action section replaces the default set; re-add what you need and verify in the org.",
+      "distractor_explanations": {
+        "B": "Customization typically replaces defaults.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Override defaults",
+      "citation_ids": [
+        "SF-HELP-LAYOUT",
+        "SF-HELP-ACTOVER"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "global",
+      "front": "What is a global action tied to?",
+      "back": "Not a particular object or record. It is a no-context shortcut."
+    },
+    {
+      "id": "F2",
+      "category": "os",
+      "front": "What is an object-specific action?",
+      "back": "An action created on an object that can use the current record, including related creates."
+    },
+    {
+      "id": "F3",
+      "category": "place",
+      "front": "Created but invisible?",
+      "back": "Add it to the page layout action bar, Lightning page, or global publisher layout."
+    },
+    {
+      "id": "F4",
+      "category": "rel",
+      "front": "Prefill a child lookup to this record?",
+      "back": "Use an object-specific create action, not a global action."
+    },
+    {
+      "id": "F5",
+      "category": "pub",
+      "front": "Where do global actions get hung?",
+      "back": "The global publisher layout and other supported global action lists."
+    },
+    {
+      "id": "F6",
+      "category": "al",
+      "front": "Action layout versus page layout?",
+      "back": "Action layout is the action form fields; page layout is the record page furniture."
+    },
+    {
+      "id": "F7",
+      "category": "val",
+      "front": "Do actions skip validation?",
+      "back": "No. Validation rules still run when the action saves."
+    },
+    {
+      "id": "F8",
+      "category": "header",
+      "front": "Create with no record open?",
+      "back": "A global quick action."
+    },
+    {
+      "id": "F9",
+      "category": "bar",
+      "front": "Lightning/mobile actions on a record layout?",
+      "back": "The Salesforce Mobile and Lightning Experience Actions section."
+    },
+    {
+      "id": "F10",
+      "category": "dyn",
+      "front": "What are Dynamic Actions?",
+      "back": "Lightning-page action assignment with visibility rules; object support is Needs verification."
+    },
+    {
+      "id": "F11",
+      "category": "fls",
+      "front": "Does omitting a field on the action layout hide it from the API?",
+      "back": "No. That is presentation on the form, not FLS."
+    },
+    {
+      "id": "F12",
+      "category": "log",
+      "front": "Log a Call on this property?",
+      "back": "An object-specific action on Property, then place it on the action bar."
+    },
+    {
+      "id": "F13",
+      "category": "types",
+      "front": "Name typical quick action jobs?",
+      "back": "Create, update, log a call, or custom UI such as Flow or LWC—confirm types in the wizard."
+    },
+    {
+      "id": "F14",
+      "category": "vs",
+      "front": "Action versus formula field?",
+      "back": "An action is a shortcut users launch; a formula field is a calculated value."
+    },
+    {
+      "id": "F15",
+      "category": "default",
+      "front": "Customizing the action bar?",
+      "back": "You typically replace defaults and must re-add standard actions you still need."
+    },
+    {
+      "id": "F16",
+      "category": "sec",
+      "front": "Are actions a security model?",
+      "back": "No. FLS, sharing, and validation still apply."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Compare global and object-specific quick actions.",
+      "answer_30_seconds": "Global actions are not tied to a record and are placed on the global publisher layout. Object-specific actions belong to an object, can create related records for this row, and are placed on that object's layout or Lightning page.",
+      "answer_2_minutes": "I pick based on context. Create Vendor from the header is global. Create Inspection from Property is object-specific so the lookup prefills. I always mention placement. I mention validation still runs. I do not invent action-type edition gates.",
+      "example": "LAB_NewVendor global vs LAB_NewInspection on Property.",
+      "tradeoffs": [
+        "Context vs no context",
+        "Publisher layout vs record action bar"
+      ],
+      "follow_ups": [
+        "What is an action layout?",
+        "What are Dynamic Actions?"
+      ],
+      "weak_answer_warnings": [
+        "Saying all actions are global"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "Create Inspection from Property but the Property lookup is blank.",
+      "answer_30_seconds": "You probably used a global action. Switch to an object-specific create on Property and include or predefine the relationship field.",
+      "answer_2_minutes": "I open the action definition and check whether it was created on Property. I place it on the Property action bar. I test a LAB_ create. I do not tell users to search the parent every time if the platform can prefill.",
+      "example": "Replaced a global Create Inspection with an object-specific action; Property__c filled.",
+      "tradeoffs": [
+        "Global vs object-specific",
+        "Predefined value vs field on the form"
+      ],
+      "follow_ups": [
+        "Can a global action accept a record Id parameter?",
+        "Should the relationship be hidden on the form?"
+      ],
+      "weak_answer_warnings": [
+        "Telling users to copy the Id"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "troubleshooting",
+      "question": "The action is in Setup but missing in Lightning.",
+      "answer_30_seconds": "It is not on the page layout action section, the Lightning page, or the global publisher layout. Placement is a second step.",
+      "answer_2_minutes": "I open the layout the user's profile and record type actually use (DATA-008/009). If someone customized the action bar, defaults were replaced and the new action was never added. I do not recreate the action first.",
+      "example": "Added LAB_NewInspection to Salesforce Mobile and Lightning Experience Actions; it appeared.",
+      "tradeoffs": [
+        "Wrong layout vs never placed",
+        "Dynamic Actions page vs layout list"
+      ],
+      "follow_ups": [
+        "Which profile's layout are they on?",
+        "Did customizing the bar drop standard buttons?"
+      ],
+      "weak_answer_warnings": [
+        "Recreating the action immediately"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "design",
+      "question": "When do you refuse a quick action?",
+      "answer_30_seconds": "When the need is a calculated field, a roll-up, a validation gate, or a full screen Flow that is not really a shortcut. Also when a related-list New button already matches the job.",
+      "answer_2_minutes": "I keep actions for frequent Lightning/mobile shortcuts. I do not replace DATA-010 with a button that omits a field. I do not build a second object to hold a button. I mention custom LWC/Flow actions as options without inventing compiler details.",
+      "example": "Rejected an action that existed only to skip Region; wrote a validation rule instead.",
+      "tradeoffs": [
+        "Shortcut vs gate",
+        "Related list New vs quick action"
+      ],
+      "follow_ups": [
+        "When is a Flow screen action better?",
+        "When is a custom LWC action better?"
+      ],
+      "weak_answer_warnings": [
+        "Creating actions for every field"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "foundational",
+      "question": "Action layout versus page layout versus compact layout?",
+      "answer_30_seconds": "Action layout is the create/update form for that action. Page layout is the record's fields, related lists, and action bar. Compact layout is the highlights header.",
+      "answer_2_minutes": "I can show three fields on Create Inspection and twenty on the Inspection record page. FLS still applies to both. Compact layout will not add the button. Interviewers listen for the three surfaces.",
+      "example": "Inspection action layout: Date, Type; Inspection page layout: full fields plus related lists.",
+      "tradeoffs": [
+        "Short form vs full record",
+        "Where the button lives vs what the form asks"
+      ],
+      "follow_ups": [
+        "Does action layout required equal field Required?",
+        "Can predefined values set hidden fields?"
+      ],
+      "weak_answer_warnings": [
+        "Calling them all page layouts"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "scenario",
+      "question": "Log a Call from Property and from the header with no record.",
+      "answer_30_seconds": "Object-specific Log a Call on Property for in-room context. If they also need logging with no record open, that is a different global action—and it will not auto-relate to a property.",
+      "answer_2_minutes": "I ask whether the Task must link to the property. If yes, object-specific. If they insist on a header button, I warn the lookup will be blank unless they pick a record. I place each action on the matching layout.",
+      "example": "Property action bar has Log a Call; no global Log a Call unless they accept no prefill.",
+      "tradeoffs": [
+        "Two actions vs one global",
+        "Task Who/What vs property lookup"
+      ],
+      "follow_ups": [
+        "Is Log a Call a standard action type?",
+        "How do Activities relate to Property?"
+      ],
+      "weak_answer_warnings": [
+        "One global Log a Call for every case"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Show Create Inspection only when Status is Occupied.",
+      "answer_30_seconds": "If Dynamic Actions are available on that Lightning page, use a visibility rule. Otherwise use layouts by record type/profile or accept the button is always there and validation/UI handles misuse.",
+      "answer_2_minutes": "I mark Dynamic Actions object support Needs verification. I do not create OccupiedProperty__c. I do not use FLS to hide an action. I still keep the object-specific action definition.",
+      "example": "Dynamic Actions visibility Status = Occupied on the Property Lightning page, if offered.",
+      "tradeoffs": [
+        "Dynamic Actions vs extra layout",
+        "Always-visible button vs hide"
+      ],
+      "follow_ups": [
+        "What if Classic users remain?",
+        "Can compact layouts hide actions?"
+      ],
+      "weak_answer_warnings": [
+        "A new object for Occupied"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "foundational",
+      "question": "How do actions fit with page layouts and Dynamic Forms?",
+      "answer_30_seconds": "Page layouts still host the Lightning/mobile action list unless Dynamic Actions take over. Dynamic Forms is about fields and sections, not the same as Dynamic Actions. Creating an action does not change the page layout furniture.",
+      "answer_2_minutes": "DATA-009 taught four presentation surfaces. This lesson adds the action bar as a fifth placement concern. I assign actions the same way I assign layouts: by the layout the user actually gets. I mention validation still runs from the action save.",
+      "example": "Commercial Facilities layout includes Create Inspection; Finance layout does not.",
+      "tradeoffs": [
+        "Action bar vs Field Section",
+        "Dynamic Actions vs Dynamic Forms"
+      ],
+      "follow_ups": [
+        "Do related-list buttons replace quick actions?",
+        "What happens if you override the default action list?"
+      ],
+      "weak_answer_warnings": [
+        "Saying Dynamic Forms places quick actions"
+      ]
+    }
+  ]
+}

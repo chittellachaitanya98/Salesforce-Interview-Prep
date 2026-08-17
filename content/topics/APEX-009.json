@@ -1,0 +1,952 @@
+{
+  "topic_id": "APEX-009",
+  "slug": "record-save-order-of-execution",
+  "title": "Record-Save Order of Execution",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Execution",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AUTO-003",
+    "APEX-008"
+  ],
+  "objectives": [
+    "Place before-save Flows, before triggers, validation, duplicate rules, the save, and after triggers in the official relative order.",
+    "Explain workflow field-update re-entry: what reruns once and what does not.",
+    "Distinguish same-row before work from after-save related DML and post-commit async work.",
+    "Use the official sequence to debug recursion and skipped automation without inventing a personal order."
+  ],
+  "diagnostic_question": "An after-save Flow updates the same Opportunity, and a workflow field update also writes a field. Which steps can re-enter, which steps are skipped on recursive saves, and where would you look first in the official order?",
+  "definition": "Record-save order of execution is the server-side sequence Salesforce runs when a record is inserted, updated, or upserted—including before-save flows, before triggers, system and custom validation, duplicate rules, the database save, after triggers, assignment/auto-response/workflow/escalation automations, after-save flows, roll-up recalculation, sharing evaluation, commit, and post-commit work. ([Triggers and Order of Execution](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_order_of_execution.htm))",
+  "why_it_matters": "Most 'automation ran twice' or 'validation never fired' incidents are order-of-execution misunderstandings—especially workflow re-entry, recursive save skip windows, and before-save versus after-save placement. Interviewers want the official page, not a memorized unofficial blog.",
+  "sixty_second_explanation": "A save is a factory paint line with fixed stations. Before-save Flow paints first, then Apex before triggers, then validation and duplicate rules, then the row is hung on the rack (saved, not shipped). After triggers run, then assignment, auto-response, workflow, escalation, after-save Flow, roll-ups, sharing, commit (the truck leaves), then email and async. Workflow field updates send the piece back through before/after update triggers once without re-running custom validation or Flows on that replay. Always reopen the Apex Developer Guide for the API version under discussion.",
+  "deeper_explanation": [
+    "The authoritative list lives on Triggers and Order of Execution and is versioned. Headline relative order used in interviews: original record loaded, new values applied, system validation, before-save record-triggered Flows, before triggers, custom validation, duplicate rules, save (not committed), after triggers, assignment/auto-response/workflow/processes/escalation, after-save Flows, entitlements/roll-ups/criteria-based sharing, commit, post-commit email and async. If a step's exact current wording is unclear, mark Needs verification and open the page. ([Triggers and Order of Execution](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_order_of_execution.htm))",
+    "Trigger events versus record state still apply inside that pipeline (APEX-008): before triggers see unsaved Trigger.new (writable, no insert Id); after triggers see saved read-only rows with Id. Before-save Flow is earlier than before triggers and is same-row only.",
+    "Workflow field updates cause one additional before/after update trigger pass. Custom validation rules, duplicate rules, and Flows do not rerun on that replay—a frequent interview trap. Recursive saves skip a documented window (assignment through grandparent roll-up processing). Reverify the skip-window wording on the current page.",
+    "After-save Flow or after-trigger DML on the same row re-enters the pipeline and must be idempotent. Post-commit async sees committed data and uses a new governor pool (APEX-007/011). Multiple Apex triggers on one event remain unordered (APEX-008)."
+  ],
+  "mental_model": {
+    "analogy": "A factory paint line with fixed stations: you cannot swap the primer booth with the shipping dock.",
+    "useful_mapping": [
+      "before-save Flow → first primer booth (same piece, before Apex before triggers)",
+      "before trigger → detail sanding while the piece is still on the hook (Trigger.new writable)",
+      "validation / duplicate rules → quality gate before it is hung as saved",
+      "database save → hung on the rack (Id exists, not yet on the truck)",
+      "after trigger → tag other parts now that the barcode exists",
+      "workflow extra pass → one authorized rework loop through sanding booths, skipping some gates",
+      "commit → truck leaves the dock",
+      "post-commit async → a later shift with its own time clock"
+    ],
+    "where_it_breaks": [
+      "The official list has more stations than a simple paint line (entitlements, sharing, escalation).",
+      "Workflow re-entry is not a general 'run everything twice' loop.",
+      "Gallery flowcharts can lag the Developer Guide.",
+      "The analogy does not encode governor numbers."
+    ]
+  },
+  "teach_back_prompt": "Walk before-save Flow, before trigger, validation, save, after trigger, workflow re-entry, and commit using the paint-line idea, then name one station the analogy oversimplifies.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: before-save Flow versus before trigger versus after trigger versus commit."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "What reruns on a workflow field update, and what does not?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why an assignment rule might not fire on a recursive save."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Debug an after-save Flow that updates the same record."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: official order plus re-entry traps."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-OOE",
+      "title": "Triggers and Order of Execution",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_order_of_execution.htm",
+      "supports": "Authoritative save pipeline, workflow re-entry, recursive-save notes. Reverify the numbered list for the API version.",
+      "release_or_version": "Apex Developer Guide / API 67.0 / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "The exact numbered list is versioned; do not treat a blog or gallery as higher priority."
+    },
+    {
+      "source_id": "SF-APEX-TRIGGERS",
+      "title": "Triggers",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers.htm",
+      "supports": "Before vs after purpose and that a save runs a documented sequence.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace the full order-of-execution page."
+    },
+    {
+      "source_id": "SF-APEX-TRIG-CONSID",
+      "title": "Context Variable Considerations",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_context_variables_considerations.htm",
+      "supports": "Trigger events versus record state (writable Trigger.new, Id timing, DML on the original).",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Event table is not the full save pipeline."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Before-save Flow then before trigger",
+        "Validation then save",
+        "After trigger",
+        "Workflow re-entry",
+        "Commit vs post-commit",
+        "Trigger event vs record state"
+      ],
+      "accessible_description": "Portrait map of the save pipeline: before-save Flow, before triggers, validation, save, after triggers, workflow, after-save Flow, commit. Side map: before versus after record state."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-OOE",
+        "SF-APEX-TRIGGERS",
+        "SF-APEX-TRIG-CONSID"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Record-save order and trigger record state"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  subgraph pipeline [Record save order]\n    BF[Before-save Flow] --> BT[Before Apex trigger]\n    BT --> Val[Custom validation and duplicate rules]\n    Val --> Save[Save not committed Id exists]\n    Save --> AT[After Apex trigger]\n    AT --> WF[Assignment workflow escalation]\n    WF --> AF[After-save Flow]\n    AF --> Commit[Commit]\n    Commit --> Post[Email and async]\n  end\n  subgraph state [Trigger event vs record state]\n    Before[before: Trigger.new writable no insert Id]\n    After[after: Trigger.new read-only Id present]\n  end\n  BT --- Before\n  AT --- After",
+      "decision": "flowchart TD\n  Need[Need automation on save?] --> Q1{Same-row field only?}\n  Q1 -->|Yes| Q2{Can before-save Flow do it?}\n  Q2 -->|Yes| Flow[Before-save Flow before Apex trigger]\n  Q2 -->|Need Apex maps| BT[Before trigger assign Trigger.new]\n  Q1 -->|Need Id or other rows| After[After trigger or after-save Flow]\n  After --> Q3{Must see committed data?}\n  Q3 -->|Yes| Post[Post-commit async APEX-011]\n  Need --> Q4{Workflow field update extra pass?}\n  Q4 -->|Yes| Replay[Triggers rerun once; custom validation and Flows do not]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Before-save record-triggered flows execute before Apex before triggers in the current Triggers and Order of Execution documentation.",
+      "source_ids": ["SF-APEX-OOE"],
+      "scope": "Save pipeline ordering — API/version sensitive",
+      "validation": "Apex Developer Guide Triggers and Order of Execution.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Workflow field updates cause one additional before/after update trigger pass and do not re-run custom validation rules, duplicate rules, or flows on that replay.",
+      "source_ids": ["SF-APEX-OOE"],
+      "scope": "Workflow re-entry asymmetry",
+      "validation": "Official workflow field-update notes in order of execution.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Before triggers may change Trigger.new before save; after triggers see a saved read-only row with Id. These event-versus-state rules sit inside the save pipeline.",
+      "source_ids": ["SF-APEX-TRIGGERS", "SF-APEX-TRIG-CONSID"],
+      "scope": "Trigger events vs record state",
+      "validation": "Triggers topic plus Context Variable Considerations.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Before-save Flow placement and workflow-versus-Flow behavior are version-sensitive. Reverify Triggers and Order of Execution for the org's API version.",
+  "unresolved_uncertainty": [
+    "Exact current wording of the recursive-save skip window (which stations are skipped) should be read from the live page during an interview deep-dive."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Order of execution",
+      "telugu": "Fixed station order when a record saves."
+    },
+    {
+      "english": "Workflow re-entry",
+      "telugu": "One extra before/after trigger pass after a workflow field update."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Order of execution is the save pipeline: before-save Flow, before triggers, validation, save, after triggers, then assignment/workflow/after-save Flow, roll-ups, sharing, commit, post-commit async. Workflow field updates get one extra before/after update pass without re-running custom validation or Flows.",
+    "two_minutes": "I treat the Apex Developer Guide as source of truth. Same-row work belongs in before-save Flow or before triggers; Id-dependent work belongs after save. I call out workflow re-entry and the recursive-save skip window. Multiple Apex triggers are unordered and share governors. Post-commit async sees committed data and a new limit pool. If I am unsure of a numbered step, I say so and open the page rather than invent a station."
+  },
+  "terminology": [
+    {
+      "term": "order of execution",
+      "plain": "The fixed server sequence used while saving a record.",
+      "precise": "The documented series of steps for insert/update/upsert for a given API version, from load through commit and post-commit work.",
+      "example": "Before-save Flow runs before before triggers in current docs.",
+      "non_example": "A team coding-style order for handler methods.",
+      "confusable_neighbor": "Flow trigger-order values—they order Flows among themselves, not the whole pipeline.",
+      "boundary": "The Developer Guide page beats gallery diagrams if they disagree."
+    },
+    {
+      "term": "before-save record-triggered Flow",
+      "plain": "A Flow that updates the triggering record before it is written.",
+      "precise": "Record-triggered Flow configured to run before save; executes before Apex before triggers; same-record updates only.",
+      "example": "Stamp Status on Case before insert.",
+      "non_example": "Creating related Tasks—that is after save.",
+      "confusable_neighbor": "Before Apex trigger: later than before-save Flow.",
+      "boundary": "Same-row only; no related-record DML in before-save Flow."
+    },
+    {
+      "term": "before trigger",
+      "plain": "Apex that runs before the record is saved.",
+      "precise": "Trigger.new is writable; addError can block; insert Id is not available yet.",
+      "example": "Normalize a phone on Contact before insert.",
+      "non_example": "Inserting children that need the parent Id.",
+      "confusable_neighbor": "Before-save Flow (earlier station).",
+      "boundary": "Event-versus-state details are APEX-008."
+    },
+    {
+      "term": "after trigger",
+      "plain": "Apex that runs after save and before commit.",
+      "precise": "Id exists; Trigger.new is read-only; related DML is typical and can re-enter the pipeline.",
+      "example": "Create a related Task after Case insert.",
+      "non_example": "Mutating Trigger.new fields in after context.",
+      "confusable_neighbor": "Post-commit async: after commit, new transaction.",
+      "boundary": "Must be idempotent if it updates the same row."
+    },
+    {
+      "term": "workflow field-update re-entry",
+      "plain": "The one extra update pass workflow field updates can cause.",
+      "precise": "Salesforce updates the record again, re-runs system validations, and fires before/after update triggers one additional time only—without re-running custom validation, duplicate rules, or Flows on that replay.",
+      "example": "A workflow sets a checkbox and your before-update trigger runs a second time.",
+      "non_example": "Unlimited recursive workflow by design.",
+      "confusable_neighbor": "Recursive save skip window—a different official nuance.",
+      "boundary": "Memorize what does versus does not rerun."
+    },
+    {
+      "term": "commit versus post-commit",
+      "plain": "Commit makes the save durable; post-commit work runs afterward.",
+      "precise": "After sharing evaluation, DML commits; then email, enqueued async Apex, and asynchronous Flow paths can run against committed state.",
+      "example": "Queueable enqueued from an after trigger runs after commit.",
+      "non_example": "Assuming a future method sees uncommitted rows from the original save.",
+      "confusable_neighbor": "Save-without-commit earlier (Ids exist, rollback still possible).",
+      "boundary": "Post-commit failures do not roll back the original save."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Place the requirement on the pipeline",
+      "actor": "Developer + admin",
+      "trigger": "A field changes on save",
+      "before": "Unknown station",
+      "after": "Before-save Flow, before trigger, after trigger, or post-commit chosen",
+      "observe": "Written station name from the official page",
+      "failure": "Guessing Flow always runs after Apex"
+    },
+    {
+      "step": 2,
+      "transition": "Apply trigger event versus record state",
+      "actor": "Developer",
+      "trigger": "Apex is required",
+      "before": "Unclear whether Id exists",
+      "after": "before vs after matches APEX-008 rules",
+      "observe": "No after assignment to Trigger.new",
+      "failure": "Child insert in before insert"
+    },
+    {
+      "step": 3,
+      "transition": "Account for re-entry",
+      "actor": "Developer",
+      "trigger": "Workflow, after-save Flow, or after-trigger DML updates the row",
+      "before": "One-pass assumption",
+      "after": "Idempotent handler; known skip window",
+      "observe": "Debug log shows a second before/after update only when expected",
+      "failure": "Non-idempotent increment that doubles on workflow replay"
+    },
+    {
+      "step": 4,
+      "transition": "Separate commit from async",
+      "actor": "Developer",
+      "trigger": "Email or callout",
+      "before": "Work stuffed into after trigger",
+      "after": "Post-commit job if it must see committed data",
+      "observe": "Async debug after CODE_UNIT of the original save",
+      "failure": "Assuming future methods share uncommitted rows"
+    }
+  ],
+  "when_to_use": [
+    "When you must place before-save Flow, before triggers, validation, and after triggers in official record-save order.",
+    "When a workflow field update or recursive save makes automation run twice—or skip a station.",
+    "When choosing same-row before work versus after-save related DML versus post-commit async.",
+    "When an interview asks you to debug order of execution without inventing a personal sequence."
+  ],
+  "when_not_to_use": [
+    "Do not use a memorized unofficial blog as if it were the record-save order of execution page.",
+    "Do not treat this execution lesson as the full trigger-framework or context-variable catalog (APEX-008).",
+    "Do not use order of execution as a place to invent governor-limit numbers (APEX-007).",
+    "Do not stuff related-record DML into a before trigger just because it is earlier on the line."
+  ],
+  "configuration_or_code_location": [
+    "Apex Developer Guide: Triggers and Order of Execution (open during design reviews).",
+    "Debug logs: CODE_UNIT_STARTED for Flow, Validation, Trigger, Workflow.",
+    "Setup → Flows / Workflow Rules / Apex Triggers on the object.",
+    "Developer Console timeline for a single save."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox Opportunity has a before-save Flow that sets LAB_StageStamp__c, a before-update trigger that uppercases NextStep, a workflow field update that checks LAB_WF__c, and an after-save Flow that writes a related Task. A tester reports the trigger ran twice and the after-save Flow did not run on the second pass. No production data.",
+    "inputs": [
+      "Opportunity update from the UI",
+      "Workflow field update on the same update",
+      "Debug log for the save"
+    ],
+    "decisions": [
+      {
+        "decision": "Keep the same-row stamp in before-save Flow / before trigger.",
+        "because": "Those stations run before save and do not need Id.",
+        "rejected": "after trigger assignment to Trigger.new"
+      },
+      {
+        "decision": "Treat the second trigger pass as workflow re-entry.",
+        "because": "Workflow field updates rerun before/after update triggers once.",
+        "rejected": "Assuming a Salesforce bug or two user clicks"
+      },
+      {
+        "decision": "Do not expect the after-save Flow to rerun on the workflow replay.",
+        "because": "Official re-entry skips Flows on that extra pass.",
+        "rejected": "Adding a second after-save Flow 'to catch the replay'"
+      }
+    ],
+    "configuration_or_code": [
+      "Open the official order-of-execution page beside the debug log.",
+      "Find WF_FIELD_UPDATE then a second trigger CODE_UNIT.",
+      "Confirm no second Flow interview on that replay."
+    ],
+    "output": "Explanation matches the official re-entry rule; Task still created once from the first after-save Flow.",
+    "verification": [
+      "Debug log shows before-save Flow before the before trigger.",
+      "Second before/after update appears only after the workflow field update.",
+      "Custom validation does not appear a second time on the replay."
+    ],
+    "self_explanation": "I used the official pipeline and the workflow asymmetry instead of inventing a team order."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; Opportunity or Account with LAB_ fields.",
+    "starting_state_checks": [
+      "You can create a before-save Flow, a before trigger, and (if permitted) a workflow field update.",
+      "Workflow may be unavailable in some orgs—if so, use an after-save Flow update and document the difference."
+    ],
+    "steps": [
+      "Create a before-save Flow that stamps a LAB_ text field.",
+      "Create a before-update trigger that System.debugs Trigger.new values.",
+      "Create a workflow field update or note why it is unavailable.",
+      "Update one LAB_ record, download the debug log, and label each CODE_UNIT in official order."
+    ],
+    "guided_completion": [
+      "If the trigger debug appears before the Flow, you are not looking at before-save versus before trigger correctly—check the log timestamps.",
+      "If you cannot create workflow, write the official re-entry rule from the page instead of inventing a demo."
+    ],
+    "independent_challenge": "Add an after-save Flow that updates the same record and explain which stations skip on the recursive save using the current guide wording.",
+    "evidence": [
+      "Annotated debug log with station names.",
+      "One sentence: workflow replay does not rerun Flows."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate the Flow/workflow and delete the LAB_ trigger.",
+      "Do not leave automations on in a shared sandbox."
+    ],
+    "limitations": "Workflow availability and exact skip-window wording are org- and release-sensitive."
+  },
+  "decision_table": [
+    {
+      "signal": "Same-row field update with no Apex maps required.",
+      "choose": "Before-save record-triggered Flow (runs before before triggers).",
+      "not": "After trigger assignment to Trigger.new.",
+      "why": "Official order puts before-save Flow first; after Trigger.new is read-only."
+    },
+    {
+      "signal": "Need parent Id or related-record DML.",
+      "choose": "After trigger or after-save Flow.",
+      "not": "Before insert child insert.",
+      "why": "Save happens before after stations; Id exists only then."
+    },
+    {
+      "signal": "A workflow field update fired and the trigger ran twice.",
+      "choose": "Treat it as the official one-time extra before/after update pass.",
+      "not": "Assume custom validation and Flows also reran on that replay.",
+      "why": "The order-of-execution page documents that asymmetry."
+    },
+    {
+      "signal": "Work must see committed data or perform a callout.",
+      "choose": "Post-commit async (APEX-011) after a bulk after trigger enqueue.",
+      "not": "Assuming an after trigger is already committed.",
+      "why": "Save is not commit; rollback is still possible until the commit station."
+    }
+  ],
+  "limitations": [
+    "The numbered list is versioned; reopen the official page.",
+    "Does not replace APEX-008 context-variable rules.",
+    "Does not catalog governor numbers.",
+    "Process Builder remnants may still appear in older orgs—verify."
+  ],
+  "security_notes": [
+    "Automation in this pipeline often runs in system mode; sharing evaluation is a late station.",
+    "Do not log Opportunity payloads with customer PII.",
+    "LAB_ data only."
+  ],
+  "common_mistakes": [
+    "Saying before triggers run before before-save Flow.",
+    "Expecting Flows to rerun on workflow field-update replay.",
+    "Treating after trigger as committed.",
+    "Inventing a personal order from a blog.",
+    "Non-idempotent after DML that loops."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Validation rule did not fire on the second update you expected.",
+      "check": [
+        "Was the second pass a workflow field-update replay?",
+        "Custom validation does not rerun on that replay."
+      ],
+      "do_not_assume": "The validation rule is inactive."
+    },
+    {
+      "symptom": "Assignment rule did not run after an after-trigger update.",
+      "check": [
+        "Recursive-save skip window on the official page.",
+        "Whether this was a recursive save, not a new user edit."
+      ],
+      "do_not_assume": "Assignment rules are broken."
+    },
+    {
+      "symptom": "After-save Flow and before trigger seem reversed in conversation.",
+      "check": [
+        "Before-save versus after-save Flow configuration.",
+        "Debug log CODE_UNIT order, not meeting-room memory."
+      ],
+      "do_not_assume": "Apex always runs first."
+    }
+  ],
+  "production_notes": [
+    "Keep the official URL in design-review templates.",
+    "Prefer idempotent after-save work.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In current docs, when do before-save record-triggered Flows run relative to Apex before triggers?",
+      "options": {
+        "A": "Before Apex before triggers",
+        "B": "After after triggers",
+        "C": "Only after commit",
+        "D": "They replace validation rules"
+      },
+      "answer": "A",
+      "rationale": "The order-of-execution page places before-save Flows before before triggers.",
+      "distractor_explanations": {
+        "B": "After triggers are after save.",
+        "C": "Before-save is pre-save.",
+        "D": "Validation is a separate station."
+      },
+      "concept": "before-save Flow",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q2",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "On a workflow field-update replay, which reruns?",
+      "options": {
+        "A": "Before and after update triggers (one additional time)",
+        "B": "Custom validation, duplicate rules, and Flows",
+        "C": "The entire pipeline including assignment forever",
+        "D": "Only SOSL"
+      },
+      "answer": "A",
+      "rationale": "Workflow field updates cause one extra before/after update trigger pass and do not rerun custom validation, duplicate rules, or Flows on that replay.",
+      "distractor_explanations": {
+        "B": "Those are the skipped items on the replay.",
+        "C": "It is one extra pass, not an infinite loop.",
+        "D": "SOSL is unrelated."
+      },
+      "concept": "workflow re-entry",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "After the database save but before commit, after triggers see what record state?",
+      "options": {
+        "A": "Id exists; Trigger.new is read-only",
+        "B": "No Id; Trigger.new is writable",
+        "C": "The row is already post-commit async",
+        "D": "Trigger.old is writable"
+      },
+      "answer": "A",
+      "rationale": "Save assigns Id; after-trigger records are read-only (APEX-008 rules inside the pipeline).",
+      "distractor_explanations": {
+        "B": "That is before insert.",
+        "C": "Commit is later.",
+        "D": "old is always read-only."
+      },
+      "concept": "after trigger state",
+      "citation_ids": ["SF-APEX-TRIGGERS", "SF-APEX-TRIG-CONSID"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where should same-row field updates go if Flow can do them?",
+      "options": {
+        "A": "Before-save Flow, which runs before before triggers",
+        "B": "After-save Flow only",
+        "C": "Post-commit email",
+        "D": "SOSL FIND"
+      },
+      "answer": "A",
+      "rationale": "Before-save Flow is the official early same-row station.",
+      "distractor_explanations": {
+        "B": "After-save is for work that needs Id or other records.",
+        "C": "Email is post-commit.",
+        "D": "SOSL is search."
+      },
+      "concept": "before-save Flow",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Is the after-trigger save already committed?",
+      "options": {
+        "A": "No. Commit is a later station; rollback is still possible",
+        "B": "Yes, after triggers are post-commit",
+        "C": "Yes, because Id exists",
+        "D": "Only on delete"
+      },
+      "answer": "A",
+      "rationale": "Id exists after save; commit is after sharing evaluation.",
+      "distractor_explanations": {
+        "B": "Post-commit is email/async.",
+        "C": "Id is not commit.",
+        "D": "The pipeline is for insert/update/upsert primarily."
+      },
+      "concept": "commit",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "An after trigger updates the same record and assignment rules do not fire again. First check?",
+      "options": {
+        "A": "Recursive-save skip window on the official page",
+        "B": "SOSL crowding",
+        "C": "Describe tokens",
+        "D": "Whether Apex public equals Java public"
+      },
+      "answer": "A",
+      "rationale": "Recursive saves skip a documented window that includes assignment through roll-up processing.",
+      "distractor_explanations": {
+        "B": "SOSL is APEX-004.",
+        "C": "Describe is APEX-002.",
+        "D": "APEX-001."
+      },
+      "concept": "recursive save",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Who wins if a blog and the Developer Guide disagree on order?",
+      "options": {
+        "A": "Triggers and Order of Execution for the API version",
+        "B": "The blog, always",
+        "C": "Filename sort of triggers",
+        "D": "SOSL RETURNING order"
+      },
+      "answer": "A",
+      "rationale": "This lesson treats the official page as authoritative.",
+      "distractor_explanations": {
+        "B": "Blogs lag and invent steps.",
+        "C": "Not a pipeline contract.",
+        "D": "Unrelated."
+      },
+      "concept": "order of execution",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Multiple after-update Apex triggers on one object:",
+      "options": {
+        "A": "Order is not guaranteed; they still share governors",
+        "B": "They run in filename order as a documented contract",
+        "C": "Each gets a new commit",
+        "D": "They replace before-save Flow"
+      },
+      "answer": "A",
+      "rationale": "APEX-008 rule still holds inside the after-trigger station.",
+      "distractor_explanations": {
+        "B": "Not a documented contract.",
+        "C": "One save pipeline.",
+        "D": "Flow is a different station."
+      },
+      "concept": "trigger order",
+      "citation_ids": ["SF-APEX-TRIGGERS", "SF-APEX-OOE"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Need a callout that must see committed Opportunity data?",
+      "options": {
+        "A": "Enqueue async after the after trigger; it runs post-commit",
+        "B": "Call out in before insert",
+        "C": "Call out in before-save Flow",
+        "D": "Call out while DML is pending in the same trigger without care"
+      },
+      "answer": "A",
+      "rationale": "Post-commit async sees committed data and a new pool. Callout-with-pending-DML is a neighbor constraint.",
+      "distractor_explanations": {
+        "B": "No Id; not committed.",
+        "C": "Before-save is pre-save.",
+        "D": "Pending DML blocks many callouts."
+      },
+      "concept": "post-commit",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Custom validation runs where relative to before triggers in the usual insert/update path?",
+      "options": {
+        "A": "After before triggers and before the save",
+        "B": "Before before-save Flow",
+        "C": "Only after commit",
+        "D": "Only on workflow replay"
+      },
+      "answer": "A",
+      "rationale": "The documented sequence places custom validation after before triggers and before the database save.",
+      "distractor_explanations": {
+        "B": "Before-save Flow is earlier.",
+        "C": "Validation is pre-save.",
+        "D": "Custom validation does not rerun on workflow replay."
+      },
+      "concept": "validation station",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates order-of-execution metadata from business data?",
+      "options": {
+        "A": "Deploying a trigger or Flow does not insert Opportunities; a save of a LAB_ row runs the pipeline",
+        "B": "The order-of-execution page is an Opportunity record",
+        "C": "Commit deploys Apex classes",
+        "D": "Workflow re-entry creates objects"
+      },
+      "answer": "A",
+      "rationale": "Automations are metadata. The saved row is data.",
+      "distractor_explanations": {
+        "B": "The page is documentation.",
+        "C": "Commit commits DML, not metadata deploy.",
+        "D": "Re-entry updates the same row."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Before-save Flow versus before trigger for a simple same-row stamp?",
+      "options": {
+        "A": "Prefer before-save Flow when it fits; it runs earlier than the before trigger",
+        "B": "Always write a global Apex trigger first",
+        "C": "Use SOSL",
+        "D": "Use after undelete only"
+      },
+      "answer": "A",
+      "rationale": "AUTO-001 plus official order: before-save Flow is the earlier same-row station.",
+      "distractor_explanations": {
+        "B": "Apex is not the default.",
+        "C": "SOSL is search.",
+        "D": "Wrong event."
+      },
+      "concept": "tool placement",
+      "citation_ids": ["SF-APEX-OOE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "order",
+      "front": "Before-save Flow versus before trigger?",
+      "back": "Before-save Flow runs first, then Apex before triggers."
+    },
+    {
+      "id": "F2",
+      "category": "order",
+      "front": "When do after triggers run?",
+      "back": "After the record is saved (Id exists) and before commit."
+    },
+    {
+      "id": "F3",
+      "category": "state",
+      "front": "Trigger.new in before versus after?",
+      "back": "Writable before save. Read-only after save."
+    },
+    {
+      "id": "F4",
+      "category": "id",
+      "front": "When is the insert Id available?",
+      "back": "After the save station—after triggers and later—not in before insert."
+    },
+    {
+      "id": "F5",
+      "category": "workflow",
+      "front": "Workflow field-update replay reruns what?",
+      "back": "Before and after update triggers once. Not custom validation, duplicate rules, or Flows."
+    },
+    {
+      "id": "F6",
+      "category": "recursive",
+      "front": "Recursive save skip window?",
+      "back": "A documented set of stations (assignment through roll-ups) is skipped. Reverify the page."
+    },
+    {
+      "id": "F7",
+      "category": "commit",
+      "front": "Save versus commit?",
+      "back": "Save assigns Id and is still rollback-able. Commit makes it durable."
+    },
+    {
+      "id": "F8",
+      "category": "async",
+      "front": "When do emails and async Apex run?",
+      "back": "Post-commit, against committed data, new governor pool."
+    },
+    {
+      "id": "F9",
+      "category": "source",
+      "front": "Authoritative URL?",
+      "back": "Triggers and Order of Execution in the Apex Developer Guide."
+    },
+    {
+      "id": "F10",
+      "category": "validation",
+      "front": "Custom validation versus before triggers?",
+      "back": "Custom validation runs after before triggers and before save."
+    },
+    {
+      "id": "F11",
+      "category": "flow",
+      "front": "After-save Flow versus after trigger?",
+      "back": "After triggers run, then later automations including after-save Flows. Confirm the current numbered list."
+    },
+    {
+      "id": "F12",
+      "category": "multi",
+      "front": "Two after triggers on one event?",
+      "back": "Unordered; share governors. Prefer one trigger plus handler (APEX-008)."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Same-row stamp, no Apex needed?",
+      "back": "Before-save Flow, which runs before Apex before triggers."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Trigger ran twice after a workflow checkbox?",
+      "back": "Expected one extra before/after update pass."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Need committed data for a callout?",
+      "back": "Post-commit async, not the after-trigger body as if it were committed."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk record-save order of execution at interview speed.",
+      "answer_30_seconds": "Before-save Flow, before triggers, validation and duplicate rules, save, after triggers, assignment/auto-response/workflow/escalation, after-save Flow, roll-ups and sharing, commit, post-commit async. I reopen the official page for the numbered list.",
+      "answer_2_minutes": "I stress relative order more than memorizing twenty bullets. I place before-save Flow before Apex before triggers. I separate save from commit. I mention workflow re-entry and recursive skip as the traps. I refuse blog order if it conflicts with Triggers and Order of Execution.",
+      "example": "Opportunity UI save: Flow stamps a field, before trigger uppercases NextStep, validation runs, then after trigger creates a Task.",
+      "tradeoffs": [
+        "Memorize headlines vs open the page",
+        "Flow vs Apex at each station"
+      ],
+      "follow_ups": [
+        "Where do duplicate rules sit?",
+        "Where is criteria-based sharing?"
+      ],
+      "weak_answer_warnings": [
+        "Apex before Flow as a universal rule"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do trigger events versus record state sit inside that order?",
+      "answer_30_seconds": "The before-trigger station still has writable Trigger.new and no insert Id. The after-trigger station has Id and read-only Trigger.new. Order of execution tells you when those stations run.",
+      "answer_2_minutes": "I do not re-teach all of APEX-008, but I connect them. Before-save Flow is even earlier than the before-trigger station. After-save Flow is later than after triggers. Commit is later still. Mixing those four names is the usual fail.",
+      "example": "Child insert belongs in the after-trigger station, not in before-save Flow.",
+      "tradeoffs": [
+        "Before-save Flow vs before trigger",
+        "After trigger vs after-save Flow"
+      ],
+      "follow_ups": [
+        "Can before-save Flow create children?",
+        "Is after-save Flow after workflow?"
+      ],
+      "weak_answer_warnings": [
+        "Calling after trigger post-commit"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A workflow field update made your before-update trigger run twice. Did validation run twice?",
+      "answer_30_seconds": "Triggers yes, once extra. Custom validation, duplicate rules, and Flows do not rerun on that replay.",
+      "answer_2_minutes": "This is the classic trap. I cite the order-of-execution workflow note. I make the trigger idempotent so the second pass is safe. I do not add a second Flow 'to catch the replay.' I distinguish this from a recursive after-trigger update, which uses the skip window instead.",
+      "example": "Workflow sets LAB_WF__c; before-update debug prints twice; validation CODE_UNIT appears once.",
+      "tradeoffs": [
+        "Keep workflow vs move the field update to Flow",
+        "Idempotent trigger vs blocking the second pass"
+      ],
+      "follow_ups": [
+        "Does process builder still appear in some orgs?",
+        "What system validations rerun?"
+      ],
+      "weak_answer_warnings": [
+        "Saying everything reruns"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "An after-save Flow updates the same Opportunity and assignment did not run again. What do you check?",
+      "answer_30_seconds": "Recursive-save skip window. Assignment through roll-up processing can be skipped. Confirm on the current page.",
+      "answer_2_minutes": "I look at the debug log for a second save without assignment CODE_UNIT. I ask whether this was a recursive update, not a new UI edit. I mark the exact skipped stations as needs verification if I cannot see the page. I do not 'fix' it by adding a second assignment rule.",
+      "example": "After-save Flow writes a field; assignment rule stays quiet on the re-save.",
+      "tradeoffs": [
+        "Same-row after-save Flow vs before-save Flow",
+        "Accept skip vs redesign so the first pass assigns"
+      ],
+      "follow_ups": [
+        "What is the current skip list?",
+        "Does after-save Flow itself rerun?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming assignment rules as broken"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "Where do you put same-row work versus related DML versus callouts?",
+      "answer_30_seconds": "Same-row: before-save Flow or before trigger. Related DML: after trigger or after-save Flow. Callouts that need commit: post-commit async.",
+      "answer_2_minutes": "I draw three buckets on the whiteboard. I refuse after-trigger field stamps on Trigger.new. I refuse before-insert children. I refuse HTTP from before insert. I keep governors in mind because every station shares the pool until commit, then async gets a new pool.",
+      "example": "Stamp Stage in before-save Flow; Task in after-save Flow; pricing callout in Queueable.",
+      "tradeoffs": [
+        "Flow vs Apex at each bucket",
+        "User waits vs async"
+      ],
+      "follow_ups": [
+        "What if after-save Flow hits limits?",
+        "Platform events versus Queueable?"
+      ],
+      "weak_answer_warnings": [
+        "One after trigger that does all three"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "Save versus commit—why do interviewers care?",
+      "answer_30_seconds": "Save creates the Id and still can roll back. Commit is later, after sharing evaluation. Async after commit sees durable data.",
+      "answer_2_minutes": "I use it to explain why after triggers can still fail the user-facing save, why future methods do not see uncommitted rows, and why post-commit email failures do not undo the Opportunity. I connect LimitException in an after trigger to a full rollback (APEX-006/007).",
+      "example": "After trigger throws; the Opportunity insert the user thought succeeded is rolled back.",
+      "tradeoffs": [
+        "Work in after trigger vs post-commit",
+        "User-visible failure vs eventual job failure"
+      ],
+      "follow_ups": [
+        "What is criteria-based sharing's station?",
+        "Do emails roll back the save if they fail?"
+      ],
+      "weak_answer_warnings": [
+        "Id exists therefore committed"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Debug log shows your before trigger before a before-save Flow. What is going on?",
+      "answer_30_seconds": "Either you are misreading CODE_UNIT names, looking at a different update, or the Flow is after-save. Officially before-save Flow is first. Open the Flow's start and the official page.",
+      "answer_2_minutes": "I do not invent a new order. I check the Flow is actually before-save. I check I am not looking at the workflow replay's before trigger. I check packages. If the live page and the log still disagree, I treat that as needs verification—not as a chance to rewrite the handbook from a single org.",
+      "example": "An after-save Flow labeled mentally as 'before save' by the admin.",
+      "tradeoffs": [
+        "Trust the page vs trust one log",
+        "Package automation vs local Flow"
+      ],
+      "follow_ups": [
+        "How do you filter debug logs to one save?",
+        "What does FLOW_START_INTERVIEW look like?"
+      ],
+      "weak_answer_warnings": [
+        "Declaring the official page wrong from one screenshot"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "How do you stay honest when the numbered list is long and versioned?",
+      "answer_30_seconds": "I memorize relative order and the two re-entry traps. I cite Triggers and Order of Execution and I say Needs verification for skip-window details I have not just read.",
+      "answer_2_minutes": "That is the handbook standard. I will not recite an unofficial 21-step blog. I will draw before-save Flow, before trigger, validation, save, after trigger, workflow, after-save Flow, commit, async. I will connect APEX-008 record state. I will not invent governor numbers while drawing the line.",
+      "example": "Whiteboard with eight boxes and a 'reverify' star on the skip window.",
+      "tradeoffs": [
+        "Speed vs accuracy",
+        "Headlines vs full numbered list"
+      ],
+      "follow_ups": [
+        "What changed when before-save Flow was introduced?",
+        "Where does Flow trigger order 1–2000 fit?"
+      ],
+      "weak_answer_warnings": [
+        "A confident unofficial sequence"
+      ]
+    }
+  ]
+}

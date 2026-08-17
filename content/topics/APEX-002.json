@@ -1,0 +1,962 @@
+{
+  "topic_id": "APEX-002",
+  "slug": "sobjects-relationships-schema-describe-and-dynamic-apex",
+  "title": "sObjects, relationships, schema describe, and dynamic Apex",
+  "track": "Apex and database programming",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-001"
+  ],
+  "objectives": [
+    "Explain an sObject as an Apex in-memory representation of a Salesforce record, distinct from the object’s metadata.",
+    "Navigate parent and child relationships on sObjects in Apex using relationship names, not raw Id guesses.",
+    "Use schema describe tokens and describe results to inspect object and field metadata at compile time or runtime.",
+    "Choose static typed Apex versus dynamic Apex (describe, get/put, newSObject) without inventing a second data model."
+  ],
+  "diagnostic_question": "A managed-package helper must stamp a field whose API name arrives as a string, and also walk from LAB_Shipment__c to its LAB_Stop__c children. Before writing code, would you use a typed sObject, Schema describe, or dynamic Apex—and what would you verify first?",
+  "definition": "An sObject is the Apex type that holds one Salesforce record in memory. Relationships expose parent and child records through relationship names. Schema describe returns metadata about objects and fields—not row data. Dynamic Apex builds on describe plus get/put and newSObject so an Apex class can work with types and field names known only at runtime. ([Working with sObjects](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_data_sobjects.htm); [Dynamic Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dynamic.htm))",
+  "why_it_matters": "Interviewers listen for whether you treat Account as a typed sObject, Schema.DescribeSObjectResult as metadata, and a queried row as data. Mixing those three causes FLS bugs, injection-prone string DML, and 'the field is null' defects when you used the wrong relationship name.",
+  "sixty_second_explanation": "Picture a container terminal. The spec sheet for a reefer container is schema describe—what doors exist, whether you may load cargo. A particular container on the dock is an sObject instance. The bill of lading that ties that container to a vessel is a relationship. Dynamic Apex is the radio call that says 'build whatever type the dispatcher named,' using tokens and get/put instead of hardcoded Account.Name. Describe never tells you what is inside one box; SOQL does.",
+  "deeper_explanation": [
+    "Concrete types such as Account and custom LAB_Shipment__c are sObject subclasses you can new, query, and DML. The generic sObject type is the parent; you cast or use get/put when the type is not known at compile time. ([Working with sObjects](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_data_sobjects.htm))",
+    "Relationship fields store Ids. Parent traversal uses the relationship name (Contact.Account.Name). Child traversal uses a subquery or getSObjects on a queried parent. Those names come from schema, not from guessing __c suffixes. ([Dynamic Apex / Dynamic DML](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dynamic_dml.htm))",
+    "Describe information is org metadata: labels, field maps, child relationships, createable flags. Tokens (Schema.SObjectType, Schema.SObjectField) are lightweight compile-checked references; describe results are runtime objects and are not serializable. Official guidance: describe tells you about objects in the organization, not individual records. ([Understanding Apex Describe Information](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dynamic_describe_objects_understanding.htm))",
+    "Dynamic Apex is the family that includes describe, Schema.getGlobalDescribe, newSObject, get/put, and later-topic dynamic SOQL/DML. Use it for ISV/generic services. Prefer typed Apex in org-specific classes. CRUD/FLS via isAccessible/isCreateable is APEX-014; this lesson only needs the idea that describe can answer those questions."
+  ],
+  "mental_model": {
+    "analogy": "A container terminal: spec sheets, docked boxes, and bills of lading.",
+    "useful_mapping": [
+      "sObject type (Account) → container class (reefer vs dry van)",
+      "sObject instance → one container sitting on the dock (a record)",
+      "relationship → bill of lading linking box to vessel or to child pallets",
+      "schema describe / token → the spec sheet for that container class",
+      "dynamic Apex (get/put, newSObject) → assembling a box from a type name on the radio",
+      "SOQL row values → cargo actually loaded in that box"
+    ],
+    "where_it_breaks": [
+      "Describe is metadata about types, not a live X-ray of one record’s field values.",
+      "Relationship names are API names, not physical lashings you can invent.",
+      "getGlobalDescribe is not a substitute for a typed class when the object is known.",
+      "The analogy does not encode governor limits, trigger order, or FLS enforcement."
+    ]
+  },
+  "teach_back_prompt": "Without calling it a catalog, explain to a Java developer the difference between an Account sObject instance, Account.sObjectType.getDescribe(), and a SOQL result—then name one place the container-terminal analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: sObject vs describe vs relationship name. One sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given a string API name, choose token describe vs getGlobalDescribe vs a typed Account variable."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Walk parent.Name vs child subquery vs get/put on generic sObject."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Debug 'field is not writeable on sObject' after a dynamic put without opening notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: when dynamic Apex is justified versus a typed helper class."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-SOBJECTS",
+      "title": "Working with sObjects",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_data_sobjects.htm",
+      "supports": "sObject as the in-memory Apex representation of a Salesforce record; typed objects such as Account.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace Object Reference field lists; reverify relationship names in the target org."
+    },
+    {
+      "source_id": "SF-APEX-DESCRIBE",
+      "title": "Understanding Apex Describe Information",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dynamic_describe_objects_understanding.htm",
+      "supports": "Tokens versus describe results; describe is metadata about objects in the org, not individual records.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Describe caching and namespace behavior can vary; do not invent cache lifetimes."
+    },
+    {
+      "source_id": "SF-APEX-DYNAMIC",
+      "title": "Dynamic Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dynamic.htm",
+      "supports": "Dynamic Apex as describe plus dynamic SOQL/SOSL/DML; describe is not record data.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Dynamic SOQL injection and WITH USER_MODE details continue in APEX-003 and APEX-014."
+    },
+    {
+      "source_id": "SF-APEX-DYNAMIC-DML",
+      "title": "Dynamic DML",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dynamic_dml.htm",
+      "supports": "newSObject on a token; get/put and getSObject/putSObject for fields and foreign keys.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Casting a token to a concrete type is required for some newSObject examples in older snippets; follow current method signatures."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "sObject instance vs type",
+        "Relationship names",
+        "Token vs describe result",
+        "Dynamic get/put",
+        "Metadata vs records",
+        "When not to go dynamic"
+      ],
+      "accessible_description": "Portrait map: an sObject holds a record; relationships use schema names; describe returns metadata; dynamic Apex uses tokens and get/put when the type is known only at runtime."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-SOBJECTS",
+        "SF-APEX-DESCRIBE",
+        "SF-APEX-DYNAMIC",
+        "SF-APEX-DYNAMIC-DML"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Typed sObject versus schema describe versus dynamic Apex"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Type[sObject type metadata] --> Inst[sObject instance record]\n  Type --> Rel[Relationship names parent and child]\n  Type --> Tok[Schema.SObjectType token]\n  Tok --> Desc[DescribeSObjectResult metadata]\n  Desc --> Fields[Field map and child relationships]\n  Inst --> GetPut[get / put dynamic Apex]\n  Inst --> SOQL[SOQL loads field values]",
+      "decision": "flowchart TD\n  Need[Need record or metadata?] --> Q1{Is the object known at compile time?}\n  Q1 -->|Yes typed work| Typed[Account a = new Account; a.Name = ...]\n  Q1 -->|No runtime type name| Q2{Need metadata or a row?}\n  Q2 -->|Metadata labels FLS shape| Desc[Schema describe / getGlobalDescribe]\n  Q2 -->|Create or set fields by API name| Dyn[Token.newSObject plus get/put]\n  Q2 -->|Query rows| Later[APEX-003 SOQL not describe]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "An sObject is the Apex in-memory type for a Salesforce record; concrete types such as Account are used in typed Apex.",
+      "source_ids": ["SF-APEX-SOBJECTS"],
+      "scope": "Language / data types",
+      "validation": "Working with sObjects in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Apex describe information is metadata about sObjects and fields in the organization, not individual records. Tokens are lightweight compile-checked references; describe results are runtime objects.",
+      "source_ids": ["SF-APEX-DESCRIBE", "SF-APEX-DYNAMIC"],
+      "scope": "Schema describe",
+      "validation": "Understanding Apex Describe Information and Dynamic Apex overview.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Dynamic Apex can instantiate sObjects from a token with newSObject and read or write fields with get/put and relationship helpers getSObject/putSObject.",
+      "source_ids": ["SF-APEX-DYNAMIC-DML"],
+      "scope": "Dynamic DML",
+      "validation": "Dynamic DML topic in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Describe options such as SObjectDescribeOptions.DEFERRED versus FULL are API-version sensitive. Reverify Schema.getDescribe behavior for the class API version.",
+  "unresolved_uncertainty": [
+    "Exact describe-cache lifetime across namespaces is not specified here; confirm current Schema documentation before an ISV performance interview."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "sObject",
+      "telugu": "Apexలో ఒక సేల్స్‌ఫోర్స్ రికార్డు యొక్క ఇన్-మెమరీ రూపం."
+    },
+    {
+      "english": "Schema describe",
+      "telugu": "ఆబ్జెక్టు/ఫీల్డ్ మెటాడేటా; వరుస విలువలు కాదు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "An sObject is a record in Apex memory. Schema describe is metadata about the type. Relationships are named paths on that type. Dynamic Apex is get/put and newSObject when the API name is only known at runtime.",
+    "two_minutes": "I start from what I know at compile time. If the object is Account, I use a typed sObject. If a package must accept an object API name as a string, I resolve a token—often via getGlobalDescribe or a known SObjectType—then newSObject and put. I never treat describe as a query: describe answers 'does this field exist and is it createable,' SOQL answers 'what is on this row.' Child data still needs a query or a relationship subquery, not a describe call."
+  },
+  "terminology": [
+    {
+      "term": "sObject",
+      "plain": "The Apex object that holds one Salesforce record in memory.",
+      "precise": "The platform type for a row. Concrete types such as Account extend sObject. You can construct, query, and DML them in a class.",
+      "example": "Account a = new Account(Name = 'LAB_Terminal');",
+      "non_example": "Schema.DescribeSObjectResult, which is metadata about Account, not a row.",
+      "confusable_neighbor": "Custom object definition in Setup: metadata shape, not an Apex instance.",
+      "boundary": "This lesson is the in-memory type; SOQL syntax is APEX-003."
+    },
+    {
+      "term": "relationship",
+      "plain": "The named path from one sObject to a parent or to child rows.",
+      "precise": "Lookup and master-detail produce relationship names used in Apex and SOQL (parent field path or child subquery). Ids live on the lookup field; traversal uses the relationship name.",
+      "example": "contact.Account.Name after querying Contact with Account.Name selected.",
+      "non_example": "Concatenating AccountId + Name as if it were a field.",
+      "confusable_neighbor": "Junction object: a data-model pattern, not the Apex traversal syntax.",
+      "boundary": "Polymorphic relationships (WhatId) have extra SOQL rules; do not invent them here."
+    },
+    {
+      "term": "schema describe",
+      "plain": "Asking the platform what an object or field looks like.",
+      "precise": "Token-based or Schema.describeSObjects access that returns DescribeSObjectResult / DescribeFieldResult. Officially: information about objects in the organization, not individual records.",
+      "example": "Account.sObjectType.getDescribe().fields.getMap().containsKey('Name')",
+      "non_example": "SELECT Name FROM Account LIMIT 1 as if that were describe.",
+      "confusable_neighbor": "Setup Object Manager UI: same metadata, different API.",
+      "boundary": "isAccessible/isCreateable belong with CRUD/FLS (APEX-014)."
+    },
+    {
+      "term": "sObject token",
+      "plain": "A compile-checked lightweight handle for a type or field.",
+      "precise": "Schema.SObjectType or Schema.SObjectField. getDescribe() on a token yields the describe result. Tokens are serializable; describe results are not.",
+      "example": "Schema.SObjectType t = Account.sObjectType;",
+      "non_example": "A String 'Account' with no token resolution.",
+      "confusable_neighbor": "RecordType.sObjectType field on some standard objects—use getSObjectType() there.",
+      "boundary": "String API names require getGlobalDescribe or describeSObjects."
+    },
+    {
+      "term": "dynamic Apex",
+      "plain": "Apex that discovers types and fields at runtime instead of hardcoding them.",
+      "precise": "The Developer Guide groups describe, app/tab describe, and dynamic SOQL/SOSL/DML under Dynamic Apex. This lesson focuses on describe plus get/put/newSObject.",
+      "example": "targetType.newSObject(); rec.put('Name', 'LAB_Box');",
+      "non_example": "public class LAB_AccountHelper with hardcoded Account fields.",
+      "confusable_neighbor": "Dynamic SOQL string queries (APEX-003).",
+      "boundary": "Prefer typed Apex when the object is known; dynamic is for generic/ISV paths."
+    },
+    {
+      "term": "get / put",
+      "plain": "Read or write a field on a generic sObject by API name.",
+      "precise": "sObject.get and put use the field API name as a string. getSObject/putSObject and getSObjects handle relationship objects.",
+      "example": "String n = (String)row.get('Name');",
+      "non_example": "row.Name on a generic sObject without a cast to Account.",
+      "confusable_neighbor": "JSON.deserialize: a different dynamic pattern.",
+      "boundary": "Wrong API names fail at runtime, not compile time."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose typed versus generic sObject",
+      "actor": "Developer",
+      "trigger": "A class must hold Salesforce records",
+      "before": "Only a business requirement exists",
+      "after": "Account (or other concrete type) versus sObject decided",
+      "observe": "The class compiles with the intended field access style",
+      "failure": "Using generic sObject for a known Account just to look flexible"
+    },
+    {
+      "step": 2,
+      "transition": "Resolve relationships from schema",
+      "actor": "Developer",
+      "trigger": "Need parent or child data",
+      "before": "Only lookup Id is known",
+      "after": "Relationship name confirmed in describe or Object Manager",
+      "observe": "Parent path or child subquery returns expected LAB_ rows",
+      "failure": "Inventing a relationship name from the child object label"
+    },
+    {
+      "step": 3,
+      "transition": "Describe when metadata is the question",
+      "actor": "Developer",
+      "trigger": "Need field map, label, or createable flag",
+      "before": "Temptation to query a dummy row",
+      "after": "Token or describeSObjects used",
+      "observe": "Describe result lists fields without inserting data",
+      "failure": "INSERT then inspect as a substitute for describe"
+    },
+    {
+      "step": 4,
+      "transition": "Dynamic instantiate only when the type is runtime-known",
+      "actor": "Developer",
+      "trigger": "API name arrives as a string",
+      "before": "String typeName in memory",
+      "after": "Token from getGlobalDescribe, newSObject, put required fields",
+      "observe": "Sandbox insert of a LAB_ row of that type succeeds",
+      "failure": "String-concatenated Apex source; Apex is not eval"
+    }
+  ],
+  "when_to_use": [
+    "When an Apex class must hold or update Salesforce records as typed sObjects rather than as untyped maps.",
+    "When you must traverse parent or child relationships on those sObjects using schema relationship names.",
+    "When schema describe is the right tool to inspect object or field metadata before dynamic Apex get/put.",
+    "When a package or generic service only learns the sObject API name at runtime and needs newSObject plus describe."
+  ],
+  "when_not_to_use": [
+    "Do not use schema describe as a substitute for SOQL when you need field values on a specific sObject row.",
+    "Do not reach for dynamic Apex get/put in a class that only ever operates on Account or one custom object.",
+    "Do not treat relationship names as optional decorations; wrong names fail at runtime even if the Id field is populated.",
+    "Do not use this sObjects-and-describe lesson as a governor-limit catalog, trigger framework, or CRUD/FLS design (later Apex topics)."
+  ],
+  "configuration_or_code_location": [
+    "Apex class in a disposable sandbox: typed Account versus generic sObject.",
+    "Object Manager → the object → Fields & Relationships for relationship API names.",
+    "Anonymous Apex: Account.sObjectType.getDescribe() and Schema.getGlobalDescribe().get('Account').",
+    "Developer Console or VS Code for compile errors on unknown fields of a typed sObject."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox utility must create a LAB_Stop__c child under a known LAB_Shipment__c, and a second generic method must set Name on whatever object API name a test passes in. No production data.",
+    "inputs": [
+      "Parent LAB_Shipment__c Id already inserted",
+      "Child relationship name confirmed in describe",
+      "Runtime type name Account for the generic path",
+      "API version 67.0 on the class"
+    ],
+    "decisions": [
+      {
+        "decision": "Use typed LAB_Stop__c for the child insert.",
+        "because": "The object is known at compile time; typed sObjects catch field typos.",
+        "rejected": "Generic sObject plus put for a known custom object"
+      },
+      {
+        "decision": "Use Schema describe to confirm the child relationship before writing a subquery later.",
+        "because": "Describe lists child relationships; it does not load stop rows.",
+        "rejected": "Guessing LAB_Stops__r from the object label"
+      },
+      {
+        "decision": "Use getGlobalDescribe().get(typeName).newSObject() and put('Name') for the generic method.",
+        "because": "Dynamic Apex is justified when the type is a string.",
+        "rejected": "Hardcoding Account in the generic method"
+      }
+    ],
+    "configuration_or_code": [
+      "LAB_Stop__c stop = new LAB_Stop__c(LAB_Shipment__c = shipmentId, Name = 'LAB_Dock-1'); insert stop;",
+      "Schema.SObjectType t = Schema.getGlobalDescribe().get(typeName); sObject rec = t.newSObject(); rec.put('Name', 'LAB_Generic');",
+      "System.assert(Account.sObjectType.getDescribe().fields.getMap().containsKey('Name'));"
+    ],
+    "output": "Child stop inserts under the shipment; generic method inserts an Account named LAB_Generic; describe confirms Name without querying rows.",
+    "verification": [
+      "SOQL on LAB_Stop__c returns the parent lookup populated.",
+      "Generic path with a bogus typeName yields a null token—guarded, no DML.",
+      "Describe call does not increment a queried-row count the way SOQL would."
+    ],
+    "self_explanation": "Typed sObject where the shape is known; describe for metadata; dynamic newSObject only for the string API name."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable Developer sandbox or scratch org; synthetic LAB_ classes and records only.",
+    "starting_state_checks": [
+      "You can create Apex classes and custom objects, or use Account if custom objects are blocked.",
+      "No production aliases in names."
+    ],
+    "steps": [
+      "Create public class LAB_SObjectLab with a method that inserts a typed Account named LAB_Typed.",
+      "Add a method that takes a String typeName, resolves Schema.getGlobalDescribe().get(typeName), and newSObject plus put Name.",
+      "In anonymous Apex, print Account.sObjectType.getDescribe().getLabel() and one child relationship name.",
+      "Attempt rec.put('NotAField__c', 'x') on Account and record the runtime error."
+    ],
+    "guided_completion": [
+      "If getGlobalDescribe returns null, the API name is wrong—do not DML.",
+      "If you queried Account to 'see if Name exists,' redo that step with describe."
+    ],
+    "independent_challenge": "From a queried Contact, read Account.Name via the relationship after selecting it in SOQL; then try the same without selecting Account.Name and explain the result.",
+    "evidence": [
+      "Anonymous Apex debug of the describe label.",
+      "Compile or runtime output for the invalid put."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Apex classes and LAB_ Accounts from the sandbox.",
+      "Do not deploy these classes to production."
+    ],
+    "limitations": "This lab does not prove managed-package namespacing, FLS, or dynamic SOQL injection handling."
+  },
+  "decision_table": [
+    {
+      "signal": "The class only ever works with Account or one custom object.",
+      "choose": "Typed sObject fields (Account.Name) in an Apex class.",
+      "not": "Generic sObject get/put for every field.",
+      "why": "Compile-time field checks beat runtime API-name typos."
+    },
+    {
+      "signal": "You need labels, field maps, or whether the type is createable—not row values.",
+      "choose": "Schema describe from a token or describeSObjects.",
+      "not": "INSERT a dummy record and inspect it.",
+      "why": "Official describe is metadata about objects in the org, not individual records."
+    },
+    {
+      "signal": "A caller passes an object API name as a String.",
+      "choose": "Resolve a token (getGlobalDescribe or known map) then newSObject and put.",
+      "not": "String-concatenated source or assuming eval exists in Apex.",
+      "why": "Dynamic Apex is the documented runtime instantiation path."
+    },
+    {
+      "signal": "You need parent Name or a list of children for a shipment.",
+      "choose": "Query with relationship paths or child subqueries; confirm names via describe.",
+      "not": "Describe alone, or inventing __r names from labels.",
+      "why": "Relationships load data through SOQL; describe only lists the paths."
+    }
+  ],
+  "limitations": [
+    "Does not teach SOQL clause syntax or bind variables (APEX-003).",
+    "Does not choose DML versus Database methods (APEX-005).",
+    "Does not replace CRUD/FLS user-mode design (APEX-014).",
+    "Relationship names and describe options are org- and API-version specific."
+  ],
+  "security_notes": [
+    "Dynamic put of user-supplied field names can bypass intent; allowlist fields.",
+    "Describe isAccessible is not automatic enforcement; APEX-014 owns user mode.",
+    "Never log real customer records in examples."
+  ],
+  "common_mistakes": [
+    "Treating DescribeSObjectResult as a queried Account row.",
+    "Using generic get/put in a class that only handles one object.",
+    "Guessing child relationship names from the object label.",
+    "Calling RecordType.sObjectType expecting a token when a field exists.",
+    "Thinking schema describe returns field values for a record Id."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "SObject row was retrieved via SOQL without querying the requested field.",
+      "check": [
+        "The relationship or field was not in the SELECT list.",
+        "You used describe, which never loads row values."
+      ],
+      "do_not_assume": "The field is empty in the database."
+    },
+    {
+      "symptom": "Invalid field for sObject on put or dynamic access.",
+      "check": [
+        "API name spelling and namespace prefix.",
+        "You have a concrete type versus generic sObject."
+      ],
+      "do_not_assume": "Describe is broken; the name may simply be wrong."
+    },
+    {
+      "symptom": "getGlobalDescribe().get(name) is null.",
+      "check": [
+        "Exact API name including __c.",
+        "The type exists in this org and is available to the running user context as documented."
+      ],
+      "do_not_assume": "You must insert a record before the type exists in describe."
+    }
+  ],
+  "production_notes": [
+    "Prefer typed sObjects in org-specific services; reserve dynamic Apex for generic modules.",
+    "Cache tokens you resolve repeatedly rather than calling getGlobalDescribe in a tight loop—Needs verification of current best practice for your API version.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does an sObject represent in Apex?",
+      "options": {
+        "A": "An in-memory Salesforce record of a given type",
+        "B": "Only the Object Manager metadata page",
+        "C": "A SOQL query string",
+        "D": "A Flow interview"
+      },
+      "answer": "A",
+      "rationale": "Working with sObjects treats types such as Account as in-memory records you can construct, query, and DML.",
+      "distractor_explanations": {
+        "B": "Setup metadata is the object definition, not an Apex instance.",
+        "C": "SOQL is the query language (APEX-003).",
+        "D": "Flow is declarative automation."
+      },
+      "concept": "sObject",
+      "citation_ids": ["SF-APEX-SOBJECTS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "According to the Dynamic Apex guide, describe information tells you about what?",
+      "options": {
+        "A": "Objects in the organization (metadata), not individual records",
+        "B": "The field values on one Account Id",
+        "C": "Only debug log heap size",
+        "D": "Only trigger context variables"
+      },
+      "answer": "A",
+      "rationale": "The Dynamic Apex topic states describe provides information about objects in an organization, not individual records.",
+      "distractor_explanations": {
+        "B": "Row values come from SOQL or in-memory sObject fields.",
+        "C": "Heap is a governor concern (APEX-007).",
+        "D": "Trigger context is APEX-008."
+      },
+      "concept": "schema describe",
+      "citation_ids": ["SF-APEX-DYNAMIC", "SF-APEX-DESCRIBE"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need a compile-checked handle to Account before calling getDescribe(). What do you use?",
+      "options": {
+        "A": "An sObject token such as Account.sObjectType",
+        "B": "A random String 'account' with no token",
+        "C": "A validation rule",
+        "D": "Trigger.oldMap only"
+      },
+      "answer": "A",
+      "rationale": "Tokens are lightweight serializable references validated at compile time; getDescribe returns the describe result.",
+      "distractor_explanations": {
+        "B": "Strings need getGlobalDescribe or describeSObjects.",
+        "C": "Validation rules are not describe APIs.",
+        "D": "Trigger maps hold records, not type tokens."
+      },
+      "concept": "sObject token",
+      "citation_ids": ["SF-APEX-DESCRIBE"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A method receives object API names as strings and must construct rows. Which Dynamic DML pattern matches the guide?",
+      "options": {
+        "A": "Resolve Schema.SObjectType and call newSObject, then put fields",
+        "B": "Eval the string as Apex source",
+        "C": "Always insert Account regardless of the string",
+        "D": "Use a formula field instead of Apex"
+      },
+      "answer": "A",
+      "rationale": "Dynamic DML shows getGlobalDescribe and newSObject on the token.",
+      "distractor_explanations": {
+        "B": "Apex has no eval of source strings.",
+        "C": "That ignores the runtime type.",
+        "D": "Formulas do not instantiate arbitrary sObjects."
+      },
+      "concept": "dynamic Apex",
+      "citation_ids": ["SF-APEX-DYNAMIC-DML"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How do you read a field by API name on a generic sObject?",
+      "options": {
+        "A": "get('FieldApiName')",
+        "B": "Only rec.FieldApiName without a concrete type",
+        "C": "Schema.describe always returns the value",
+        "D": "SOSL FIND on the field name"
+      },
+      "answer": "A",
+      "rationale": "Dynamic DML documents get/put using the API name.",
+      "distractor_explanations": {
+        "B": "Dot-notation requires a typed sObject (or a cast).",
+        "C": "Describe returns metadata, not the row value.",
+        "D": "SOSL is search (APEX-004)."
+      },
+      "concept": "get / put",
+      "citation_ids": ["SF-APEX-DYNAMIC-DML"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You want Contact’s parent Account Name in Apex. What must be true?",
+      "options": {
+        "A": "Query the relationship path (Account.Name) or otherwise load the parent sObject",
+        "B": "DescribeSObjectResult automatically hydrates Account.Name",
+        "C": "Put the Account Id in Name",
+        "D": "Only after triggers can see parent fields"
+      },
+      "answer": "A",
+      "rationale": "Relationship field values are loaded through queries (or in-memory assignment), not by describe.",
+      "distractor_explanations": {
+        "B": "Describe lists relationships; it does not load parent rows.",
+        "C": "Name is not the lookup Id.",
+        "D": "Before or after is a trigger concern; both can query."
+      },
+      "concept": "relationship",
+      "citation_ids": ["SF-APEX-SOBJECTS", "SF-APEX-DYNAMIC-DML"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Are describe result objects serializable according to the describe topic?",
+      "options": {
+        "A": "No; tokens are serializable, describe results are not",
+        "B": "Yes, that is why we store them in custom objects",
+        "C": "Only in triggers",
+        "D": "Only in Flow"
+      },
+      "answer": "A",
+      "rationale": "The describe topic states describe result objects are not serializable and are validated at runtime.",
+      "distractor_explanations": {
+        "B": "Do not persist describe results as if they were records.",
+        "C": "Serialization rules are not trigger-specific.",
+        "D": "Flow is not the describe API."
+      },
+      "concept": "describe result",
+      "citation_ids": ["SF-APEX-DESCRIBE"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "An ISV package must work on whatever custom object the subscriber names. Which toolset is in scope for this lesson?",
+      "options": {
+        "A": "Dynamic Apex: token, newSObject, get/put, describe",
+        "B": "A hardcoded Account helper only",
+        "C": "Changing org-wide defaults",
+        "D": "Writing a validation rule per subscriber"
+      },
+      "answer": "A",
+      "rationale": "Dynamic Apex exists so applications can tailor to the organization when types are not fixed at compile time.",
+      "distractor_explanations": {
+        "B": "Hardcoding Account fails the ISV requirement.",
+        "C": "OWD is sharing, not dynamic types.",
+        "D": "Validation rules are not a substitute for generic DML."
+      },
+      "concept": "dynamic Apex",
+      "citation_ids": ["SF-APEX-DYNAMIC"]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why might RecordType.sObjectType be the wrong way to get a token?",
+      "options": {
+        "A": "Some standard sObjects have a field named sObjectType; use getSObjectType() for the token",
+        "B": "RecordType cannot be described",
+        "C": "Tokens do not exist for standard objects",
+        "D": "sObjectType is only for custom objects"
+      },
+      "answer": "A",
+      "rationale": "The describe topic warns that AssignmentRule, QueueSObject, and RecordType have an sObjectType field.",
+      "distractor_explanations": {
+        "B": "RecordType can be described.",
+        "C": "Standard objects have tokens.",
+        "D": "Tokens exist for standard and custom types."
+      },
+      "concept": "sObject token",
+      "citation_ids": ["SF-APEX-DESCRIBE"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You need to know whether the running user can create a type before DML. Which API family is the granular check described in the Developer Guide?",
+      "options": {
+        "A": "DescribeSObjectResult methods such as isCreateable",
+        "B": "SOSL FIND",
+        "C": "Trigger.new directly",
+        "D": "A formula field"
+      },
+      "answer": "A",
+      "rationale": "Enforce Security with Field and SObject Describe Methods documents isAccessible/isCreateable/isUpdateable. Full user-mode design is later.",
+      "distractor_explanations": {
+        "B": "SOSL searches text.",
+        "C": "Trigger.new is record context.",
+        "D": "Formulas do not replace describe permission checks."
+      },
+      "concept": "schema describe",
+      "citation_ids": ["SF-APEX-DESCRIBE"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates sObject class metadata from business data?",
+      "options": {
+        "A": "Deploying LAB_SObjectLab.cls does not insert Account rows; describe still sees Account as a type",
+        "B": "Every describe call inserts a record",
+        "C": "sObject instances are metadata and custom objects are data",
+        "D": "getGlobalDescribe copies all records into heap"
+      },
+      "answer": "A",
+      "rationale": "Classes are metadata. Records are data. Describe inspects type metadata already in the org.",
+      "distractor_explanations": {
+        "B": "Describe does not insert.",
+        "C": "That reverses the split.",
+        "D": "getGlobalDescribe returns type tokens, not all rows."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-APEX-DYNAMIC", "SF-APEX-SOBJECTS"]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Schema.describeSObjects differs from token getDescribe in which documented way?",
+      "options": {
+        "A": "It can take type names dynamically and describe more than one sObject at a time",
+        "B": "It returns SOQL query results",
+        "C": "It can only describe Apex classes, not objects",
+        "D": "It deletes the sObject"
+      },
+      "answer": "A",
+      "rationale": "The Schema method topic states describeSObjects can specify types dynamically and describe more than one sObject.",
+      "distractor_explanations": {
+        "B": "That is SOQL.",
+        "C": "It describes sObjects.",
+        "D": "Describe is read of metadata."
+      },
+      "concept": "schema describe",
+      "citation_ids": ["SF-APEX-DESCRIBE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is an sObject in Apex?",
+      "back": "The in-memory type for a Salesforce record, such as Account or a custom object instance."
+    },
+    {
+      "id": "F2",
+      "category": "describe",
+      "front": "Does schema describe return field values for one record Id?",
+      "back": "No. Describe is metadata about objects in the org, not individual records."
+    },
+    {
+      "id": "F3",
+      "category": "token",
+      "front": "Token versus describe result?",
+      "back": "A token is a lightweight compile-checked reference. getDescribe() yields a runtime describe result that is not serializable."
+    },
+    {
+      "id": "F4",
+      "category": "dynamic",
+      "front": "How do you construct a row when the type is a String?",
+      "back": "Resolve Schema.SObjectType (often getGlobalDescribe) and call newSObject, then put fields."
+    },
+    {
+      "id": "F5",
+      "category": "dynamic",
+      "front": "get versus dot-notation?",
+      "back": "get('Name') works on generic sObject. rec.Name requires a typed sObject or a cast."
+    },
+    {
+      "id": "F6",
+      "category": "relationship",
+      "front": "Where do parent/child names come from?",
+      "back": "Schema relationship names (and child relationships on describe), not invented labels."
+    },
+    {
+      "id": "F7",
+      "category": "relationship",
+      "front": "Id field versus relationship path?",
+      "back": "AccountId stores the Id. Account.Name traverses the parent sObject after it is loaded."
+    },
+    {
+      "id": "F8",
+      "category": "describe",
+      "front": "Account.sObjectType.getDescribe() returns?",
+      "back": "Schema.DescribeSObjectResult metadata for Account."
+    },
+    {
+      "id": "F9",
+      "category": "pitfall",
+      "front": "RecordType.sObjectType trap?",
+      "back": "Some objects have a field named sObjectType. Use getSObjectType() for the token."
+    },
+    {
+      "id": "F10",
+      "category": "boundary",
+      "front": "Typed class versus dynamic Apex?",
+      "back": "If the object is known, use typed fields. Dynamic Apex is for runtime type or field names."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Class versus records?",
+      "back": "The Apex class is metadata. Inserted sObject rows are business data."
+    },
+    {
+      "id": "F12",
+      "category": "dynamic",
+      "front": "What is putSObject for?",
+      "back": "Setting a related sObject on a foreign key, as documented in Dynamic DML."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Need to know if Name exists on a type?",
+      "back": "Use describe fields.getMap(), not INSERT and inspect."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Need the Name on a specific Account Id?",
+      "back": "SOQL (or an in-memory sObject). Describe will not load that row."
+    },
+    {
+      "id": "F15",
+      "category": "dynamic",
+      "front": "Name three pieces grouped under Dynamic Apex?",
+      "back": "Describe information, dynamic SOQL/SOSL, and dynamic DML (newSObject/get/put)."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is an sObject, and how is it different from schema describe?",
+      "answer_30_seconds": "An sObject is a record in Apex memory. Schema describe is metadata about the type—fields, labels, child relationships—not the values on one Id.",
+      "answer_2_minutes": "I treat Account a = new Account() as a row I can DML. I treat Account.sObjectType.getDescribe() as a spec sheet. Interviewers want that split because juniors query dummy rows to 'see fields' or think describe hydrates Name. Dynamic Apex sits on top: tokens, get/put, newSObject when names arrive at runtime.",
+      "example": "LAB_SObjectLab inserts a typed Account, then uses describe.fields.getMap() to confirm Name without querying.",
+      "tradeoffs": [
+        "Typed sObject vs generic sObject",
+        "Describe vs SOQL"
+      ],
+      "follow_ups": [
+        "When is getGlobalDescribe justified?",
+        "Are describe results serializable?"
+      ],
+      "weak_answer_warnings": [
+        "Calling describe a query",
+        "Calling custom objects 'sObjects' only in Setup and not in Apex"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Explain parent and child relationships on sObjects in Apex.",
+      "answer_30_seconds": "Lookup and master-detail expose relationship names. Parents are field paths like Account.Name. Children are subqueries or getSObjects after a query. Ids live on the lookup field.",
+      "answer_2_minutes": "I confirm the relationship name in describe or Object Manager, then SELECT the path. I do not invent __r from the object label. For generic sObjects, Dynamic DML documents getSObject and getSObjects. This is still data access—describe only lists the relationship, it does not load children.",
+      "example": "Query LAB_Shipment__c with a nested SELECT on LAB_Stops__r after confirming the child relationship name.",
+      "tradeoffs": [
+        "Nested SOQL vs separate queries",
+        "Typed relationship vs dynamic getSObjects"
+      ],
+      "follow_ups": [
+        "What if the relationship was not queried?",
+        "Polymorphic WhoId/WhatId?"
+      ],
+      "weak_answer_warnings": [
+        "Treating AccountId as if it were Account.Name"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A package must create a record whose type is passed as a string. How do you do it?",
+      "answer_30_seconds": "Resolve Schema.SObjectType from getGlobalDescribe or a known map, call newSObject, put required fields, then DML. Guard a null token.",
+      "answer_2_minutes": "This is the Dynamic DML example in the Developer Guide. I do not eval Apex. I allowlist types if the string is user-supplied. I still prefer a typed class when the subscriber object is known. I mention that dynamic SOQL is a later lesson if they also need to query by runtime field lists.",
+      "example": "createObject('Account') using getGlobalDescribe().get('Account').newSObject().",
+      "tradeoffs": [
+        "Generic ISV helper vs typed subscriber extension",
+        "Allowlist vs fully open type names"
+      ],
+      "follow_ups": [
+        "How do you set a lookup dynamically?",
+        "What if the type is not createable?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming Apex can compile a string of source at runtime"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "getGlobalDescribe().get('MyObject__c') returns null. Walk the diagnosis.",
+      "answer_30_seconds": "Check the exact API name, namespace, and that the type exists in this org. Do not insert a dummy row to 'register' it.",
+      "answer_2_minutes": "I print Schema.getGlobalDescribe().keySet() in a sandbox for a prefix match. I check packaging namespace. I confirm I did not pass a label. If the token exists but DML fails, I move to FLS/createable—describe can answer isCreateable, which is a neighbor of APEX-014.",
+      "example": "Caller passed 'My Object' label instead of MyObject__c.",
+      "tradeoffs": [
+        "Caching a token map vs calling getGlobalDescribe each time",
+        "Failing fast vs defaulting to Account"
+      ],
+      "follow_ups": [
+        "Custom metadata types versus custom objects?",
+        "What does describeSObjects add?"
+      ],
+      "weak_answer_warnings": [
+        "Inserting a record to make describe work"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you refuse dynamic Apex?",
+      "answer_30_seconds": "When the class only ever handles one known sObject. Typed fields fail at compile time; get/put fails at runtime.",
+      "answer_2_minutes": "Dynamic Apex is for generic modules and runtime names. Org-specific LAB_ShipmentService should use LAB_Shipment__c. I also refuse dynamic field puts of unsanitized user input. I keep describe for metadata questions even in typed code—for example listing fields for a UI—without turning the whole service generic.",
+      "example": "LAB_ShipmentService uses typed children; a separate LAB_GenericFactory uses newSObject.",
+      "tradeoffs": [
+        "Compile safety vs reuse across objects",
+        "ISV flexibility vs subscriber simplicity"
+      ],
+      "follow_ups": [
+        "How do you unit-test dynamic put?",
+        "Where does WITH USER_MODE fit?"
+      ],
+      "weak_answer_warnings": [
+        "Making every helper dynamic for 'future objects'"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do tokens and describe results relate?",
+      "answer_30_seconds": "A token is a lightweight handle. getDescribe() on the token returns the describe result. You can also go from describe back to a token. Results are not serializable.",
+      "answer_2_minutes": "I show Account.sObjectType as Schema.SObjectType, then getDescribe() as DescribeSObjectResult, then fields.getMap() for Schema.SObjectField tokens. For string names I use getGlobalDescribe or describeSObjects. I mention the RecordType.sObjectType field trap so they hear I read the guide.",
+      "example": "Schema.DescribeSObjectResult dsr = Account.sObjectType.getDescribe();",
+      "tradeoffs": [
+        "Token describe vs describeSObjects batch",
+        "DEFERRED vs FULL describe options—reverify API version"
+      ],
+      "follow_ups": [
+        "Can you serialize a describe result in a Queueable?",
+        "What is getChildRelationships() for?"
+      ],
+      "weak_answer_warnings": [
+        "Storing DescribeSObjectResult in a custom object field"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Code does rec.Name on a generic sObject and will not compile. What do you do?",
+      "answer_30_seconds": "Use get('Name') or cast to Account. Dot-notation needs a concrete type.",
+      "answer_2_minutes": "I check the declared type. If it must stay generic, I switch to get/put and document the API names. If it is always Account, I change the signature to Account and restore dot-notation. I do not 'fix' it by making everything String maps.",
+      "example": "sObject rec = t.newSObject(); rec.put('Name', 'LAB_Box');",
+      "tradeoffs": [
+        "Cast to Account vs stay generic",
+        "Map<String,Object> vs sObject"
+      ],
+      "follow_ups": [
+        "How do you put a lookup Id?",
+        "How do you put a parent sObject?"
+      ],
+      "weak_answer_warnings": [
+        "Rewriting the method to use JSON as a database"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "A teammate queries Account LIMIT 1 to discover if Industry exists. How do you correct them?",
+      "answer_30_seconds": "Use schema describe. Querying a row is data access and can fail in an empty org; describe is metadata.",
+      "answer_2_minutes": "I point at the Dynamic Apex sentence that describe is about objects in the organization, not individual records. I show fields.getMap().containsKey('Industry'). I note empty-org tests would fail their SOQL approach. I keep SOQL for when they need the Industry value on a specific account.",
+      "example": "Account.Industry.getDescribe() or fields map containsKey.",
+      "tradeoffs": [
+        "Describe vs SOQL",
+        "Hardcoded field vs describe-driven UI"
+      ],
+      "follow_ups": [
+        "How would you list all custom fields?",
+        "Does describe honor FLS for the running user?"
+      ],
+      "weak_answer_warnings": [
+        "Defending dummy-row queries as describe"
+      ]
+    }
+  ]
+}

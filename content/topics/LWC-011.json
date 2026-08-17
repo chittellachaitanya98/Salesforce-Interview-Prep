@@ -1,0 +1,963 @@
+{
+  "topic_id": "LWC-011",
+  "slug": "performance-caching-rendering-and-large-datasets",
+  "title": "Performance, caching, rendering, and large datasets",
+  "track": "Lightning Web Components",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-010"
+  ],
+  "objectives": [
+    "Choose the wire adapter or cacheable Apex method that returns the least data the UI needs.",
+    "Explain client-side Apex caching, refreshApex, and why polling refresh is rejected.",
+    "Apply documented lightning-datatable guidance for large datasets: smaller pages, infinite scroll, fewer editable columns.",
+    "Avoid render loops such as updating a wire config in renderedCallback."
+  ],
+  "diagnostic_question": "A lightning-datatable of 3,000 Cases freezes the browser. Caching is 'on,' but the page still paints slowly. What do you change first: the query shape, the cache annotation, the render cost, or the dataset size?",
+  "definition": "Performance, caching, rendering, and large datasets are how an LWC stays usable as data grows. The wire service may provision from client cache without a network call. @AuraEnabled(cacheable=true) caches read-only Apex results on the client; do not assume a duration. lightning-datatable renders in the browser: Salesforce testing shows best results around a maximum of 1,000 rows and 5 columns, load about 50 rows at a time, and if you have more than 250 rows use fewer than 20 columns. Infinite scroll and fewer inline-edit columns reduce cost. ([Understand the Wire Service](https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service-about.html); [Client-Side Caching](https://developer.salesforce.com/docs/platform/lwc/guide/apex-result-caching.html); [Improve Datatable Performance](https://developer.salesforce.com/docs/platform/lwc/guide/data-table-performance.html))",
+  "why_it_matters": "Interviewers fail 'we will cache it' answers that still ship 3,000 DOM rows. Cache does not shrink render cost. Updating a wire config in renderedCallback can infinite-loop. Polling refreshApex creates server load the Guide rejects.",
+  "sixty_second_explanation": "Think of an airport baggage carousel. Caching is bags already on the belt so you do not run back to the hold. Rendering is how many bags you dump onto the belt at once. A large dataset is a 747 unload. Performance is not emptying the whole hold onto one carousel. Infinite scroll is sending the next cart only when travelers reach the end of the belt. Inline edit on every column is putting a scale on every bag.",
+  "deeper_explanation": [
+    "Always use the wire adapter that returns the least data. getRecord is not getObjectInfo. The wire is reactive; $ params rerun the adapter. If a config property is undefined, nothing provisions. Do not update adapter config in renderedCallback or you can loop. Do not depend on data arriving at a specific lifecycle hook. ([Understand the Wire Service](https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service-about.html); [Use the Wire Service](https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service.html))",
+    "cacheable=true caches read-only Apex on the client and is required for @wire. The refresh time is platform-configured; do not assume a number. When you know data is stale, call refreshApex() once after a mutation—not in setInterval. Imperative Apex is not LDS-managed; notifyRecordUpdateAvailable after those writes. ([Client-Side Caching](https://developer.salesforce.com/docs/platform/lwc/guide/apex-result-caching.html))",
+    "lightning-datatable loads everything it displays on the user's computer. Poor performance looks like slow load, lag, freeze, or a crashed tab. Use smaller datasets, enable-infinite-loading with onloadmore, and reserve inline editing for critical fields. Custom cell types add nesting and cost. Guide numbers: testing best at max 1,000 rows and 5 columns; load a maximum of 50 rows at a time; more than 250 rows → fewer than 20 columns. Your own testing still matters. ([Improve Datatable Performance](https://developer.salesforce.com/docs/platform/lwc/guide/data-table-performance.html))",
+    "Rendering cost is DOM and rerender. Conditional directives (lwc:if) beat leftover hidden trees. Lists need keys. Do not clone huge wired objects in getters that run every render. LWC-007 loading states should skeleton a region, not block the page, while a large list pages in."
+  ],
+  "mental_model": {
+    "analogy": "An airport baggage carousel: cached bags already on the belt, carts of about 50 bags, a 747 unload as a large dataset, scales on every bag as inline edit.",
+    "useful_mapping": [
+      "bags already on the belt → LDS or cacheable Apex client cache",
+      "running back to the hold → unnecessary network / refreshApex polling",
+      "next cart at the end of the belt → infinite scroll / LIMIT pages",
+      "scale on every bag → inline edit on every column",
+      "dumping the whole hold → 3,000-row datatable in one paint",
+      "rerouting the belt in a loop → wire config updated in renderedCallback"
+    ],
+    "where_it_breaks": [
+      "A carousel cannot invent bags; an undefined $id never fires the wire.",
+      "Cache duration is not a posted timetable—do not assume seconds.",
+      "Apex governors still apply per call even when the client cache is warm."
+    ]
+  },
+  "teach_back_prompt": "Explain why cacheable Apex does not fix a 3,000-row datatable, using the carousel analogy, then name one place the analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Quote the datatable testing guidance for rows, columns, and page size."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Why is refreshApex in setInterval rejected?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why not change wire config in renderedCallback?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Least-data adapter: getRecord vs getObjectInfo vs fat Apex."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: cache vs render vs large datasets."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-WIRE-ABOUT",
+      "title": "Understand the Wire Service",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service-about.html",
+      "supports": "Provision vs fetch; cache may skip network; no lifecycle timing guarantees; do not update config in renderedCallback; refreshApex not for polling.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not publish a cache TTL number."
+    },
+    {
+      "source_id": "SF-LWC-WIRE-USE",
+      "title": "Use the Wire Service to Get Data",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-wire-service.html",
+      "supports": "Use the adapter that returns the least data; prefer record forms when they fit.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Per-adapter return shapes live in the reference."
+    },
+    {
+      "source_id": "SF-LWC-APEX-CACHE",
+      "title": "Client-Side Caching of Apex Method Results",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/apex-result-caching.html",
+      "supports": "cacheable=true; required for @wire; do not assume duration; refreshApex; notifyRecordUpdateAvailable after imperative writes.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Default cache duration can change."
+    },
+    {
+      "source_id": "SF-LWC-DT-PERF",
+      "title": "Improve Datatable Performance",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/data-table-performance.html",
+      "supports": "Browser-side render cost; 1000x5 testing guidance; 50-row pages; 250 rows / 20 columns; infinite scroll; fewer inline-edit columns; custom type cost.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Your own testing can differ; numbers are Salesforce testing guidance, not a hard platform governor."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Least data adapter",
+        "Client cache",
+        "refresh once",
+        "Datatable numbers",
+        "Infinite scroll",
+        "No render loop"
+      ],
+      "accessible_description": "Portrait map of LWC performance: least-data wires, client cache, one refresh after mutation, paged datatables, and no config updates in renderedCallback."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-WIRE-ABOUT",
+        "SF-LWC-APEX-CACHE",
+        "SF-LWC-DT-PERF"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Where is the time going: network, cache, or DOM?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Need[UI needs data] --> Least[Least-data adapter or DTO]\n  Least --> Cache{In LDS or Apex client cache?}\n  Cache -->|Yes| Render[Render current page of rows]\n  Cache -->|No| Net[Network then cache]\n  Render --> Table[lightning-datatable page ~50 rows]\n  Table --> More[onloadmore infinite scroll]\n  Mutate[User DML] --> Refresh[refreshApex once]",
+      "decision": "flowchart TD\n  Slow[Page feels slow] --> Q1{How many rows and columns in the DOM?}\n  Q1 -->|Thousands| Page[Page or infinite-scroll; drop columns]\n  Q1 -->|Small| Q2{Are you refetching in a timer?}\n  Q2 -->|Yes| Stop[Stop polling refreshApex]\n  Q2 -->|No| Q3{Fat adapter or extra fields?}\n  Q3 -->|Yes| Least[Narrow the wire or Apex DTO]\n  Q3 -->|No| Q4{Config changed in renderedCallback?}\n  Q4 -->|Yes| Loop[Move config updates out of renderedCallback]\n  Q4 -->|No| Edit[Reduce inline-edit columns and custom cell types]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Use the wire adapter that returns the least data. Provision may come from cache without a network call. Do not update wire config in renderedCallback.",
+      "source_ids": ["SF-LWC-WIRE-USE", "SF-LWC-WIRE-ABOUT"],
+      "scope": "Wire performance",
+      "validation": "Use the Wire Service and Understand the Wire Service.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "cacheable=true caches read-only Apex on the client, is required for @wire, and must not be assumed to last a fixed number of seconds. Refresh with refreshApex after a mutation, not via polling.",
+      "source_ids": ["SF-LWC-APEX-CACHE", "SF-LWC-WIRE-ABOUT"],
+      "scope": "Caching",
+      "validation": "Client-Side Caching and wire refresh guidance.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Salesforce testing shows datatable performance is best with a maximum of 1,000 rows and 5 columns; load a maximum of 50 rows at a time; if more than 250 rows, use fewer than 20 columns. Infinite scroll and fewer inline-edit columns help.",
+      "source_ids": ["SF-LWC-DT-PERF"],
+      "scope": "Large datasets",
+      "validation": "Improve Datatable Performance.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Datatable guidance numbers are Salesforce testing results, not edition governors. Reverify current Improve Datatable Performance topic for Summer '26.",
+  "unresolved_uncertainty": [
+    "Default Apex client-cache duration is explicitly not to be assumed.",
+    "Needs verification: GraphQL pagination APIs for a given org's API version."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Client-side cache",
+      "telugu": "బ్రౌజర్‌లో ఉంచిన Apex లేదా LDS ఫలితాలు."
+    },
+    {
+      "english": "Infinite scroll",
+      "telugu": "స్క్రోల్ చివరకు చేరినప్పుడు మరిన్ని అడ్డు వరుసలు లోడ్ చేయడం."
+    },
+    {
+      "english": "Large dataset",
+      "telugu": "ఒకేసారి DOMలో పెయింట్ చేయడానికి చాలా పెద్ద రికార్డు సెట్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I shrink the payload, then the DOM. Cacheable Apex helps repeats, not a 3,000-row paint. I page about 50 rows, limit columns, and refresh once after DML—never in a timer.",
+    "two_minutes": "I pick the least-data adapter. I never change wire config in renderedCallback. I quote the datatable testing numbers as guidance, not law, and I still test. Inline edit and custom cell types are render taxes. Cache duration is not a number I invent."
+  },
+  "terminology": [
+    {
+      "term": "performance",
+      "plain": "How quickly the page becomes usable and stays responsive.",
+      "precise": "A mix of network, cache hits, and browser render cost. A warm cache with 3,000 DOM rows can still freeze the tab.",
+      "example": "Case table that paints 50 rows in one second versus 3,000 rows that crash Chrome.",
+      "non_example": "Apex CPU time only, with no talk of the datatable.",
+      "confusable_neighbor": "Server governor limits (APEX-007).",
+      "boundary": "This lesson is LWC client cost plus documented cache/datatable guidance."
+    },
+    {
+      "term": "caching",
+      "plain": "Reusing data already on the client so you may skip a network trip.",
+      "precise": "LDS cache and @AuraEnabled(cacheable=true). Duration is platform-configured. refreshApex after a known mutation; do not poll.",
+      "example": "Second visit to labCaseBadge hits cacheable Apex without a server round trip.",
+      "non_example": "setInterval(() => refreshApex(wired), 2000).",
+      "confusable_neighbor": "Platform Cache / org cache (server), not this topic.",
+      "boundary": "Do not quote a TTL."
+    },
+    {
+      "term": "rendering",
+      "plain": "Turning data into DOM the browser must paint and keep interactive.",
+      "precise": "Datatable cells, custom types, inline edit, and rerenders from reactive properties. Parent/child rerender cascades.",
+      "example": "Removing unused inline-edit columns to cut lag.",
+      "non_example": "SOQL selectivity only.",
+      "confusable_neighbor": "SLDS visual polish (LWC-009).",
+      "boundary": "errorCallback unmount (LWC-007) is not a perf strategy."
+    },
+    {
+      "term": "large datasets",
+      "plain": "More rows or columns than a browser table can comfortably hold at once.",
+      "precise": "Guide testing: best at ≤1000 rows and 5 columns; page ≤50; if >250 rows, use <20 columns. Use LIMIT/OFFSET, GraphQL pagination, or infinite scroll.",
+      "example": "onloadmore appending the next 50 LAB_ Cases.",
+      "non_example": "SELECT without LIMIT dumped into lightning-datatable.",
+      "confusable_neighbor": "LDV architecture (ARCH track).",
+      "boundary": "Numbers are testing guidance, not a hard governor."
+    },
+    {
+      "term": "infinite loading",
+      "plain": "Load a subset, then fetch more when the user scrolls to the end.",
+      "precise": "lightning-datatable enable-infinite-loading and onloadmore. Still respect page-size guidance (~50).",
+      "example": "First 50 Cases, then onloadmore requests the next 50.",
+      "non_example": "Loading 1,000 rows silently in the background while showing a spinner.",
+      "confusable_neighbor": "Pagination controls (LIMIT/OFFSET) without scroll.",
+      "boundary": "Component Reference has the event details."
+    },
+    {
+      "term": "refreshApex",
+      "plain": "The function that invalidates and refetches a wired Apex result.",
+      "precise": "Call once after a mutating operation. Do not use with setTimeout/setInterval as a polling pattern.",
+      "example": "After closeCase imperative, refreshApex(this.wiredCases).",
+      "non_example": "Polling every second 'to be safe.'",
+      "confusable_neighbor": "refreshGraphQL for GraphQL wires.",
+      "boundary": "Imperative Apex may need notifyRecordUpdateAvailable for LDS."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Shrink the contract",
+      "actor": "Developer",
+      "trigger": "List or table requested",
+      "before": "SELECT many fields / getObjectInfo for a name",
+      "after": "Least-data adapter or DTO plus a page size",
+      "observe": "Field list matches columns",
+      "failure": "Fat Apex 'for later'"
+    },
+    {
+      "step": 2,
+      "transition": "Mark cache honestly",
+      "actor": "Developer",
+      "trigger": "Read method for @wire",
+      "before": "Uncached repeats",
+      "after": "cacheable=true on non-mutating Apex, or LDS wire",
+      "observe": "Second navigation may skip the network",
+      "failure": "Assuming a 30-second TTL in comments"
+    },
+    {
+      "step": 3,
+      "transition": "Page the DOM",
+      "actor": "Developer",
+      "trigger": "More than a small page of rows",
+      "before": "One giant datatable",
+      "after": "50-row pages, infinite scroll, few editable columns",
+      "observe": "Tab stays interactive",
+      "failure": "3,000 rows and 25 inline-edit columns"
+    },
+    {
+      "step": 4,
+      "transition": "Refresh once",
+      "actor": "Developer",
+      "trigger": "Successful DML",
+      "before": "Stale cache",
+      "after": "refreshApex or LDS notify, one time",
+      "observe": "No setInterval",
+      "failure": "Updating wire config in renderedCallback"
+    }
+  ],
+  "when_to_use": [
+    "When an LWC table or list is slow and you must reason about performance, caching, rendering, and large datasets together.",
+    "When choosing cacheable Apex versus an LDS wire, or deciding to call refreshApex once after a write.",
+    "When a lightning-datatable has hundreds of rows and you need the documented paging and column guidance.",
+    "When a component rerenders in a loop and you suspect wire config is being set in renderedCallback."
+  ],
+  "when_not_to_use": [
+    "Do not use this performance lesson as a substitute for SOQL selectivity and governors (APEX-007) or SLDS accessibility (LWC-009).",
+    "Do not claim cacheable=true will make a 3,000-row render fast, or invent a cache duration.",
+    "Do not poll refreshApex, or change wire adapter config inside renderedCallback.",
+    "Do not treat Salesforce's 1,000×5 testing note as a hard org governor you can quote without 'testing showed.'"
+  ],
+  "configuration_or_code_location": [
+    "Apex: @AuraEnabled(cacheable=true) plus LIMIT/OFFSET or a paging token.",
+    "LWC: @wire config with $pageSize; lightning-datatable enable-infinite-loading onloadmore.",
+    "After DML: refreshApex(wiredResult) once.",
+    "Never: wire config assignment in renderedCallback; setInterval refresh."
+  ],
+  "worked_example": {
+    "scenario": "labAllCases used getAllCases() returning 3,200 Cases and 22 fields into lightning-datatable with every column inline-editable. Browser performance and rendering collapse on that large dataset. Caching is unused because the method is not cacheable. Product needs Status and Number, newest first, and edit only on Status.",
+    "inputs": [
+      "Thousands of Case rows in a sandbox",
+      "Users on laptops, not just admin desktops"
+    ],
+    "decisions": [
+      {
+        "decision": "Return Number, Status, CreatedDate only, LIMIT 50, keyed paging or OFFSET with care.",
+        "because": "Least data plus the 50-row load guidance.",
+        "rejected": "Keep 22 fields 'for a future export column'"
+      },
+      {
+        "decision": "enable-infinite-loading and onloadmore to append pages.",
+        "because": "Documented alternative to one giant paint.",
+        "rejected": "Render 3,200 rows then CSS-overflow"
+      },
+      {
+        "decision": "Inline edit only on Status; cacheable=true on the read method; refreshApex once after save.",
+        "because": "Inline edit is a documented tax; cache is for repeats, not first paint of thousands of cells.",
+        "rejected": "setInterval refresh every 5 seconds"
+      }
+    ],
+    "configuration_or_code": [
+      "@AuraEnabled(cacheable=true) public static List<Case> page(Integer off) { return [SELECT CaseNumber, Status, CreatedDate FROM Case ORDER BY CreatedDate DESC LIMIT 50 OFFSET :off]; }",
+      "enable-infinite-loading onloadmore={handleMore}",
+      "refreshApex(this.wiredPage) after updateRecord on Status"
+    ],
+    "output": "Interactive first page; more rows on scroll; Status the only editable column.",
+    "verification": [
+      "First payload has ≤50 rows and 3 fields.",
+      "No timer calls refreshApex.",
+      "Tab remains usable at a few hundred accumulated rows—retest if it degrades."
+    ],
+    "self_explanation": "I treated render cost as the first freeze, then cache as a repeat optimization. I quoted Guide numbers as testing guidance."
+  },
+  "hands_on_lab": {
+    "environment": "Scratch org or Developer sandbox with synthetic LAB_ Cases (create a few dozen, not production).",
+    "starting_state_checks": [
+      "You can deploy LWC and Apex.",
+      "You will not query production customer rows."
+    ],
+    "steps": [
+      "Build labCasePage: cacheable Apex or a wire that returns at most 50 rows and three fields into lightning-datatable.",
+      "Add enable-infinite-loading and onloadmore that appends the next page without resetting the table.",
+      "Enable inline edit on one column only.",
+      "After an inline save, call refreshApex once; do not add a timer."
+    ],
+    "guided_completion": [
+      "If the first request returns more than 50 rows, paging is incomplete.",
+      "If renderedCallback assigns a wire parameter, remove it."
+    ],
+    "independent_challenge": "Document in a comment the Guide's 1,000×5 testing note and why your table still needs its own measurement.",
+    "evidence": [
+      "Code showing LIMIT 50 (or equivalent) and a single refreshApex after save.",
+      "Note that cache duration is not hard-coded."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ components and Apex.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not prove LDV sharing skew or GraphQL cursor pagination."
+  },
+  "decision_table": [
+    {
+      "signal": "Need a name and status, not object metadata or 40 fields.",
+      "choose": "The least-data wire adapter or a three-field cacheable Apex DTO.",
+      "not": "getObjectInfo or SELECT-many Apex 'for flexibility.'",
+      "why": "The wire topic says always use the adapter that returns the least data."
+    },
+    {
+      "signal": "Users scroll a Case table that would be thousands of rows.",
+      "choose": "Page about 50 rows with infinite loading or pagination; keep columns few.",
+      "not": "One lightning-datatable bound to the entire query result.",
+      "why": "Datatable performance guidance: browser memory, 50-row loads, column caps as rows grow."
+    },
+    {
+      "signal": "Every column is inline-editable and the table lags.",
+      "choose": "Reserve inline editing for critical fields only.",
+      "not": "Editable on all columns plus heavy custom cell types.",
+      "why": "The more columns that enable inline editing, the slower the datatable."
+    },
+    {
+      "signal": "Data looks stale after a save, or someone added a 2-second refresh timer.",
+      "choose": "refreshApex once after the mutation completes.",
+      "not": "setInterval/setTimeout polling of refreshApex.",
+      "why": "The wire topic rejects polling refresh as unnecessary server load."
+    }
+  ],
+  "limitations": [
+    "Testing numbers are guidance, not governors.",
+    "Does not replace SOQL index strategy.",
+    "Does not set a cache TTL.",
+    "OFFSET paging has well-known scale limits; cursor/GraphQL may be better—Needs verification per use case."
+  ],
+  "security_notes": [
+    "Paging does not replace FLS; still return only needed fields (LWC-010).",
+    "Do not log entire large payloads.",
+    "Infinite scroll can still over-expose if each page is a fat DTO."
+  ],
+  "common_mistakes": [
+    "Cacheable as a cure for huge DOM.",
+    "Polling refreshApex.",
+    "Wire config in renderedCallback.",
+    "All columns inline-editable.",
+    "Inventing a cache duration."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Browser tab freezes when the table opens.",
+      "check": [
+        "Row and column counts in the first payload.",
+        "Inline-edit flags and custom types.",
+        "Whether paging exists."
+      ],
+      "do_not_assume": "Apex CPU is the only problem."
+    },
+    {
+      "symptom": "Component rerenders forever.",
+      "check": [
+        "Wire config mutated in renderedCallback.",
+        "Getter that returns a new array every time and is wired into a child."
+      ],
+      "do_not_assume": "The platform wire is 'broken.'"
+    },
+    {
+      "symptom": "Data never updates after save.",
+      "check": [
+        "Did you refreshApex or notify LDS once?",
+        "Is the method cacheable so the client kept the old page?"
+      ],
+      "do_not_assume": "You must reload the whole Lightning page."
+    }
+  ],
+  "production_notes": [
+    "Measure on a laptop-class device, not only a developer workstation.",
+    "Quote datatable numbers as Salesforce testing, then record your own.",
+    "No production deploy is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Salesforce testing cited in Improve Datatable Performance shows best results around which size?",
+      "options": {
+        "A": "A maximum of 1,000 rows and 5 columns",
+        "B": "Unlimited rows if cacheable=true",
+        "C": "Exactly 10,000 rows and 50 columns",
+        "D": "One row only"
+      },
+      "answer": "A",
+      "rationale": "Datatable performance is best with a maximum of 1,000 rows and 5 columns in Salesforce testing.",
+      "distractor_explanations": {
+        "B": "Cache does not remove DOM cost.",
+        "C": "Opposite of the guidance.",
+        "D": "Not the cited testing note."
+      },
+      "concept": "Datatable testing size",
+      "citation_ids": ["SF-LWC-DT-PERF"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "To improve display time, the datatable topic suggests loading how many rows at a time?",
+      "options": {
+        "A": "A maximum of 50 rows",
+        "B": "All rows the SOQL can return",
+        "C": "Exactly 2,500 rows",
+        "D": "Zero; tables cannot page"
+      },
+      "answer": "A",
+      "rationale": "Load a maximum of 50 rows at a time using LIMIT, OFFSET, GraphQL pagination, or infinite loading.",
+      "distractor_explanations": {
+        "B": "That is the anti-pattern.",
+        "C": "Not the cited page size.",
+        "D": "Paging is the point."
+      },
+      "concept": "Page size",
+      "citation_ids": ["SF-LWC-DT-PERF"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A table has more than 250 rows. What column guidance does the topic add?",
+      "options": {
+        "A": "Use fewer than 20 columns",
+        "B": "Add as many columns as the object has fields",
+        "C": "Require 40 inline-edit columns",
+        "D": "Switch to Visualforce automatically"
+      },
+      "answer": "A",
+      "rationale": "If your datatable has more than 250 rows, use fewer than 20 columns.",
+      "distractor_explanations": {
+        "B": "Increases render cost.",
+        "C": "Inline edit is a tax.",
+        "D": "Not the documented step."
+      },
+      "concept": "Columns vs rows",
+      "citation_ids": ["SF-LWC-DT-PERF"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why not call refreshApex from setInterval?",
+      "options": {
+        "A": "Polling creates unnecessary server load; refresh once after a mutation",
+        "B": "refreshApex is illegal",
+        "C": "LWS blocks timers",
+        "D": "Jest forbids it"
+      },
+      "answer": "A",
+      "rationale": "The wire topic says do not use refresh functions in a polling pattern with setTimeout or setInterval.",
+      "distractor_explanations": {
+        "B": "The function is documented for post-mutation refresh.",
+        "C": "Not the stated reason.",
+        "D": "Unrelated."
+      },
+      "concept": "No polling refresh",
+      "citation_ids": ["SF-LWC-WIRE-ABOUT"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Should you assume a fixed client-cache duration for cacheable Apex?",
+      "options": {
+        "A": "No; the default can change; do not assume a duration",
+        "B": "Yes; it is always 30 seconds",
+        "C": "Yes; it is always 24 hours",
+        "D": "Yes; it is one governor limit unit"
+      },
+      "answer": "A",
+      "rationale": "The caching topic says the default cache duration can change; do not assume a cache duration.",
+      "distractor_explanations": {
+        "B": "Invented number.",
+        "C": "Invented number.",
+        "D": "Not how cache is described."
+      },
+      "concept": "No assumed TTL",
+      "citation_ids": ["SF-LWC-APEX-CACHE"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Updating a wire adapter configuration object property in renderedCallback is dangerous because:",
+      "options": {
+        "A": "It can result in an infinite loop",
+        "B": "It disables LWS",
+        "C": "It deletes the component metadata",
+        "D": "It is required for caching"
+      },
+      "answer": "A",
+      "rationale": "The wire syntax notes: don’t update a wire adapter configuration object property in renderedCallback() as it can result in an infinite loop.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Unrelated.",
+        "D": "Opposite of safe practice."
+      },
+      "concept": "renderedCallback loop",
+      "citation_ids": ["SF-LWC-WIRE-ABOUT"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You only need record Name. Which choice matches 'least amount of data'?",
+      "options": {
+        "A": "A record wire or form that returns the Name field, not getObjectInfo for the whole object",
+        "B": "Apex selecting every field on Case",
+        "C": "getObjectInfo plus a 40-column table",
+        "D": "A 3,000-row datatable cached"
+      },
+      "answer": "A",
+      "rationale": "getRecord returns record data; getObjectInfo returns object metadata. Use the least adapter.",
+      "distractor_explanations": {
+        "B": "Fat payload.",
+        "C": "Wrong adapter and huge render.",
+        "D": "Cache does not fix DOM size."
+      },
+      "concept": "Least-data adapter",
+      "citation_ids": ["SF-LWC-WIRE-USE"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Inline editing is on 15 columns and the table lags. First documented move?",
+      "options": {
+        "A": "Reserve inline editing for critical fields only",
+        "B": "Add more custom data types",
+        "C": "Poll refreshApex",
+        "D": "Disable shadow DOM"
+      },
+      "answer": "A",
+      "rationale": "The more columns that enable inline editing, the slower the datatable performs.",
+      "distractor_explanations": {
+        "B": "Custom types add nesting cost.",
+        "C": "Increases load.",
+        "D": "Not a perf switch."
+      },
+      "concept": "Inline edit tax",
+      "citation_ids": ["SF-LWC-DT-PERF"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Client cache hit versus first paint of 3,000 cells?",
+      "options": {
+        "A": "Cache may skip the network; it does not remove browser render cost",
+        "B": "Cache deletes extra rows",
+        "C": "They are the same optimization",
+        "D": "Cache always blocks rendering"
+      },
+      "answer": "A",
+      "rationale": "Wire provision can be cached; datatable still paints every displayed cell on the user's computer.",
+      "distractor_explanations": {
+        "B": "Cache does not page for you.",
+        "C": "Network versus DOM.",
+        "D": "False."
+      },
+      "concept": "Cache vs render",
+      "citation_ids": ["SF-LWC-WIRE-ABOUT", "SF-LWC-DT-PERF"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Infinite loading versus loading all rows behind a spinner?",
+      "options": {
+        "A": "Infinite loading shows a subset then onloadmore; a hidden full load still paints or holds a huge array",
+        "B": "They are identical",
+        "C": "Infinite loading is only for Aura",
+        "D": "Spinners remove row limits"
+      },
+      "answer": "A",
+      "rationale": "enable-infinite-loading plus onloadmore is the documented incremental pattern.",
+      "distractor_explanations": {
+        "B": "Memory and time differ.",
+        "C": "It is an LWC datatable feature.",
+        "D": "UX chrome is not paging."
+      },
+      "concept": "Infinite scroll",
+      "citation_ids": ["SF-LWC-DT-PERF"]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "If data is already in the LDS cache, a wire evaluation:",
+      "options": {
+        "A": "Can return without a network call",
+        "B": "Always hits Apex twice",
+        "C": "Always waits for renderedCallback",
+        "D": "Always throws"
+      },
+      "answer": "A",
+      "rationale": "If data is already available in LDS cache, it is returned without a network call.",
+      "distractor_explanations": {
+        "B": "Opposite of cache.",
+        "C": "Do not depend on lifecycle timing.",
+        "D": "False."
+      },
+      "concept": "LDS cache provision",
+      "citation_ids": ["SF-LWC-WIRE-ABOUT"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "After imperative Apex updates records, LDS may still be stale because:",
+      "options": {
+        "A": "LDS does not manage data provisioned by imperative Apex; notifyRecordUpdateAvailable after the call",
+        "B": "LWS deletes LDS",
+        "C": "cacheable=true is illegal on all orgs",
+        "D": "You must disable the datatable"
+      },
+      "answer": "A",
+      "rationale": "The caching topic: Lightning Data Service doesn’t manage data provisioned by imperative Apex calls; notifyRecordUpdateAvailable after you invoke the method.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "False.",
+        "D": "Unrelated."
+      },
+      "concept": "Imperative vs LDS cache",
+      "citation_ids": ["SF-LWC-APEX-CACHE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "Datatable testing sweet spot cited by Salesforce?",
+      "back": "Best with a maximum of 1,000 rows and 5 columns. Still measure your own case."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "Suggested rows to load at a time?",
+      "back": "A maximum of 50 rows via LIMIT, pagination, or infinite loading."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "More than 250 rows. Column guidance?",
+      "back": "Use fewer than 20 columns."
+    },
+    {
+      "id": "F4",
+      "category": "decision",
+      "front": "refreshApex in setInterval?",
+      "back": "No. Polling creates unnecessary server load. Refresh once after a mutation."
+    },
+    {
+      "id": "F5",
+      "category": "decision",
+      "front": "Wire config in renderedCallback?",
+      "back": "Do not. It can infinite-loop."
+    },
+    {
+      "id": "F6",
+      "category": "limitation_security",
+      "front": "Assume cache duration?",
+      "back": "No. The platform can change the default. Do not hard-code a TTL."
+    },
+    {
+      "id": "F7",
+      "category": "scenario",
+      "front": "Does cacheable=true fix 3,000 DOM rows?",
+      "back": "No. Cache may skip the network; the browser still paints the cells."
+    },
+    {
+      "id": "F8",
+      "category": "scenario",
+      "front": "All columns inline-editable. Cost?",
+      "back": "More editable columns, slower datatable. Edit only critical fields."
+    },
+    {
+      "id": "F9",
+      "category": "terminology",
+      "front": "Least-data rule?",
+      "back": "Always use the wire adapter that returns the least data your use case requires."
+    },
+    {
+      "id": "F10",
+      "category": "terminology",
+      "front": "Cache hit on LDS wire?",
+      "back": "Data can be returned without a network call if it is already cached."
+    },
+    {
+      "id": "F11",
+      "category": "decision",
+      "front": "Imperative Apex wrote records. LDS still stale?",
+      "back": "Call notifyRecordUpdateAvailable; LDS does not manage imperative Apex data."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Fat DTO plus paging. Still exposure?",
+      "back": "Yes. Each page can still over-return fields. Shrink the DTO (LWC-010)."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Custom datatable cell types?",
+      "back": "They add nesting and complexity. Keep them simple; they cost more on large sets."
+    },
+    {
+      "id": "F14",
+      "category": "decision",
+      "front": "Need object metadata or a record Name?",
+      "back": "getObjectInfo versus getRecord—pick the adapter that matches the need."
+    },
+    {
+      "id": "F15",
+      "category": "terminology",
+      "front": "Infinite loading attributes?",
+      "back": "enable-infinite-loading and an onloadmore handler on lightning-datatable."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you talk about LWC performance, caching, rendering, and large datasets in one minute?",
+      "answer_30_seconds": "Shrink the payload, then the DOM. Cache helps repeats. A huge datatable is a render problem. Page about 50 rows and refresh once after writes.",
+      "answer_2_minutes": "I start with the least-data adapter. I mark read Apex cacheable and never invent a TTL. I quote Salesforce's datatable testing numbers as guidance: 1000×5, 50-row pages, fewer than 20 columns past 250 rows. I disable most inline edit. I never poll refreshApex or poke wire config in renderedCallback.",
+      "example": "labAllCases rewritten to 50-row infinite scroll and Status-only edit.",
+      "tradeoffs": [
+        "Export-all versus interactive table",
+        "OFFSET versus cursor paging"
+      ],
+      "follow_ups": [
+        "What is notifyRecordUpdateAvailable?",
+        "What about GraphQL?"
+      ],
+      "weak_answer_warnings": [
+        "We will just cache it"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why is cacheable Apex not a large-dataset strategy by itself?",
+      "answer_30_seconds": "Cache skips some network trips. The browser still creates a cell for every displayed row and column.",
+      "answer_2_minutes": "I separate provision from paint. A cache hit of 3,000 rows is still 3,000 rows. The datatable topic is explicit that everything displayed loads on the user's computer. I page first, then cache the page.",
+      "example": "Second visit still froze until we added LIMIT 50.",
+      "tradeoffs": [
+        "Warm cache versus first-contentful table",
+        "Memory versus extra onloadmore calls"
+      ],
+      "follow_ups": [
+        "Does LDS cache page 2?",
+        "What about Excel export?"
+      ],
+      "weak_answer_warnings": [
+        "cacheable=true equals virtualization"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A 22-column editable datatable of thousands of Cases freezes. What do you cut first?",
+      "answer_30_seconds": "Rows per request, then columns, then inline-edit flags. Add infinite loading. Do not start with a spinner redesign.",
+      "answer_2_minutes": "I measure the first payload. I apply 50-row pages and drop unused fields. I keep inline edit on the one column product actually edits. I mention custom cell types if present. I only then look at Apex CPU. I say the 1000×5 figure is Salesforce testing, not a law.",
+      "example": "Status-only edit, three fields, onloadmore.",
+      "tradeoffs": [
+        "Product wants every column versus a usable page",
+        "Datatable versus a virtualized custom list—Needs verification if you propose a non-base grid"
+      ],
+      "follow_ups": [
+        "OFFSET limits?",
+        "How do you test on a laptop?"
+      ],
+      "weak_answer_warnings": [
+        "Buy users more RAM"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A teammate added refreshApex every two seconds so the queue looks live. Your response?",
+      "answer_30_seconds": "Remove the timer. The Guide rejects polling refresh. Refresh once after a known mutation or use a real event strategy later.",
+      "answer_2_minutes": "I explain server load and cache stampede. I offer refresh after the user's own save, or a platform event design that is out of this lesson. I do not replace the timer with renderedCallback config churn.",
+      "example": "labQueue dropped setInterval; saves call refreshApex once.",
+      "tradeoffs": [
+        "Near-real-time versus load",
+        "LMS/platform events versus pull"
+      ],
+      "follow_ups": [
+        "What about GraphQL subscriptions? (Needs verification)",
+        "What is RefreshView API?"
+      ],
+      "weak_answer_warnings": [
+        "Live means poll"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "The component's wire fires forever and the browser heats up. Where do you look?",
+      "answer_30_seconds": "renderedCallback assigning a wire parameter, or a getter that feeds a new object into a child every render.",
+      "answer_2_minutes": "The Guide calls out config updates in renderedCallback as an infinite-loop risk. I also look for array copies in getters used as @api values. I do not blame LDS first. I add a log of config identity to prove it changes every paint.",
+      "example": "this.pageSize++ inside renderedCallback retriggered the wire.",
+      "tradeoffs": [
+        "Local tracked page versus URL state",
+        "Child @api object versus primitives"
+      ],
+      "follow_ups": [
+        "How do you see wire config in DevTools?",
+        "What is isDataProvisionedForConfig?"
+      ],
+      "weak_answer_warnings": [
+        "Salesforce wire is broken"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Save works but the table shows old Status until a full reload.",
+      "answer_30_seconds": "The client cache still holds the page. Call refreshApex on the wired Apex, or notifyRecordUpdateAvailable if the write was imperative and LDS-owned.",
+      "answer_2_minutes": "I ask whether the read is wired Apex or ui*Api. I apply the matching refresh. I do not tell users to hard-reload as the design. I still do not add a poll.",
+      "example": "updateRecord on Status then refreshApex(this.wiredPage).",
+      "tradeoffs": [
+        "Optimistic UI versus wait-for-refresh",
+        "Apex cache versus LDS record cache"
+      ],
+      "follow_ups": [
+        "refreshGraphQL?",
+        "RefreshView API?"
+      ],
+      "weak_answer_warnings": [
+        "Cache is a bug; turn off cacheable"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When is a datatable the wrong control for a large dataset?",
+      "answer_30_seconds": "When users need thousands of rows, many columns, and heavy custom cells at once. Export, reports, or a filtered summary may be the product, not a grid.",
+      "answer_2_minutes": "I keep lightning-datatable for interactive slices. I push 'download everything' to a report, Bulk API, or a server file—out of this lesson but honest. I do not custom-build a second grid just to ignore the Guide's nesting warning without a measured reason.",
+      "example": "Ops wanted 8,000 rows; we shipped a report plus a 50-row working queue.",
+      "tradeoffs": [
+        "Interactive grid versus report",
+        "Infinite scroll versus page numbers"
+      ],
+      "follow_ups": [
+        "What about lightning-tree-grid?",
+        "What about virtualization libraries under LWS?"
+      ],
+      "weak_answer_warnings": [
+        "Datatable scales forever if cached"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach cache versus render with a baggage carousel, then break it.",
+      "answer_30_seconds": "Cached bags are already on the belt. Dumping a 747 at once is a large dataset. Infinite scroll is the next cart. The break: the belt never moves if the ticket Id is missing—the wire never fires.",
+      "answer_2_minutes": "I add that cache has no posted timetable, so I do not invent minutes. Scales on every bag are inline-edit columns. Rerouting the belt each time a bag appears is renderedCallback config. I never call this a library catalog.",
+      "example": "Whiteboard 50-bag carts versus one 3,200-bag dump.",
+      "tradeoffs": [
+        "Analogy versus quoting 1000×5",
+        "Network versus DOM"
+      ],
+      "follow_ups": [
+        "Say the 50-row line",
+        "Why not poll?"
+      ],
+      "weak_answer_warnings": [
+        "catalog-shelf metaphor"
+      ]
+    }
+  ]
+}

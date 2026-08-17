@@ -1,0 +1,1045 @@
+{
+  "topic_id": "AUTO-003",
+  "slug": "before-save-vs-after-save-record-triggered-flow",
+  "title": "Before-Save vs After-Save Record-Triggered Flow",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Decision",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "FOUND-002",
+    "AUTO-001",
+    "AUTO-002"
+  ],
+  "objectives": [
+    "Choose before-save (fast field updates on the triggering record) versus after-save (actions and related records) from the outcome.",
+    "Cite why before-save record-triggered Flow can update that record before it is saved, and is documented as faster than a record-change process.",
+    "Use Flow Trigger Explorer and trigger order values to see before-save, after-save, and asynchronous paths on one object.",
+    "Refuse before-save when the work is email, related-record DML, or a human approval, and refuse Apex when after-save Flow already fits."
+  ],
+  "diagnostic_question": "A LAB_ Course Attendee needs a status defaulted on the same record, then a related waitlist record updated and an email sent. Before reading, which path is before-save versus after-save, and what evidence would make you reject a validation rule or Apex?",
+  "definition": "A record-triggered Flow starts when a record is created, updated, or deleted. Before-save (optimize for fast field updates) can make additional updates to that same record before it is saved to the database and is documented as up to 10 times faster than a record-change process. After-save (optimize for actions and related records) runs later in the save order and is the path for related records, emails, and other actions. ([Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm); [Before-Save Record-Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger_record.htm); [Bulkified Record Processing](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm))",
+  "why_it_matters": "Interviewers listen for 'same record, before the database save' versus 'related records and actions after save.' Putting email or Task creation on a before-save path, or writing Apex for a same-record stamp a before-save Flow can do, is a common fail. Order of execution is the deeper map (APEX-009); this lesson is the Flow fork.",
+  "sixty_second_explanation": "Think of an airport. Before-save is passport control: you can still correct the same passport before the traveler is admitted to the country—the record is not yet saved. After-save is the arrivals concierge: the traveler is in the country, so you can book a hotel, text a ride, or create a luggage ticket (related records and actions). Validation is the 'you may not enter' stamp; a formula is the always-visible visa class on the passport; approval is a secondary interview with immigration; Apex is a custom hangar when Flow cannot do the job.",
+  "deeper_explanation": [
+    "Triggered Flows Help: creating or updating a record can trigger a record-triggered flow to make additional updates to that record before it is saved to the database. A record-triggered flow can update a Salesforce record 10 times faster than a record-change process. Configure the record trigger on the Start element. ([Before-Save Record-Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger_record.htm); [Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm))",
+    "After-save is selected when you optimize the flow for Actions and Related Records. Help's bulkification example uses an after-save Opportunity flow to Get Records and create Tasks, and notes that after-save runs later in the order than before-save; details of that order live in Triggers and Order of Execution. ([Bulkified Record Processing](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm))",
+    "Flow Trigger Explorer shows record-triggered flows for an object that run when a record is created, updated, or deleted, including before-save, after-save, and asynchronous paths. You can assign a trigger order value from 1 to 2,000 so before-save or after-save flows on the same object run in a predictable sequence. ([Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm))",
+    "AUTO-001 still applies. A validation rule refuses an illegal save; it does not stamp a default. A formula field calculates without a Flow interview. An approval process routes a person. Apex is complementary for CPU-heavy work or Batch Apex volume—not the default for a same-record before-save update. Custom Error is a record-triggered Flow element (Flow Types); do not invent its full behavior here.",
+    "Scheduled paths on a record-triggered Flow run part of the flow at a configurable offset after the triggering event. They are not the same as before-save. Needs verification before claiming async governor numbers; Help's bulkification page mentions after-save for follow-up Tasks and higher limits on some asynchronous work—confirm the current article before quoting numbers."
+  ],
+  "mental_model": {
+    "analogy": "Airport passport control versus the arrivals concierge: before-save still edits the same passport before admission; after-save happens after the traveler is in the country and can create tickets and send messages.",
+    "useful_mapping": [
+      "before-save / fast field updates → correct the same record before the database save",
+      "after-save / actions and related records → related DML, email, and other actions after save",
+      "validation rule → refused entry (illegal data never saves)",
+      "formula field → visa class printed on the passport (always computed)",
+      "approval process → a secondary human interview, not a field stamp",
+      "Flow Trigger Explorer → the airport's board of all flights (flows) for that object",
+      "trigger order 1–2000 → which checkpoint runs first among same-kind flows"
+    ],
+    "where_it_breaks": [
+      "One Salesforce save can run validation, before-save Flow, after-save Flow, and Apex triggers—more than two airport rooms (APEX-009).",
+      "The 10x claim is versus a record-change process, not versus Apex.",
+      "Scheduled paths and asynchronous paths are extra rooms, not before-save.",
+      "Edition and API version change which elements exist on each path; do not invent a full element allow-list."
+    ]
+  },
+  "teach_back_prompt": "Without naming drawers, explain when you pick before-save versus after-save for a record-triggered Flow, why a validation rule is the wrong stamp, and when Apex is still the complementary tool.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: before-save updates the same record before database save; after-save is actions and related records."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Five signals: default a field, send email, create Task, block illegal amount, manager approval."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain Flow Trigger Explorer and trigger order 1–2000."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk 'email never sent from my before-save Flow' without notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: airport mapping plus where order of execution lives."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-TRIGGERED",
+      "title": "Triggered Flows",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm",
+      "supports": "Trigger types; before-save 10x vs record-change process; Flow Trigger Explorer; trigger order 1–2000; scheduled paths.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace the order-of-execution developer topic."
+    },
+    {
+      "source_id": "SF-HELP-BEFORE-SAVE",
+      "title": "Before-Save Record-Triggered Flows",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger_record.htm",
+      "supports": "Creating or updating a record can trigger additional updates to that record before it is saved; 10x faster than a record-change process.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Element allow-lists are version-sensitive; confirm in Flow Builder."
+    },
+    {
+      "source_id": "SF-HELP-BULK-FLOW",
+      "title": "Bulkified Record Processing to Avoid CPU Limits Example",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm",
+      "supports": "After-save optimize for Actions and Related Records; after-save runs later than before-save; related Task creation example.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "CPU milliseconds cited on that page are Needs verification against current governor docs (APEX-007)."
+    },
+    {
+      "source_id": "SF-HELP-WHICH-TOOL",
+      "title": "Get Started Automating a Business Task with a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm",
+      "supports": "Record-triggered starts; complementary Apex/Batch Apex still apply.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define before vs after save."
+    },
+    {
+      "source_id": "SF-HELP-VALIDATION",
+      "title": "Define Validation Rules",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.fields_defining_field_validation_rules.htm",
+      "supports": "Validation blocks invalid saves; not a same-record field update.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Not a Flow timing topic."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Same record before save",
+        "After-save actions",
+        "Validation vs Flow",
+        "Trigger Explorer",
+        "Trigger order",
+        "When Apex"
+      ],
+      "accessible_description": "Portrait decision map of before-save versus after-save record-triggered Flow against validation, formula, approval, and Apex."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-TRIGGERED",
+        "SF-HELP-BEFORE-SAVE",
+        "SF-HELP-BULK-FLOW"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Before-save versus after-save on one save"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Save[Record save] --> VR[Validation rules]\n  VR --> Before[Before-save Flow: same record field updates]\n  Before --> DB[(Record saved to database)]\n  DB --> After[After-save Flow: actions and related records]\n  After --> Async[Asynchronous / scheduled paths]\n  Explorer[Flow Trigger Explorer] --> Before\n  Explorer --> After",
+      "decision": "flowchart TD\n  Need[Record-triggered need?] --> Q1{Must illegal data never save?}\n  Q1 -->|Yes| VR[Validation rule not Flow]\n  Q1 -->|No| Q2{Only update the triggering record?}\n  Q2 -->|Yes| Before[Before-save / fast field updates]\n  Q2 -->|Related records, email, Task, approval submit| After[After-save / actions and related records]\n  Q2 -->|Person must approve| AP[Approval process]\n  Q2 -->|CPU-heavy or Batch volume| Apex[Complementary Apex]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Creating or updating a record can trigger a record-triggered flow to make additional updates to that record before it is saved. That path can update a record up to 10 times faster than a record-change process.",
+      "source_ids": [
+        "SF-HELP-BEFORE-SAVE",
+        "SF-HELP-TRIGGERED"
+      ],
+      "scope": "Before-save",
+      "validation": "Before-Save Record-Triggered Flows and Triggered Flows.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "After-save record-triggered flows are optimized for actions and related records, run later than before-save, and are the documented pattern for creating related Tasks after a save.",
+      "source_ids": [
+        "SF-HELP-BULK-FLOW"
+      ],
+      "scope": "After-save",
+      "validation": "Bulkified Record Processing example.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Flow Trigger Explorer shows before-save, after-save, and asynchronous paths for an object. Trigger order values 1–2000 sequence before-save or after-save flows on the same object.",
+      "source_ids": [
+        "SF-HELP-TRIGGERED"
+      ],
+      "scope": "Management",
+      "validation": "Triggered Flows managing-triggers section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Validation rules still own refused saves; record-triggered Flow is not a substitute for True-means-invalid. Complementary Apex remains for CPU-intensive or Batch volume work.",
+      "source_ids": [
+        "SF-HELP-VALIDATION",
+        "SF-HELP-WHICH-TOOL"
+      ],
+      "scope": "Tool boundaries",
+      "validation": "Define Validation Rules and complementary tools.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Trigger order (1–2000) and Flow Trigger Explorer remain the documented way to sequence record-triggered flows. Reverify Start-element labels (Fast Field Updates vs Actions and Related Records) in the target org.",
+  "unresolved_uncertainty": [
+    "The complete list of elements allowed on before-save versus after-save is UI-version sensitive; confirm in Flow Builder rather than memorizing an unofficial allow-list.",
+    "Numeric CPU limits mentioned in bulkification examples belong to APEX-007; do not treat them as this lesson's facts."
+  ],
+  "telugu_glossary": [
+    {"english": "Before-save Flow", "telugu": "Save avakamunde ade record paina field update."},
+    {"english": "After-save Flow", "telugu": "Save tarvata related records leda actions."}
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Before-save updates the same record before the database save and is documented as faster than a record-change process. After-save is for actions and related records. Validation still blocks illegal data. Apex is complementary, not the default stamp.",
+    "two_minutes": "I ask whether the change is only fields on the triggering record. If yes, I optimize for fast field updates (before-save). If I need Get Records, create Tasks, send email, or submit approval, I optimize for actions and related records (after-save). I use Flow Trigger Explorer and trigger order 1–2000 when multiple flows share an object. I do not use before-save as a validation rule, and I do not write Apex for a same-record default a before-save Flow can do."
+  },
+  "terminology": [
+    {
+      "term": "record-triggered Flow",
+      "plain": "A flow that starts when a record is created, updated, or deleted.",
+      "precise": "Configure the trigger on the Start element. Help lists record-created, updated, deleted, and scheduled paths on record-triggered flows.",
+      "example": "Opportunity updated to Closed Won starts an after-save Flow.",
+      "non_example": "A screen Flow the user clicks is not record-triggered.",
+      "confusable_neighbor": "Schedule-triggered Flow: time batch, not a record save.",
+      "boundary": "AUTO-005 owns other start types."
+    },
+    {
+      "term": "before-save",
+      "plain": "The record-triggered path that updates the triggering record before it is saved.",
+      "precise": "Help: additional updates to that record before it is saved to the database; up to 10 times faster than a record-change process. In the Start element this is the fast field updates optimization.",
+      "example": "Default LAB_ Status__c on the same Course Attendee before insert commits.",
+      "non_example": "Sending an email is not before-save work.",
+      "confusable_neighbor": "Validation rule: refuses the save instead of stamping a field.",
+      "boundary": "Do not invent a full element list; confirm in Builder."
+    },
+    {
+      "term": "after-save",
+      "plain": "The record-triggered path for actions and related records after the save.",
+      "precise": "Optimize the Flow for Actions and Related Records. Help's example creates Tasks after Closed Won and notes after-save runs later than before-save.",
+      "example": "Create follow-up LAB_ Tasks and email attendees after save.",
+      "non_example": "A formula field is not after-save.",
+      "confusable_neighbor": "Asynchronous / scheduled path: time-offset, not the immediate after-save path.",
+      "boundary": "Bulk DML patterns are AUTO-006/007."
+    },
+    {
+      "term": "fast field updates",
+      "plain": "The Start-element optimization that selects the before-save path.",
+      "precise": "Tied to updating the triggering record before the database save, not to related-record DML.",
+      "example": "Optimize for Fast Field Updates when only LAB_ fields on $Record change.",
+      "non_example": "Apex Database.update on related contacts is not this optimization.",
+      "confusable_neighbor": "Actions and Related Records: the after-save label.",
+      "boundary": "UI wording can vary; match the org."
+    },
+    {
+      "term": "Flow Trigger Explorer",
+      "plain": "The view of all record-triggered flows for an object and trigger type.",
+      "precise": "Shows flows that run on create, update, or delete, including before-save, after-save, and asynchronous paths, and lets you navigate among them.",
+      "example": "Open Explorer on Opportunity to see two before-save and one after-save Flow.",
+      "non_example": "Setup → Validation Rules is not Explorer.",
+      "confusable_neighbor": "Trigger order value: the numeric sequence, not the Explorer itself.",
+      "boundary": "Permissions to view flows still apply."
+    },
+    {
+      "term": "trigger order",
+      "plain": "A number from 1 to 2,000 that sequences same-object before-save or after-save flows.",
+      "precise": "Assign a trigger order so flows run in a predictable sequence, for example by team or logical owner.",
+      "example": "Sales-owned before-save order 10, Service-owned order 20.",
+      "non_example": "Approval process step order is a different product.",
+      "confusable_neighbor": "Apex trigger order is APEX-009, not this Flow value.",
+      "boundary": "Values outside 1–2000 are not documented here."
+    },
+    {
+      "term": "scheduled path",
+      "plain": "A time-offset path on a record-triggered Flow, not before-save.",
+      "precise": "Help: run part of the flow at a configurable offset after the triggering event, such as a follow-up three days later.",
+      "example": "Email three days after LAB_ Quote create.",
+      "non_example": "Before-save field default is not a scheduled path.",
+      "confusable_neighbor": "Schedule-triggered Flow: a different type that runs on a clock for a batch (AUTO-005).",
+      "boundary": "Do not quote unofficial async governor numbers."
+    },
+    {
+      "term": "$Record",
+      "plain": "The triggering record in a record-triggered or schedule-triggered interview.",
+      "precise": "Triggered Flows notes $Record for schedule-triggered interviews; record-triggered flows also work with the triggering record in the Start element.",
+      "example": "Assignment on $Record.Status__c in before-save.",
+      "non_example": "A formula field on the object is not $Record.",
+      "confusable_neighbor": "recordId in a screen Flow: a different input contract (AUTO-002).",
+      "boundary": "Working with the triggering record has its own Help article; this lesson is the before/after fork."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name same-record vs side effects",
+      "actor": "Admin",
+      "trigger": "Record-triggered request",
+      "before": "Someone already opened Apex",
+      "after": "Written: same record fields vs related/email/approval",
+      "observe": "One sentence without product names",
+      "failure": "Starting in a trigger because 'save happened'"
+    },
+    {
+      "step": 2,
+      "transition": "Pick before-save or after-save",
+      "actor": "Admin",
+      "trigger": "Flow is the right tool",
+      "before": "Type chosen but optimization unclear",
+      "after": "Start element: Fast Field Updates vs Actions and Related Records",
+      "observe": "Debug shows the path; related DML only on after-save",
+      "failure": "Email element on a before-save flow"
+    },
+    {
+      "step": 3,
+      "transition": "Sequence with Explorer",
+      "actor": "Admin",
+      "trigger": "More than one flow on the object",
+      "before": "Unknown run order",
+      "after": "Trigger order 1–2000; Explorer lists before-save, after-save, async",
+      "observe": "Explorer screenshot of LAB_ flows",
+      "failure": "Assuming creation date is the order"
+    },
+    {
+      "step": 4,
+      "transition": "Respect validation and Apex boundaries",
+      "actor": "Admin + developer",
+      "trigger": "Illegal data or volume/CPU",
+      "before": "Trying to stamp instead of block",
+      "after": "Validation if True means invalid; Apex only if complementary reasons apply",
+      "observe": "Sandbox save tests",
+      "failure": "After-save Flow used as a validation rule"
+    }
+  ],
+  "when_to_use": [
+    "Use before-save record-triggered Flow when you only need to update fields on the triggering record before it is saved, not when a validation rule must refuse illegal data.",
+    "Use after-save record-triggered Flow when you need actions and related records—Tasks, emails, Get Records—after the save commits.",
+    "Use a validation rule instead of any record-triggered Flow when the formula is True because the value is invalid and must never save.",
+    "Use a formula field when the value should calculate without a Flow interview, and an approval process when a person must decide.",
+    "Use Apex or Batch Apex only when Help's complementary cases apply; do not write Apex for a same-record stamp before-save Flow can do."
+  ],
+  "when_not_to_use": [
+    "Do not use before-save Flow to send email, create related records, or collect a manager approval—that is after-save, approval, or another tool.",
+    "Do not use after-save Flow as a substitute for a validation rule that must block the save.",
+    "Do not use a formula field or validation rule when the need is a related Task after Closed Won—that is after-save Flow.",
+    "Do not use Apex as the default for fast field updates on the same record.",
+    "Do not use a scheduled path when you meant before-save; scheduled paths are time offsets after the event."
+  ],
+  "configuration_or_code_location": [
+    "Flow Builder Start element: object, create/update/delete, Optimize the Flow for Fast Field Updates vs Actions and Related Records.",
+    "Automation app → Flow Trigger Explorer for the object.",
+    "Start element or Explorer: trigger order 1–2000.",
+    "Object Manager → Validation Rules when the save must be refused instead."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox course-management style: LAB_ Course Attendee should default Status to Enrolled on the same record when blank, then if Status becomes Canceled, promote a waitlisted attendee (related record) and email both people. No production data.",
+    "inputs": [
+      "Same-record default",
+      "Related attendee update",
+      "Two emails",
+      "Illegal negative seats must never save"
+    ],
+    "decisions": [
+      {
+        "decision": "Before-save Flow to default Status on the triggering attendee.",
+        "because": "Help: additional updates to that record before it is saved.",
+        "rejected": "Apex trigger for the default"
+      },
+      {
+        "decision": "After-save Flow for waitlist update and emails.",
+        "because": "Related records and communication are actions after save.",
+        "rejected": "Putting Send Email on the before-save path"
+      },
+      {
+        "decision": "Validation rule if seats would be negative.",
+        "because": "True means invalid; Flow should not be the hard block.",
+        "rejected": "After-save Flow that tries to undo the save"
+      }
+    ],
+    "configuration_or_code": [
+      "Record-triggered Flow optimize Fast Field Updates: Assignment on $Record.Status__c.",
+      "Second Flow optimize Actions and Related Records: Get Records waitlist, Update Records, Send Email.",
+      "Validation rule on seats < 0."
+    ],
+    "output": "Defaults apply before commit; related waitlist and emails run after save; illegal seats never save.",
+    "verification": [
+      "Insert LAB_ attendee with blank status; before-save debug shows Status Enrolled before commit.",
+      "Update to Canceled; related waitlist row changes and emails send only on the after-save Flow.",
+      "Negative seats show a validation error, not an after-save compensation."
+    ],
+    "self_explanation": "I split same-record stamp, related actions, and illegal-data block. Apex stayed unused."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ custom object or Course Attendee-style object.",
+    "starting_state_checks": [
+      "You can create record-triggered flows",
+      "You can create a validation rule"
+    ],
+    "steps": [
+      "Create a before-save Flow that assigns one field on the triggering LAB_ record.",
+      "Create an after-save Flow that creates a related Task or sends an email.",
+      "Open Flow Trigger Explorer for that object and note before-save vs after-save.",
+      "Add a validation rule for an illegal value and prove it blocks save without the after-save Flow running."
+    ],
+    "guided_completion": [
+      "If email is on the before-save canvas, move it.",
+      "If you opened Apex first, write why before-save Flow was enough for the stamp."
+    ],
+    "independent_challenge": "Set trigger order 10 and 20 on two before-save flows and predict which Assignment wins.",
+    "evidence": [
+      "Explorer screenshot",
+      "Debug of before-save vs after-save"
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate LAB_ flows and validation",
+      "Do not deploy to production"
+    ],
+    "limitations": "Does not prove full order of execution or Apex trigger coexistence."
+  },
+  "decision_table": [
+    {
+      "signal": "Only fields on the triggering record must change as it saves.",
+      "choose": "Before-save record-triggered Flow (fast field updates).",
+      "not": "After-save, Apex trigger, or a formula field that cannot write user-editable fields the same way.",
+      "why": "Help: additional updates to that record before it is saved; faster than a record-change process."
+    },
+    {
+      "signal": "Closed Won must create Tasks for team members and maybe email.",
+      "choose": "After-save Flow optimized for actions and related records.",
+      "not": "Before-save Flow, a validation rule, or Apex as the first tool.",
+      "why": "Help's bulkification example is after-save Task creation."
+    },
+    {
+      "signal": "Amount below zero must never be stored.",
+      "choose": "Validation rule True when invalid.",
+      "not": "After-save Flow that deletes the row, or before-save that 'fixes' illegal data silently if the business wanted a hard block.",
+      "why": "Validation verifies data before the user can save."
+    },
+    {
+      "signal": "A manager must accept a discount.",
+      "choose": "Approval process (prefer Flow Approval Processes).",
+      "not": "Before-save field stamp pretending to be approval.",
+      "why": "Human routing is not a record-triggered field update."
+    },
+    {
+      "signal": "Two before-save flows on Opportunity collide.",
+      "choose": "Trigger order 1–2000 and Flow Trigger Explorer.",
+      "not": "Random activation order, or merging into Apex without a complementary reason.",
+      "why": "Help documents trigger order for predictable sequence."
+    }
+  ],
+  "limitations": [
+    "Does not replace APEX-009 order of execution.",
+    "Does not list every allowed before-save element.",
+    "Does not teach Get/Create/Update bulk design (AUTO-007).",
+    "10x comparison is versus record-change processes, not Apex."
+  ],
+  "security_notes": [
+    "After-save actions run in the Flow run context; confirm user vs system mode in later lessons.",
+    "Emails can leak record data; use LAB_ data only.",
+    "Trigger order is not a security control."
+  ],
+  "common_mistakes": [
+    "Putting Send Email on a before-save Flow.",
+    "Using after-save to emulate a validation rule.",
+    "Writing Apex for a same-record default.",
+    "Ignoring Flow Trigger Explorer when multiple flows fire.",
+    "Confusing scheduled paths with before-save."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Email never sends from a record-triggered Flow.",
+      "check": [
+        "Start element is Fast Field Updates (before-save)",
+        "Move communication to after-save"
+      ],
+      "do_not_assume": "Email deliverability is the only cause."
+    },
+    {
+      "symptom": "Related Task is missing though the field update worked.",
+      "check": [
+        "Field update is before-save; Task create needs after-save",
+        "Entry conditions on the after-save Flow"
+      ],
+      "do_not_assume": "One Flow can always do both without checking optimization."
+    },
+    {
+      "symptom": "Two before-save flows overwrite each other.",
+      "check": [
+        "Trigger order 1–2000",
+        "Flow Trigger Explorer list"
+      ],
+      "do_not_assume": "Last-created wins."
+    }
+  ],
+  "production_notes": [
+    "Inventory all record-triggered flows per object in Explorer before adding another.",
+    "Document why any Apex trigger still exists beside before-save Flow.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Before-save record-triggered Flow can do what to the triggering record?",
+      "options": {
+        "A": "Make additional updates to that record before it is saved to the database",
+        "B": "Only send email",
+        "C": "Only create related Tasks",
+        "D": "Replace all validation rules"
+      },
+      "answer": "A",
+      "rationale": "Help: additional updates to that record before it is saved.",
+      "distractor_explanations": {
+        "B": "Communication is after-save work.",
+        "C": "Related records are after-save.",
+        "D": "Validation still blocks illegal saves."
+      },
+      "concept": "Before-save",
+      "citation_ids": [
+        "SF-HELP-BEFORE-SAVE"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Help's speed claim for before-save record-triggered Flow is versus what?",
+      "options": {
+        "A": "A record-change process, up to 10 times faster",
+        "B": "Always faster than Apex by a fixed factor",
+        "C": "Faster than validation rules",
+        "D": "Faster than formula fields"
+      },
+      "answer": "A",
+      "rationale": "Triggered Flows / Before-Save: 10 times faster than a record-change process.",
+      "distractor_explanations": {
+        "B": "Not documented as a vs-Apex factor.",
+        "C": "Different tools.",
+        "D": "Different tools."
+      },
+      "concept": "10x claim",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED",
+        "SF-HELP-BEFORE-SAVE"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need follow-up Tasks after Opportunity Closed Won. Which Start optimization matches Help's example?",
+      "options": {
+        "A": "Actions and Related Records (after-save)",
+        "B": "Fast Field Updates only",
+        "C": "A validation rule",
+        "D": "A formula field"
+      },
+      "answer": "A",
+      "rationale": "Bulkification example: after-save Opportunity flow creating Tasks.",
+      "distractor_explanations": {
+        "B": "Before-save is same-record fields.",
+        "C": "Validation blocks saves.",
+        "D": "Formula computes."
+      },
+      "concept": "After-save Tasks",
+      "citation_ids": [
+        "SF-HELP-BULK-FLOW"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "After-save runs when relative to before-save?",
+      "options": {
+        "A": "Later in the order of execution than before-save flows",
+        "B": "Before validation rules",
+        "C": "Instead of the database save",
+        "D": "Only in Salesforce Classic"
+      },
+      "answer": "A",
+      "rationale": "Bulkification Help: after-save runs later than before-save; see Triggers and Order of Execution.",
+      "distractor_explanations": {
+        "B": "Validation is earlier.",
+        "C": "The record is saved first.",
+        "D": "Not Classic-only."
+      },
+      "concept": "Order",
+      "citation_ids": [
+        "SF-HELP-BULK-FLOW"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Flow Trigger Explorer shows which paths?",
+      "options": {
+        "A": "Before-save, after-save, and asynchronous paths for an object",
+        "B": "Only Apex classes",
+        "C": "Only approval steps",
+        "D": "Only formula fields"
+      },
+      "answer": "A",
+      "rationale": "Triggered Flows: Explorer includes before-save, after-save, and asynchronous paths.",
+      "distractor_explanations": {
+        "B": "Apex is Setup elsewhere.",
+        "C": "Approvals are a different product.",
+        "D": "Formulas are object metadata."
+      },
+      "concept": "Explorer",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Documented trigger order range for record-triggered flows on one object?",
+      "options": {
+        "A": "1 to 2,000",
+        "B": "Only 1 to 10",
+        "C": "Unlimited negative numbers",
+        "D": "Exactly 99"
+      },
+      "answer": "A",
+      "rationale": "Help: trigger order value 1–2,000.",
+      "distractor_explanations": {
+        "B": "Range is larger.",
+        "C": "Not documented.",
+        "D": "Not a single required value."
+      },
+      "concept": "Trigger order",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Illegal negative amount must never save. Tool?",
+      "options": {
+        "A": "Validation rule whose formula is True when invalid",
+        "B": "Before-save Flow that emails finance",
+        "C": "After-save Flow that deletes the record",
+        "D": "Apex as the first choice"
+      },
+      "answer": "A",
+      "rationale": "Define Validation Rules: verify before save; True means invalid.",
+      "distractor_explanations": {
+        "B": "Email is not a hard block.",
+        "C": "Compensating after save is the wrong pattern.",
+        "D": "Apex is complementary."
+      },
+      "concept": "Validation vs Flow",
+      "citation_ids": [
+        "SF-HELP-VALIDATION"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A scheduled path on a record-triggered Flow is for what?",
+      "options": {
+        "A": "Running part of the flow at a configurable offset after the triggering event",
+        "B": "The same thing as before-save",
+        "C": "Replacing formula fields",
+        "D": "Classic approval steps"
+      },
+      "answer": "A",
+      "rationale": "Triggered Flows: scheduled paths, e.g. follow-up three days later.",
+      "distractor_explanations": {
+        "B": "Different path.",
+        "C": "Formulas are not scheduled paths.",
+        "D": "Approvals are a different tool."
+      },
+      "concept": "Scheduled path",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Same-record Status default plus related waitlist update. How many Flow optimizations?",
+      "options": {
+        "A": "Before-save for the default; after-save for the related update",
+        "B": "Only a formula field",
+        "C": "Only a validation rule",
+        "D": "Apex is required for both"
+      },
+      "answer": "A",
+      "rationale": "Same-record before save vs related records after save.",
+      "distractor_explanations": {
+        "B": "Formula does not write related rows.",
+        "C": "Validation blocks, it does not update waitlists.",
+        "D": "Flow can do both paths."
+      },
+      "concept": "Split paths",
+      "citation_ids": [
+        "SF-HELP-BEFORE-SAVE",
+        "SF-HELP-BULK-FLOW"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "When is Apex still reasonable beside record-triggered Flow?",
+      "options": {
+        "A": "CPU-intensive work or more records than scheduled-triggered Flow allows",
+        "B": "Any same-record field stamp",
+        "C": "Any email",
+        "D": "Any formula display"
+      },
+      "answer": "A",
+      "rationale": "Complementary tools in Which automation tool.",
+      "distractor_explanations": {
+        "B": "Before-save Flow.",
+        "C": "After-save Flow.",
+        "D": "Formula field."
+      },
+      "concept": "Apex complementary",
+      "citation_ids": [
+        "SF-HELP-WHICH-TOOL"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do you configure the record trigger?",
+      "options": {
+        "A": "The Start element of the record-triggered flow",
+        "B": "A validation rule error message",
+        "C": "A formula field return type",
+        "D": "An approval email template only"
+      },
+      "answer": "A",
+      "rationale": "Help: configure the record trigger in the Start element.",
+      "distractor_explanations": {
+        "B": "Validation is separate.",
+        "C": "Formulas have no Start element.",
+        "D": "Approvals are separate."
+      },
+      "concept": "Start element",
+      "citation_ids": [
+        "SF-HELP-BEFORE-SAVE"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Two teams own Opportunity automation. How does Help let you divide before-save flows?",
+      "options": {
+        "A": "Trigger order values so they run in a predictable sequence",
+        "B": "Delete validation rules",
+        "C": "Convert both to formula fields",
+        "D": "Disable sharing"
+      },
+      "answer": "A",
+      "rationale": "Trigger order 1–2000 lets you divide automation by team or logical owner.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Formulas are not flows.",
+        "D": "Sharing is SEC."
+      },
+      "concept": "Team sequencing",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "before",
+      "front": "Before-save in one sentence?",
+      "back": "Updates the triggering record before it is saved to the database."
+    },
+    {
+      "id": "F2",
+      "category": "before",
+      "front": "10x faster than what?",
+      "back": "A record-change process—not a documented vs-Apex factor."
+    },
+    {
+      "id": "F3",
+      "category": "after",
+      "front": "After-save optimization label?",
+      "back": "Actions and Related Records."
+    },
+    {
+      "id": "F4",
+      "category": "after",
+      "front": "After-save vs before-save timing?",
+      "back": "After-save runs later in the order of execution."
+    },
+    {
+      "id": "F5",
+      "category": "explorer",
+      "front": "Flow Trigger Explorer shows?",
+      "back": "Before-save, after-save, and asynchronous paths for an object."
+    },
+    {
+      "id": "F6",
+      "category": "order",
+      "front": "Trigger order range?",
+      "back": "1 to 2,000 for same-object before-save or after-save flows."
+    },
+    {
+      "id": "F7",
+      "category": "boundary",
+      "front": "Illegal data never save?",
+      "back": "Validation rule True = invalid—not an after-save undo."
+    },
+    {
+      "id": "F8",
+      "category": "boundary",
+      "front": "Same-record stamp vs Apex?",
+      "back": "Prefer before-save Flow; Apex is complementary for CPU/volume."
+    },
+    {
+      "id": "F9",
+      "category": "path",
+      "front": "Scheduled path vs before-save?",
+      "back": "Scheduled path is a time offset after the event, not the before-save path."
+    },
+    {
+      "id": "F10",
+      "category": "scenario",
+      "front": "Email from record-triggered Flow?",
+      "back": "After-save (actions). Not before-save fast field updates."
+    },
+    {
+      "id": "F11",
+      "category": "scenario",
+      "front": "Related Task after Closed Won?",
+      "back": "After-save Flow, as in Help's bulkification example."
+    },
+    {
+      "id": "F12",
+      "category": "start",
+      "front": "Where is the trigger configured?",
+      "back": "Start element of the record-triggered Flow."
+    },
+    {
+      "id": "F13",
+      "category": "boundary",
+      "front": "Manager must decide?",
+      "back": "Approval process, not a before-save Assignment."
+    },
+    {
+      "id": "F14",
+      "category": "boundary",
+      "front": "Always-on calculate?",
+      "back": "Formula field, not a record-triggered Flow."
+    },
+    {
+      "id": "F15",
+      "category": "analogy",
+      "front": "Airport one-liner?",
+      "back": "Before-save is passport control on the same passport; after-save is the arrivals concierge."
+    },
+    {
+      "id": "F16",
+      "category": "bulk",
+      "front": "Why after-save in the Task example?",
+      "back": "Creating related Tasks is actions and related records, not a same-record before-save update."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Before-save versus after-save record-triggered Flow?",
+      "answer_30_seconds": "Before-save updates the same record before the database save and is documented as faster than a record-change process. After-save is actions and related records after the save.",
+      "answer_2_minutes": "I look at the outcome. Same-record fields: Fast Field Updates. Tasks, email, Get Records: Actions and Related Records. I mention Flow Trigger Explorer and trigger order 1–2000 when multiple flows exist. I keep validation for illegal saves and Apex for complementary CPU or Batch cases.",
+      "example": "LAB_ Status default before-save; waitlist plus email after-save.",
+      "tradeoffs": [
+        "Same-record vs side effects",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "What is a scheduled path?",
+        "Where is order of execution documented?"
+      ],
+      "weak_answer_warnings": [
+        "Saying before-save can send email"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why not a validation rule for a Status default?",
+      "answer_30_seconds": "Validation True means invalid and blocks save. A default is a field update on a legal record—that is before-save Flow, not validation.",
+      "answer_2_minutes": "If Status blank is allowed and we want Enrolled, that is a stamp, not a refusal. If Status blank must never save, that is validation. Interviewers mix the two. A formula field cannot always write a user-editable default the same way a before-save Assignment can.",
+      "example": "Blank LAB_ Status becomes Enrolled on insert via before-save.",
+      "tradeoffs": [
+        "Block vs stamp",
+        "Formula vs Flow"
+      ],
+      "follow_ups": [
+        "Can Custom Error replace validation?",
+        "Does before-save run on Data Loader?"
+      ],
+      "weak_answer_warnings": [
+        "Using after-save to emulate validation"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Your before-save Flow never sends the welcome email. Diagnose.",
+      "answer_30_seconds": "Before-save is fast field updates on the triggering record. Communication is an after-save action. Move Send Email to an Actions and Related Records flow.",
+      "answer_2_minutes": "I open the Start element. If it is Fast Field Updates, email does not belong there. I do not rewrite in Apex for an email Help lists as Flow communication. I also check entry conditions and deliverability only after the path is after-save.",
+      "example": "LAB_ Contact before-save that attempted Send Email.",
+      "tradeoffs": [
+        "Path vs deliverability",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "Could a scheduled path send it later?",
+        "Would a screen Flow be better?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming SPF first"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Two before-save flows overwrite Discount__c. What do you do?",
+      "answer_30_seconds": "Open Flow Trigger Explorer, then assign trigger order values between 1 and 2,000 so they run in a known sequence—or combine the logic if one owner should own the field.",
+      "answer_2_minutes": "I do not guess that last-modified metadata wins. I do not jump to Apex. I check whether a formula field or validation should own the number instead of two Flows fighting.",
+      "example": "Sales order 10 then Finance order 20 both assigning LAB_ Discount__c.",
+      "tradeoffs": [
+        "Sequence vs merge",
+        "Flow vs formula"
+      ],
+      "follow_ups": [
+        "Does after-save also use trigger order?",
+        "How do async paths show in Explorer?"
+      ],
+      "weak_answer_warnings": [
+        "Deleting one flow without talking to the owner"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you still write Apex instead of record-triggered Flow?",
+      "answer_30_seconds": "When the work is CPU-intensive or the volume exceeds what scheduled-triggered Flow can handle—Help's complementary table—not for a same-record stamp.",
+      "answer_2_minutes": "I still pick before-save Flow for fast field updates and after-save for related Tasks. I may call invocable Apex from after-save if one step is code. I will not quote unofficial governor numbers in this lesson.",
+      "example": "Complex discount engine vs defaulting LAB_ Type__c.",
+      "tradeoffs": [
+        "Invocable Apex vs trigger",
+        "Batch Apex vs scheduled Flow"
+      ],
+      "follow_ups": [
+        "Who owns the class?",
+        "How do you test both?"
+      ],
+      "weak_answer_warnings": [
+        "Apex for every Opportunity update"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "What does Flow Trigger Explorer add that Setup → Flows does not?",
+      "answer_30_seconds": "It filters to one object and trigger type and shows before-save, after-save, and asynchronous paths together so you can navigate and reorder.",
+      "answer_2_minutes": "I use it in interviews to prove I can find collisions. Setup's full flow list mixes screen and autolaunched types. Explorer is the record-triggered map. It does not replace validation, formula, or approval lists.",
+      "example": "Opportunity Explorer listing two before-save and one after-save LAB_ flow.",
+      "tradeoffs": [
+        "Explorer vs full list",
+        "Flow vs other metadata"
+      ],
+      "follow_ups": [
+        "Can you open Builder from Explorer?",
+        "What is an asynchronous path?"
+      ],
+      "weak_answer_warnings": [
+        "Saying Explorer shows Apex triggers"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Related waitlist never updates though Status on the attendee changes.",
+      "answer_30_seconds": "The Status stamp may be before-save while the waitlist Update Records belongs on after-save. Check that the second Flow is Actions and Related Records and that entry conditions see the committed Status.",
+      "answer_2_minutes": "I debug both interviews. I do not use a validation rule to move waitlist rows. I do not use Apex first. I verify Get Records is not inside a loop with DML (AUTO-006).",
+      "example": "Canceled attendee after-save should enroll the next waitlist LAB_ row.",
+      "tradeoffs": [
+        "Same-record vs related",
+        "Entry conditions vs path"
+      ],
+      "follow_ups": [
+        "Does before-save see related records?",
+        "Would a formula on seats help?"
+      ],
+      "weak_answer_warnings": [
+        "One Flow forced to do both without checking Start optimization"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Airport analogy, then break it.",
+      "answer_30_seconds": "Before-save is passport control on the same passport; after-save is the arrivals concierge creating tickets and sending texts. It breaks because one Salesforce save also runs validation, Apex triggers, and maybe scheduled paths—more rooms than two.",
+      "answer_2_minutes": "I add that the 10x claim is versus a record-change process, not Apex. Formula is the printed visa class; approval is a human interview; validation is refused entry. I never use a labeled-drawer story.",
+      "example": "One Opportunity save: validation, before-save Flow, after-save Flow.",
+      "tradeoffs": [
+        "Teaching vs OOEE precision",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "Where does AUTO-005 sit?",
+        "Where does Custom Error sit?"
+      ],
+      "weak_answer_warnings": [
+        "Stopping at the analogy without tool boundaries"
+      ]
+    }
+  ]
+}

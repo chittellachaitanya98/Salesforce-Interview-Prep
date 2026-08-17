@@ -1,0 +1,997 @@
+{
+  "topic_id": "INT-009",
+  "slug": "external-objects-salesforce-connect-and-data-virtualiza",
+  "title": "External objects, Salesforce Connect, and data virtualization",
+  "track": "Integration and APIs",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "INT-008"
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer official Help and Developer Guides over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "objectives": [
+    "Define Salesforce Connect as the adapter framework that surfaces external data as external objects without storing those rows.",
+    "Use indirect lookup when the remote key is not a Salesforce Id.",
+    "Choose virtualization versus batch copy using INT-001 how much/how fast and INT-003 styles.",
+    "Authenticate Connect callouts with named credentials (INT-004), not secrets in Apex."
+  ],
+  "diagnostic_question": "ERP bins must appear on Account without a Salesforce bin table, keys are ERP customer numbers, and reports also need last night's snapshot. What is Connect vs a copy, and which lookup type?",
+  "definition": "Data virtualization lets Salesforce access external data in real time without persisting a copy to reconcile. Salesforce Connect provides adapters (for example OData) that map remote tables to external objects—schema projections that hold no stored rows. Indirect lookup relates an external child to a Salesforce parent using a unique External Id field, not a Salesforce Id. ([Data Virtualization](https://architect.salesforce.com/docs/architect/fundamentals/guide/data-virtualization.html); [Indirect lookup](https://help.salesforce.com/s/articleView?id=platform.external_object_indirect_lookup_relationships.htm); [Integration Patterns](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns))",
+  "why_it_matters": "Teams that copy nightly and call it Connect still reconcile. Teams that virtualize huge interactive reports without measuring remote latency create timeouts. Interviewers want projection vs copy and indirect lookup.",
+  "sixty_second_explanation": "Imagine a telescope aimed at a warehouse you do not own. Salesforce Connect is the telescope mount. External objects are the labeled views in the eyepiece—not crates in your warehouse. Indirect lookup is matching their stenciled customer number to your unique External Id, because they do not paint Salesforce Ids on the crates. If you also keep a snapshot fridge, say so—that is a copy, not the telescope.",
+  "deeper_explanation": [
+    "Architects page: Connect translates SOQL to the remote query language, authenticates, maps types. External objects behave like platform objects in many UI/API ways but store no data. Live callouts happen when users query. ([Virtualization](https://architect.salesforce.com/docs/architect/fundamentals/guide/data-virtualization.html))",
+    "Indirect lookup: child external object to parent standard/custom object by matching a unique External Id on the parent. Direct Salesforce Ids will not exist on the remote row. ([Indirect lookup Help](https://help.salesforce.com/s/articleView?id=platform.external_object_indirect_lookup_relationships.htm))",
+    "Editions: Connect is in Developer Edition and extra cost in Enterprise/Performance/Unlimited as documented on that Help page. Adapter limits changed on Hyperforce in recent releases—Needs verification of current General Limits for Salesforce Connect; do not quote old row caps as eternal.",
+    "Named credentials authenticate adapters (INT-004). Formula/validation/automation support on external objects is feature-specific—Needs verification rather than repeating old blog restrictions as law."
+  ],
+  "mental_model": {
+    "analogy": "A telescope on a warehouse you do not own: Connect is the mount, external objects are eyepiece views, indirect lookup matches stenciled numbers, a snapshot fridge is a separate copy.",
+    "useful_mapping": [
+      "Salesforce Connect → telescope mount/adapters",
+      "external object → eyepiece view (__x), no crates stored",
+      "OData/SQL/custom adapter → lens type",
+      "indirect lookup → stencil number vs your External Id",
+      "named credential → badge to enter their warehouse",
+      "batch copy → your own fridge to reconcile",
+      "live SOQL on __x → looking now, remote may be down"
+    ],
+    "where_it_breaks": [
+      "Telescope shows errors if the warehouse is dark—no pretty cached picture unless you add a copy.",
+      "Report/offline needs may force a snapshot (INT-003 two-style design).",
+      "License and adapter limits are not magnification numbers to invent.",
+      "Search/high-data-volume modes vary—verify Help."
+    ]
+  },
+  "teach_back_prompt": "Explain Connect, external objects, and data virtualization, then when you add a snapshot copy and how indirect lookup keys work.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Projection vs copy."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Indirect lookup fields."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Named credential on the data source."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Remote down: what users see."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: virtualization."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-INT-VIRT",
+      "title": "Salesforce Data Virtualization",
+      "type": "Official architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/fundamentals/guide/data-virtualization.html",
+      "supports": "Connect adapters, external objects as schema projection, no stored rows, live callouts, named credential mention in examples.",
+      "release_or_version": "Architects Fundamentals",
+      "last_verified": "2026-08-16",
+      "limits": "Snowflake example is one adapter, not all."
+    },
+    {
+      "source_id": "SF-INT-PATTERNS",
+      "title": "Integration Patterns — Data Virtualization",
+      "type": "Official architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns",
+      "supports": "Official virtualization pattern: real-time access without persisting a copy to reconcile.",
+      "release_or_version": "Architects Fundamentals",
+      "last_verified": "2026-08-16",
+      "limits": "Strategy, not adapter setup clicks."
+    },
+    {
+      "source_id": "SF-EXT-LOOKUP",
+      "title": "Indirect Lookup Relationship Fields on External Objects",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.external_object_indirect_lookup_relationships.htm",
+      "supports": "Indirect lookup when remote data lacks Salesforce Ids; unique External Id on parent; edition notes for Connect.",
+      "release_or_version": "Salesforce Help",
+      "last_verified": "2026-08-16",
+      "limits": "UI steps can change; editions listed on the article."
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "No stored rows",
+        "Adapters",
+        "Indirect lookup",
+        "Named credential",
+        "Copy is not Connect"
+      ],
+      "accessible_description": "Connect projects remote tables as external objects. Indirect lookup matches External Id keys. Copies are a different pattern."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-INT-VIRT",
+        "SF-EXT-LOOKUP",
+        "SF-INT-PATTERNS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Connect projection versus stored copy"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  User[User SOQL or related list] --> XObj[External object __x]\n  XObj --> Connect[Salesforce Connect adapter]\n  Connect --> NC[Named credential]\n  NC --> Remote[Remote OData or SQL]\n  XObj --> IL[Indirect lookup]\n  IL --> Parent[Salesforce parent External Id]",
+      "decision": "flowchart TD\n  Need[Need remote rows in Salesforce UX] --> Q1{May we store a copy?}\n  Q1 -->|No live| Virt[Salesforce Connect external objects]\n  Q1 -->|Yes reports/offline| Copy[Batch copy INT-003]\n  Virt --> Q2{Remote has Salesforce Id?}\n  Q2 -->|No| IL[Indirect lookup to unique External Id]\n  Q2 -->|Yes rare| Direct[Lookup using documented relationship type]\n  Virt --> Q3{Auth}\n  Q3 --> NC[Named credential INT-004]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Data Virtualization: Salesforce accesses external data in real time without persisting a copy that must then be reconciled.",
+      "source_ids": [
+        "SF-INT-PATTERNS",
+        "SF-INT-VIRT"
+      ],
+      "scope": "Pattern",
+      "validation": "Pattern list plus virtualization page.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Salesforce Connect maps remote data to external objects. External objects are a schema projection and hold no stored data; queries cause real-time callouts.",
+      "source_ids": [
+        "SF-INT-VIRT"
+      ],
+      "scope": "Connect",
+      "validation": "Data Virtualization architect page.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Indirect lookup links a child external object to a parent Salesforce object by matching a unique External Id field because remote rows do not carry Salesforce Ids.",
+      "source_ids": [
+        "SF-EXT-LOOKUP"
+      ],
+      "scope": "Relationships",
+      "validation": "Indirect lookup Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Salesforce Connect edition availability is documented as Developer Edition and extra cost in Enterprise, Performance, and Unlimited on the indirect-lookup Help article.",
+      "source_ids": [
+        "SF-EXT-LOOKUP"
+      ],
+      "scope": "Editions",
+      "validation": "Help editions table.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Hyperforce Connect limit changes in recent releases—reverify current Connect limits Help; do not freeze old caps.",
+  "unresolved_uncertainty": [
+    "Current row/callout limits per adapter.",
+    "Formula/automation support matrix on external objects.",
+    "High-data-volume external objects availability."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "External object",
+      "telugu": "రిమోట్ టేబుల్ ప్రొజెక్షన్; స్టోర్ చేసిన రోలు కాదు."
+    },
+    {
+      "english": "Indirect lookup",
+      "telugu": "External Id ద్వారా పేరెంట్‌కు లింక్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Connect virtualizes remote tables as external objects with no stored rows. Indirect lookup matches their key to our unique External Id. A snapshot table is a copy, not Connect.",
+    "two_minutes": "I only virtualize when INT-001 how fast is live-look and we refuse reconciliation. Named credentials authenticate. If finance needs yesterday's numbers offline, I add an explicit batch copy. I will not quote expired row limits. Remote downtime is an error, not a cache, unless we built one."
+  },
+  "terminology": [
+    {
+      "term": "Salesforce Connect",
+      "plain": "The telescope mount that talks to remote data sources.",
+      "precise": "Adapter framework translating SOQL to remote queries, authenticating, mapping results to Salesforce types; powers external objects.",
+      "example": "OData 4 adapter to a sandbox ERP.",
+      "non_example": "Nightly Bulk upsert into a custom object called Connect__c.",
+      "confusable_neighbor": "Heroku Connect (different product) or Data Cloud connectors.",
+      "boundary": "SKU extra cost outside DE—see Help."
+    },
+    {
+      "term": "external object",
+      "plain": "An eyepiece view ending in __x, not a crate in your warehouse.",
+      "precise": "Metadata type mapping a remote table; queryable like objects but holds no stored rows; access fetches live data.",
+      "example": "LAB_ERP_Bin__x on Account related list.",
+      "non_example": "LAB_ERP_Bin__c populated nightly.",
+      "confusable_neighbor": "Big Object stored archive.",
+      "boundary": "Not all standard object features apply—verify."
+    },
+    {
+      "term": "data virtualization",
+      "plain": "Look now; do not keep a second store to reconcile.",
+      "precise": "Official Integration Pattern: real-time access without persisting data to reconcile.",
+      "example": "Live bins, no Salesforce bin table.",
+      "non_example": "Hourly copy labeled virtualization.",
+      "confusable_neighbor": "CDN cache.",
+      "boundary": "INT-003 style vs this adapter lesson."
+    },
+    {
+      "term": "indirect lookup",
+      "plain": "Match their customer number to our unique External Id field.",
+      "precise": "Relationship from external child to Salesforce parent using parent's unique External Id and child's external column name.",
+      "example": "ERP orders related list on Account via Account.ERP_Cust__c unique External Id.",
+      "non_example": "Assuming ERP stored Salesforce Account Id.",
+      "confusable_neighbor": "External lookup (external parent) and standard lookup—verify types in Help.",
+      "boundary": "Parent must have unique External Id."
+    },
+    {
+      "term": "schema projection",
+      "plain": "A map of their columns, not the goods.",
+      "precise": "Architects language: external object defines shape, not a copy of data.",
+      "example": "Sync metadata from OData $metadata, still zero stored rows.",
+      "non_example": "Data Loader insert into __x as if it were __c (not how virtualization stores).",
+      "confusable_neighbor": "Custom metadata types.",
+      "boundary": "Write-back support is adapter-specific—Needs verification."
+    },
+    {
+      "term": "external data source",
+      "plain": "The connection definition (adapter, URL, credential).",
+      "precise": "Setup object that Connect uses; typically linked to a named credential for auth.",
+      "example": "LAB_ERP_OData source using callout-capable named credential.",
+      "non_example": "Apex Bearer header instead of the source.",
+      "confusable_neighbor": "Named credential alone without a data source.",
+      "boundary": "Adapter list is product-versioned."
+    },
+    {
+      "term": "OData adapter",
+      "plain": "A common lens for REST OData ERPs.",
+      "precise": "Connect adapters include OData versions among others (SQL, custom, GraphQL, DynamoDB as currently offered). Confirm the org's adapter list.",
+      "example": "Northwind-style OData lab.",
+      "non_example": "SOAP OM as Connect.",
+      "confusable_neighbor": "UI API.",
+      "boundary": "Do not invent adapter SKUs."
+    },
+    {
+      "term": "live callout",
+      "plain": "Each user query may hit the remote system now.",
+      "precise": "When a user opens a page/SOQL on an external object, Connect callouts to the back end.",
+      "example": "Related list spinner while ERP answers.",
+      "non_example": "Reading a stored __c snapshot with no HTTP.",
+      "confusable_neighbor": "Apex REST callout you wrote (INT-006) for a different job.",
+      "boundary": "Latency and remote outages become UX."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Refuse or accept a copy",
+      "actor": "Architect",
+      "trigger": "Need ERP in UX",
+      "before": "Default custom object",
+      "after": "Virtualize vs batch vs both",
+      "observe": "Written system of record",
+      "failure": "Hidden hourly copy"
+    },
+    {
+      "step": 2,
+      "transition": "Configure source + credential",
+      "actor": "Admin",
+      "trigger": "Virtualize",
+      "before": "Raw URL in Apex",
+      "after": "External data source + named credential",
+      "observe": "Sandbox ping/sync metadata",
+      "failure": "Production ERP from a lab"
+    },
+    {
+      "step": 3,
+      "transition": "Map objects and lookups",
+      "actor": "Admin",
+      "trigger": "Tables chosen",
+      "before": "No relationship",
+      "after": "External objects + indirect lookup",
+      "observe": "Related list on parent with matching External Id",
+      "failure": "Expecting Salesforce Ids on ERP rows"
+    },
+    {
+      "step": 4,
+      "transition": "Prove live vs stored",
+      "actor": "Developer + admin",
+      "trigger": "UAT",
+      "before": "Unclear where rows live",
+      "after": "Remote change visible without Salesforce DML",
+      "observe": "Change ERP lab row, refresh related list",
+      "failure": "Checking a __c table that was never the design"
+    }
+  ],
+  "when_to_use": [
+    "When you need external objects, Salesforce Connect, and data virtualization instead of a stored copy.",
+    "When remote keys are not Salesforce Ids and indirect lookup to a unique External Id is required.",
+    "When how fast is live page access and how much per user query is a modest related list, not a million-row extract.",
+    "When named credentials should authenticate the Connect adapter (INT-004).",
+    "When an interview asks projection versus nightly reconcile."
+  ],
+  "when_not_to_use": [
+    "Do not virtualize a million-row interactive report without measuring the remote system (use batch extracts/Bulk).",
+    "Do not call a custom-object copy Salesforce Connect.",
+    "Do not invent Connect row limits from old blogs.",
+    "Do not skip External Id uniqueness for indirect lookup.",
+    "Do not point Connect at production ERP from this lesson."
+  ],
+  "configuration_or_code_location": [
+    "Setup External Data Sources / External Objects in sandbox",
+    "Named credential on the source",
+    "Unique External Id on parent",
+    "LAB_ names"
+  ],
+  "worked_example": {
+    "scenario": "Sandbox Account should show ERP bins live. ERP key is CustNum. Finance also wants yesterday's bin counts in a report that must work if ERP is down.",
+    "inputs": [
+      "Live related list",
+      "CustNum key",
+      "Offline snapshot report"
+    ],
+    "decisions": [
+      {
+        "decision": "Live list: LAB_ERP_Bin__x via Connect + indirect lookup Account.CustNum__c unique External Id.",
+        "because": "No Salesforce Id on ERP; virtualization pattern.",
+        "rejected": "Only a nightly __c table pretending to be live"
+      },
+      {
+        "decision": "Report snapshot: explicit batch copy LAB_Bin_Snapshot__c, named as copy not Connect.",
+        "because": "Virtualization does not persist a copy; offline need is a second style.",
+        "rejected": "Calling the snapshot virtualization"
+      }
+    ],
+    "configuration_or_code": [
+      "Do not use production ERP.",
+      "Named credential to a lab OData if available; otherwise stop at the decision record."
+    ],
+    "output": "Two-path design: telescope plus fridge.",
+    "verification": [
+      "__x path has no stored bin rows.",
+      "Snapshot object is not named Connect.",
+      "Indirect lookup uses unique External Id."
+    ],
+    "self_explanation": "Live vs offline split kept virtualization honest."
+  },
+  "hands_on_lab": {
+    "environment": "Developer Edition sandbox if Connect is available; otherwise decision-record-only lab.",
+    "starting_state_checks": [
+      "Check whether External Data Sources appears in Setup",
+      "No production ERP"
+    ],
+    "steps": [
+      "Create unique External Id text field Account.LAB_CustNum__c on a sandbox Account.",
+      "Write a design note: indirect lookup matches LAB_ERP_Bin__x column CustNum to that field.",
+      "If Connect is licensed, create a named credential and external data source to a public OData sample; sync one external object; do not use customer data.",
+      "If not licensed, capture a screenshot of missing Setup and quote Help editions instead of inventing a config."
+    ],
+    "guided_completion": [
+      "If you created LAB_Bin__c and called it Connect, rewrite.",
+      "If lookup used Salesforce Id on ERP, switch to External Id."
+    ],
+    "independent_challenge": "List one reason a snapshot copy would still be required for finance.",
+    "evidence": [
+      "Field LAB_CustNum__c unique External Id.",
+      "Either a synced __x screenshot or an edition-limitation note."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete lab data source/objects.",
+      "Do not leave credentials to public OData unused if policy requires cleanup."
+    ],
+    "limitations": "Connect SKU may be absent; the lesson still teaches the projection model."
+  },
+  "decision_table": [
+    {
+      "signal": "Live related list, no Salesforce copy allowed.",
+      "choose": "Salesforce Connect external objects (data virtualization).",
+      "not": "Nightly custom object labeled 'near real time'.",
+      "why": "Official virtualization does not persist a copy to reconcile."
+    },
+    {
+      "signal": "Remote key is ERP customer number, not Salesforce Id.",
+      "choose": "Indirect lookup to a unique External Id on the parent.",
+      "not": "Standard lookup expecting a Salesforce Id in ERP.",
+      "why": "Indirect lookup Help exists for that mismatch."
+    },
+    {
+      "signal": "Reports must work when ERP is down or on yesterday's numbers.",
+      "choose": "Explicit batch copy in addition to or instead of Connect.",
+      "not": "Pretend Connect caches a fridge automatically.",
+      "why": "Projection holds no stored rows; downtime is live errors."
+    },
+    {
+      "signal": "Million-row extract for warehouse analytics.",
+      "choose": "Batch/Bulk data integration, not interactive Connect related lists.",
+      "not": "SOQL on __x for the whole warehouse in a report burst.",
+      "why": "How much/how fast: virtualization is live per user query."
+    },
+    {
+      "signal": "Adapter authentication.",
+      "choose": "Named credential / external credential on the data source.",
+      "not": "Apex Bearer in a trigger 'because Connect is hard'.",
+      "why": "Connect authenticates via the source; token safety is INT-004."
+    }
+  ],
+  "limitations": [
+    "SKU may be extra cost.",
+    "Adapter limits versioned.",
+    "Feature support on __x Needs verification.",
+    "Write-back not assumed."
+  ],
+  "security_notes": [
+    "Named credentials.",
+    "External Id values may be sensitive.",
+    "User permissions still apply on what Connect returns."
+  ],
+  "common_mistakes": [
+    "Copy called Connect.",
+    "Missing unique External Id.",
+    "Assuming Salesforce Ids exist remotely.",
+    "Invented row limits.",
+    "No plan for remote outage.",
+    "Using Connect for Bulk-scale extracts."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Related list errors.",
+      "check": [
+        "Remote availability, named credential, adapter, user perms.",
+        "Not a missing __c row."
+      ],
+      "do_not_assume": "Connect stores a cache by default."
+    },
+    {
+      "symptom": "No parent match.",
+      "check": [
+        "External Id unique populated.",
+        "Column mapping on indirect lookup."
+      ],
+      "do_not_assume": "Need Salesforce Id in ERP."
+    }
+  ],
+  "production_notes": [
+    "Measure remote latency.",
+    "License check.",
+    "No production ERP from this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "External objects store rows in Salesforce?",
+      "options": {
+        "A": "No. They are a schema projection; queries call out live",
+        "B": "Yes, like custom objects",
+        "C": "Yes, in Metadata API only",
+        "D": "Yes, via Bulk 2.0 automatically"
+      },
+      "answer": "A",
+      "rationale": "Architects virtualization page.",
+      "distractor_explanations": {
+        "B": "That would be a copy.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "No store",
+      "citation_ids": [
+        "SF-INT-VIRT"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Data virtualization official idea?",
+      "options": {
+        "A": "Real-time access without persisting a copy to reconcile",
+        "B": "Nightly Bulk copy",
+        "C": "SOAP OM",
+        "D": "OAuth PKCE"
+      },
+      "answer": "A",
+      "rationale": "Pattern summary.",
+      "distractor_explanations": {
+        "B": "Batch.",
+        "C": "INT-008.",
+        "D": "INT-004."
+      },
+      "concept": "Pattern",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Indirect lookup is for?",
+      "options": {
+        "A": "External child to Salesforce parent when remote lacks Salesforce Ids, matching unique External Id",
+        "B": "Always Metadata deploy",
+        "C": "OAuth scopes",
+        "D": "Query locators"
+      },
+      "answer": "A",
+      "rationale": "Indirect lookup Help.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "INT-005."
+      },
+      "concept": "IL",
+      "citation_ids": [
+        "SF-EXT-LOOKUP"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "ERP CustNum to Account. Need?",
+      "options": {
+        "A": "Unique External Id on Account plus indirect lookup",
+        "B": "Salesforce Id stored in ERP as the only option",
+        "C": "Platform event",
+        "D": "Bulk 2.0 ingest of layouts"
+      },
+      "answer": "A",
+      "rationale": "Help matching rule.",
+      "distractor_explanations": {
+        "B": "They may not store it.",
+        "C": "INT-007.",
+        "D": "Wrong."
+      },
+      "concept": "CustNum",
+      "citation_ids": [
+        "SF-EXT-LOOKUP"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Finance needs yesterday if ERP is down. Connect alone?",
+      "options": {
+        "A": "Add an explicit batch snapshot copy; Connect holds no fridge",
+        "B": "Connect always caches 30 days",
+        "C": "Use 201 Created",
+        "D": "Use Tooling API"
+      },
+      "answer": "A",
+      "rationale": "No stored rows.",
+      "distractor_explanations": {
+        "B": "Not documented as default.",
+        "C": "INT-005.",
+        "D": "Wrong."
+      },
+      "concept": "Snapshot",
+      "citation_ids": [
+        "SF-INT-VIRT"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Authenticate the OData source?",
+      "options": {
+        "A": "Named credential on the external data source",
+        "B": "Bearer in a formula",
+        "C": "SOAP OM",
+        "D": "nextRecordsUrl"
+      },
+      "answer": "A",
+      "rationale": "Connect + INT-004.",
+      "distractor_explanations": {
+        "B": "Unsafe.",
+        "C": "INT-008.",
+        "D": "INT-005."
+      },
+      "concept": "NC",
+      "citation_ids": [
+        "SF-INT-VIRT"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Million-row warehouse dump via related list __x?",
+      "options": {
+        "A": "Wrong how-much; use batch/Bulk",
+        "B": "Perfect Connect use",
+        "C": "Required by indirect lookup",
+        "D": "Replaces CDC"
+      },
+      "answer": "A",
+      "rationale": "Live per-user callouts.",
+      "distractor_explanations": {
+        "B": "Scale risk.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Scale",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Hourly LAB_Bin__c copy named 'Connect sync'. Accurate?",
+      "options": {
+        "A": "No. That is batch data integration, not virtualization",
+        "B": "Yes if hourly",
+        "C": "Yes if REST",
+        "D": "Yes if __c suffix"
+      },
+      "answer": "A",
+      "rationale": "Copy vs projection.",
+      "distractor_explanations": {
+        "B": "Cadence ≠ pattern.",
+        "C": "API ≠ pattern.",
+        "D": "__c is stored."
+      },
+      "concept": "Name trap",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-INT-VIRT"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Connect edition note on Help?",
+      "options": {
+        "A": "Developer Edition included; extra cost in Enterprise, Performance, Unlimited as documented",
+        "B": "All editions including Personal forever free as stated here",
+        "C": "Only Classic",
+        "D": "Only with GraphQL API"
+      },
+      "answer": "A",
+      "rationale": "Indirect lookup Help editions.",
+      "distractor_explanations": {
+        "B": "Not what Help said.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Edition",
+      "citation_ids": [
+        "SF-EXT-LOOKUP"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Remote ERP down during a demo of __x.",
+      "options": {
+        "A": "Users see live errors; there is no stored copy unless you built one",
+        "B": "Salesforce shows yesterday automatically",
+        "C": "Metadata API fills rows",
+        "D": "OAuth grants extra retention"
+      },
+      "answer": "A",
+      "rationale": "No persisted copy.",
+      "distractor_explanations": {
+        "B": "Only if you built snapshot.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Outage",
+      "citation_ids": [
+        "SF-INT-VIRT"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "External object vs custom object?",
+      "options": {
+        "A": "External: projection __x live; custom: stored rows __c",
+        "B": "Identical storage",
+        "C": "External is Bulk only",
+        "D": "Custom cannot have External Id"
+      },
+      "answer": "A",
+      "rationale": "Storage split.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Custom can have External Id."
+      },
+      "concept": "__x vs __c",
+      "citation_ids": [
+        "SF-INT-VIRT"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Connect vs Apex REST callout (INT-006)?",
+      "options": {
+        "A": "Connect maps tables to objects/UI; Apex callout is a coded HTTP envelope for a specific request/response",
+        "B": "Identical",
+        "C": "Callouts create external objects automatically",
+        "D": "Connect replaces OAuth"
+      },
+      "answer": "A",
+      "rationale": "Product vs procedure.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Auth still needed."
+      },
+      "concept": "Connect vs Apex",
+      "citation_ids": [
+        "SF-INT-VIRT",
+        "SF-INT-PATTERNS"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "co",
+      "front": "Salesforce Connect does what?",
+      "back": "Adapters that surface remote data as external objects without storing those rows."
+    },
+    {
+      "id": "F2",
+      "category": "eo",
+      "front": "External object storage?",
+      "back": "None. Schema projection; live callouts on access."
+    },
+    {
+      "id": "F3",
+      "category": "dv",
+      "front": "Virtualization vs copy?",
+      "back": "Live no reconcile copy vs stored rows to sync."
+    },
+    {
+      "id": "F4",
+      "category": "il",
+      "front": "Indirect lookup key?",
+      "back": "Parent unique External Id matched to remote column."
+    },
+    {
+      "id": "F5",
+      "category": "ed",
+      "front": "Connect editions (Help)?",
+      "back": "DE included; extra cost EE/PE/UE as documented."
+    },
+    {
+      "id": "F6",
+      "category": "nc",
+      "front": "Auth for adapters?",
+      "back": "Named credentials, not Apex Bearer."
+    },
+    {
+      "id": "F7",
+      "category": "out",
+      "front": "What happens when the ERP is down?",
+      "back": "Live errors unless you built a snapshot copy."
+    },
+    {
+      "id": "F8",
+      "category": "suf",
+      "front": "__x meaning?",
+      "back": "External object suffix."
+    },
+    {
+      "id": "F9",
+      "category": "scale",
+      "front": "Million-row interactive __x?",
+      "back": "Usually the wrong how-much; batch instead."
+    },
+    {
+      "id": "F10",
+      "category": "trap",
+      "front": "Hourly __c called Connect?",
+      "back": "It is a copy, not Connect."
+    },
+    {
+      "id": "F11",
+      "category": "id",
+      "front": "Remote has no Salesforce Id?",
+      "back": "Indirect lookup, do not assume Id."
+    },
+    {
+      "id": "F12",
+      "category": "lim",
+      "front": "Quote old row caps?",
+      "back": "No. Reverify current Connect limits Help."
+    },
+    {
+      "id": "F13",
+      "category": "two",
+      "front": "Live list + offline report?",
+      "back": "Connect plus explicit batch snapshot."
+    },
+    {
+      "id": "F14",
+      "category": "meta",
+      "front": "Sync metadata vs data?",
+      "back": "Syncing OData metadata still stores no rows."
+    },
+    {
+      "id": "F15",
+      "category": "wr",
+      "front": "Assume write-back?",
+      "back": "Needs verification per adapter."
+    },
+    {
+      "id": "F16",
+      "category": "sku",
+      "front": "If Setup lacks External Data Sources?",
+      "back": "Likely unlicensed; do not invent clicks."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain external objects, Salesforce Connect, and data virtualization.",
+      "answer_30_seconds": "Connect adapters project remote tables as __x objects with no stored rows. That is the virtualization pattern. Indirect lookup maps non-Salesforce keys.",
+      "answer_2_minutes": "I contrast a nightly __c copy. Auth is named credentials. Limits and formulas Needs verification. Remote downtime is live failure.",
+      "example": "ERP bins on Account plus optional snapshot.",
+      "tradeoffs": [
+        "Freshness vs offline"
+      ],
+      "follow_ups": [
+        "OData vs SQL adapter?"
+      ],
+      "weak_answer_warnings": [
+        "Connect stores rows"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "When is Connect the wrong tool?",
+      "answer_30_seconds": "Huge extracts, offline-mandated reports, or when a copy is already the system of record in Salesforce.",
+      "answer_2_minutes": "How much and how fast from INT-001 still apply. Salesforce Connect virtualization is live per access, not a warehouse dump. For a two-million-row finance CSV I use batch or Bulk, and I will not fake a Connect SKU as if it stored those rows.",
+      "example": "Finance needs a CSV of two million ERP rows for a closed-period audit, so we copy, not Connect.",
+      "tradeoffs": [
+        "UX vs analytics"
+      ],
+      "follow_ups": [
+        "Hyperforce limits?"
+      ],
+      "weak_answer_warnings": [
+        "Always Connect"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "ERP customer number, Salesforce Accounts, live orders related list.",
+      "answer_30_seconds": "Unique External Id on Account, Connect orders __x, indirect lookup.",
+      "answer_2_minutes": "ERP has a customer number, not a Salesforce Account Id, so I use an indirect lookup from the external order object to Account.CustNum__c as a unique External Id. I test matching in a sandbox and put a named credential on the Salesforce Connect source, not a hard-coded password.",
+      "example": "LAB_CustNum__c unique External Id plus LAB_ERP_Order__x related list on Account.",
+      "tradeoffs": [
+        "Key quality"
+      ],
+      "follow_ups": [
+        "Duplicates on External Id?"
+      ],
+      "weak_answer_warnings": [
+        "Standard lookup"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "They already nightly-load orders and want Connect 'too'.",
+      "answer_30_seconds": "Two styles: keep the copy for reports; add __x only if live extra columns are worth the latency. Do not double-name them Connect.",
+      "answer_2_minutes": "They already nightly-load orders, so adding Connect as well creates two truths. Reconciliation (INT-010) applies to the stored copy. The virtualization path has no persisted rows to cycle-count. I pick one pattern unless a documented hybrid is required.",
+      "example": "LAB_Order__c snapshot plus LAB_Order__x live status.",
+      "tradeoffs": [
+        "Cost vs clarity"
+      ],
+      "follow_ups": [
+        "Which is system of record?"
+      ],
+      "weak_answer_warnings": [
+        "Replace copy silently"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "The external-object related list is empty. What do you check first?",
+      "answer_30_seconds": "External Id mismatch, user perms, adapter filter, remote empty—not a missing Salesforce row store.",
+      "answer_2_minutes": "I compare stencil numbers on both sides of the indirect lookup, then check named-credential HTTP 401 versus a 200 with zero rows. Trailing spaces on ERP customer numbers are common. I do not Data Loader into an __x object expecting Salesforce storage.",
+      "example": "ERP CustNum has a trailing space that does not match Account.CustNum__c in Salesforce.",
+      "tradeoffs": [
+        "Data quality vs Connect down"
+      ],
+      "follow_ups": [
+        "Sharing on parent?"
+      ],
+      "weak_answer_warnings": [
+        "Insert __x"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Page times out on the related list.",
+      "answer_30_seconds": "Remote latency or too-wide query. Narrow filters or stop using Connect for that list; consider copy for that UX.",
+      "answer_2_minutes": "I will not invent timeout defaults. I capture debug of the Connect callout. Huge unfiltered __x lists are a how-much fail.",
+      "example": "Related list without a where clause on a large OData set.",
+      "tradeoffs": [
+        "Filter vs copy"
+      ],
+      "follow_ups": [
+        "HDV mode?"
+      ],
+      "weak_answer_warnings": [
+        "Raise timeout only"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Indirect vs external lookup vs lookup—what do you actually say?",
+      "answer_30_seconds": "Indirect: external child, Salesforce parent, External Id match. I will not invent the other types' field lists; I open Help if they want external parent.",
+      "answer_2_minutes": "The assigned Help article is indirect lookup. I admit neighboring relationship types exist and I will not bluff column names.",
+      "example": "Account is the Salesforce parent; ERP order is the external-object child via indirect lookup.",
+      "tradeoffs": [
+        "Honesty vs complete graph"
+      ],
+      "follow_ups": [
+        "Write-back?"
+      ],
+      "weak_answer_warnings": [
+        "Invent master-detail"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the telescope analogy and where it breaks.",
+      "answer_30_seconds": "Connect mount, __x eyepiece, stencil numbers, snapshot fridge. It breaks when the warehouse is dark or when I invent magnification limits.",
+      "answer_2_minutes": "The telescope maps Salesforce Connect to a live view of the remote warehouse; external objects are the eyepiece, not stored crates. It breaks for offline reports, which need a copy, and for invented adapter SLAs. Named credentials are the badge at the gate, not the lens type. Live ERP errors surface in Salesforce UX instead of a stale snapshot.",
+      "example": "Whiteboard bins live plus finance snapshot.",
+      "tradeoffs": [
+        "Teaching vs SKU"
+      ],
+      "follow_ups": [
+        "Where is OData?"
+      ],
+      "weak_answer_warnings": [
+        "Generic furniture metaphor"
+      ]
+    }
+  ]
+}

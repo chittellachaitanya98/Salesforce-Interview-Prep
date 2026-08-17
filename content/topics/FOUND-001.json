@@ -1,0 +1,1053 @@
+{
+  "topic_id": "FOUND-001",
+  "slug": "crm-saas-cloud-metadata-multitenancy",
+  "title": "CRM, Cloud Computing, Metadata, Data, and Multitenancy",
+  "track": "Orientation and terminology",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [],
+  "objectives": [
+    "Explain CRM and cloud computing in plain language and name what each solves.",
+    "Distinguish metadata from business data before discussing objects or fields.",
+    "Describe multitenancy as shared platform infrastructure with isolated tenant data.",
+    "Recognize when a requirement is about cloud access context, data shape, or tenant isolation."
+  ],
+  "diagnostic_question": "A stakeholder says, 'We will move our customer spreadsheet to the Salesforce cloud so sales can collaborate.' List what is CRM, what cloud access implies, what will become metadata versus data, and what multitenancy implies for isolation.",
+  "definition": "Customer relationship management (CRM) is software for managing customer-facing relationships and pipelines. Salesforce describes its CRM platform as helping teams manage relationships with prospects and customers, collaborate, and store data in the cloud ([Salesforce CRM Basics](https://trailhead.salesforce.com/content/learn/modules/lex_implementation_basics/lex_implementation_basics_welcome)). On the multitenant Salesforce Platform, tenants share platform architecture while tenant metadata and business data remain isolated ([Platform Multitenant Architecture](https://architect.salesforce.com/docs/architect/fundamentals/guide/platform-multitenant-architecture.html)).",
+  "why_it_matters": "Every later Salesforce topic assumes you know whether a conversation is about cloud access, business purpose (CRM), configuration shape (metadata), live facts (data), or tenant boundaries (multitenancy). Mixing these layers causes wrong security, migration, and architecture decisions.",
+  "terminology": [
+    {
+      "term": "CRM",
+      "plain": "Software that helps teams track customers, leads, deals, and service cases in one place.",
+      "precise": "Applications and processes for managing customer relationships across sales, service, and marketing.",
+      "example": "Tracking leads through conversion to opportunities and closed deals.",
+      "non_example": "A general ledger system used only by finance.",
+      "confusable_neighbor": "ERP: broader enterprise operations, not only customer-facing workflows.",
+      "boundary": "This topic orients vocabulary; object-level modeling is FOUND-002."
+    },
+    {
+      "term": "Cloud access",
+      "plain": "Accessing data over a network instead of keeping the only copy on a local device.",
+      "precise": "The Salesforce CRM unit describes data stored securely in the cloud and accessed from desktop and mobile; this lesson does not make a product-pricing or license claim.",
+      "example": "Accessing Salesforce data from a desktop or mobile device when the data is stored in the cloud.",
+      "non_example": "Keeping the only copy of application data on one employee laptop.",
+      "confusable_neighbor": "Local file sharing: sending a file is not the same as working with structured records in a CRM org.",
+      "boundary": "This lesson uses cloud access as platform context; product editions, licenses, and broader cloud-service comparisons are out of scope."
+    },
+    {
+      "term": "Cloud computing",
+      "plain": "Using computing resources over the network instead of only on your own machines.",
+      "precise": "On-demand access to shared pools of configurable resources (compute, storage, services) over the internet.",
+      "example": "Salesforce data is stored in the cloud; users access it from desktop or mobile.",
+      "non_example": "A single app running only on one employee laptop with no shared service.",
+      "confusable_neighbor": "A local-only application: not the same as network-accessible cloud data.",
+      "boundary": "Focus is platform context, not cloud certification taxonomy."
+    },
+    {
+      "term": "Metadata",
+      "plain": "Configuration that describes how the org is shaped and behaves.",
+      "precise": "Definitions and settings for schema, automation, security, and presentation—not the live business values inside records.",
+      "example": "A custom field definition for Status__c.",
+      "non_example": "Status = New on one saved request record.",
+      "confusable_neighbor": "Business data: operational record values.",
+      "boundary": "Deep metadata types come later; here the split matters more than every metadata subtype."
+    },
+    {
+      "term": "Business data",
+      "plain": "The actual customer, transaction, and operational facts your users work with.",
+      "precise": "Record and field values representing real business occurrences.",
+      "example": "Account Acme Corp with Industry = Manufacturing.",
+      "non_example": "The picklist definition that allows Industry values.",
+      "confusable_neighbor": "Metadata: the shape and rules, not the instance values.",
+      "boundary": "Data migration tools operate on business data; metadata deployments operate on definitions."
+    },
+    {
+      "term": "Multitenancy",
+      "plain": "Many customers share one platform, but each customer's data is kept apart.",
+      "precise": "A single software instance serves multiple tenants with logical isolation of each tenant's data and configuration.",
+      "example": "Your production org is one tenant; another company's org is a separate tenant on shared Salesforce infrastructure.",
+      "non_example": "Two companies sharing one login or one undifferentiated database with no isolation.",
+      "confusable_neighbor": "User authorization: permissions within a tenant, not the tenant boundary.",
+      "boundary": "Isolation mechanisms and compliance details expand in security tracks."
+    },
+    {
+      "term": "Tenant",
+      "plain": "One customer's isolated space on a shared platform.",
+      "precise": "In Salesforce, typically one org (production or sandbox) representing one customer's environment.",
+      "example": "Your company's production Salesforce org.",
+      "non_example": "One user profile inside an org.",
+      "confusable_neighbor": "User: a person who logs in; tenant is the org boundary.",
+      "boundary": "Sandbox/scratch org types are FOUND-003."
+    },
+    {
+      "term": "Org",
+      "plain": "Your company's Salesforce environment—settings, users, data, and apps together.",
+      "precise": "A Salesforce organization: the bounded tenant environment customers configure and use.",
+      "example": "A production org with its own users, objects, and records.",
+      "non_example": "A single report folder only.",
+      "confusable_neighbor": "Account record: one business customer inside CRM data.",
+      "boundary": "Org types and creation are covered in FOUND-003."
+    }
+  ],
+  "sixty_second_explanation": "CRM is the job: shared customer relationships instead of emailed spreadsheets. Cloud computing is the delivery: Salesforce runs as on-demand software on a shared platform, not a server under your desk. Metadata is the recipe—objects, fields, and rules. Business data is the live ingredients—record values. Multitenancy means many companies share the platform architecture while each tenant's metadata and data stay isolated.",
+  "deeper_explanation": [
+    "Start with the business problem: teams need a shared, current view of customers and pipeline—not a scattered spreadsheet ([Salesforce CRM Basics](https://trailhead.salesforce.com/content/learn/modules/lex_implementation_basics/lex_implementation_basics_welcome)).",
+    "CRM products organize that work around accounts, contacts, leads, opportunities, cases, and related activities; the current unit explains Salesforce objects and records as the organizing model ([Salesforce CRM Basics](https://trailhead.salesforce.com/content/learn/modules/lex_implementation_basics/lex_implementation_basics_welcome)).",
+    "Cloud access here means that Salesforce data is stored securely in the cloud and can be accessed from desktop and mobile, as the current CRM unit describes ([Salesforce CRM Basics](https://trailhead.salesforce.com/content/learn/modules/lex_implementation_basics/lex_implementation_basics_welcome)).",
+    "On Salesforce, an org is where data, configuration, and customization live ([Salesforce CRM Basics](https://trailhead.salesforce.com/content/learn/modules/lex_implementation_basics/lex_implementation_basics_welcome)); metadata describes configuration while business records hold business data, and Metadata API works with metadata rather than business records ([Metadata API Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_intro.htm)); the architecture brief explains how tenant-specific metadata and data are isolated ([Platform Multitenant Architecture](https://architect.salesforce.com/docs/architect/fundamentals/guide/platform-multitenant-architecture.html)).",
+    "Multitenancy uses shared platform architecture while tenant metadata and business data remain private, so designs must account for shared platform behavior and tenant boundaries ([Platform Multitenant Architecture](https://architect.salesforce.com/docs/architect/fundamentals/guide/platform-multitenant-architecture.html))."
+  ],
+  "mental_model": {
+    "analogy": "A hotel chain on one power grid: each hotel (tenant org) has its own room inventory (business data) and its own floor-plan drawings (metadata), while the chain's generators and elevators are shared cloud computing infrastructure.",
+    "useful_mapping": [
+      "hotel brand / chain utilities → cloud computing platform",
+      "one hotel building → tenant org",
+      "floor-plan drawings and house rules → metadata",
+      "guest names and room occupancy → business data",
+      "front-desk guest book → CRM purpose (who you serve)",
+      "keycard access inside one hotel → user authorization, not tenant isolation"
+    ],
+    "where_it_breaks": [
+      "You do not own the generators—seasonal platform releases and shared limits still apply.",
+      "A hotel number is not a guest—an org is not a user or a record.",
+      "Multitenancy isolates companies; it does not replace profiles, sharing, or field-level security inside your org.",
+      "The analogy does not encode SaaS contract terms, data-residency options, or edition features; those need current Help for the target org."
+    ]
+  },
+  "teach_back_prompt": "Explain CRM, cloud access, metadata, business data, and multitenancy to a teammate without using those five terms.",
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Provision an org",
+      "actor": "Customer and Salesforce",
+      "trigger": "Org creation and access provisioning",
+      "before": "No tenant environment",
+      "after": "An org exists as a tenant on shared platform architecture",
+      "observe": "Org identifier and login context",
+      "failure": "A required capability or label may differ in the target org; verify it in the target disposable org and current official documentation"
+    },
+    {
+      "step": 2,
+      "transition": "Configure metadata",
+      "actor": "Admin or developer",
+      "trigger": "Business requirements",
+      "before": "Generic org defaults",
+      "after": "Custom objects, fields, automation definitions deployed",
+      "observe": "Setup and Object Manager changes",
+      "failure": "Treating configuration changes as record imports"
+    },
+    {
+      "step": 3,
+      "transition": "Operate on business data",
+      "actor": "Business users and integrations",
+      "trigger": "Daily work or integration jobs",
+      "before": "Empty or sample records",
+      "after": "Live CRM records and values",
+      "observe": "List views, reports, API record Ids",
+      "failure": "Mixing metadata deployment tools with data load tools"
+    },
+    {
+      "step": 4,
+      "transition": "Enforce tenant isolation",
+      "actor": "Platform runtime",
+      "trigger": "Every request",
+      "before": "Request arrives with user context",
+      "after": "Only authorized tenant data returned",
+      "observe": "Users cannot browse another org by default",
+      "failure": "Assuming shared reports or credentials cross tenants"
+    }
+  ],
+  "when_to_use": [
+    "When onboarding someone who mixes CRM, cloud computing, metadata, and business data in the same sentence.",
+    "When a migration plan must split metadata deployments from business data loads before any object design.",
+    "When a security review starts from multitenancy isolation and you need to stop people treating another company's org as the same tenant.",
+    "When an executive says 'put it in the cloud' and you must decide whether they mean CRM records or emailed files."
+  ],
+  "when_not_to_use": [
+    "Do not use this CRM and cloud computing lesson as a substitute for object, field, and record modeling in FOUND-002.",
+    "Do not treat multitenancy isolation as a complete authorization design for users inside one org.",
+    "Do not claim a SaaS edition, data-residency region, or license pack from this orientation; verify the target org's current Help.",
+    "Do not use metadata-versus-data vocabulary to justify production edits or real customer data in a training org."
+  ],
+  "configuration_or_code_location": [
+    "Trailhead: Salesforce CRM Basics unit for CRM, cloud, objects, records, and org orientation.",
+    "If available in the target org, Setup → Company Information can show org identity after login; labels and availability can change, so verify the current path.",
+    "Official Architecture pages for multitenancy fundamentals."
+  ],
+  "worked_example": {
+    "scenario": "A 20-person reseller wants to stop emailing spreadsheets and track leads in a Salesforce CRM org. They need cloud computing access for reps on laptops and phones, a clear split between lead-field metadata and lead-row business data, and a plain explanation of multitenancy so leadership does not think another customer can open their records.",
+    "inputs": [
+      "Leads arrive from web forms and reps.",
+      "Managers need pipeline visibility.",
+      "Reps need shared access to customer data."
+    ],
+    "decisions": [
+      {
+        "decision": "Use Salesforce CRM for the shared customer workflow instead of an emailed spreadsheet and separate database.",
+        "because": "The team needs a common CRM view of leads and pipeline, with cloud access from desktop and mobile.",
+        "rejected": "Treating emailed spreadsheet copies as the system of record."
+      },
+      {
+        "decision": "Treat lead field definitions as metadata and each lead row as business data.",
+        "because": "Definitions are configured once; instances change daily.",
+        "rejected": "Hard-coding every lead as a custom label."
+      }
+    ],
+    "configuration_or_code": [
+      "Enable Leads and standard lead fields.",
+      "Create users and grant the access required for the CRM workflow.",
+      "Import initial lead records via supported data tool."
+    ],
+    "output": "Reps work leads inside one org; managers run pipeline reports.",
+    "verification": [
+      "Confirm users log into the same org.",
+      "Confirm a test lead record is visible to authorized users only.",
+      "Confirm field definitions appear in Object Manager separately from record values."
+    ],
+    "self_explanation": "The company chose a Salesforce cloud CRM workflow, configured metadata for lead shape, and loaded lead business data into an isolated tenant org."
+  },
+  "hands_on_lab": {
+    "environment": "A disposable Trailhead Playground or sandbox; feature availability and navigation can differ by org. Synthetic company names only.",
+    "starting_state_checks": [
+      "You can log in.",
+      "You are not in a production org with customer data."
+    ],
+    "steps": [
+      "In the disposable org, if Setup exposes Company Information, observe the org name and Org ID as the tenant context; labels and availability can differ by org.",
+      "If Object Manager and Lead are available, inspect field definitions (metadata) without creating real customer PII; object availability and UI labels can vary by org.",
+      "Create one synthetic lead record with fake name and company.",
+      "Open the same lead definition and the saved record side by side. Label which parts are metadata versus business data."
+    ],
+    "guided_completion": [
+      "Name one CRM workflow this org supports.",
+      "State one reason the CRM data is accessed in the cloud.",
+      "State one multitenancy implication (shared platform, isolated org)."
+    ],
+    "independent_challenge": "A colleague asks to 'copy our metadata into another company's org.' Explain what is wrong with that request in tenant terms.",
+    "evidence": [
+      "Screenshot or notes: Company Information + one synthetic lead.",
+      "Written 3-sentence metadata vs data explanation."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete synthetic lead after review.",
+      "Do not export real customer data."
+    ],
+    "limitations": "This lab orients vocabulary; it does not teach full security or deployment."
+  },
+  "decision_table": [
+    {
+      "signal": "Need shared customer pipeline with cloud access",
+      "choose": "Salesforce CRM cloud access",
+      "not": "Emailed spreadsheet as the system of record",
+      "why": "CRM purpose and shared-access requirements"
+    },
+    {
+      "signal": "Defining allowed values for a field",
+      "choose": "Metadata change",
+      "not": "Business data import",
+      "why": "Shape vs instance"
+    },
+    {
+      "signal": "Loading 5,000 lead rows",
+      "choose": "Business data operation",
+      "not": "Metadata API deploy",
+      "why": "Record values vs definitions"
+    },
+    {
+      "signal": "Worried another customer can read your records by default",
+      "choose": "Trust tenant isolation + your org access controls",
+      "not": "Assume separate physical infrastructure is required for any cloud platform",
+      "why": "Multitenancy isolates tenants logically"
+    }
+  ],
+  "limitations": [
+    "Cloud access does not remove configuration, security, or data-quality work.",
+    "Multitenancy implies shared release timing and platform limits.",
+    "CRM scope here is platform orientation, not every Sales/Service Cloud feature."
+  ],
+  "security_notes": [
+    "Tenant isolation is foundational but not a substitute for user-level authorization inside your org.",
+    "Metadata can still expose sensitive labels or configuration text.",
+    "Never use real customer PII in training orgs."
+  ],
+  "common_mistakes": [
+    "Using CRM, cloud, and Salesforce as interchangeable synonyms.",
+    "Calling live records 'metadata' because they appear in Setup screens.",
+    "Assuming cloud access means no authorization work.",
+    "Believing multitenancy means data is public across customers."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Stakeholder equates cloud access with a particular device location",
+      "check": [
+        "Clarify cloud access versus local-only files",
+        "Show org Id and shared login domain",
+        "Discuss sandbox vs production boundaries"
+      ],
+      "do_not_assume": "They already understand tenant vs user"
+    },
+    {
+      "symptom": "Team imports records but fields are missing",
+      "check": [
+        "Metadata deployed?",
+        "Field-level security?",
+        "Correct object?"
+      ],
+      "do_not_assume": "Import tool is broken"
+    },
+    {
+      "symptom": "Confusion about another company's data appearing",
+      "check": [
+        "Same login?",
+        "Sandbox refresh source?",
+        "Report scope?"
+      ],
+      "do_not_assume": "Multitenancy failed platform-wide"
+    }
+  ],
+  "production_notes": [
+    "Document which environments are tenants (prod, sandboxes) and what data each may hold.",
+    "Separate metadata release process from business data migration runbooks.",
+    "Align executives on CRM capability, tenant boundaries, and access requirements."
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "CRM manages customer relationships; Salesforce provides a multitenant cloud context where each org is a tenant with metadata and business data. Metadata defines org shape; business data is live records. Each org is isolated within the shared platform architecture.",
+    "two_minutes": "I start with the business outcome: a shared customer system of record. The current CRM unit describes Salesforce data stored securely in the cloud and accessed from desktop and mobile. Multitenancy means many orgs use shared platform architecture but remain logically isolated—our data is not commingled with another customer's org. I separate metadata changes (schema, automation, security settings) from business data operations (imports, integrations, user work) because they use different tools, risks, and deployment paths. That framing prevents classic mistakes like deploying records with Metadata API or assuming cloud access removes security design."
+  },
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "prompt": "What does CRM primarily help an organization manage?",
+      "options": {
+        "A": "Internal payroll only",
+        "B": "Customer relationships and pipeline",
+        "C": "Hardware inventory only",
+        "D": "Network cables"
+      },
+      "answer": "B",
+      "rationale": "CRM centers on customer relationships and related sales/service workflows.",
+      "distractor_explanations": {
+        "A": "Payroll is ERP/finance scope.",
+        "C": "Inventory alone is not CRM's core.",
+        "D": "Infrastructure is not the business purpose."
+      },
+      "concept": "CRM definition",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-TH-CRM-ORG"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "prompt": "What cloud-oriented capability does the current Salesforce CRM unit explicitly describe?",
+      "options": {
+        "A": "Software stored only on one laptop",
+        "B": "Access to Salesforce data securely in the cloud from desktop and mobile",
+        "C": "A local-only database on one device",
+        "D": "A local compilation step"
+      },
+      "answer": "B",
+      "rationale": "The unit says Salesforce data is stored securely in the cloud and can be accessed from desktop and mobile.",
+      "distractor_explanations": {
+        "A": "Local-only storage is not cloud access.",
+        "C": "A local-only database is not cloud access.",
+        "D": "Compilation is not the cloud-access fact described here."
+      },
+      "concept": "Cloud access orientation",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-TH-CRM-ORG"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "prompt": "In multitenancy, what is typically isolated per tenant?",
+      "options": {
+        "A": "Each tenant's data and configuration",
+        "B": "Physical power cables per user",
+        "C": "Every user's home Wi-Fi",
+        "D": "Printer drivers on laptops"
+      },
+      "answer": "A",
+      "rationale": "Each tenant's data and configuration are logically separated on shared infrastructure.",
+      "distractor_explanations": {
+        "B": "Physical cabling is irrelevant.",
+        "C": "User home networks are outside the platform.",
+        "D": "Client device drivers are not tenant boundaries."
+      },
+      "concept": "Multitenancy",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-ARCH-MT"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "prompt": "An admin defines a new picklist field. That change is mostly:",
+      "options": {
+        "A": "Business data import",
+        "B": "A saved record",
+        "C": "A page layout only",
+        "D": "Metadata"
+      },
+      "answer": "D",
+      "rationale": "Field definitions are metadata.",
+      "distractor_explanations": {
+        "A": "Imports change instances, not definitions.",
+        "B": "A record is data, not the field definition.",
+        "C": "A page layout is not the field definition."
+      },
+      "concept": "Metadata vs data",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-API"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "prompt": "A team imports 2,000 Account rows. That operation is primarily:",
+      "options": {
+        "A": "Metadata deployment",
+        "B": "Business data load",
+        "C": "Tab design only",
+        "D": "Org rename"
+      },
+      "answer": "B",
+      "rationale": "Rows are business data instances.",
+      "distractor_explanations": {
+        "A": "Deploy tools change definitions.",
+        "C": "Tabs are presentation metadata.",
+        "D": "Renaming org is not a bulk record load."
+      },
+      "concept": "Data operations",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-API"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "prompt": "Which statement matches the current Salesforce CRM unit?",
+      "options": {
+        "A": "Salesforce data is stored securely in the cloud and can be accessed from desktop and mobile",
+        "B": "Salesforce data must stay on one local device",
+        "C": "Cloud access removes authorization work",
+        "D": "Every customer sees the same org records by default"
+      },
+      "answer": "A",
+      "rationale": "The current CRM unit explicitly describes Salesforce data as stored securely in the cloud and accessible from desktop and mobile.",
+      "distractor_explanations": {
+        "B": "Local-only storage is the opposite of the described cloud access.",
+        "C": "Cloud access does not remove authorization work.",
+        "D": "Tenant isolation means customer org records are not shared by default."
+      },
+      "concept": "Cloud access fact",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-TH-CRM-ORG"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "prompt": "Company A and Company B both use Salesforce. Which statement is best?",
+      "options": {
+        "A": "They share one production org by default",
+        "B": "They see each other's records by default",
+        "C": "They have separate orgs on shared platform infrastructure",
+        "D": "They must share admins"
+      },
+      "answer": "C",
+      "rationale": "They share platform infrastructure but have separate org tenants.",
+      "distractor_explanations": {
+        "A": "Each customer gets its own org.",
+        "B": "Cross-tenant record visibility is not default.",
+        "D": "Admins are not shared across unrelated customers."
+      },
+      "concept": "Tenant isolation",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-ARCH-MT"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "prompt": "A manager says 'Put the spreadsheet in the cloud' but means only email the file. What is missing?",
+      "options": {
+        "A": "Clarify CRM system vs file sharing",
+        "B": "Buy more printers",
+        "C": "Disable multitenancy",
+        "D": "Delete metadata"
+      },
+      "answer": "A",
+      "rationale": "A CRM system organizes structured customer data for application workflows; emailing a file is not the same as working in the org.",
+      "distractor_explanations": {
+        "B": "Printers do not define CRM.",
+        "C": "Multitenancy is a platform property.",
+        "D": "Deleting metadata would break the org."
+      },
+      "concept": "Stakeholder alignment",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-TH-CRM-ORG"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "prompt": "Records load successfully but a new field is invisible. First check:",
+      "options": {
+        "A": "Whether the cloud label changed",
+        "B": "Whether CRM exists",
+        "C": "Whether cloud is turned off",
+        "D": "Metadata deployed and field access"
+      },
+      "answer": "D",
+      "rationale": "Field must exist as metadata and be accessible to the user.",
+      "distractor_explanations": {
+        "A": "A cloud label is not the issue.",
+        "B": "CRM relevance does not explain one missing field.",
+        "C": "Cloud cannot be 'turned off' per field."
+      },
+      "concept": "Troubleshooting",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-META-API"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "prompt": "A developer uses Metadata API to deploy fields, then complains leads are missing. Likely issue:",
+      "options": {
+        "A": "Multitenancy failed globally",
+        "B": "They deployed definitions but not lead records",
+        "C": "CRM relevance explains missing records",
+        "D": "Cloud access removes records automatically"
+      },
+      "answer": "B",
+      "rationale": "Metadata API does not replace business data loading.",
+      "distractor_explanations": {
+        "A": "Platform-wide tenancy failure is extremely unlikely.",
+        "C": "CRM relevance does not explain missing records.",
+        "D": "Cloud access does not delete records spontaneously."
+      },
+      "concept": "Tool boundary",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-META-API"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "prompt": "Metadata change vs business data change—best contrast:",
+      "options": {
+        "A": "Both are always the same operation",
+        "B": "Metadata is only reports",
+        "C": "Metadata changes definitions; business data changes record values",
+        "D": "Business data cannot be imported"
+      },
+      "answer": "C",
+      "rationale": "Metadata changes shape; business data changes instances.",
+      "distractor_explanations": {
+        "A": "They use different tools and risks.",
+        "B": "Metadata is broader than reports.",
+        "D": "Business data is commonly imported."
+      },
+      "concept": "Contrast",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-API"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "prompt": "Cloud access and tenant isolation—best framing:",
+      "options": {
+        "A": "Network-accessible CRM data plus an isolated org boundary",
+        "B": "Cloud access never has limits",
+        "C": "Cloud access removes security work",
+        "D": "CRM records are public across orgs"
+      },
+      "answer": "A",
+      "rationale": "The CRM unit supports cloud access, and the architecture brief describes shared platform architecture with tenant isolation; do not infer zero limits or zero security work.",
+      "distractor_explanations": {
+        "B": "Cloud platforms still have limits.",
+        "C": "Cloud access does not remove security work.",
+        "D": "Tenant isolation means records are not public across orgs."
+      },
+      "concept": "Cloud access and tenant isolation",
+      "difficulty": "Intermediate",
+      "citation_ids": [
+        "SF-TH-CRM-ORG",
+        "SF-ARCH-MT"
+      ]
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is Salesforce in one sentence?",
+      "answer_30_seconds": "Salesforce is a multitenant cloud computing CRM platform: each customer org is a tenant with its own metadata and business data, isolated from other companies even though they share platform infrastructure.",
+      "answer_2_minutes": "I split four layers. CRM is the business job—shared customer relationships instead of spreadsheet copies. Cloud computing is how you reach it: the application runs as on-demand software, not a local-only file. Metadata is configuration such as objects and fields. Business data is the live record values. Multitenancy means many tenants share architecture while each org's metadata and data stay private. I do not treat cloud access as a free pass on security inside the org.",
+      "example": "A reseller tracks leads and opportunities in one production org; another vendor on Salesforce cannot open those records by default.",
+      "tradeoffs": [
+        "Shared platform behavior",
+        "Shared release cadence"
+      ],
+      "follow_ups": [
+        "How does cloud access affect the mental model?",
+        "What is an org?"
+      ],
+      "weak_answer_warnings": [
+        "Only says 'cloud' with no CRM or tenant meaning"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Define metadata vs business data.",
+      "answer_30_seconds": "Metadata is configuration shape; business data is live record values.",
+      "answer_2_minutes": "Metadata includes object and field definitions, automation, and security settings. Business data is the operational records and values users and systems work with daily. Confusing them leads to wrong tools—for example using metadata deploy for record import.",
+      "example": "Status__c definition vs Status=New on a record.",
+      "tradeoffs": [
+        "Separate deployment paths",
+        "Different risk profiles"
+      ],
+      "follow_ups": [
+        "Which API for each?"
+      ],
+      "weak_answer_warnings": [
+        "Says records are metadata because seen in Setup"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Executive wants Salesforce but refuses 'cloud.' How do you respond?",
+      "answer_30_seconds": "Clarify the cloud-access concern and tenant isolation; address control through sandboxes, security, and governance.",
+      "answer_2_minutes": "Probe the concern: security, compliance, uptime, or control. Explain the verified cloud-access wording and multitenancy with isolation evidence. Offer sandbox strategy, access controls, and export/integration patterns. Keep product-specific capability and licensing questions scoped to current official documentation.",
+      "example": "Financial services firm worried about data residency.",
+      "tradeoffs": [
+        "Speed vs control",
+        "Opex vs capex"
+      ],
+      "follow_ups": [
+        "What compliance frameworks apply?"
+      ],
+      "weak_answer_warnings": [
+        "Dismisses concern without listening"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Team imported records but reports are empty.",
+      "answer_30_seconds": "Check data actually loaded, report filters, and user record access—not multitenancy failure first.",
+      "answer_2_minutes": "Verify import job results and record counts. Then inspect report type, filters, and running user. Separate metadata issues (missing fields) from data scope and sharing. Multitenancy rarely explains empty reports when records exist for admins.",
+      "example": "Import succeeded but running user lacks read access.",
+      "tradeoffs": [
+        "Quick filter fix vs sharing redesign"
+      ],
+      "follow_ups": [
+        "Running user vs admin?"
+      ],
+      "weak_answer_warnings": [
+        "Blames Salesforce cloud generically"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Symptom: 'We cannot find our metadata in the other org.'",
+      "answer_30_seconds": "Different orgs are different tenants; metadata must be deployed per org.",
+      "answer_2_minutes": "Clarify tenants: production, sandbox, and partner orgs are separate. Metadata and data do not automatically appear across tenants. Use deployment pipelines, change sets, or DevOps tooling with appropriate credentials per org.",
+      "example": "Dev sandbox changes not in production until deployed.",
+      "tradeoffs": [
+        "Manual deploy vs CI/CD"
+      ],
+      "follow_ups": [
+        "Which environments exist?"
+      ],
+      "weak_answer_warnings": [
+        "Assumes one global org for all customers"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "User fears another company can read their data because 'it's all cloud.'",
+      "answer_30_seconds": "Multitenancy isolates tenants; unauthorized cross-tenant access is not normal operation.",
+      "answer_2_minutes": "Explain tenant boundary at org level, authentication, and authorization inside org. Distinguish platform isolation from internal sharing misconfiguration. Point to security track for depth.",
+      "example": "Two vendors on Salesforce cannot see each other's accounts by default.",
+      "tradeoffs": [
+        "Tenant isolation vs internal authorization"
+      ],
+      "follow_ups": [
+        "What compliance docs exist?"
+      ],
+      "weak_answer_warnings": [
+        "Hand-waves 'it's secure' without mechanism"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you pause a Salesforce cloud CRM recommendation?",
+      "answer_30_seconds": "When security, residency, latency, integration, or access constraints remain unresolved; verify the target org and current official documentation before recommending a path.",
+      "answer_2_minutes": "Probe the actual constraint: security, data residency, latency, integration, or access. Separate evidence about cloud data access and tenant isolation from questions that require current product documentation or org verification. Do not claim that one delivery arrangement fits every requirement.",
+      "example": "A policy requires a data-residency review before customer data is used.",
+      "tradeoffs": [
+        "Time to market vs control"
+      ],
+      "follow_ups": [
+        "What data classes are restricted?"
+      ],
+      "weak_answer_warnings": [
+        "Claims cloud access fits every constraint without analysis"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Explain multitenancy to a skeptical engineer in 60 seconds.",
+      "answer_30_seconds": "Many customers share one Salesforce cloud computing platform, but each tenant org keeps isolated metadata and business data—like separate hotels on one power grid, not one shared front desk.",
+      "answer_2_minutes": "I start with the engineer’s fear: noisy neighbors and data leakage. Salesforce documents multitenancy as one application serving many organizations from a shared stack, with a layer that keeps each organization’s data and schemas private. Metadata describes tenant-specific customizations; business data is the records. I then break the hotel analogy: you do not tune the shared database like a dedicated server, and user permissions inside your org are not the tenant wall. I invite a follow-up on releases and limits rather than inventing governor numbers.",
+      "example": "Org Id distinguishes tenants; Company A's Lead rows do not appear in Company B's CRM org by default.",
+      "tradeoffs": [
+        "Efficiency vs customization latency"
+      ],
+      "follow_ups": [
+        "How are noisy neighbors handled?"
+      ],
+      "weak_answer_warnings": [
+        "Says tenants share records for efficiency"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "CRM in one sentence?",
+      "back": "Software to manage customer relationships and related workflows."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "Cloud access in one sentence?",
+      "back": "Salesforce data is described as stored securely in the cloud and accessible from desktop and mobile."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "What is metadata in this lesson?",
+      "back": "Configuration that describes org shape and behavior, such as a field definition—not the value on one record."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "Business data?",
+      "back": "Live record and field values used in operations."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "Multitenancy?",
+      "back": "Shared platform serving many isolated tenants."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "Define a new field: metadata or business data?",
+      "back": "Metadata: you changed the definition. The later Status=New on a saved record is business data."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "Import 1,000 leads—metadata or data?",
+      "back": "Business data operation."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Need a shared pipeline CRM with cloud access?",
+      "back": "Evaluate the Salesforce CRM workflow and verify target-org capabilities."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "Another customer's org equals yours?",
+      "back": "No—separate tenant orgs."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "Org vs user?",
+      "back": "Org is tenant environment; user is a person in it."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "Does cloud access remove security design?",
+      "back": "No—tenant isolation is not user authorization."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Can metadata be sensitive?",
+      "back": "Yes—labels and config text can expose information."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "Does multitenancy mean public data?",
+      "back": "No—logical isolation separates tenants."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Spreadsheet emailed vs Salesforce org?",
+      "back": "Email is file sharing; a CRM org is a structured application context for customer data."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Field missing after import—first split?",
+      "back": "Metadata existence vs user field access vs data scope."
+    },
+    {
+      "id": "F16",
+      "category": "decision",
+      "front": "Where does the hotel-chain analogy break for multitenancy?",
+      "back": "Shared cloud computing still has platform releases and limits; isolation is by tenant org, not by user permission inside the org."
+    },
+    {
+      "id": "F17",
+      "category": "terminology",
+      "front": "What does SaaS mean here versus hosting your own CRM?",
+      "back": "Salesforce is delivered as cloud computing software you subscribe to; you do not install the CRM application on a company-owned server. Exact contract terms need current Help."
+    }
+  ],
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Define CRM, cloud access, metadata, data, and multitenancy from memory in one paragraph each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify five items: Lead field definition, one lead record, Company Information, cloud-access statement, report row."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain the hotel-chain analogy and where it breaks."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose: 'We uploaded records but fields are missing'—metadata vs data vs access."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Teach-back without using the five core terms; answer one skeptical multitenancy question."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-TH-CRM-ORG",
+      "title": "What is Apex?",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_intro_what_is_apex.htm",
+      "supports": "The Lightning Platform, including Apex, runs in a multitenant cloud environment; Apex is saved and runs in the cloud on Salesforce servers.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Apex-focused; not a CRM product catalog. SaaS commercial terms are out of scope."
+    },
+    {
+      "source_id": "SF-ARCH-MT",
+      "title": "Multitenancy and Metadata Overview",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_large_data_volumes_bp.meta/salesforce_large_data_volumes_bp/ldv_deployments_concepts_multitenancy_and_metadata.htm",
+      "supports": "Multitenancy as one application for multiple organizations from a shared stack, with isolated tenant data and schemas.",
+      "release_or_version": "Large Data Volumes best practices guide",
+      "last_verified": "2026-08-16",
+      "limits": "Architecture overview; not a contract for every isolation implementation detail or edition."
+    },
+    {
+      "source_id": "SF-META-API",
+      "title": "Understanding Metadata API",
+      "type": "Official Salesforce Developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_intro.htm",
+      "supports": "Metadata versus business data, metadata definitions and values, and the Metadata API boundary: metadata operations do not create or modify business records.",
+      "release_or_version": "Summer '26 (API version 67.0), Latest",
+      "last_verified": "2026-08-16",
+      "limits": "Metadata API scope; use supported data APIs for records, and verify the target org and current documentation before applying it."
+    },
+    {
+      "source_id": "SF-OBJREF-01",
+      "title": "Overview of Salesforce Objects and Fields",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm",
+      "supports": "Salesforce stores business information in objects, fields, and records such as Account—the CRM data shape this orientation points toward.",
+      "release_or_version": "Object Reference / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Data-model overview; FOUND-002 owns the full object/field/record lesson."
+    },
+    {
+      "source_id": "LS-RETR-01",
+      "title": "Test-Enhanced Learning",
+      "type": "Peer-reviewed learning science",
+      "url": "https://doi.org/10.1111/j.1467-9280.2006.01693.x",
+      "supports": "Retrieval practice design.",
+      "release_or_version": "2006",
+      "last_verified": "2026-08-09",
+      "limits": "General learning science."
+    },
+    {
+      "source_id": "LS-DIST-01",
+      "title": "Effective Learning Techniques",
+      "type": "Peer-reviewed review",
+      "url": "https://journals.sagepub.com/doi/10.1177/1529100612453266",
+      "supports": "Spaced review policy.",
+      "release_or_version": "2013",
+      "last_verified": "2026-08-09",
+      "limits": "Intervals are handbook policy."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video found",
+      "channel": "Salesforce official channels searched",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "Trailhead module covers the orientation.",
+      "gaps": "No claim-level video verification performed.",
+      "free_or_paid": "Free",
+      "last_verified": "2026-08-08"
+    },
+    {
+      "status": "not_verified",
+      "title": "No verified Telugu video found for this topic",
+      "channel": "Candidate channels not endorsed without transcript review",
+      "url": "",
+      "language": "Telugu",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "Glossary provided in lesson.",
+      "gaps": "No verified Telugu video for this topic.",
+      "free_or_paid": "Free",
+      "last_verified": "2026-08-08"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "CRM purpose",
+        "Cloud access",
+        "metadata vs data",
+        "multitenancy",
+        "tenant org",
+        "takeaway"
+      ]
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-TH-CRM-ORG",
+        "SF-ARCH-MT",
+        "SF-META-API",
+        "SF-OBJREF-01"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Tenant operations map"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  CRM[CRM purpose: customer relationships] --> Cloud[Cloud computing delivery]\n  Cloud --> Tenant[Multitenant Salesforce platform]\n  Tenant --> Meta[Metadata: schema and configuration]\n  Tenant --> Data[Business data: record values]\n  Meta --> Isolate[Tenant isolation by org]\n  Data --> Isolate",
+      "decision": "flowchart TD\n  Req[Stakeholder request] --> Q1{Shared customer pipeline or just a file?}\n  Q1 -->|Pipeline and collaboration| CRM[Model it as CRM records]\n  Q1 -->|Email a spreadsheet| File[Not a CRM system of record]\n  Req --> Q2{Changing shape or instances?}\n  Q2 -->|New field or object| Meta[Metadata change]\n  Q2 -->|Thousands of lead rows| Data[Business data load]\n  Req --> Q3{Fear another company can read it?}\n  Q3 -->|Different customer org| MT[Multitenancy isolates tenants]\n  Q3 -->|Users in the same org| Sec[Authorization is a later SEC topic]",
+      "sequence": "sequenceDiagram\n  participant User\n  participant Org as Tenant org\n  participant Plat as Shared cloud platform\n  User->>Org: Configure metadata\n  User->>Org: Create or import business data\n  Org->>Plat: Request with org context\n  Plat-->>Org: Only this tenant's metadata and data"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "The Lightning Platform, including Apex, runs in a multitenant cloud environment; Apex is saved and runs in the cloud on Salesforce servers.",
+      "source_ids": [
+        "SF-TH-CRM-ORG"
+      ],
+      "scope": "Cloud computing delivery",
+      "validation": "What is Apex? in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Multitenancy provides a single application to multiple organizations from a shared hardware-software stack while keeping each organization's data and schemas isolated.",
+      "source_ids": [
+        "SF-ARCH-MT"
+      ],
+      "scope": "Multitenancy and tenant isolation",
+      "validation": "Multitenancy and Metadata Overview in the Large Data Volumes guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Salesforce metadata describes schema, process, presentation, authorization, and org configuration; Metadata API manages metadata rather than business records.",
+      "source_ids": [
+        "SF-META-API"
+      ],
+      "scope": "Metadata, business data, and API boundary",
+      "validation": "Visible Metadata API Developer Guide content contrasts metadata with business records and directs record operations to data APIs.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Salesforce organizes business information as objects, fields, and records (for example Account), which is the CRM data shape later topics model in detail.",
+      "source_ids": [
+        "SF-OBJREF-01"
+      ],
+      "scope": "CRM data orientation",
+      "validation": "Object Reference overview of objects, fields, and records.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Interview-ready rewrite 2026-08-16: hotel-chain analogy, mermaid diagrams, Developer Guide sources for cloud, multitenancy, metadata, and CRM data shape. SaaS commercial terms remain Needs verification.",
+  "unresolved_uncertainty": [
+    "Exact SaaS contract, edition, and data-residency options require current Help for the target org—do not invent them from this orientation.",
+    "Numeric governor limits and noisy-neighbor controls are out of scope here.",
+    "Setup navigation labels can change by release; verify in the disposable org."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "CRM",
+      "telugu": "కస్టమర్ సంబంధాలను నిర్వహించడానికి ఉపయోగించే సాఫ్ట్‌వేర్."
+    },
+    {
+      "english": "Cloud access",
+      "telugu": "క్లౌడ్‌లోని డేటాను డెస్క్‌టాప్ లేదా మొబైల్ నుండి యాక్సెస్ చేయడం."
+    },
+    {
+      "english": "Multitenancy",
+      "telugu": "ఒకే ప్లాట్‌ఫామ్‌లో అనేక కస్టమర్ల డేటా వేర్వేరుగా భద్రపరచబడటం."
+    }
+  ]
+}

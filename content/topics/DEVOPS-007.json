@@ -1,0 +1,211 @@
+{
+  "topic_id": "DEVOPS-007",
+  "slug": "ci-cd-pipelines-secrets-environment-variables-approvals",
+  "title": "CI/CD pipelines, secrets, environment variables, approvals, and rollback",
+  "track": "Development lifecycle and DevOps",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": ["DEVOPS-006"],
+  "objectives": [
+    "Define continuous integration as regularly integrating metadata source into a repository with automated builds and tests.",
+    "Keep secrets and org credentials out of Git; inject them as CI secrets or environment variables.",
+    "Place human approvals before production metadata deploy, distinct from Apex quality gates.",
+    "Describe rollback as a planned metadata action (fix-forward deploy, validated quick deploy, or package downgrade)—not git revert alone and not --ignore-errors."
+  ],
+  "diagnostic_question": "A pipeline deploys LAB_ metadata to production using a connected-app secret committed in the repo, no approval job, and --ignore-errors so 'rollback is easier.' What do you change first?",
+  "definition": "Continuous integration regularly merges Salesforce metadata source into version control and runs automated builds and tests. A CI/CD pipeline scripts retrieve/deploy/validate, tests, and promotions across environments. Secrets (JWT keys, refresh tokens, installation keys) must live in the CI secret store, not the DX project. Environment variables parameterize org aliases and test levels. Approvals are human go/no-go steps before production. Rollback is how you restore a safe metadata state after a bad deploy. ([Continuous Integration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ci.htm); [project deploy start](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html); [project deploy validate](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_validate.html))",
+  "why_it_matters": "A pipeline that commits secrets or ignore-errors on production is a security and consistency incident, not DevOps maturity. Interviewers want JWT/secrets outside Git, approvals separate from test gates, and rollback that is not a fairy-tale git revert of production.",
+  "sixty_second_explanation": "Think of a harbor lock. The pipeline is the sequence of chambers from Git basin to production harbor. Secrets are the lock keys—never painted on the hull (the repo). Environment variables are the tide tables for each harbor (which org, which test level). Approvals are the lock-keeper's hand on the gate before the last chamber. Rollback is reversing a chamber or sending a repair barge—not dynamiting the lock with ignore-errors. Quality gates (DEVOPS-006) are the depth sounder; they are not the keeper's signature.",
+  "deeper_explanation": [
+    "Salesforce DX defines CI as developers regularly integrating code into a source repository with automated builds and tests so new code does not introduce bugs. DX integrates with third-party CI (Jenkins, CircleCI, Travis samples, and others). Sample repos exist for org development and package development models. ([Continuous Integration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ci.htm))",
+    "Auth to Dev Hub and target orgs in CI uses secrets: JWT key files, consumer secrets, refresh tokens, package installation keys. These are environment variables or secret stores in the CI product—not files committed beside force-app. If a secret was committed, rotate it. Scratch orgs in CI should not receive personal data.",
+    "Approvals in this topic are pipeline promotions (a human must click before production metadata deploy), not Salesforce Flow approval processes. Quality gates can be fully automated; production still often needs a change-approval step. Validate then quick deploy (10-day job ID) is a way to separate long tests from the approved window. ([project deploy validate](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_validate.html))",
+    "Rollback: never --ignore-errors on production; it can leave an inconsistent org. A failed deploy with rollbackOnError (default in many tools) leaves the org as it was. After a successful bad deploy, git revert is only source truth—you still must deploy the reverted metadata (fix-forward) or install a previous package version. Destructive changes and data side effects may not reverse by redeploying old XML. Plan rollback in the release notes (DEVOPS-010)."
+  ],
+  "mental_model": {
+    "analogy": "A harbor lock: pipeline chambers, secrets as keys not painted on the hull, environment variables as per-harbor tide tables, approvals as the lock-keeper, rollback as reversing a chamber or sending a repair barge—not dynamite (ignore-errors).",
+    "useful_mapping": [
+      "CI → frequent integrate + automated tests",
+      "CD → promoting the same artifact toward production",
+      "secret → JWT key, token, install key in CI store",
+      "environment variable → org alias, test level, API version per chamber",
+      "approval → human gate before production deploy",
+      "validate job ID → tests done in an upstream chamber, 10-day ticket",
+      "rollback → deploy last known good metadata or prior package version",
+      "ignore-errors → dynamite that can split the lock"
+    ],
+    "where_it_breaks": [
+      "Salesforce metadata deploy is not a container image you un-tag from a registry.",
+      "Some metadata and all business data will not roll back with a Git revert deploy.",
+      "DevOps Center is an official alternative UI; this lesson still uses CLI as the contract.",
+      "Vendor YAML is not Salesforce documentation."
+    ]
+  },
+  "teach_back_prompt": "Explain where secrets live, where approvals sit relative to quality gates, and why git revert is not by itself a production rollback.",
+  "review_schedule": [
+    {"interval": "1 day", "prompt": "CI definition from the DX guide plus one secret you must not commit."},
+    {"interval": "3 days", "prompt": "Validate then quick deploy versus a pipeline approval."},
+    {"interval": "7 days", "prompt": "Three rollback options after a successful bad production deploy."},
+    {"interval": "14 days", "prompt": "Org-model CI versus package-model CI samples."},
+    {"interval": "30 days", "prompt": "Two-minute interview: secrets, approvals, rollback, ignore-errors."}
+  ],
+  "sources": [
+    {"source_id": "SF-DX-CI", "title": "Continuous Integration", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ci.htm", "supports": "CI definition; DX integrates with third-party CI; sample repos for org and package development models.", "release_or_version": "Salesforce DX Developer Guide / Summer '26", "last_verified": "2026-08-16", "limits": "Vendor steps are examples. DevOps Center is linked as Help, not fully specified here."},
+    {"source_id": "SF-CLI-DEPLOY", "title": "project deploy start", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html", "supports": "Never --ignore-errors on production; dry-run; async job IDs; destructive manifests.", "release_or_version": "Salesforce CLI Command Reference", "last_verified": "2026-08-16", "limits": "Does not define JWT auth setup."},
+    {"source_id": "SF-CLI-VALIDATE", "title": "project deploy validate", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_validate.html", "supports": "Validate without executing; 10-day job ID for quick deploy; not for sandboxes.", "release_or_version": "Salesforce CLI Command Reference", "last_verified": "2026-08-16", "limits": "Quick deploy still overwrites corresponding metadata."},
+    {"source_id": "SF-DX-INTRO", "title": "How Salesforce Developer Experience (DX) Tooling Changes the Way You Work", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm", "supports": "CLI for development, continuous integration, and delivery; VCS as source of truth.", "release_or_version": "Salesforce DX Developer Guide / Summer '26", "last_verified": "2026-08-16", "limits": "Does not list secret-store products."}
+  ],
+  "videos": [{"status": "not_verified", "title": "No verified official exact-topic video claimed in this pack", "channel": "Prefer DX Continuous Integration and CLI deploy references", "url": "", "language": "English", "duration": "", "level": "Advanced", "teaches_well": "", "gaps": "Needs verification before recommending a specific recording.", "free_or_paid": "Unknown", "last_verified": "2026-08-16"}],
+  "visuals": {
+    "infographic": {"format": "4:5 SVG", "size": "1600x2000", "zones": ["CI definition", "Secrets not in Git", "Env vars per org", "Approvals vs gates", "Validate/quick", "Rollback vs ignore-errors"], "accessible_description": "Portrait of a Salesforce metadata pipeline: secrets, variables, tests, approval, deploy, rollback."},
+    "cheat_sheet": {"format": "A4 HTML", "source_footer": ["SF-DX-CI", "SF-CLI-DEPLOY", "SF-CLI-VALIDATE", "SF-DX-INTRO"]},
+    "system_map": {"format": "zoomable SVG", "title": "Pipeline chambers from Git to production"},
+    "mermaid": {
+      "structure": "flowchart TD\n  Git[Git metadata] --> CI[CI: build and tests]\n  Secrets[CI secret store] --> CI\n  Env[Env vars: org alias test level] --> CI\n  CI --> Gate[Quality gates DEVOPS-006]\n  Gate --> Appr[Human approval]\n  Appr --> Val[Optional validate job ID]\n  Val --> Prod[project deploy start or quick]\n  Prod -->|bad success| RB[Fix-forward deploy or prior package version]\n  Prod -->|failed with rollback| Stay[Org unchanged]",
+      "decision": "flowchart TD\n  Pipe[Pipeline change] --> Q1{Secret or metadata?}\n  Q1 -->|JWT token install key| Sec[CI secret / env var; never Git]\n  Q1 -->|Apex XML| GitSrc[Commit; run tests]\n  GitSrc --> Q2{Production?}\n  Q2 -->|Yes| Q3{Approved?}\n  Q3 -->|No| Wait[Wait for approval]\n  Q3 -->|Yes| Dep[Deploy or quick-deploy validated job]\n  Q2 -->|Scratch/CI| Scratch[Create scratch, deploy, test, delete]\n  Fail[Production deploy failed mid-way] --> NoIgn[Do not ignore-errors; rely on rollback of the failed job]\n  Bad[Successful bad deploy] --> Fix[Deploy last good Git or previous package version]"
+    }
+  },
+  "claims": [
+    {"claim_id": "C-001", "claim": "CI is regularly integrating code into a source repository with automated builds and tests. Salesforce DX integrates with third-party CI tools and provides sample repos for org and package development models.", "source_ids": ["SF-DX-CI"], "scope": "CI definition", "validation": "Continuous Integration in the Salesforce DX Developer Guide.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-002", "claim": "Never use --ignore-errors when deploying to production; partial success can leave an inconsistent org.", "source_ids": ["SF-CLI-DEPLOY"], "scope": "Production deploy flags", "validation": "project deploy start flag description.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-003", "claim": "project deploy validate does not execute the deploy; the job ID is valid 10 days for project deploy quick. Do not use validate on sandboxes.", "source_ids": ["SF-CLI-VALIDATE"], "scope": "Validate/quick in pipelines", "validation": "project deploy validate reference.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-004", "claim": "The CLI is the documented tool for development, continuous integration, and delivery, with version control as the source of truth.", "source_ids": ["SF-DX-INTRO"], "scope": "CLI in CI/CD", "validation": "Salesforce DX tooling introduction.", "last_verified": "2026-08-16"}
+  ],
+  "changed_in_release": "CI vendor samples (Jenkins/CircleCI/Travis) age; treat them as patterns. Reverify JWT auth help for Summer '26.",
+  "unresolved_uncertainty": ["Exact JWT connected-app setup clicks and DevOps Center pipeline UI are Help-sensitive.", "Whether a given metadata type rolls back by redeploying old XML is type-specific."],
+  "telugu_glossary": [{"english": "Secret", "telugu": "Git లో పెట్టకూడని కీ లేదా టోకెన్."}, {"english": "Rollback", "telugu": "చెడు డిప్లాయ్ తర్వాత సురక్షిత మెటాడేటా స్థితికి తిరిగి వెళ్లడం."}],
+  "interview_explanation": {
+    "thirty_seconds": "CI merges metadata often and runs automated tests. Secrets stay in the CI store as environment variables, not in Git. Approvals are humans before production. Rollback is deploy last-good or a previous package version. Never ignore-errors on production.",
+    "two_minutes": "I sketch chambers: PR tests on scratch orgs, UAT deploy, validate on production, approval, quick deploy. I rotate any committed secret. I distinguish quality gates from CAB-style approval. I explain git revert still needs a metadata deploy and may not undo data or all deletes. I mention DX sample repos for org versus package models."
+  },
+  "terminology": [
+    {"term": "continuous integration", "plain": "Merge metadata source often and let machines test it.", "precise": "Developers regularly integrate code into a source repository; automated builds and tests run so new code does not introduce bugs.", "example": "Every LAB_ PR creates a scratch org, deploys, runs RunLocalTests, deletes the org.", "non_example": "A weekly manual change set with no tests.", "confusable_neighbor": "Continuous delivery: promoting the same artifact onward.", "boundary": "Vendor YAML is not the Salesforce definition."},
+    {"term": "CI/CD pipeline", "plain": "The scripted chambers from Git to production.", "precise": "Automated jobs that test and deploy Salesforce metadata using CLI, wrapping org or package development models.", "example": "Jenkinsfile calling sf project deploy start with env-specific aliases.", "non_example": "A single developer deploying from a laptop with no record.", "confusable_neighbor": "Salesforce Flow interview.", "boundary": "DevOps Center is an official alternative; CLI remains the contract here."},
+    {"term": "secret", "plain": "A credential that must not be in the metadata repo.", "precise": "JWT private keys, consumer secrets, refresh tokens, package installation keys, and similar. Store in the CI secret manager.", "example": "SF_JWT_KEY as a masked CI secret used to auth the Dev Hub.", "non_example": "sfdx-project.json packageDirectories, which is not a secret.", "confusable_neighbor": "Environment variable that is merely an org alias.", "boundary": "Rotate immediately if it was committed."},
+    {"term": "environment variable", "plain": "A per-job setting such as which org or test level.", "precise": "Non-secret or secret-injected values that keep YAML generic: aliases, test levels, API versions.", "example": "SF_TARGET_ORG=uat-sandbox and TEST_LEVEL=RunLocalTests.", "non_example": "Hard-coded production usernames in the Jenkinsfile committed to Git.", "confusable_neighbor": "Custom metadata type records in the package.", "boundary": "Do not put private keys in unmasked job logs."},
+    {"term": "approval", "plain": "A human go/no-go before production metadata deploy.", "precise": "Pipeline promotion approval, not a Salesforce record Approval Process. Distinct from automated quality gates.", "example": "Two reviewers click Approve on the production job after validate succeeds.", "non_example": "Apex test pass treated as legal approval.", "confusable_neighbor": "Flow approval (AUTO track).", "boundary": "Who may approve is a governance choice."},
+    {"term": "rollback", "plain": "Returning to a safe metadata state after a bad release.", "precise": "For a failed deploy, rely on transactional rollback—not ignore-errors. For a successful bad deploy, deploy last-known-good source or a previous package version. Git revert without deploy does nothing to the org.", "example": "Install unlocked package 1.3.0 after 1.4.0 misbehaves, if the version is still installable.", "non_example": "--ignore-errors so some components stay.", "confusable_neighbor": "Data restore from backup.", "boundary": "Deletes and some type changes may not reverse cleanly (DEVOPS-009)."},
+    {"term": "quick deploy", "plain": "Use a successful validation job ID to deploy without rerunning those tests.", "precise": "After project deploy validate, project deploy quick within 10 days. Still overwrites corresponding metadata. Not for sandboxes.", "example": "Validate Monday, approve Friday, quick deploy the job ID.", "non_example": "Quick deploy of an unvalidated local folder.", "confusable_neighbor": "sf project deploy start --async, which is a different job.", "boundary": "If source changed after validate, re-validate."},
+    {"term": "ignore-errors", "plain": "A deploy flag that can save some components and skip others.", "precise": "Never use when deploying to production; can leave an inconsistent production org.", "example": "A production job that omitted the flag and failed closed.", "non_example": "Using it as a rollback strategy.", "confusable_neighbor": "ignore-warnings, sometimes used when deleting already-absent components in CI.", "boundary": "ignore-warnings is not a license to hide compile errors."}
+  ],
+  "mechanics": [
+    {"step": 1, "transition": "Integrate in Git", "actor": "Developer", "trigger": "PR", "before": "Unreviewed XML", "after": "CI scratch tests green", "observe": "Job log with no secrets printed", "failure": "Committing JWT keys to pass CI"},
+    {"step": 2, "transition": "Promote with variables", "actor": "Pipeline", "trigger": "Merge", "before": "Hard-coded org", "after": "Env-specific alias and test level", "observe": "UAT deploy report", "failure": "Same command blindly aimed at production"},
+    {"step": 3, "transition": "Approve production", "actor": "Release owner", "trigger": "Validate passed", "before": "Automated gates only", "after": "Human approval recorded", "observe": "Approval timestamp plus job ID", "failure": "Auto-deploy to prod from main with no approval when policy requires one"},
+    {"step": 4, "transition": "Rollback plan ready", "actor": "Release owner", "trigger": "Bad success", "before": "Hope", "after": "Fix-forward metadata deploy or prior package version identified", "observe": "Written rollback in the release ticket", "failure": "ignore-errors or laptop git revert with no deploy"}
+  ],
+  "when_to_use": [
+    "When automating metadata tests and deploys as a CI/CD pipeline instead of laptop-only releases.",
+    "When deciding how secrets and environment variables are injected for org auth.",
+    "When placing a human approval before production after quality gates pass.",
+    "When planning rollback for a failed versus a successful-but-wrong metadata deploy.",
+    "When someone proposes --ignore-errors so the pipeline 'always goes green.'"
+  ],
+  "when_not_to_use": [
+    "Do not treat pipeline approvals as Salesforce record approval processes (AUTO).",
+    "Do not use this lesson as the Apex coverage math lesson (DEVOPS-006).",
+    "Do not use git revert alone as production rollback without a metadata deploy.",
+    "Do not commit secrets to make JWT 'easier' for Jenkins.",
+    "Do not run project deploy validate against sandboxes as the CD check."
+  ],
+  "configuration_or_code_location": [
+    "CI product secret store and masked environment variables.",
+    "Pipeline YAML/Jenkinsfile calling sf commands from a DX project.",
+    "Optional validate job ID stored as a pipeline artifact.",
+    "Dev Hub connected app for JWT—clicks Needs verification in current Help."
+  ],
+  "worked_example": {
+    "scenario": "Team wants CD for LAB_ metadata. A developer committed a JWT key. The draft Jenkinsfile uses --ignore-errors on production and auto-deploys on merge to main.",
+    "inputs": ["DX project", "Jenkins available", "Production requires approval"],
+    "decisions": [
+      {"decision": "Remove the key from Git, rotate it, inject as a masked secret.", "because": "The repo is metadata source of truth, not a credential vault.", "rejected": "Leaving the key because CI already works"},
+      {"decision": "PR jobs use scratch orgs; production job requires approval and forbids ignore-errors.", "because": "CI definition is automated tests; production still needs a human chamber.", "rejected": "Auto-prod on merge with ignore-errors"},
+      {"decision": "Document rollback as deploy of previous Git SHA or package version, not git revert without CLI.", "because": "Orgs change only via metadata deploy/install.", "rejected": "Calling GitHub revert the rollback"}
+    ],
+    "configuration_or_code": [
+      "CI secret SF_JWT_KEY; env SF_TARGET_ORG per stage.",
+      "PR: scratch create --no-track-source, deploy, tests, delete.",
+      "Prod: validate (optional), approval, deploy start without --ignore-errors."
+    ],
+    "output": "No secrets in Git. Production cannot deploy without approval. Failed deploys fail closed.",
+    "verification": ["git log no longer contains the key.", "A PR job log shows masked secrets.", "Production job has an approval step and no ignore-errors."],
+    "self_explanation": "I treated secrets, approvals, and rollback as separate chambers from tests."
+  },
+  "hands_on_lab": {
+    "environment": "Local DX project plus any CI or a documented mock pipeline. No production. LAB_ only.",
+    "starting_state_checks": ["You will not commit private keys.", "You can run sf commands locally."],
+    "steps": [
+      "Write a four-stage pipeline outline: PR scratch tests, UAT deploy, production approval, deploy.",
+      "List three secrets that must be environment variables, not files in force-app.",
+      "Write the production deploy command without --ignore-errors.",
+      "Write a rollback paragraph for a successful bad deploy versus a failed deploy."
+    ],
+    "guided_completion": ["If you lack Jenkins, the outline still counts.", "If a sample repo from DX CI is cloned, do not commit its dummy secrets as real."],
+    "independent_challenge": "Add where validate/quick deploy would sit relative to approval.",
+    "evidence": ["Pipeline outline with LAB_ naming.", "Rollback paragraph."],
+    "stop_recovery_cleanup": ["Delete any local key files.", "Do not auth production from this lab."],
+    "limitations": "Will not provision a real connected app."
+  },
+  "decision_table": [
+    {"signal": "Every PR should prove metadata still deploys.", "choose": "CI scratch org: deploy, RunLocalTests, delete.", "not": "Only deploying from a laptop on Fridays.", "why": "DX defines CI as frequent integrate plus automated tests."},
+    {"signal": "A JWT key or install key is in the working tree.", "choose": "Unstage, gitignore, rotate, store as a CI secret.", "not": "Committing it so Jenkins can read the repo.", "why": "Secrets are not metadata source."},
+    {"signal": "Production deploy needs a long test run and a short freeze.", "choose": "Validate earlier, approve, quick deploy within 10 days.", "not": "Validate against UAT sandbox as if it were production.", "why": "Validate is the production-style job ID path."},
+    {"signal": "Production deploy failed and someone wants ignore-errors.", "choose": "Fix the payload; let the failed job roll back.", "not": "--ignore-errors on production.", "why": "Partial saves can leave an inconsistent org."},
+    {"signal": "Production deploy succeeded but the feature is wrong.", "choose": "Fix-forward deploy last good Git or prior package version.", "not": "git revert on GitHub with no metadata deploy.", "why": "VCS revert is not an org rollback until you deploy."}
+  ],
+  "limitations": ["Does not configure a specific CI vendor.", "JWT setup is Help-sensitive.", "Rollback is type-dependent.", "No production pipeline authorized."],
+  "security_notes": ["Mask secrets in logs.", "Least-privilege CI user.", "Rotate leaked keys.", "Scratch orgs in CI get no PII."],
+  "common_mistakes": ["Secrets in Git.", "ignore-errors as rollback.", "Approvals confused with Flow approvals.", "git revert without deploy.", "validate on sandboxes.", "Printing env vars that contain keys."],
+  "troubleshooting": [
+    {"symptom": "CI cannot auth the Dev Hub.", "check": ["Secret present and not expired.", "Connected app policies.", "Clock skew."], "do_not_assume": "Need to commit the key."},
+    {"symptom": "Quick deploy rejected.", "check": ["Job ID age ≤ 10 days.", "Same org.", "Source not replaced by a different payload."], "do_not_assume": "CLI is down."},
+    {"symptom": "Rollback deploy cannot delete a field.", "check": ["Destructive change needed (DEVOPS-009).", "Data dependencies."], "do_not_assume": "Old XML undeletes automatically."}
+  ],
+  "production_notes": ["Require approval if policy says so.", "Forbid ignore-errors.", "Keep a named last-good package version or Git SHA.", "This lesson does not authorize enabling a production pipeline."],
+  "mcqs": [
+    {"id": "Q1", "category": "recall", "difficulty": "Foundation", "prompt": "DX definition of continuous integration?", "options": {"A": "Regularly integrate code into a source repository with automated builds and tests", "B": "Only change sets on Fridays", "C": "Committing JWT keys", "D": "Developing Apex in production"}, "answer": "A", "rationale": "Continuous Integration topic opening definition.", "distractor_explanations": {"B": "Not CI.", "C": "A secret leak.", "D": "Forbidden as a dev environment."}, "concept": "CI definition", "citation_ids": ["SF-DX-CI"]},
+    {"id": "Q2", "category": "recall", "difficulty": "Foundation", "prompt": "Where should a JWT private key live?", "options": {"A": "CI secret store / masked environment variable", "B": "force-app/main/default/classes", "C": "package.xml", "D": "A public gist"}, "answer": "A", "rationale": "Secrets are not metadata source; the repo is.", "distractor_explanations": {"B": "Apex is metadata, not a keystore.", "C": "Manifest.", "D": "Public leak."}, "concept": "Secrets", "citation_ids": ["SF-DX-INTRO"]},
+    {"id": "Q3", "category": "application", "difficulty": "Intermediate", "prompt": "Never use which flag on production deploys?", "options": {"A": "--ignore-errors", "B": "--target-org", "C": "--test-level", "D": "--wait"}, "answer": "A", "rationale": "project deploy start: never on production; inconsistent org risk.", "distractor_explanations": {"B": "Required aiming.", "C": "Quality gate.", "D": "Timeout."}, "concept": "ignore-errors", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q4", "category": "application", "difficulty": "Intermediate", "prompt": "Validate job ID lifetime for quick deploy?", "options": {"A": "10 days", "B": "10 minutes", "C": "Until the scratch org expires", "D": "Forever"}, "answer": "A", "rationale": "Validate reference: job ID valid 10 days.", "distractor_explanations": {"B": "Too short.", "C": "Unrelated.", "D": "Stale validations are unsafe."}, "concept": "10 days", "citation_ids": ["SF-CLI-VALIDATE"]},
+    {"id": "Q5", "category": "recall", "difficulty": "Foundation", "prompt": "DX CI sample repos illustrate which models?", "options": {"A": "Org development model and package development model", "B": "Only change sets", "C": "Only 1GP", "D": "Only Data Loader"}, "answer": "A", "rationale": "CI topic lists both sample repo families.", "distractor_explanations": {"B": "Not the sample split.", "C": "Packaging is 2GP/unlocked in modern DX.", "D": "Data."}, "concept": "Two models", "citation_ids": ["SF-DX-CI"]},
+    {"id": "Q6", "category": "application", "difficulty": "Intermediate", "prompt": "Is a pipeline approval the same as a Salesforce Approval Process?", "options": {"A": "No. This topic's approval is a human CD gate; record approvals are a different automation feature", "B": "Yes, always the same metadata type", "C": "Yes, git merge creates an Approval Process", "D": "Yes, ignore-errors is an approval"}, "answer": "A", "rationale": "Keep AUTO approval processes out of this DevOps meaning.", "distractor_explanations": {"B": "Different products.", "C": "Merge is Git.", "D": "A dangerous flag."}, "concept": "Approval meaning", "citation_ids": ["SF-DX-CI"]},
+    {"id": "Q7", "category": "scenario", "difficulty": "Intermediate", "prompt": "git revert on main after a bad production deploy. Org status?", "options": {"A": "Unchanged until you deploy the reverted metadata or a previous package version", "B": "Automatically rolled back by GitHub", "C": "Always restored including deleted records", "D": "Secrets rotate themselves"}, "answer": "A", "rationale": "VCS is truth; orgs change via deploy/install.", "distractor_explanations": {"B": "No such hook by default.", "C": "Data and deletes may not reverse.", "D": "Unrelated."}, "concept": "Revert vs rollback", "citation_ids": ["SF-DX-INTRO", "SF-CLI-DEPLOY"]},
+    {"id": "Q8", "category": "scenario", "difficulty": "Intermediate", "prompt": "Production deploy failed midway. Best first instinct?", "options": {"A": "Treat it as rolled back if rollbackOnError/default failure behavior applied; do not ignore-errors to 'finish'", "B": "Rerun with --ignore-errors", "C": "Delete production", "D": "Commit the JWT key"}, "answer": "A", "rationale": "Failed deploys should not partially save on production.", "distractor_explanations": {"B": "Forbidden pattern.", "C": "Absurd.", "D": "Security fail."}, "concept": "Failed deploy", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q9", "category": "recall", "difficulty": "Foundation", "prompt": "What is the CLI for in the DX intro?", "options": {"A": "Development, continuous integration, and delivery", "B": "Only Data Loader mapping", "C": "Only AppExchange screenshots", "D": "Only sharing rules"}, "answer": "A", "rationale": "DX intro highlights the CLI for those lifecycle jobs.", "distractor_explanations": {"B": "Data.", "C": "Marketing.", "D": "Security config."}, "concept": "CLI role", "citation_ids": ["SF-DX-INTRO"]},
+    {"id": "Q10", "category": "application", "difficulty": "Intermediate", "prompt": "Quick deploy after validate still does what to metadata?", "options": {"A": "Overwrites the corresponding metadata in the org; it is a real deploy", "B": "Only writes a log", "C": "Only updates Git", "D": "Copies Account rows"}, "answer": "A", "rationale": "Validate notes that quick deploy overwrites corresponding metadata and does not use source tracking.", "distractor_explanations": {"B": "It deploys.", "C": "Git unchanged.", "D": "Not data."}, "concept": "Quick is real", "citation_ids": ["SF-CLI-VALIDATE"]},
+    {"id": "Q11", "category": "scenario", "difficulty": "Intermediate", "prompt": "Environment variable versus secret?", "options": {"A": "Both may be injected by CI; secrets are credentials that must be masked; aliases/test levels are configuration", "B": "All env vars must be committed", "C": "Secrets belong in package.xml", "D": "Test level is a JWT key"}, "answer": "A", "rationale": "Parameterize jobs; mask credentials.", "distractor_explanations": {"B": "Do not commit secrets.", "C": "Manifest is metadata list.", "D": "Test level is not a credential."}, "concept": "Env vs secret", "citation_ids": ["SF-DX-CI"]},
+    {"id": "Q12", "category": "scenario", "difficulty": "Intermediate", "prompt": "Why mention DevOps Center in a CLI-first interview?", "options": {"A": "It is an official optional collaboration/release UI; the CLI contract still explains retrieve/deploy/CI", "B": "It replaces Git", "C": "It stores JWT keys in Apex", "D": "It is required to use scratch orgs"}, "answer": "A", "rationale": "DX intro lists DevOps Center as optional; CI topic links its Help.", "distractor_explanations": {"B": "VCS remains truth.", "C": "Dangerous nonsense.", "D": "Scratch orgs use Dev Hub + CLI."}, "concept": "DevOps Center optional", "citation_ids": ["SF-DX-CI", "SF-DX-INTRO"]}
+  ],
+  "flashcards": [
+    {"id": "F1", "category": "ci", "front": "What is CI in the DX guide?", "back": "Regularly integrate into a source repo with automated builds and tests."},
+    {"id": "F2", "category": "secret", "front": "Where do JWT keys live?", "back": "CI secret store / masked env vars, never force-app."},
+    {"id": "F3", "category": "flag", "front": "ignore-errors on production?", "back": "Never. Partial success can leave an inconsistent org."},
+    {"id": "F4", "category": "quick", "front": "Validate job ID lifetime?", "back": "10 days for project deploy quick."},
+    {"id": "F5", "category": "approval", "front": "Pipeline approval vs Flow approval?", "back": "Human CD gate versus record Approval Process. Different features."},
+    {"id": "F6", "category": "rollback", "front": "git revert without deploy?", "back": "Org unchanged. Rollback requires metadata deploy or package install."},
+    {"id": "F7", "category": "models", "front": "Two CI sample models?", "back": "Org development model and package development model."},
+    {"id": "F8", "category": "env", "front": "Example environment variables?", "back": "Target org alias and test level, injected per chamber."},
+    {"id": "F9", "category": "cli", "front": "CLI role in DX intro?", "back": "Development, continuous integration, and delivery."},
+    {"id": "F10", "category": "failed", "front": "Failed production deploy instinct?", "back": "Fail closed. Do not ignore-errors to finish."},
+    {"id": "F11", "category": "quick2", "front": "Is quick deploy a real metadata change?", "back": "Yes. It overwrites corresponding metadata."},
+    {"id": "F12", "category": "scratch", "front": "CI scratch orgs and PII?", "back": "Do not load personal data. Delete the org after tests."},
+    {"id": "F13", "category": "rotate", "front": "Secret was committed?", "back": "Remove from history if possible, rotate the credential, store it in CI."},
+    {"id": "F14", "category": "validate", "front": "Validate on sandboxes in CD?", "back": "No. Use dry-run with tests. Validate is the production job-ID path."},
+    {"id": "F15", "category": "package", "front": "Package-model rollback option?", "back": "Install a previous package version if your model versions packages."}
+  ],
+  "interview_questions": [
+    {"id": "I1", "category": "foundational", "question": "What does Salesforce mean by continuous integration?", "answer_30_seconds": "Developers regularly integrate metadata source into a repository. Automated builds and tests run so new code does not introduce bugs. DX plugs into third-party CI.", "answer_2_minutes": "I mention sample repos for org versus package models. I use scratch orgs for PR proof. I keep secrets out. I do not claim a specific vendor is required. CLI is the lifecycle tool.", "example": "GitHub Actions: on pull_request, create scratch, deploy LAB_ source, run tests, delete.", "tradeoffs": ["Vendor choice", "Org model vs package model CI"], "follow_ups": ["Jenkins vs CircleCI samples?", "DevOps Center?"], "weak_answer_warnings": ["CI means change sets"]},
+    {"id": "I2", "category": "foundational", "question": "How do you handle secrets in a Salesforce pipeline?", "answer_30_seconds": "JWT keys, tokens, and package installation keys live in the CI secret store as masked environment variables. Never in Git. Rotate if leaked.", "answer_2_minutes": "I separate aliases (config) from keys (secrets). I mask logs. I use a least-privilege CI user. I do not print sf org display that might show tokens. I still need API Enabled and Metadata deploy rights—those are permissions, not secrets.", "example": "SF_JWT_KEY file uploaded as a secret; Jenkins injects it at runtime.", "tradeoffs": ["JWT vs refresh token", "Secret rotation cadence"], "follow_ups": ["Connected app policies?", "Who owns the Dev Hub user?"], "weak_answer_warnings": ["Commit the key so CI works"]},
+    {"id": "I3", "category": "scenario", "question": "Leadership wants auto-deploy to production on every main merge.", "answer_30_seconds": "I can auto-deploy to a scratch or UAT. Production still needs quality gates and, if policy requires, a human approval. I will not add ignore-errors to make it always green.", "answer_2_minutes": "I offer validate-on-main plus an approval job. I explain quick deploy for the window. I keep tests from DEVOPS-006. Some teams auto-prod for truly reversible unlocked packages—Needs verification of their risk appetite—but I would not default there for a shared enterprise org.", "example": "main merge deploys UAT; production waits for two approvers after validate.", "tradeoffs": ["Speed vs blast radius", "Package push upgrades vs source deploy"], "follow_ups": ["Who approves after hours?", "Hotfix lane?"], "weak_answer_warnings": ["Always auto-prod with ignore-errors"]},
+    {"id": "I4", "category": "scenario", "question": "How do you roll back a successful bad production metadata deploy?", "answer_30_seconds": "Deploy last-known-good Git or install a previous package version. GitHub revert without CLI does nothing to the org. Deletes may need destructive changes.", "answer_2_minutes": "I ask what succeeded: additive fields are hard to undo if data exists. I prefer fix-forward if the bug is Apex. I never ignore-errors. I separate data restore. I mention 10-day validate IDs are not a rollback tool.", "example": "Install LabBoarding 1.3.0 after 1.4.0 broke a Flow; then retrieve to confirm Git matches.", "tradeoffs": ["Fix-forward vs version downgrade", "Field delete vs hide"], "follow_ups": ["Can you uninstall unlocked?", "What about converted field types?"], "weak_answer_warnings": ["Revert on GitHub is rollback"]},
+    {"id": "I5", "category": "design", "question": "Where do approvals sit relative to quality gates?", "answer_30_seconds": "Gates are automated tests, coverage, analyzer. Approvals are humans after gates, before production deploy. Neither is a Flow approval process.", "answer_2_minutes": "I would not make CAB re-run tests by hand if validate already did. I would not let approval skip failing tests. I store the validate job ID as evidence. I keep the approver list out of Apex.", "example": "Analyzer+tests green → manager approval → quick deploy.", "tradeoffs": ["Two-person rule vs speed", "CAB weekly vs per-release"], "follow_ups": ["Emergency bypass?", "Audit log?"], "weak_answer_warnings": ["Tests are the approval"]},
+    {"id": "I6", "category": "foundational", "question": "How can validate/quick deploy fit a pipeline?", "answer_30_seconds": "Run validate after UAT, keep the 10-day job ID, take the approval, then quick deploy in the freeze. Do not validate sandboxes.", "answer_2_minutes": "If metadata changes after validate, I re-validate. Quick deploy still overwrites metadata—it is not a rehearsal. I still monitor Deployment Status (DEVOPS-010). I do not use the job ID on a different org.", "example": "Monday validate against prod; Friday CAB; sf project deploy quick --job-id …", "tradeoffs": ["Stale validation vs re-test cost", "Async validate vs blocking agent"], "follow_ups": ["What if tests are non-deterministic?", "Who stores the job ID?"], "weak_answer_warnings": ["Validate UAT and quick-deploy production with that ID"]},
+    {"id": "I7", "category": "troubleshooting", "question": "CI prints a Salesforce access token in logs. Response?", "answer_30_seconds": "Treat it as a leaked secret: revoke/rotate, mask the log step, purge logs if the vendor allows, stop printing org display in debug.", "answer_2_minutes": "I check whether the token was in Git too. I reduce sf log level. I confirm the CI user cannot be used interactively from the leak. I add a pipeline test that fails if files look like keys.", "example": "Jenkins console showed sf org display output; rotate the refresh token and mask the step.", "tradeoffs": ["Debug verbosity vs leak risk", "Shared CI user vs per-env users"], "follow_ups": ["How long was the token valid?", "Who reads Jenkins?"], "weak_answer_warnings": ["Tokens in logs are fine because CI is internal"]},
+    {"id": "I8", "category": "challenge", "question": "Design rollback for org-model versus package-model pipelines.", "answer_30_seconds": "Org model: deploy a previous Git SHA. Package model: install a previous version if allowed. Both still need a CLI/org action. Neither undoes data by itself.", "answer_2_minutes": "I keep last-good identifiers in the release ticket. Org-model rollbacks can be messy with profile XML. Package-model rollbacks depend on upgrade/downgrade rules—Needs verification per package type. I add destructive-change planning for deletes. I forbid ignore-errors as a fake rollback.", "example": "Org model: deploy tag release-2026-08-01. Package model: sf package install LabBoarding@1.3.0 --target-org prod (only if policy allows).", "tradeoffs": ["Git SHA pinpoint vs package inventory", "Downgrade support gaps"], "follow_ups": ["Unlocked uninstall?", "2GP downgrade?"], "weak_answer_warnings": ["Same rollback as Docker image pull"]}
+  ]
+}

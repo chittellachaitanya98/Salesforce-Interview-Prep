@@ -1,0 +1,1080 @@
+{
+  "topic_id": "DATA-002",
+  "slug": "standard-and-custom-fields-and-data-types",
+  "title": "Standard and custom fields and data types",
+  "track": "Data model and configuration",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-001"
+  ],
+  "objectives": [
+    "Explain a field as a typed attribute on an object, and a data type as the kind of value that field stores or calculates.",
+    "Distinguish Salesforce-provided standard fields from organization-created custom fields without treating custom as the default design.",
+    "Choose a data type for a custom field using official type meaning, then name conversion, uniqueness, and External ID as separate later checks.",
+    "Separate field metadata (API name, type, requiredness) from the business data stored in that field on records."
+  ],
+  "diagnostic_question": "A facilities team wants a property code, a purchase date, an active flag, and a link to the owning Account on LAB_Property__c. Before reading, which are standard versus custom fields, which data types would you reach for, and what would you refuse to encode as a text field?",
+  "definition": "A field is a named, typed attribute on a Salesforce object. Standard fields ship with the object; custom fields are created by the organization and appear in the API with a __c suffix. The data type decides what kind of value the field holds—text, number, date, checkbox, relationship, formula, and others—and therefore what reports, automation, and conversions can do with it. ([Custom Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/custom_fields.htm); [Custom Field Types](https://help.salesforce.com/s/articleView?id=platform.custom_field_types.htm); [Overview of Salesforce Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm))",
+  "why_it_matters": "A wrong data type on a custom field is expensive to unwind: picklists, formulas, External IDs, and integrations all assume the type. Interviewers listen for whether you reuse a standard field when it already means the thing, and whether you keep the field definition (metadata) separate from the values on records (business data).",
+  "sixty_second_explanation": "Think of a warehouse packing slip. Standard fields are the printed boxes every slip already has—Created By, Name, Owner. Custom fields are extra boxes your warehouse stamps on, and each box has a data type: a date stamp is not a tracking-number text box. The slip template is metadata; the numbers written on today's shipment are business data. Do not invent a custom text field for a meaning a standard field already stores.",
+  "deeper_explanation": [
+    "The Object Reference maps object to table, field to column, and record to row as a structural starting point. A field's data type is the column's allowed value kind. Standard fields come with the object; custom fields are organization-defined and, in the API, use a __c suffix such as Hire_Date__c. ([Overview of Salesforce Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm); [Custom Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/custom_fields.htm))",
+    "Custom objects automatically include standard fields such as Name, CreatedById, LastModifiedById, and—unless the object is the detail side of a master-detail relationship—OwnerId. Those are still standard fields even though they sit on a custom object. You add custom fields when the org needs an attribute Salesforce did not ship. ([Custom Object Standard Fields](https://help.salesforce.com/s/articleView?id=platform.dev_objectfields.htm))",
+    "Custom Field Types and Custom Field Attributes describe data type as the determinant of what information the field contains (for example Number versus Date versus Checkbox) and which attributes apply (length, required, unique, External ID, formula, roll-up). Numeric custom fields are handled as type double in the API. Client applications cannot define custom fields via the API; administrators define them in the UI (or Metadata API as metadata). ([Custom Field Types](https://help.salesforce.com/s/articleView?id=platform.custom_field_types.htm); [Custom Field Attributes](https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm); [Custom Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/custom_fields.htm))",
+    "External ID can be set on one custom field per object in the user interface described by the Object Reference; the field type must be text, number, or email. Unique custom fields on custom objects can be case-sensitive or case-insensitive. Default-value formulas run even if field-level security hides the field, and defaults are not used for lead conversion, importing, or merging. Changing a custom field's data type is a separate, constrained operation—Needs verification of current conversion pairs in the target org. ([Custom Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/custom_fields.htm))",
+    "Relationship field types (lookup, master-detail) and formula or roll-up summary types belong to later DATA topics. This lesson only needs: a relationship is still a field with a data type; do not store a parent Id as free text when a relationship field is the model."
+  ],
+  "mental_model": {
+    "analogy": "A warehouse packing slip: printed boxes are standard fields, stamped extra boxes are custom fields, and each box's data type is the stamp shape (date, weight, checkbox, tracking text).",
+    "useful_mapping": [
+      "standard field → a box already printed on every slip for that object",
+      "custom field → an extra box your org adds; API name ends in __c",
+      "data type → what kind of mark the box accepts",
+      "API name vs label → machine identifier vs wording on the slip",
+      "field definition → the slip template (metadata)",
+      "field value on a record → today's handwritten numbers (business data)",
+      "External ID / unique → a barcode that integrations match on, not a display label",
+      "OwnerId on a custom object → a printed owner box that disappears if the object becomes a master-detail detail"
+    ],
+    "where_it_breaks": [
+      "Changing a data type is not erasing a stamp; conversion rules and data loss risk are org- and type-specific.",
+      "A standard field on a custom object (Name, OwnerId) is still a standard field.",
+      "Required at the field definition is not the same as required on a page layout or by a validation rule.",
+      "The analogy does not encode field-level security, formula compile size, or relationship cascade delete."
+    ]
+  },
+  "teach_back_prompt": "Without saying 'column,' explain standard field, custom field, and data type using the packing-slip analogy, then name one place the analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, write standard vs custom field and one sentence on why data type is a metadata choice, not a record value."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given four attributes (code, date, flag, parent Account), pick data types and reject a text-for-everything design."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain External ID vs unique vs required, and which types the Object Reference allows for External ID."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose a report that cannot SUM a field: is it the data type, FLS, or a formula?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: reuse a standard field vs create a custom field, plus one type-change caution."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-OBJREF-FIELDS",
+      "title": "Custom Fields",
+      "type": "Official Salesforce Object Reference",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/custom_fields.htm",
+      "supports": "Custom fields created in the UI; __c API suffix; External ID on text/number/email; uniqueness and case sensitivity; default-value formula constraints; numeric custom fields as double.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-OBJREF-CONCEPTS",
+      "title": "Overview of Salesforce Objects and Fields",
+      "type": "Official Salesforce Object Reference",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm",
+      "supports": "Object/field/record structural mapping; standard vs custom origin of objects and fields as platform vocabulary.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-FIELDTYPES",
+      "title": "Custom Field Types",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.custom_field_types.htm",
+      "supports": "Catalog of custom field data types and what kind of information each type stores.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-FIELDATTR",
+      "title": "Custom Field Attributes",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.custom_field_attributes.htm",
+      "supports": "Data type as the determinant of field information; attributes such as required, unique, formula, roll-up type, and related-to.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-CUSTOMOBJFIELDS",
+      "title": "Custom Object Standard Fields",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.dev_objectfields.htm",
+      "supports": "Default standard fields on custom objects including Name, audit fields, OwnerId, and OwnerId removal when the object is a master-detail detail.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Field is a typed attribute",
+        "Standard vs custom origin",
+        "Data type drives behavior",
+        "API name __c vs label",
+        "Metadata vs field values",
+        "External ID and unique"
+      ],
+      "accessible_description": "Portrait map: a field sits on an object; standard fields ship with the object while custom fields are org-created; data type constrains values; API name is not the label; definitions are metadata and values are data."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-OBJREF-FIELDS",
+        "SF-OBJREF-CONCEPTS",
+        "SF-HELP-FIELDTYPES",
+        "SF-HELP-FIELDATTR",
+        "SF-HELP-CUSTOMOBJFIELDS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Need an attribute → reuse standard field or add typed custom field"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Obj[Object] --> Std[Standard fields shipped with object]\n  Obj --> Cus[Custom fields org-created __c]\n  Cus --> Type[Data type: text number date checkbox relationship formula]\n  Type --> Meta[Field definition is metadata]\n  Meta --> Vals[Values on records are business data]\n  Cus --> Ext[Optional External ID unique required]",
+      "decision": "flowchart TD\n  Need[Need an attribute] --> Q1{Does a standard field already mean this?}\n  Q1 -->|Yes| Reuse[Reuse the standard field]\n  Q1 -->|No| Q2{What kind of value?}\n  Q2 -->|Date or date/time| Dt[Date or Date/Time type]\n  Q2 -->|Yes/no flag| Cb[Checkbox]\n  Q2 -->|Parent record| Rel[Relationship field DATA-003]\n  Q2 -->|Calculated display| Fm[Formula DATA-006 not stored input]\n  Q2 -->|Free-form text code| Tx[Text or Auto Number]\n  Q2 -->|List of allowed words| Pk[Picklist DATA-008]",
+      "sequence": "sequenceDiagram\n  participant Admin\n  participant ObjectManager\n  participant Record\n  Admin->>ObjectManager: Add custom field metadata and data type\n  ObjectManager-->>Record: New empty attribute on existing rows\n  Admin->>Record: Enter LAB_ values as business data\n  Note over Admin,Record: Changing type later is a conversion, not a rename"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Administrators define custom fields on standard or custom objects in the user interface; custom field API names use a __c suffix; client applications cannot define custom fields via the (data) API.",
+      "source_ids": [
+        "SF-OBJREF-FIELDS",
+        "SF-OBJREF-CONCEPTS"
+      ],
+      "scope": "Custom field origin and identity",
+      "validation": "Matched to Custom Fields and Objects and Fields overview.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "A field's data type determines what kind of information it contains and which attributes apply. Numeric custom fields are handled as type double in the API.",
+      "source_ids": [
+        "SF-HELP-FIELDTYPES",
+        "SF-HELP-FIELDATTR",
+        "SF-OBJREF-FIELDS"
+      ],
+      "scope": "Data types",
+      "validation": "Custom Field Types, Custom Field Attributes, and Custom Fields notes.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Custom objects include Salesforce-provided standard fields such as Name, CreatedById, LastModifiedById, and OwnerId; OwnerId is removed if the object becomes the detail side of a master-detail relationship.",
+      "source_ids": [
+        "SF-HELP-CUSTOMOBJFIELDS",
+        "SF-OBJREF-FIELDS"
+      ],
+      "scope": "Standard fields on custom objects",
+      "validation": "Custom Object Standard Fields Help plus Custom Fields object table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "An External ID custom field must be text, number, or email. Unique custom fields on custom objects may be case-sensitive or case-insensitive. Default-value formulas are not used for lead conversion, import, or merge.",
+      "source_ids": [
+        "SF-OBJREF-FIELDS",
+        "SF-HELP-FIELDATTR"
+      ],
+      "scope": "External ID, unique, defaults",
+      "validation": "Object Reference Custom Fields plus attributes Help.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Field type catalogs and conversion support are release-sensitive. Reverify Custom Field Types and Change the Data Type of a Custom Field in the target org for Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact UI conversion pairs when changing a custom field's data type, and per-edition custom-field limits, are Needs verification in the target org—do not recite unofficial numbers.",
+    "Which objects allow which custom field types beyond the Object Reference sample table remains object-specific."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Standard field",
+      "telugu": "ఆబ్జెక్ట్‌తో సేల్స్‌ఫోర్స్ ఇచ్చే రెడీమేడ్ ఫీల్డ్."
+    },
+    {
+      "english": "Custom field",
+      "telugu": "మీ ఆర్గ్ జోడించే ఫీల్డ్; API పేరు __c తో అంతం."
+    },
+    {
+      "english": "Data type",
+      "telugu": "ఫీల్డ్‌లో ఎలాంటి విలువ ఉంటుందో చెప్పే రకం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "A field is a typed attribute on an object. Standard fields ship with the object; custom fields are org-created and use __c. Data type decides what the field can store. Reuse a standard field when it already means the thing; treat the definition as metadata and values as data.",
+    "two_minutes": "I start from the business attribute. If Account.Name or CreatedDate already means it, I do not clone a custom text field. If we need an org-specific code, date, or flag, I pick the Custom Field Types catalog: text/auto-number, date, checkbox, number—not a catch-all text box. Relationship, formula, and roll-up types are later topics. I mention External ID only for text, number, or email used in upsert. I never treat page-layout required as the same as the field's Required attribute."
+  },
+  "terminology": [
+    {
+      "term": "field",
+      "plain": "A named slot on an object that holds one kind of value.",
+      "precise": "A typed attribute on a Salesforce object. Structurally analogous to a column; the data type constrains values.",
+      "example": "LAB_Property__c.LAB_Code__c holding P-1042.",
+      "non_example": "The LAB_Property__c object itself is not a field.",
+      "confusable_neighbor": "Record: one saved row of values, not the attribute definition.",
+      "boundary": "Field types that are relationships, formulas, or roll-ups are introduced here only as types; mechanics are later DATA topics."
+    },
+    {
+      "term": "standard field",
+      "plain": "A field Salesforce already put on the object.",
+      "precise": "A field that ships with the object, including Name, audit fields, and OwnerId on custom objects that are not master-detail details.",
+      "example": "Account.Name or LAB_Property__c.CreatedById.",
+      "non_example": "A custom LAB_Code__c field is not a standard field even if every record uses it.",
+      "confusable_neighbor": "Standard object: who created the object, not who created the field.",
+      "boundary": "Standard fields on custom objects are still standard fields."
+    },
+    {
+      "term": "custom field",
+      "plain": "A field your org adds.",
+      "precise": "An organization-defined field. In the API the name uses a __c suffix. Administrators create these in the UI; client data APIs do not define them.",
+      "example": "Hire_Date__c on Contact.",
+      "non_example": "Renaming the label of Account.Phone does not make Phone a custom field.",
+      "confusable_neighbor": "Custom object: a new object vs a new field on an existing object.",
+      "boundary": "Packaged names may add a namespace prefix; verify in the package docs."
+    },
+    {
+      "term": "data type",
+      "plain": "The kind of value the field is allowed to hold.",
+      "precise": "The type selected when creating a custom field (and inherent on standard fields). It determines information kind and which attributes apply.",
+      "example": "Date for LAB_PurchaseDate__c rather than Text.",
+      "non_example": "Storing 2026-08-16 in a Text field is a value, not a Date type.",
+      "confusable_neighbor": "Formula return type: a formula field also has a return type, covered in DATA-006.",
+      "boundary": "Do not invent unofficial type lists; use Custom Field Types Help."
+    },
+    {
+      "term": "API name",
+      "plain": "The machine identifier for the field.",
+      "precise": "The developer name used in APIs, formulas, and code. Custom fields end in __c.",
+      "example": "LAB_Code__c vs label Property Code.",
+      "non_example": "A page-layout section heading is not an API name.",
+      "confusable_neighbor": "Label: user-facing wording that can change without renaming the API.",
+      "boundary": "Namespace prefixes apply in managed packages."
+    },
+    {
+      "term": "External ID",
+      "plain": "A custom field used to match records from another system.",
+      "precise": "A custom field flagged as External ID. Object Reference: type must be text, number, or email; used in import, integration, and upsert matching.",
+      "example": "LAB_LegacyKey__c text field marked External ID for upsert.",
+      "non_example": "A formula field displaying a vendor code is not an External ID unless defined as such on an allowed type.",
+      "confusable_neighbor": "Unique: uniqueness can exist without External ID, and External ID is a matching flag.",
+      "boundary": "The Object Reference describes identifying one custom field as External ID in the UI; confirm current UI limits in org."
+    },
+    {
+      "term": "unique field",
+      "plain": "A custom field whose values must not repeat.",
+      "precise": "On a custom object, uniqueness may be case-sensitive or case-insensitive. Duplicate insert returns DUPLICATE_VALUE. Not settable via ordinary data API calls.",
+      "example": "LAB_BadgeNumber__c unique case-insensitive.",
+      "non_example": "Required without unique still allows duplicates.",
+      "confusable_neighbor": "External ID: matching for upsert, not the same checkbox.",
+      "boundary": "Uniqueness on standard objects/fields is object-specific; do not generalize."
+    },
+    {
+      "term": "required field attribute",
+      "plain": "The field must have a value everywhere in Salesforce.",
+      "precise": "Custom Field Attributes: Required makes the field required everywhere, not available for external objects. Distinct from layout requiredness and validation rules.",
+      "example": "LAB_Code__c Required at field definition.",
+      "non_example": "Marking the field required only on one page layout.",
+      "confusable_neighbor": "Validation rule: formula that blocks a save with a message (DATA-010).",
+      "boundary": "Do not assign default values to fields that are both required and unique, per Help."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name the attribute and test standard fit",
+      "actor": "Admin + BA",
+      "trigger": "A new piece of information is requested",
+      "before": "Unclear whether a field already exists",
+      "after": "Reuse a standard field or justify a custom field",
+      "observe": "Written reason the standard field does or does not mean this",
+      "failure": "Cloning Account.Name into a custom text field"
+    },
+    {
+      "step": 2,
+      "transition": "Pick a data type",
+      "actor": "Admin",
+      "trigger": "Custom field is justified",
+      "before": "Type not chosen",
+      "after": "Type from Custom Field Types matched to the value kind",
+      "observe": "Sample LAB_ values save and appear correctly in a report",
+      "failure": "Using Text for dates, flags, or parent Ids"
+    },
+    {
+      "step": 3,
+      "transition": "Set identity and quality attributes",
+      "actor": "Admin",
+      "trigger": "Type chosen",
+      "before": "Optional External ID, unique, required unset",
+      "after": "Attributes match integration and quality needs",
+      "observe": "Describe/inspect unique and External ID flags in sandbox",
+      "failure": "Marking a Long Text Area as External ID (not an allowed type per Object Reference)"
+    },
+    {
+      "step": 4,
+      "transition": "Prove metadata vs data",
+      "actor": "Admin",
+      "trigger": "Field exists",
+      "before": "Empty values on existing records",
+      "after": "Synthetic LAB_ values entered; field deploy treated as metadata",
+      "observe": "Retrieve of the custom field vs a Data Loader column of values",
+      "failure": "Assuming creating the field fills historical values"
+    }
+  ],
+  "when_to_use": [
+    "When an object needs a new typed attribute and you must choose a custom field data type instead of stuffing everything into Text.",
+    "When deciding whether a standard field already stores the meaning, so you do not create a duplicate custom field.",
+    "When an integration needs an External ID or unique custom field and you must confirm the field type is text, number, or email for External ID.",
+    "When diagnosing why a report cannot group, filter, or SUM: the field's data type may be wrong.",
+    "When explaining that adding a field is a metadata/schema change, while filling values on records is business data."
+  ],
+  "when_not_to_use": [
+    "Do not use a custom field to replace a lookup or master-detail relationship when the need is a parent object link (DATA-003).",
+    "Do not use a stored custom field when a formula field should calculate a display value (DATA-006) or a roll-up summary should aggregate children (DATA-007).",
+    "Do not encode record-type-specific picklist processes as free-text data types (DATA-008).",
+    "Do not treat this fields-and-data-types lesson as a page-layout or Dynamic Forms lesson (DATA-009) or as a validation-rule design lesson (DATA-010).",
+    "Do not change a custom field data type in production to experiment; conversion support is org- and type-specific and can lose data."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Object Manager → object → Fields & Relationships in a disposable sandbox.",
+    "Field definition: label, API name, data type, required, unique, External ID.",
+    "Field-level security and page layouts are neighboring surfaces, not proof the type is correct.",
+    "Metadata retrieve of CustomField vs Data Loader export of field values."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab models LAB_Property__c. The team needs a human property code, a purchase date, an occupied flag, a numeric square footage, and a match key from a legacy facilities system. No production data.",
+    "inputs": [
+      "Custom object LAB_Property__c already exists",
+      "Need code, date, flag, number, legacy key",
+      "Legacy upsert will match on the key",
+      "Synthetic LAB_ rows only"
+    ],
+    "decisions": [
+      {
+        "decision": "Do not create a custom Owner or Created Date; reuse standard fields.",
+        "because": "Custom objects already include those standard fields.",
+        "rejected": "LAB_OwnerName__c text field"
+      },
+      {
+        "decision": "LAB_Code__c as Text (or Auto Number if the org should assign numbers).",
+        "because": "It is an identifier, not a date or checkbox.",
+        "rejected": "Long Text Area for a short code"
+      },
+      {
+        "decision": "LAB_PurchaseDate__c as Date; LAB_Occupied__c as Checkbox; LAB_SqFt__c as Number.",
+        "because": "Data type must match the value kind for filters and math.",
+        "rejected": "All four as Text"
+      },
+      {
+        "decision": "LAB_LegacyKey__c Text marked External ID (and unique if the legacy key is 1:1).",
+        "because": "Object Reference allows External ID on text, number, or email.",
+        "rejected": "External ID on a Date field"
+      }
+    ],
+    "configuration_or_code": [
+      "Object Manager → LAB_Property__c → Fields & Relationships → New for each custom field.",
+      "Set FLS for the admin profile used in the lab; add fields to the layout only to enter test values.",
+      "Insert two LAB_ records; attempt a duplicate unique key to observe DUPLICATE_VALUE."
+    ],
+    "output": "Five typed custom fields plus reused standard fields; upsert-ready External ID; sample LAB_ values stored as business data.",
+    "verification": [
+      "API names end in __c for the custom fields.",
+      "A report can filter on Date and Checkbox without text parsing.",
+      "Duplicate unique key fails; describe shows External ID on LAB_LegacyKey__c."
+    ],
+    "self_explanation": "I reused standard fields, matched each custom field to a data type, and treated External ID as a typed matching flag—not a label."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable Developer sandbox or scratch org; LAB_ object and fields only.",
+    "starting_state_checks": [
+      "You can create custom fields on a custom object.",
+      "No production aliases in API names."
+    ],
+    "steps": [
+      "Create or reuse LAB_Property__c.",
+      "Add LAB_Code__c (Text), LAB_PurchaseDate__c (Date), LAB_Occupied__c (Checkbox), LAB_SqFt__c (Number), LAB_LegacyKey__c (Text, External ID, unique).",
+      "Create two synthetic records; confirm the date field rejects non-dates in the UI.",
+      "Attempt a second record with the same unique key and capture the error."
+    ],
+    "guided_completion": [
+      "If you stored the date in Text, delete and recreate as Date rather than 'formatting' in reports.",
+      "If OwnerId is missing, check whether the object is a master-detail detail (DATA-003)."
+    ],
+    "independent_challenge": "Add a Phone field and explain why it is a type, not a formula. Then write one sentence on why you would not mark Phone as External ID without checking allowed types.",
+    "evidence": [
+      "Screenshot or describe result showing types and External ID.",
+      "Note of the duplicate unique-key error."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ records then LAB_ fields/object from the sandbox.",
+      "Do not deploy to production."
+    ],
+    "limitations": "This lab does not prove type-conversion matrices, edition field limits, or managed-package namespace prefixes."
+  },
+  "decision_table": [
+    {
+      "signal": "The object already has a field that means this (Name, Owner, Created Date, Amount).",
+      "choose": "Reuse the standard field.",
+      "not": "A parallel custom field with the same meaning.",
+      "why": "Standard fields ship with the object; clones split reporting and automation."
+    },
+    {
+      "signal": "The org needs an attribute Salesforce did not ship, with a known value kind.",
+      "choose": "Create a custom field and pick the matching data type.",
+      "not": "A catch-all Text field 'to stay flexible'.",
+      "why": "Data type drives filters, math, and conversion; Custom Field Types is the catalog."
+    },
+    {
+      "signal": "An integration must match Salesforce rows to an external system's key.",
+      "choose": "Text, number, or email custom field marked External ID (and unique if 1:1).",
+      "not": "External ID on Date, Checkbox, or Long Text Area.",
+      "why": "Object Reference restricts External ID to text, number, or email."
+    },
+    {
+      "signal": "Users must pick from a controlled list of words.",
+      "choose": "Picklist (or global value set) as the data type—detail in DATA-008.",
+      "not": "Text field plus a validation rule as the first design.",
+      "why": "Picklist is the type for enumerated values; validation is a later gate."
+    },
+    {
+      "signal": "The value should be calculated from other fields, not typed.",
+      "choose": "Formula field type (DATA-006), not a stored Number users edit.",
+      "not": "A Number field that Flow fills 'whenever someone remembers'.",
+      "why": "Calculated display is a formula data type, not a handwritten box."
+    }
+  ],
+  "limitations": [
+    "Does not teach lookup vs master-detail mechanics (DATA-003) or junction objects (DATA-004).",
+    "Does not catalog every conversion pair when changing a custom field type.",
+    "Does not replace field-level security, page layouts, or validation rules.",
+    "Numeric org-wide field limits are edition-sensitive; Needs verification in the target org."
+  ],
+  "security_notes": [
+    "Field-level security is not the data type; a user can lack FLS on a correctly typed field.",
+    "Default-value formulas still run when FLS hides the field; do not put secrets in defaults.",
+    "Do not store secrets in ordinary custom fields; named credentials and protected configuration are DATA-012."
+  ],
+  "common_mistakes": [
+    "Creating a custom text field that duplicates a standard field.",
+    "Using Text for dates, checkboxes, or parent record Ids.",
+    "Assuming a custom object has no standard fields.",
+    "Marking the wrong type as External ID.",
+    "Calling the field definition 'data' and the values 'metadata'."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Report cannot SUM or filter as a date.",
+      "check": [
+        "The field's data type is Number/Date, not Text.",
+        "The user has FLS to the field."
+      ],
+      "do_not_assume": "The report type is the only problem."
+    },
+    {
+      "symptom": "Upsert cannot match the legacy key.",
+      "check": [
+        "The field is External ID on an allowed type.",
+        "API name and uniqueness match the integration."
+      ],
+      "do_not_assume": "A label change updates the External ID flag."
+    },
+    {
+      "symptom": "Owner field missing on a custom object.",
+      "check": [
+        "The object is the detail side of a master-detail relationship.",
+        "OwnerId is a standard field removed in that case."
+      ],
+      "do_not_assume": "Someone deleted a custom Owner field."
+    }
+  ],
+  "production_notes": [
+    "Add custom fields in sandbox; deploy metadata; backfill values as a data operation if needed.",
+    "Type changes on fields with data are high-risk; verify conversion Help in the target org.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In the Salesforce Object Reference, how are custom field API names identified?",
+      "options": {
+        "A": "A suffix of two underscores and a lowercase c (__c)",
+        "B": "A prefix of std__",
+        "C": "No suffix; only the label is used in the API",
+        "D": "A suffix of __x for all custom fields"
+      },
+      "answer": "A",
+      "rationale": "Custom field names in the API use a __c suffix, for example Hire_Date__c.",
+      "distractor_explanations": {
+        "B": "There is no std__ prefix for custom fields.",
+        "C": "The API uses the developer name, not only the label.",
+        "D": "__x is associated with external objects, not ordinary custom fields."
+      },
+      "concept": "Custom field API name",
+      "citation_ids": [
+        "SF-OBJREF-FIELDS",
+        "SF-OBJREF-CONCEPTS"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Who defines custom fields according to the Object Reference Custom Fields topic?",
+      "options": {
+        "A": "Administrators in the user interface (client data APIs do not define them)",
+        "B": "Any SOAP insert of a Field record from a regular user",
+        "C": "Only Apex without Setup access",
+        "D": "Only by editing a page layout"
+      },
+      "answer": "A",
+      "rationale": "Administrators define custom fields using the UI; client applications cannot define custom fields via the API.",
+      "distractor_explanations": {
+        "B": "The data API does not create field definitions.",
+        "C": "Apex is not the documented creation path in that topic.",
+        "D": "Layouts present fields; they do not define the field type."
+      },
+      "concept": "Custom field creation",
+      "citation_ids": [
+        "SF-OBJREF-FIELDS",
+        "SF-HELP-FIELDTYPES"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Which custom field types can be marked External ID per the Object Reference?",
+      "options": {
+        "A": "Text, number, or email",
+        "B": "Date, checkbox, or formula",
+        "C": "Long text area or rich text",
+        "D": "Any data type including master-detail"
+      },
+      "answer": "A",
+      "rationale": "An External ID custom field must be text, number, or email.",
+      "distractor_explanations": {
+        "B": "Those types are not listed for External ID.",
+        "C": "Long text is not an External ID type in that topic.",
+        "D": "Relationship types are not the External ID types listed."
+      },
+      "concept": "External ID types",
+      "citation_ids": [
+        "SF-OBJREF-FIELDS",
+        "SF-HELP-FIELDATTR"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "A custom object is not in a master-detail relationship. Which statement about OwnerId is accurate?",
+      "options": {
+        "A": "OwnerId is a standard field on the custom object",
+        "B": "OwnerId is a custom field you must create",
+        "C": "Custom objects never have OwnerId",
+        "D": "OwnerId exists only on Account"
+      },
+      "answer": "A",
+      "rationale": "Custom objects include OwnerId unless they become a master-detail detail.",
+      "distractor_explanations": {
+        "B": "OwnerId is standard, not custom.",
+        "C": "Standalone custom objects have OwnerId.",
+        "D": "OwnerId is not limited to Account."
+      },
+      "concept": "Standard fields on custom objects",
+      "citation_ids": [
+        "SF-HELP-CUSTOMOBJFIELDS",
+        "SF-OBJREF-FIELDS"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does a field's data type determine according to Custom Field Attributes Help?",
+      "options": {
+        "A": "What type of information is in the field",
+        "B": "Which profile owns the record",
+        "C": "Whether the object is standard or custom",
+        "D": "The org's API version"
+      },
+      "answer": "A",
+      "rationale": "Data type determines what type of information is in the field, for example Number versus other types.",
+      "distractor_explanations": {
+        "B": "Ownership is a record concern, not the field type catalog.",
+        "C": "Object origin is not the data type.",
+        "D": "API version is not the field data type."
+      },
+      "concept": "Data type meaning",
+      "citation_ids": [
+        "SF-HELP-FIELDTYPES",
+        "SF-HELP-FIELDATTR"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why is storing a purchase date in a Text custom field a poor data-type choice?",
+      "options": {
+        "A": "Date filters, sorting, and conversion expect a Date type, not parsed text",
+        "B": "Text fields cannot be created on custom objects",
+        "C": "Dates may only live on standard objects",
+        "D": "Text fields cannot have API names"
+      },
+      "answer": "A",
+      "rationale": "Data type must match the value kind; Date is the type for calendar dates.",
+      "distractor_explanations": {
+        "B": "Text is a valid custom field type.",
+        "C": "Custom objects can have Date fields.",
+        "D": "Text fields have API names."
+      },
+      "concept": "Choosing Date vs Text",
+      "citation_ids": [
+        "SF-HELP-FIELDTYPES",
+        "SF-HELP-FIELDATTR"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How does the API treat numeric custom fields?",
+      "options": {
+        "A": "As type double",
+        "B": "As strings only",
+        "C": "As integers that cannot have decimals",
+        "D": "They are not queryable"
+      },
+      "answer": "A",
+      "rationale": "The Object Reference notes all numeric custom fields are handled as type double.",
+      "distractor_explanations": {
+        "B": "They are numeric types, not strings.",
+        "C": "Double can represent decimals; do not assume integer-only.",
+        "D": "They are queryable."
+      },
+      "concept": "Numeric custom fields",
+      "citation_ids": [
+        "SF-OBJREF-FIELDS",
+        "SF-HELP-FIELDTYPES"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Default-value formulas on custom fields are not used for which operations, per the Object Reference?",
+      "options": {
+        "A": "Lead conversion, importing, or merging records",
+        "B": "Interactive UI create of a new record",
+        "C": "Describing the field in the API",
+        "D": "Deploying the field metadata"
+      },
+      "answer": "A",
+      "rationale": "Default values are not used for lead conversion, importing, or merging records.",
+      "distractor_explanations": {
+        "B": "UI create can apply defaults.",
+        "C": "Describe is unrelated to default application.",
+        "D": "Deploying metadata is not that exclusion list."
+      },
+      "concept": "Default values",
+      "citation_ids": [
+        "SF-OBJREF-FIELDS",
+        "SF-HELP-FIELDATTR"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "If a custom object becomes the detail side of a master-detail relationship, what happens to OwnerId?",
+      "options": {
+        "A": "The Owner field is removed; ownership is controlled by the master",
+        "B": "OwnerId becomes a required custom field",
+        "C": "OwnerId is copied onto every related list",
+        "D": "OwnerId is converted to a formula"
+      },
+      "answer": "A",
+      "rationale": "Help states OwnerId is removed because the master controls ownership.",
+      "distractor_explanations": {
+        "B": "You do not add a custom Owner in that case.",
+        "C": "Related lists do not replace OwnerId.",
+        "D": "It is not converted to a formula."
+      },
+      "concept": "OwnerId and master-detail",
+      "citation_ids": [
+        "SF-HELP-CUSTOMOBJFIELDS",
+        "SF-OBJREF-FIELDS"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A unique custom field on a custom object is case-insensitive. Which pair is treated as the same value?",
+      "options": {
+        "A": "ABC and abc",
+        "B": "ABC and ABD",
+        "C": "Null and a space",
+        "D": "A Date and a Text spelling of the date"
+      },
+      "answer": "A",
+      "rationale": "If caseSensitive is false, ABC and abc are the same value.",
+      "distractor_explanations": {
+        "B": "Those are different strings.",
+        "C": "Not stated as equivalent in that uniqueness note.",
+        "D": "Type mismatch is not the uniqueness example."
+      },
+      "concept": "Case-insensitive unique",
+      "citation_ids": [
+        "SF-OBJREF-FIELDS",
+        "SF-HELP-FIELDATTR"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Which change is metadata versus business data?",
+      "options": {
+        "A": "Creating LAB_SqFt__c as Number is metadata; entering 1200 on a record is data",
+        "B": "Both are business data",
+        "C": "Both are metadata",
+        "D": "Entering 1200 deploys a new field type"
+      },
+      "answer": "A",
+      "rationale": "Field definition is schema/metadata; values on records are business data.",
+      "distractor_explanations": {
+        "B": "The definition is not record data.",
+        "C": "The value 1200 is not a field definition.",
+        "D": "Entering a value does not create the type."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": [
+        "SF-OBJREF-CONCEPTS",
+        "SF-OBJREF-FIELDS"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need a yes/no occupied flag on LAB_Property__c. Best data type?",
+      "options": {
+        "A": "Checkbox",
+        "B": "Text with values Yes and No",
+        "C": "Date/Time",
+        "D": "Master-detail to User"
+      },
+      "answer": "A",
+      "rationale": "Checkbox is the type for a boolean flag per the field type catalog.",
+      "distractor_explanations": {
+        "B": "Text yes/no breaks filters and reporting.",
+        "C": "Date/Time is not a flag.",
+        "D": "A relationship is not a boolean attribute."
+      },
+      "concept": "Checkbox vs Text",
+      "citation_ids": [
+        "SF-HELP-FIELDTYPES",
+        "SF-HELP-FIELDATTR"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "What is a Salesforce field?",
+      "back": "A named, typed attribute on an object—structurally like a column."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "Standard field vs custom field?",
+      "back": "Standard ships with the object. Custom is org-created and uses __c in the API."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "Custom field API suffix?",
+      "back": "Two underscores and a lowercase c, for example Hire_Date__c."
+    },
+    {
+      "id": "F4",
+      "category": "data types",
+      "front": "What does data type decide?",
+      "back": "What kind of information the field contains and which attributes apply."
+    },
+    {
+      "id": "F5",
+      "category": "data types",
+      "front": "Date stored as Text—problem?",
+      "back": "Filters, sorting, and conversion expect a Date type, not parsed text."
+    },
+    {
+      "id": "F6",
+      "category": "identity",
+      "front": "External ID allowed types?",
+      "back": "Text, number, or email custom fields, per the Object Reference."
+    },
+    {
+      "id": "F7",
+      "category": "identity",
+      "front": "Unique vs External ID?",
+      "back": "Unique blocks duplicates. External ID is a matching flag for import/upsert."
+    },
+    {
+      "id": "F8",
+      "category": "standard",
+      "front": "Does a custom object have standard fields?",
+      "back": "Yes: Name, audit fields, and usually OwnerId unless it is a master-detail detail."
+    },
+    {
+      "id": "F9",
+      "category": "standard",
+      "front": "What happens to OwnerId on a detail object?",
+      "back": "The Owner field is removed; the master controls ownership."
+    },
+    {
+      "id": "F10",
+      "category": "metadata",
+      "front": "Field definition vs field value?",
+      "back": "Definition/type is metadata. Values on records are business data."
+    },
+    {
+      "id": "F11",
+      "category": "api",
+      "front": "Numeric custom fields in the API?",
+      "back": "Handled as type double."
+    },
+    {
+      "id": "F12",
+      "category": "defaults",
+      "front": "When are default-value formulas not applied?",
+      "back": "Lead conversion, importing, and merging records."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Need a yes/no flag—type?",
+      "back": "Checkbox, not Text yes/no."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Need a parent Account link—type family?",
+      "back": "A relationship field (lookup or master-detail), not a text Id."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Need a calculated display—type family?",
+      "back": "Formula field (DATA-006), not a stored Number users type."
+    },
+    {
+      "id": "F16",
+      "category": "limits",
+      "front": "Can the data API create custom fields?",
+      "back": "No. Administrators define custom fields in the UI / metadata, not via ordinary record APIs."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is a field, and how do standard and custom fields differ?",
+      "answer_30_seconds": "A field is a typed attribute on an object. Standard fields ship with the object. Custom fields are created by the org and use __c in the API.",
+      "answer_2_minutes": "I start from object, field, record. The field's data type constrains values. I reuse a standard field when it already means the attribute. I add a custom field only for an org-specific attribute. I keep the definition as metadata and the values as business data. I do not recite unofficial per-edition field counts.",
+      "example": "LAB_Property__c reuses CreatedById and adds LAB_Code__c as a custom Text field.",
+      "tradeoffs": [
+        "Reuse standard vs clone custom",
+        "Type safety vs catch-all Text"
+      ],
+      "follow_ups": [
+        "What is the API suffix?",
+        "Is Name on a custom object standard or custom?"
+      ],
+      "weak_answer_warnings": [
+        "Calling every field custom",
+        "Equating label with API name"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you choose a data type for a custom field?",
+      "answer_30_seconds": "Match the value kind: Date for dates, Checkbox for flags, Number for math, Text for codes, relationship for parent records. Do not default to Text.",
+      "answer_2_minutes": "I open the Custom Field Types catalog mentally. If users type a calendar date, Date or Date/Time. If it is yes/no, Checkbox. If it is a controlled list, picklist. If it is calculated, formula. If it is a parent, lookup or master-detail. Text is for true free-form or short codes, not a dumping ground. Type is metadata and is costly to change.",
+      "example": "LAB_PurchaseDate__c as Date; LAB_Occupied__c as Checkbox; LAB_SqFt__c as Number.",
+      "tradeoffs": [
+        "Flexible Text vs typed reporting",
+        "Stored field vs formula"
+      ],
+      "follow_ups": [
+        "When is Auto Number better than Text?",
+        "When do you use Long Text Area?"
+      ],
+      "weak_answer_warnings": [
+        "Text for everything",
+        "Picking type from the page layout editor only"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "An integration must upsert properties using a legacy facilities key. What field design do you use?",
+      "answer_30_seconds": "A custom Text, Number, or Email field marked External ID, usually unique if the key is one-to-one. That is metadata for matching, not a formula display.",
+      "answer_2_minutes": "I confirm the Object Reference rule: External ID is text, number, or email. I do not put External ID on Date or Checkbox. I separate unique (duplicate prevention) from External ID (upsert matching). I test with LAB_ keys in sandbox. I do not store the parent Account Id in that same text field.",
+      "example": "LAB_LegacyKey__c Text, unique, External ID used by upsert in a sandbox.",
+      "tradeoffs": [
+        "Unique-only vs External ID",
+        "Text key vs Auto Number"
+      ],
+      "follow_ups": [
+        "Can you have more than one External ID? Needs verification in current UI.",
+        "What error is DUPLICATE_VALUE?"
+      ],
+      "weak_answer_warnings": [
+        "Marking a formula as External ID",
+        "Using the record Name as the only integration key without checking uniqueness"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A custom object's Owner field disappeared after a relationship change. What happened?",
+      "answer_30_seconds": "The object is now the detail side of a master-detail relationship. Help says OwnerId is removed because the master owns the rows.",
+      "answer_2_minutes": "I check Fields & Relationships for a master-detail field. Detail records inherit sharing from the master and cannot use sharing rules that need Owner. If independent ownership was required, the relationship should have been lookup. I do not recreate a custom OwnerName text field as a substitute for real ownership.",
+      "example": "LAB_Unit__c made detail under LAB_Property__c; OwnerId gone; property owner controls access.",
+      "tradeoffs": [
+        "Lookup vs master-detail ownership",
+        "Text owner name vs real OwnerId"
+      ],
+      "follow_ups": [
+        "Can you convert back? Needs verification.",
+        "What happens to queues on detail objects?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming someone deleted a custom Owner field"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you refuse to create a new custom field?",
+      "answer_30_seconds": "When a standard field already means it, when the need is a relationship or a formula, or when the request is really a page-layout or validation problem.",
+      "answer_2_minutes": "Interviewers want judgment. Duplicate Name or Amount as custom text is a fail. A parent link is a relationship type. A calculated percent is a formula. 'Make it required on this layout only' is layout or validation, not a new type. I still create a typed custom field when the org has a genuine new attribute.",
+      "example": "Rejecting LAB_AccountName__c on Opportunity because Account.Name already exists via the relationship.",
+      "tradeoffs": [
+        "New field vs reuse",
+        "Field vs layout vs validation"
+      ],
+      "follow_ups": [
+        "How do you document the rejection?",
+        "What if the standard field is not on the layout?"
+      ],
+      "weak_answer_warnings": [
+        "Always creating custom fields",
+        "Using fields to replace record types"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do you separate field metadata from field values?",
+      "answer_30_seconds": "Creating or changing the field type is a metadata/schema change. Entering 1200 in LAB_SqFt__c on a record is business data. Deploying a field does not backfill values.",
+      "answer_2_minutes": "Same split as DATA-001. Source control or change sets move the CustomField definition. Data Loader or UI entry moves values. Default-value formulas do not apply on import, merge, or lead conversion. Historical rows stay blank until a data fill. FLS can hide values without deleting the field.",
+      "example": "Deploy LAB_SqFt__c Number to sandbox; existing LAB_ properties show blank until someone enters numbers.",
+      "tradeoffs": [
+        "Deploy vs backfill",
+        "Default formula vs import"
+      ],
+      "follow_ups": [
+        "Do defaults run under hidden FLS?",
+        "Why might import skip defaults?"
+      ],
+      "weak_answer_warnings": [
+        "Calling records metadata",
+        "Expecting type deploy to populate history"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "A report cannot SUM square footage. How do you debug the field?",
+      "answer_30_seconds": "Check the field's data type first. If LAB_SqFt__c is Text, SUM will not behave like a Number. Then check FLS and report type.",
+      "answer_2_minutes": "I inspect Fields & Relationships for Number (or Currency/Percent), not Text. I confirm the user can see the field. I do not start by writing a row-level formula to parse text if we can still change the type in sandbox with no data, or plan a conversion with a data migration if values exist. Conversion pairs are Needs verification.",
+      "example": "LAB_SqFt__c was Text '1200'; recreating as Number lets a summary report SUM.",
+      "tradeoffs": [
+        "Convert in place vs new field + migrate",
+        "Report formula vs fix the type"
+      ],
+      "follow_ups": [
+        "What if data already exists in Text?",
+        "Could it be a formula field instead?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the report chart type only"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "Required on the field versus required on the page layout—why does it matter for data types?",
+      "answer_30_seconds": "The field Required attribute makes the field required everywhere in Salesforce. Layout requiredness is presentation. APIs and integrations feel the field-level Required flag.",
+      "answer_2_minutes": "Help says Required makes the field required everywhere and is not available for external objects. A layout can require a field for one process without blocking API loads. Validation rules (DATA-010) are a third gate. I do not combine Required and Unique with a default value, because Help warns uniqueness errors can result.",
+      "example": "LAB_Code__c Required at field definition so Data Loader cannot skip it; a secondary description field required only on the facilities page layout.",
+      "tradeoffs": [
+        "Everywhere-required vs layout-required",
+        "Validation rule vs field attribute"
+      ],
+      "follow_ups": [
+        "External objects and Required?",
+        "Why avoid default on required+unique?"
+      ],
+      "weak_answer_warnings": [
+        "Treating layout required as API required"
+      ]
+    }
+  ]
+}

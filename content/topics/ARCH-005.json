@@ -1,0 +1,992 @@
+{
+  "topic_id": "ARCH-005",
+  "slug": "automation-architecture-and-flow-apex-boundaries",
+  "title": "Automation architecture and Flow/Apex boundaries",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-004"
+  ],
+  "objectives": [
+    "Place automation architecture on the official which-tool spectrum: formula, validation, approval, Flow, then Apex when Flow cannot meet the need.",
+    "Draw Flow versus Apex boundaries using maintainability (Easy), save-order participation, bulkification, and callout timing—not a preference for code.",
+    "Detect duplicate automation on the same object as an architecture defect, not a feature.",
+    "Cite the Apex order-of-execution guide rather than reciting an unofficial step list from memory."
+  ],
+  "diagnostic_question": "A same-record status stamp, a cross-object roll-up with branching, a callout, and an approval chain all land on Opportunity. Before reading, which belong in formula, validation, approval, before-save Flow, after-save Flow, or Apex—and what evidence would move one item across the Flow/Apex boundary?",
+  "definition": "Salesforce automation architecture is the designed set of formula fields, validation rules, approval processes, Flow, and Apex that implement business logic on a save or a user action. Official Help tells you to pick the simplest tool that meets the requirement and to use Apex when Flow cannot. Flow and Apex both participate in the documented record save order, so two cooks on the same pan (duplicate automation) is a defect. ([Which Tool](https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm); [Easy Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/easy-overview.html); [Order of Execution](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_order_of_execution.htm))",
+  "why_it_matters": "Interviewers listen for 'Flow first unless Flow cannot,' plus save-order awareness, plus Easy maintainability. A trigger farm that reprints what a before-save Flow already does fails Easy even if it compiles. A Flow that performs a synchronous callout from a trigger-shaped path fails the same boundary from the other side. Governors and exact Flow limits belong to cited Limits docs, not folklore.",
+  "sixty_second_explanation": "Treat automation like a restaurant kitchen brigade. Formula and validation are the printed recipe cards at the station. Approvals are the manager's sign-off on a plate. Record-triggered Flow is the line cook following a visible recipe. Apex is the pastry chef for techniques the recipe cards cannot express. The pass window is the official order of execution: every ticket hits the window in a documented sequence. Two cooks seasoning the same pan is not 'resilience'—it is a race. Easy asks whether the night shift can still read the recipe.",
+  "deeper_explanation": [
+    "Salesforce Help on choosing the right automation tool places formula fields, validation rules, approval processes, Flow, and Apex on one spectrum. Use the simplest tool that works. Use Apex when you need something a flow cannot do or you need more flexibility than a flow provides. ([Which Tool](https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm))",
+    "Well-Architected Easy treats healthy automation as efficiency plus data integrity, and it warns that a design only a programmer can maintain is not Easy. Automation architecture is therefore an ownership decision as much as a tool decision. ([Easy Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/easy-overview.html))",
+    "The Apex Developer Guide publishes Triggers and Order of Execution: system validation, before-save record-triggered flows, before triggers, custom validation rules, duplicate rules, after triggers, assignment rules, auto-response, workflow (legacy), processes (legacy), escalation, after-save flows, roll-up summaries, and later steps such as sharing recalculation and outbound messages appear in that documented sequence. Recite from the current page; do not memorize an unofficial blog numbering. ([Order of Execution](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_order_of_execution.htm))",
+    "Boundary heuristics for interviews (always re-check the which-tool page): same-record field updates often fit before-save Flow; user-facing screens and orchestrated work fit screen or autolaunched Flow; approvals have their own engine (classic versus Flow approval processes—confirm current Help); Apex for complex transactions, reusable services, callouts (not synchronous HTTP from a trigger), and cases Flow cannot express. Exact Flow CPU, DML, or element caps: cite current Limits documentation or mark Needs verification.",
+    "Workflow Rules and Process Builder are retired/legacy on the save-order page. New architecture should not add them. Duplicate Flow plus trigger on the same entry condition is the two-cooks defect."
+  ],
+  "mental_model": {
+    "analogy": "A restaurant kitchen brigade: printed recipe cards are formula and validation; manager sign-off is approval; line cooks following visible recipes are Flow; the pastry chef is Apex; the pass window is the official order of execution; two cooks seasoning one pan is duplicate automation.",
+    "useful_mapping": [
+      "formula / validation → printed cards at the station",
+      "approval process → manager sign-off before the plate leaves",
+      "before-save Flow → seasoning the pan before it hits the window",
+      "after-save Flow → garnish and side tickets after the plate is up",
+      "Apex → pastry technique the cards cannot express",
+      "order of execution → the pass window sequence",
+      "duplicate Flow + trigger → two cooks, one pan"
+    ],
+    "where_it_breaks": [
+      "A kitchen has one pass; Salesforce save order includes legacy workflow and process steps you should not add to.",
+      "Apex callouts cannot be synchronous from a trigger the way a pastry chef can wait on an oven—timing is a platform rule.",
+      "The analogy does not encode governor-limit numbers; cite Limits docs.",
+      "Easy ownership may prefer Flow even when Apex would be 'faster for a specialist.'"
+    ]
+  },
+  "teach_back_prompt": "Explain formula, validation, approval, Flow, and Apex with the kitchen brigade, then name where the pass-window analogy breaks on callouts and legacy tools.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, recite the which-tool order and the Apex-when-Flow-cannot rule."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Place four LAB_ Opportunity needs on the spectrum without looking."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain before-save versus after-save Flow using the order-of-execution page, not a blog."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose two cooks on one pan: Flow and trigger on the same entry."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: Flow/Apex boundary, Easy ownership, no invented Flow limits."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-WHICH-TOOL",
+      "title": "Which Automation Tool Do I Use?",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm",
+      "supports": "Spectrum of formula, validation, approval, Flow, and Apex; simplest tool; Apex when Flow cannot meet the need.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "UI names for Flow approval processes versus classic approvals can change; reverify the current article."
+    },
+    {
+      "source_id": "SF-WA-EASY",
+      "title": "Easy | Well-Architected",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/easy-overview.html",
+      "supports": "Easy automation is maintainable; a programmer-only design can fail Easy. Automated pillar: efficiency and data integrity.",
+      "release_or_version": "Well-Architected Easy",
+      "last_verified": "2026-08-16",
+      "limits": "Does not pick a specific Flow type for every case."
+    },
+    {
+      "source_id": "SF-APEX-OOE",
+      "title": "Triggers and Order of Execution",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_order_of_execution.htm",
+      "supports": "Documented save-order including before-save flows, before triggers, validation rules, after triggers, after-save flows, and later platform steps.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "The numbered list is versioned; do not recite an unofficial blog sequence as if it were current."
+    },
+    {
+      "source_id": "SF-APEX-DEVGUIDE",
+      "title": "Apex Developer Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm",
+      "supports": "Apex as server-side transaction control used when programmatic automation is required; callouts from triggers must be asynchronous.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Governor numbers belong to the governors topic; do not invent them here."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Which Tool Help and the order-of-execution guide",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Which-tool spectrum",
+        "Flow first unless cannot",
+        "Before-save vs after-save",
+        "Order of execution pass",
+        "Two cooks one pan",
+        "Easy ownership"
+      ],
+      "accessible_description": "Portrait map of Salesforce automation architecture: formula through Apex, Flow versus Apex boundary, save-order pass window, and the duplicate-automation defect."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-WHICH-TOOL",
+        "SF-WA-EASY",
+        "SF-APEX-OOE",
+        "SF-APEX-DEVGUIDE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Automation architecture and Flow/Apex boundary map"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Save[Record save] --> Formula[Formula fields display/calc]\n  Save --> Val[Validation rules]\n  Save --> OOE[Order of execution pass window]\n  OOE --> BeforeFlow[Before-save record-triggered Flow]\n  OOE --> BeforeTrig[Before Apex trigger]\n  OOE --> AfterTrig[After Apex trigger]\n  OOE --> AfterFlow[After-save record-triggered Flow]\n  OOE --> Appr[Approval processes on their own path]\n  Need[Need beyond Flow] --> Apex[Apex service or trigger]",
+      "decision": "flowchart TD\n  Req[Automation request] --> Q1{Can a formula or validation rule meet it safely?}\n  Q1 -->|Yes| Decl[Stay on formula or validation]\n  Q1 -->|No| Q2{Is it an approval chain?}\n  Q2 -->|Yes| Appr[Approval process; confirm classic vs Flow approvals in current Help]\n  Q2 -->|No| Q3{Can Flow do it and can the owning team maintain it?}\n  Q3 -->|Yes same record| Before[Before-save Flow]\n  Q3 -->|Yes after DML or interaction| Flow[After-save, screen, or autolaunched Flow]\n  Q3 -->|Flow cannot, or need a coded service/callout pattern| Apex[Apex: trigger, invocable, or async]\n  Apex --> Q4{Synchronous callout from trigger?}\n  Q4 -->|Yes attempted| Stop[Invalid: callout must be async from trigger context]\n  Dup[Second Flow or trigger on same entry] --> Smell[Two cooks: consolidate]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Help instructs builders to choose the simplest automation tool that meets the requirement, spanning formula fields, validation rules, approval processes, Flow, and Apex. Use Apex when a flow cannot do the work or more flexibility than a flow provides is required.",
+      "source_ids": ["SF-HELP-WHICH-TOOL"],
+      "scope": "Which-tool spectrum and Flow/Apex boundary",
+      "validation": "Which Automation Tool Do I Use? Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Easy architectures require maintainable automation. A design that only a programmer can own can fail Easy even if it is technically reliable.",
+      "source_ids": ["SF-WA-EASY"],
+      "scope": "Ownership NFR on automation",
+      "validation": "Easy Overview maintainability warning.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Record-triggered flows and Apex triggers participate in a documented order of execution that includes before-save flows, before triggers, validation rules, after triggers, and after-save flows among other platform steps.",
+      "source_ids": ["SF-APEX-OOE"],
+      "scope": "Save order",
+      "validation": "Triggers and Order of Execution.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Apex executes transaction control on the Salesforce server. Callouts initiated from trigger context must run asynchronously from the triggering DML.",
+      "source_ids": ["SF-APEX-DEVGUIDE"],
+      "scope": "Apex runtime and trigger callout timing",
+      "validation": "Apex Developer Guide plus the well-known trigger-callout restriction documented with order of execution / async Apex; confirm the current callout-from-trigger Help if quoting a specific error string.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Workflow Rules and Process Builder are legacy on the save-order page; new designs should not add them. Reverify Flow Approval Processes versus classic approvals in current Help.",
+  "unresolved_uncertainty": [
+    "Exact Flow element, CPU, and interview limits: cite current Salesforce Limits documentation; do not invent numbers.",
+    "Flow Approval Processes versus Classic Approval Processes UI and feature gates: Needs verification on the current approvals Help.",
+    "Precise exception message text for synchronous callouts from triggers: confirm in current Apex callout documentation."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Automation architecture",
+      "telugu": "ఫార్ములా, వాలిడేషన్, అప్రూవల్, Flow, Apexను ఒక స్పెక్ట్రమ్‌గా రూపొందించడం."
+    },
+    {
+      "english": "Before-save Flow",
+      "telugu": "రికార్డు సేవ్ అయ్యే ముందు అదే రికార్డును నవీకరించే ఫ్లో."
+    },
+    {
+      "english": "Order of execution",
+      "telugu": "సేవ్ సమయంలో ఫ్లోలు, ట్రిగ్గర్లు, వాలిడేషన్ నడిచే అధికారిక క్రమం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I pick the simplest tool on the official spectrum. Flow first when the owning team can maintain it. Apex when Flow cannot, or for a coded service or async callout. I design one automation per entry condition because save order is a pass window, not a place for two cooks.",
+    "two_minutes": "Same-record updates often go before-save Flow. Approvals stay on the approval engine. I open the order-of-execution page instead of reciting a blog. I refuse a new Workflow Rule. I refuse synchronous HTTP from a trigger. Easy can fail a clever trigger farm. I do not invent Flow limit numbers."
+  },
+  "terminology": [
+    {
+      "term": "automation architecture",
+      "plain": "The planned mix of declarative and programmatic logic for a process.",
+      "precise": "An intentional map of formula, validation, approval, Flow, and Apex per object and entry condition, aligned to the which-tool spectrum and Easy maintainability.",
+      "example": "LAB_Opportunity: validation for required stage reasons, before-save Flow for a status stamp, one after-save Flow for tasks, no extra trigger.",
+      "non_example": "Five triggers and three flows all on Opportunity update with overlapping criteria.",
+      "confusable_neighbor": "A single Flow interview debug: runtime of one tool, not the architecture.",
+      "boundary": "AUTO-001 teaches tool choice in more product depth; this lesson is the architect boundary."
+    },
+    {
+      "term": "Flow versus Apex boundary",
+      "plain": "When the recipe cards are enough versus when you need the pastry chef.",
+      "precise": "Official rule: use Apex when a flow cannot do the work or you need more flexibility than a flow provides—plus Easy ownership of whoever maintains it.",
+      "example": "Complex multi-object splitting with a callout pattern that Flow cannot express cleanly → Apex service.",
+      "non_example": "Writing Apex for a same-record field stamp a before-save Flow already covers.",
+      "confusable_neighbor": "Invocable Apex inside Flow: a hybrid, not a reason to skip the boundary question.",
+      "boundary": "Exact Flow capability matrix is versioned; reverify Help rather than memorizing an unofficial list."
+    },
+    {
+      "term": "before-save record-triggered Flow",
+      "plain": "Flow that updates the same record before it is committed.",
+      "precise": "A record-triggered flow that runs in the before-save portion of the order of execution, suited to same-record field updates without a DML in that path.",
+      "example": "Stamp LAB_Status__c on Opportunity before insert/update.",
+      "non_example": "Creating child tasks in before-save—that needs after-save or another path.",
+      "confusable_neighbor": "Before Apex trigger: same window family, different owner skill.",
+      "boundary": "Do not put callouts here."
+    },
+    {
+      "term": "after-save record-triggered Flow",
+      "plain": "Flow that runs after the record is saved, for extra work.",
+      "precise": "A record-triggered flow later in the save order, used when you need the committed record id or additional DML such as related records.",
+      "example": "Create a LAB_Task after Opportunity reaches a stage.",
+      "non_example": "A same-record field update that could have been before-save and now risks recursion.",
+      "confusable_neighbor": "After Apex trigger: overlapping window; pick one owner per concern.",
+      "boundary": "Recursion and re-entry are design risks; test them."
+    },
+    {
+      "term": "order of execution",
+      "plain": "The documented sequence of the save pass window.",
+      "precise": "The Apex Developer Guide list of what runs on insert/update, including before-save flows, triggers, validation rules, after-save flows, and later platform steps. Use the current page as source of truth.",
+      "example": "Explaining why a validation rule sees values already changed by before-save Flow.",
+      "non_example": "An unofficial 21-step blog printed as if it were the guide.",
+      "confusable_neighbor": "Flow interview order inside one Flow: different from the record save order.",
+      "boundary": "Legacy workflow and process builder still appear as steps; do not add new ones."
+    },
+    {
+      "term": "duplicate automation",
+      "plain": "Two cooks seasoning the same pan.",
+      "precise": "Two or more automations (Flow, trigger, legacy process) implementing the same entry condition or mutating the same field without a single owner.",
+      "example": "Process Builder leftover plus a new record-triggered Flow both setting LAB_Status__c.",
+      "non_example": "A validation rule plus a Flow that only creates a task—different jobs.",
+      "confusable_neighbor": "Invocable Apex reused by one Flow: composition, if there is a single orchestrator.",
+      "boundary": "Inventory existing automation before adding another."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Inventory the object",
+      "actor": "Architect + admin",
+      "trigger": "A new automation request",
+      "before": "Unknown Flow, trigger, and legacy process count",
+      "after": "A list of existing automations and fields they touch",
+      "observe": "Object Manager / Flow list / Apex triggers for the LAB_ object",
+      "failure": "Adding a sixth automation without reading the five already there"
+    },
+    {
+      "step": 2,
+      "transition": "Place on the which-tool spectrum",
+      "actor": "Architect",
+      "trigger": "Inventory exists",
+      "before": "A tool preference",
+      "after": "Formula, validation, approval, Flow, or Apex chosen with a written why",
+      "observe": "Simplest tool that meets the requirement; Apex only if Flow cannot",
+      "failure": "Apex by default because the team likes code"
+    },
+    {
+      "step": 3,
+      "transition": "Fit the save-order window",
+      "actor": "Architect + developer",
+      "trigger": "Tool chosen",
+      "before": "Unspecified before versus after",
+      "after": "Before-save versus after-save (or async) decided; no sync callout from trigger",
+      "observe": "A note citing the order-of-execution page",
+      "failure": "Two flows and a trigger on the same entry"
+    },
+    {
+      "step": 4,
+      "transition": "Prove Easy ownership",
+      "actor": "Architect + maintenance team",
+      "trigger": "Path designed",
+      "before": "Only the original author understands it",
+      "after": "Named owner skill, tests, and a single orchestrator per concern",
+      "observe": "A readable Flow or a documented Apex service, plus tests in sandbox",
+      "failure": "An undocumented trigger farm that fails Easy"
+    }
+  ],
+  "when_to_use": [
+    "When an interview asks you to design Salesforce automation architecture and defend Flow versus Apex boundaries.",
+    "When a same-record update, an approval, a related-record create, and a callout compete on one object.",
+    "When you discover duplicate Flow and trigger logic on the same entry condition (two cooks).",
+    "When a programmer-only trigger farm would fail Easy even though it compiles."
+  ],
+  "when_not_to_use": [
+    "Do not use this lesson as a substitute for AUTO-001 product walkthroughs of every Flow type, or for Apex governor catalogs (APEX-007).",
+    "Do not invent Flow element or CPU limit numbers; cite current Limits documentation.",
+    "Do not add new Workflow Rules or Process Builder as if they were current architecture.",
+    "Do not put a synchronous HTTP callout in a trigger and call it automation architecture."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Flows, Approval Processes, Validation Rules, Formula fields.",
+    "Setup → Apex Triggers / Apex Classes for coded automation.",
+    "Apex Developer Guide: Triggers and Order of Execution.",
+    "Disposable sandbox only; synthetic LAB_ objects."
+  ],
+  "worked_example": {
+    "scenario": "LAB_Opportunity needs: (1) stamp a status field on the same record, (2) require a lost reason, (3) manager approval above a threshold, (4) create a task after save, (5) notify an external credit service. A developer starts a single before-and-after trigger for all five. Sandbox only.",
+    "inputs": [
+      "Same-record stamp",
+      "Data-quality rule",
+      "Approval chain",
+      "Related task",
+      "External callout"
+    ],
+    "decisions": [
+      {
+        "decision": "Validation rule for lost reason; before-save Flow for the stamp; approval process for the threshold; after-save Flow for the task.",
+        "because": "Which-tool says simplest tool; these are in Flow/declarative reach.",
+        "rejected": "One Apex trigger for all five"
+      },
+      {
+        "decision": "Apex (async) only for the credit callout, invoked from a path that is not a synchronous trigger HTTP call.",
+        "because": "Trigger context cannot wait on a synchronous callout; Apex is justified where Flow plus platform events or async Apex is the documented pattern.",
+        "rejected": "HTTP callout inside before insert trigger"
+      },
+      {
+        "decision": "Do not also keep a leftover Process Builder on the same stamp field.",
+        "because": "Two cooks on one pan plus legacy on the save-order page.",
+        "rejected": "Add Flow 'just for now' beside Process Builder"
+      }
+    ],
+    "configuration_or_code": [
+      "Inventory existing Opportunity automation first.",
+      "Build LAB_ declarative pieces in sandbox; keep credit callout as a stubbed async class.",
+      "No production credentials."
+    ],
+    "output": "A written automation map with one owner per concern and Apex only on the callout boundary.",
+    "verification": [
+      "No overlapping Flow and trigger on the stamp field.",
+      "Callout is not synchronous from a trigger.",
+      "Which-tool rationale is written for each of the five needs."
+    ],
+    "self_explanation": "I used the spectrum, not a trigger preference. The pass window cannot host two cooks. Callouts are async."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox with synthetic LAB_Opportunity or a custom LAB_ object.",
+    "starting_state_checks": [
+      "You can create a validation rule and a record-triggered Flow.",
+      "You will not deploy to production."
+    ],
+    "steps": [
+      "Inventory existing automation on the LAB_ object (flows, triggers, approval, validation, legacy processes).",
+      "Implement a same-record stamp with before-save Flow and a validation rule for a required reason—no Apex.",
+      "Open the official order-of-execution page and write which step your Flow occupies.",
+      "Write why a credit-check callout would not go in that Flow or in a synchronous trigger."
+    ],
+    "guided_completion": [
+      "If you created both a trigger and a Flow for the stamp, delete one.",
+      "If you quoted a Flow limit number, replace it with a Limits-doc citation or Needs verification."
+    ],
+    "independent_challenge": "Add an after-save Flow that creates a LAB_Task and explain why that DML was not done before-save.",
+    "evidence": [
+      "Screenshot or retrieve of the Flow and validation rule (LAB_ names).",
+      "A one-paragraph save-order citation in your own words."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate LAB_ flows and delete lab Apex if you created any.",
+      "Do not leave duplicate automation in a shared sandbox."
+    ],
+    "limitations": "This lab does not prove governor headroom or Flow interview limits."
+  },
+  "decision_table": [
+    {
+      "signal": "A calculated value displayed on the record or a simple same-record constraint.",
+      "choose": "Formula field or validation rule first.",
+      "not": "An Apex trigger or after-save Flow that only reprints the formula.",
+      "why": "Which-tool starts with the simplest declarative tools."
+    },
+    {
+      "signal": "A same-record field update the admin team can own, no callout.",
+      "choose": "Before-save record-triggered Flow.",
+      "not": "A before trigger 'because architects write Apex,' or after-save DML to the same record without a reason.",
+      "why": "Before-save Flow sits early in the official save order and avoids extra DML for same-row updates."
+    },
+    {
+      "signal": "A sequential approve/reject chain.",
+      "choose": "Approval process (confirm classic versus Flow approvals in current Help).",
+      "not": "A custom Apex state machine that reimplements approvals without a documented gap.",
+      "why": "Which-tool includes approvals as their own engine."
+    },
+    {
+      "signal": "Flow cannot express the transaction, reusable service, or you need a trigger-safe async callout.",
+      "choose": "Apex (invocable, trigger, or async job) with a written why Flow cannot.",
+      "not": "Synchronous HTTP from a trigger, or Apex for a stamp Flow already covers.",
+      "why": "Help: Apex when Flow cannot or more flexibility is required; trigger callouts must be async."
+    },
+    {
+      "signal": "A second Flow, trigger, or legacy process already mutates the same field on the same entry.",
+      "choose": "Consolidate to one orchestrator; retire the duplicate.",
+      "not": "Add another 'temporary' automation beside it.",
+      "why": "Save order will run both; Easy maintainability and data integrity fail."
+    }
+  ],
+  "limitations": [
+    "Does not catalog every Flow element.",
+    "Does not list governor numbers.",
+    "Legacy workflow/process steps still run if present; do not add new ones.",
+    "Flow Approval Processes feature gates need current Help."
+  ],
+  "security_notes": [
+    "Automation runs in a user or system context depending on the tool; threat-model who it runs as (ARCH-004).",
+    "Do not hard-code secrets in Flow or Apex.",
+    "Callouts use named credentials, not passwords in formulas."
+  ],
+  "common_mistakes": [
+    "Apex for every field stamp.",
+    "Two cooks on one field.",
+    "Synchronous callout from a trigger.",
+    "Reciting an unofficial save-order blog.",
+    "Inventing Flow limit numbers.",
+    "Adding Process Builder in 2026."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "A field value flips twice on one save.",
+      "check": [
+        "Inventory Flow, trigger, and legacy process on that field",
+        "Before-save versus after-save fighting"
+      ],
+      "do_not_assume": "The platform randomly rewrites fields."
+    },
+    {
+      "symptom": "Validation rule fires on a value you thought Flow already set.",
+      "check": [
+        "Whether the Flow is after-save (too late) versus before-save",
+        "Order-of-execution page"
+      ],
+      "do_not_assume": "Validation is broken."
+    },
+    {
+      "symptom": "Callout error from a trigger save.",
+      "check": [
+        "Whether the callout is synchronous in trigger context",
+        "Move to async Apex or a non-trigger entry"
+      ],
+      "do_not_assume": "Named credentials are invalid first."
+    }
+  ],
+  "production_notes": [
+    "Inventory production automation before go-live; duplicates are incidents waiting to happen.",
+    "Retire legacy processes as a controlled project, not a silent add-on.",
+    "Reverify order of execution if you depend on a specific step number."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Official which-tool guidance says to use Apex when?",
+      "options": {
+        "A": "When a flow cannot do the work or you need more flexibility than a flow provides",
+        "B": "Whenever an architect is on the team",
+        "C": "Instead of validation rules always",
+        "D": "Only in Salesforce Classic"
+      },
+      "answer": "A",
+      "rationale": "Which Automation Tool Do I Use? places Apex after Flow for those reasons.",
+      "distractor_explanations": {
+        "B": "Role is not the criterion.",
+        "C": "Validation remains the simplest tool for many constraints.",
+        "D": "Apex is not Classic-only."
+      },
+      "concept": "Apex when Flow cannot",
+      "citation_ids": ["SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which tools sit on the official automation spectrum in this lesson?",
+      "options": {
+        "A": "Formula fields, validation rules, approval processes, Flow, and Apex",
+        "B": "Only Apex and LWC",
+        "C": "Only sharing rules",
+        "D": "Only Recycle Bin"
+      },
+      "answer": "A",
+      "rationale": "Which-tool Help spans those capabilities.",
+      "distractor_explanations": {
+        "B": "Incomplete.",
+        "C": "Security architecture.",
+        "D": "LDV deletion."
+      },
+      "concept": "Spectrum",
+      "citation_ids": ["SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where should you look for the save-order sequence of flows and triggers?",
+      "options": {
+        "A": "Apex Developer Guide: Triggers and Order of Execution",
+        "B": "An unofficial 21-step blog as the system of record",
+        "C": "The Recycle Bin",
+        "D": "Well-Architected Adaptable only"
+      },
+      "answer": "A",
+      "rationale": "The order-of-execution page is the cited source of truth.",
+      "distractor_explanations": {
+        "B": "Blogs drift; the guide is official.",
+        "C": "Unrelated.",
+        "D": "Wrong pillar for the sequence list."
+      },
+      "concept": "Order of execution",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Best first tool for a same-record status stamp the admin team will own?",
+      "options": {
+        "A": "Before-save record-triggered Flow",
+        "B": "Synchronous HTTP from a before trigger",
+        "C": "A new Workflow Rule",
+        "D": "Modify All Data"
+      },
+      "answer": "A",
+      "rationale": "Simplest automation that fits; before-save avoids extra DML for same-row updates.",
+      "distractor_explanations": {
+        "B": "Illegal/incorrect callout pattern.",
+        "C": "Legacy; do not add.",
+        "D": "A permission, not automation."
+      },
+      "concept": "Before-save Flow",
+      "citation_ids": ["SF-HELP-WHICH-TOOL", "SF-APEX-OOE"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A programmer-only trigger farm replaces a readable Flow the admins owned. Which Well-Architected risk?",
+      "options": {
+        "A": "It can fail Easy even if it compiles",
+        "B": "It automatically passes Easy",
+        "C": "Easy forbids all Apex",
+        "D": "Easy is only about button colors"
+      },
+      "answer": "A",
+      "rationale": "Easy Overview: programmer-only designs can fail Easy.",
+      "distractor_explanations": {
+        "B": "Compilation is not the test.",
+        "C": "Apex is allowed when Flow cannot.",
+        "D": "Maintainability is the point."
+      },
+      "concept": "Easy ownership",
+      "citation_ids": ["SF-WA-EASY"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Synchronous HTTP callout from a before-insert trigger. Architect verdict?",
+      "options": {
+        "A": "Do not; callouts from trigger context must be asynchronous",
+        "B": "Always preferred for real-time",
+        "C": "Required by order of execution",
+        "D": "The same as a formula field"
+      },
+      "answer": "A",
+      "rationale": "Trigger DML cannot wait on a synchronous callout; use async Apex or another pattern.",
+      "distractor_explanations": {
+        "B": "Real-time UI callouts are a different entry (often LWC plus Apex), not trigger HTTP.",
+        "C": "OOE does not bless sync trigger callouts.",
+        "D": "False."
+      },
+      "concept": "Trigger callouts",
+      "citation_ids": ["SF-APEX-DEVGUIDE", "SF-APEX-OOE"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A leftover Process Builder and a new record-triggered Flow both set the same field. What is the defect?",
+      "options": {
+        "A": "Duplicate automation—two cooks on one pan; consolidate and retire legacy",
+        "B": "Required high availability",
+        "C": "Proof that Apex is forbidden",
+        "D": "An ownership-skew problem"
+      },
+      "answer": "A",
+      "rationale": "Save order will run both; Easy and data integrity suffer.",
+      "distractor_explanations": {
+        "B": "Duplicates are not HA.",
+        "C": "Wrong conclusion.",
+        "D": "LDV topic."
+      },
+      "concept": "Two cooks",
+      "citation_ids": ["SF-APEX-OOE", "SF-WA-EASY"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Need a manager approval chain on a discount. First architecture choice?",
+      "options": {
+        "A": "Approval process (confirm classic vs Flow approvals in current Help)",
+        "B": "A before-save Flow that emails a random user",
+        "C": "Public Read/Write OWD",
+        "D": "Recycle Bin hard delete"
+      },
+      "answer": "A",
+      "rationale": "Which-tool includes approvals as the engine for that job.",
+      "distractor_explanations": {
+        "B": "Not an approval engine.",
+        "C": "Security.",
+        "D": "LDV deletion."
+      },
+      "concept": "Approvals",
+      "citation_ids": ["SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Validation fires on a value you expected Flow to set. Likely save-order issue?",
+      "options": {
+        "A": "The Flow is after-save, so validation already ran; use before-save for same-record values validation must see",
+        "B": "Validation never runs if any Flow exists",
+        "C": "Apex public is Java public",
+        "D": "Ownership skew"
+      },
+      "answer": "A",
+      "rationale": "Order of execution places before-save flows and before triggers before custom validation; after-save is later.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Wrong topic.",
+        "D": "Wrong topic."
+      },
+      "concept": "Validation vs Flow timing",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A teammate quotes 'Flow maxes at 47 elements.' Response?",
+      "options": {
+        "A": "Do not invent numbers; cite current Limits documentation or mark Needs verification",
+        "B": "Accept 47 as a Well-Architected constant",
+        "C": "It is the order-of-execution step count",
+        "D": "It is the ownership-skew threshold"
+      },
+      "answer": "A",
+      "rationale": "This handbook forbids invented scale numbers.",
+      "distractor_explanations": {
+        "B": "Not a framework constant.",
+        "C": "False.",
+        "D": "10,000 is skew, not Flow elements."
+      },
+      "concept": "No invented limits",
+      "citation_ids": ["SF-HELP-WHICH-TOOL"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Before-save Flow versus after-save Flow?",
+      "options": {
+        "A": "Before-save updates the same record before commit; after-save is later and can do extra DML such as related records",
+        "B": "They are identical steps",
+        "C": "After-save runs before validation always",
+        "D": "Before-save is only for callouts"
+      },
+      "answer": "A",
+      "rationale": "Matches the official save-order families.",
+      "distractor_explanations": {
+        "B": "Different windows.",
+        "C": "After-save is after validation and after commit of the original save path.",
+        "D": "Callouts do not belong in before-save."
+      },
+      "concept": "Before vs after",
+      "citation_ids": ["SF-APEX-OOE"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Invocable Apex called from Flow versus a standalone overlapping trigger?",
+      "options": {
+        "A": "Invocable Apex can be a single orchestrated hybrid; a second trigger on the same entry is duplicate automation unless justified",
+        "B": "They are always forbidden together",
+        "C": "Invocable Apex sets OWD",
+        "D": "Triggers replace which-tool Help"
+      },
+      "answer": "A",
+      "rationale": "Composition under one Flow is different from two independent mutators.",
+      "distractor_explanations": {
+        "B": "Hybrids are valid when Flow cannot do a piece.",
+        "C": "False.",
+        "D": "Help still governs the spectrum."
+      },
+      "concept": "Hybrid vs duplicate",
+      "citation_ids": ["SF-HELP-WHICH-TOOL", "SF-WA-EASY"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "When does official Help send you to Apex?",
+      "back": "When a flow cannot do the work or you need more flexibility than a flow provides."
+    },
+    {
+      "id": "F2",
+      "category": "spectrum",
+      "front": "Name the which-tool spectrum.",
+      "back": "Formula, validation, approval, Flow, then Apex."
+    },
+    {
+      "id": "F3",
+      "category": "flow",
+      "front": "Before-save Flow is for?",
+      "back": "Same-record updates before commit, without extra DML in that path."
+    },
+    {
+      "id": "F4",
+      "category": "flow",
+      "front": "After-save Flow is for?",
+      "back": "Work after the record is saved, such as creating related records."
+    },
+    {
+      "id": "F5",
+      "category": "ooe",
+      "front": "Source of truth for save order?",
+      "back": "Apex Developer Guide: Triggers and Order of Execution—not an unofficial blog."
+    },
+    {
+      "id": "F6",
+      "category": "boundary",
+      "front": "Synchronous HTTP from a trigger?",
+      "back": "Do not. Callouts from trigger context must be asynchronous."
+    },
+    {
+      "id": "F7",
+      "category": "easy",
+      "front": "Can a trigger farm fail Easy?",
+      "back": "Yes, if only a programmer can maintain it, even if it compiles."
+    },
+    {
+      "id": "F8",
+      "category": "defect",
+      "front": "Two cooks on one pan means?",
+      "back": "Duplicate Flow, trigger, or legacy process mutating the same field on the same entry."
+    },
+    {
+      "id": "F9",
+      "category": "legacy",
+      "front": "New Workflow Rules or Process Builder in a 2026 design?",
+      "back": "No. They are legacy on the save-order path; do not add them."
+    },
+    {
+      "id": "F10",
+      "category": "approvals",
+      "front": "First tool for a manager approve/reject chain?",
+      "back": "Approval process; confirm classic versus Flow approvals in current Help."
+    },
+    {
+      "id": "F11",
+      "category": "scenario",
+      "front": "Validation does not see a Flow-set value. Check?",
+      "back": "Whether the Flow is after-save; same-record values validation must see belong in before-save."
+    },
+    {
+      "id": "F12",
+      "category": "limits",
+      "front": "May you invent a Flow element cap in this lesson?",
+      "back": "No. Cite current Limits documentation or mark Needs verification."
+    },
+    {
+      "id": "F13",
+      "category": "hybrid",
+      "front": "Invocable Apex inside one Flow?",
+      "back": "A valid hybrid when Flow cannot do a piece—not the same as a second overlapping trigger."
+    },
+    {
+      "id": "F14",
+      "category": "formula",
+      "front": "Simple displayed calculation. First tool?",
+      "back": "Formula field, not Apex."
+    },
+    {
+      "id": "F15",
+      "category": "inventory",
+      "front": "First step before adding automation?",
+      "back": "Inventory existing Flow, trigger, approval, validation, and legacy processes on the object."
+    },
+    {
+      "id": "F16",
+      "category": "analogy",
+      "front": "Where does the kitchen-pass analogy break?",
+      "back": "Legacy workflow steps still in the window, async-only trigger callouts, and governor numbers the recipe cards do not show."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you choose between Flow and Apex on a Salesforce automation architecture?",
+      "answer_30_seconds": "Simplest tool that works. Flow when the owning team can maintain it. Apex when Flow cannot, or for a coded service or async callout. I write the why.",
+      "answer_2_minutes": "I start from which-tool Help, not from a language preference. Same-record stamps often go before-save Flow. Approvals stay on the approval engine. I inventory existing automations so I do not add a second cook. Easy can fail a clever trigger farm. I do not invent Flow limits.",
+      "example": "LAB_Opportunity stamp in before-save Flow; credit check in async Apex.",
+      "tradeoffs": [
+        "Admin ownership vs coded flexibility",
+        "One Flow versus Flow plus invocable"
+      ],
+      "follow_ups": [
+        "What if Flow hits a documented limit?",
+        "Who owns the invocable?"
+      ],
+      "weak_answer_warnings": [
+        "Apex always because we are architects"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why does order of execution matter to automation architecture?",
+      "answer_30_seconds": "Flows, triggers, and validation share one save pass. Before-save work is visible to validation; after-save is too late for that. Duplicates both run.",
+      "answer_2_minutes": "I open the Developer Guide page rather than reciting a blog. I place same-record updates before validation when they must be seen. I explain why two automations on one field flicker. I mention leftover workflow as a ghost cook. I do not claim a step number without the current page.",
+      "example": "After-save Flow sets a field validation already rejected.",
+      "tradeoffs": [
+        "Before-save speed vs after-save DML needs",
+        "One page of truth vs tribal memory"
+      ],
+      "follow_ups": [
+        "Where do assignment rules sit? (Look it up.)",
+        "What about after-save Flow recursion?"
+      ],
+      "weak_answer_warnings": [
+        "Unofficial 21-step recitation as gospel"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Five Opportunity needs including a callout. A developer wants one trigger. Respond.",
+      "answer_30_seconds": "Split them. Validation, before-save Flow, approval, after-save Flow, and async Apex for the callout. Not one trigger, and not sync HTTP in before insert.",
+      "answer_2_minutes": "I map each need to which-tool. I refuse a god trigger because Easy and testing suffer. The callout is the real Apex justification. I inventory leftover Process Builder on the stamp field. I keep named credentials out of the Flow formula.",
+      "example": "LAB_Opportunity worked example in this lesson.",
+      "tradeoffs": [
+        "One class vs several declarative tools",
+        "Real-time UI callout vs trigger-time async"
+      ],
+      "follow_ups": [
+        "Could the callout be user-button plus LWC?",
+        "How do you test the Flow?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to the god trigger"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Admins owned a Flow. A rewrite in undocumented Apex 'for performance' is proposed with no measured limit. Answer.",
+      "answer_30_seconds": "Show evidence of a documented limit first. Easy can fail if admins must still own the rule. I will not invent a Flow cap to justify Apex.",
+      "answer_2_minutes": "If current Limits docs show Flow cannot meet a measured NFR, Apex is justified and I still want tests and a readable service. If the issue is unselective queries, that is ARCH-003, not 'Flow is slow.' I would consider invocable Apex under the Flow so ownership stays at the orchestrator.",
+      "example": "LAB_ status Flow replaced by a 2,000-line trigger with no CPU measurement.",
+      "tradeoffs": [
+        "Measured limits vs folklore",
+        "Hybrid invocable vs full rewrite"
+      ],
+      "follow_ups": [
+        "What would you measure in a volume sandbox?",
+        "Who maintains the invocable?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing element counts"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A field flips twice on one user save. How do you debug?",
+      "answer_30_seconds": "Inventory every Flow, trigger, and legacy process on that field. Two cooks. Do not start with 'Salesforce bug.'",
+      "answer_2_minutes": "I use debug logs or Flow interviews to see both writers. I check before versus after fighting, and recursion from after-save DML. I retire the duplicate rather than adding a third 'fixer' Flow. I cite order of execution to explain the sequence to the team.",
+      "example": "Process Builder leftover plus new record-triggered Flow on LAB_Status__c.",
+      "tradeoffs": [
+        "Retire legacy now vs freeze and migrate",
+        "One orchestrator vs many small flows"
+      ],
+      "follow_ups": [
+        "How do you find inactive but still-invoked processes?",
+        "Could a managed package be the second cook?"
+      ],
+      "weak_answer_warnings": [
+        "Adding another Flow to overwrite the overwrite"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Save fails with a callout-related error from a trigger. What do you check first?",
+      "answer_30_seconds": "Whether the callout is synchronous in trigger context. Move it async. Do not first blame the remote URL.",
+      "answer_2_minutes": "I look at the stack: before/after trigger, @future/Queueable, named credential. I consider a user-driven LWC plus Apex if the NFR is request-reply on a button (ARCH-006). I still keep secrets out of debug logs.",
+      "example": "before insert Opportunity trigger calling Http.send.",
+      "tradeoffs": [
+        "User-wait request/reply vs fire-and-forget async",
+        "Flow HTTP versus Apex HTTP"
+      ],
+      "follow_ups": [
+        "Queueable versus future?",
+        "Timeout: cite 120 seconds max as documented for Apex callouts, not as a business SLA"
+      ],
+      "weak_answer_warnings": [
+        "Retrying the same sync trigger callout in a loop"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How do you keep automation architecture Easy after go-live?",
+      "answer_30_seconds": "One orchestrator per concern, named owners, tests, and an inventory. No silent extra Flow beside a trigger.",
+      "answer_2_minutes": "Intentional readability is an Easy attribute. I prefer a documented Flow plus small invocables over a mystery trigger farm. I schedule reviews when entry conditions change. I treat managed-package automations as extra cooks I must inventory. I do not equate Easy with 'no Apex ever.'",
+      "example": "LAB_ object with a one-page automation map in the design record.",
+      "tradeoffs": [
+        "Many tiny flows vs one large flow",
+        "Admin owner vs developer owner"
+      ],
+      "follow_ups": [
+        "How do you version Flow?",
+        "What is a trigger framework's place? (Later APEX.)"
+      ],
+      "weak_answer_warnings": [
+        "Easy means never write Apex"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the Flow/Apex boundary with the kitchen brigade, then break the analogy.",
+      "answer_30_seconds": "Recipe cards are formula and validation, sign-off is approval, line cooks are Flow, pastry chef is Apex, the pass is order of execution, two cooks are duplicates. Callouts and legacy workflow break the picture.",
+      "answer_2_minutes": "I walk the five LAB_Opportunity needs. I say Apex is not a promotion; it is a technique the cards cannot express. I forbid invented limit numbers. I open the official pass-window page. I note Easy: the night shift must still read the recipe. I never use a library or labeled-drawer story.",
+      "example": "Stamp, lost reason, approval, task, credit callout.",
+      "tradeoffs": [
+        "Memorable analogy vs platform timing rules",
+        "Chef ego vs which-tool Help"
+      ],
+      "follow_ups": [
+        "Where does screen Flow sit?",
+        "Where does batch Apex sit? (APEX-011.)"
+      ],
+      "weak_answer_warnings": [
+        "A generic catalog metaphor instead of the kitchen-pass story",
+        "God-trigger pride"
+      ]
+    }
+  ]
+}

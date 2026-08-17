@@ -1,0 +1,992 @@
+{
+  "topic_id": "DQM-001",
+  "slug": "import-wizard-data-loader-apis-and-etl-decision-criteri",
+  "title": "Import Wizard, Data Loader, APIs, and ETL decision criteria",
+  "track": "Data management and quality",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 35,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-002"
+  ],
+  "objectives": [
+    "Choose Data Import Wizard versus Data Loader using official object, volume, export, and client-versus-browser criteria.",
+    "Explain when SOAP, REST, Bulk API, or Bulk API 2.0 belongs in an integration instead of a one-off loader job.",
+    "State ETL decision criteria: transformation, scheduling, multi-system sync, and ongoing pipelines versus a CSV load.",
+    "Separate import/export of business records from deploying metadata, and name the success/error evidence you would keep."
+  ],
+  "diagnostic_question": "A teammate has 8,000 LAB_ contacts to add in a sandbox, another teammate has 400,000 LAB_ custom-object rows plus a nightly delta, and a third wants a live two-system sync. Before you pick a tool, which volume, object, export, and ETL signals would you check?",
+  "definition": "The Data Import Wizard is an in-browser tool that maps CSV fields and imports supported objects. Data Loader is a client application that inserts, updates, upserts, deletes, or exports records from CSV or a database connection, including command-line batch on Windows. SOAP, REST, and Bulk APIs are the programmatic contracts those clients call. ETL decision criteria ask whether you need scheduled transformation and multi-system pipelines rather than a one-time file load. ([Data Import Wizard](https://help.salesforce.com/s/articleView?id=sf.import_with_data_import_wizard.htm); [Data Loader](https://help.salesforce.com/s/articleView?id=sf.data_loader.htm); [Data Loader Guide](https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/data_loader.htm))",
+  "why_it_matters": "Picking the Wizard for an object it cannot import, or Data Loader for a job that needs continuous transformation, creates failed rows, duplicate accounts, and unowned integrations. Interviewers listen for volume, object coverage, export need, Bulk API versus SOAP, and whether middleware is doing extract-transform-load rather than a person clicking CSV.",
+  "sixty_second_explanation": "Think of a freight terminal. The Data Import Wizard is the walk-up counter: browser, mapped fields, supported cargo types, no outbound shipping. Data Loader is the loading dock: a client that can load or export many pallets, including a Windows night-shift CLI. APIs are the trucking contracts the dock uses. ETL is the warehouse network that cleans, schedules, and moves freight between many buildings every night—not a one-time pallet drop.",
+  "deeper_explanation": [
+    "Salesforce Help describes the Data Import Wizard as the in-browser mapping and import path after you prepare a CSV. Launch it from Setup (Quick Find: Data Import Wizard) or from object tools / personal settings for users who are not administrators. Unmapped fields are not imported. You choose add new records, update existing records, or add and update together; Help notes that add-and-update can fire workflows that create related objects, while update-existing does not. ([Import Data with the Data Import Wizard](https://help.salesforce.com/s/articleView?id=sf.import_with_data_import_wizard.htm))",
+    "Salesforce Help describes Data Loader as a client for bulk import or export. It inserts, updates, deletes, or exports records; it reads CSV or a database connection and writes CSV on export. Documented features include a UI wizard, a Windows-only command-line for automated batch, drag-and-drop mapping, all objects including custom objects, and success/error CSV logs. Help lists support for large files with up to 5 million records; the Data Loader Guide (Summer '26) also documents Bulk API 2.0 for very large files (up to 150 million records). Cite the guide version in the org rather than memorizing a single unofficial cap. ([Data Loader Help](https://help.salesforce.com/s/articleView?id=sf.data_loader.htm); [Data Loader Guide](https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/data_loader.htm))",
+    "Command-line operations include extract (export, excluding soft-deleted rows), extract_all (includes soft-deleted), insert, update, upsert (match on a custom external ID), delete (Recycle Bin), and hard_delete (no Recycle Bin). Hard delete requires Bulk API (or Bulk API 2.0) in Data Loader settings. These operations are DQM-002; this lesson only needs them as the reason Data Loader is not 'just a bigger Wizard.' ([Data Loader operations](https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/loader_operations.htm); [Configure Data Loader](https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/configuring_the_data_loader.htm))",
+    "APIs are how any client, including Data Loader, talks to Salesforce. SOAP and REST suit interactive or moderate volumes; Bulk API and Bulk API 2.0 are the asynchronous path Data Loader uses when you enable those settings. ETL decision criteria: use middleware or a scheduled pipeline when you must transform fields, join several source systems, retry, or run every night. A CSV in the Wizard is not an ETL architecture. dataloader.io is a MuleSoft cloud product, not the Salesforce Data Loader client—do not treat them as the same tool in an interview."
+  ],
+  "mental_model": {
+    "analogy": "A freight terminal: Wizard = walk-up counter, Data Loader = loading dock and night-shift CLI, APIs = trucking contracts, ETL = the multi-building warehouse network.",
+    "useful_mapping": [
+      "CSV file → pallet of goods",
+      "field mapping → which bay the pallet is labeled for",
+      "Data Import Wizard → walk-up counter (browser, no outbound shipping)",
+      "Data Loader UI → loading dock with a forklift operator",
+      "Data Loader CLI (Windows) → scheduled night shift",
+      "SOAP/REST → individual truck runs",
+      "Bulk API / Bulk API 2.0 → unit-train of pallets",
+      "ETL middleware → warehouse network that cleans and reroutes freight every night",
+      "success/error CSVs → signed delivery receipts and rejected pallets"
+    ],
+    "where_it_breaks": [
+      "The Wizard is not a 'small Data Loader'; object coverage and export differ, not just volume.",
+      "Enabling Bulk API is not the same as designing an ETL pipeline with transformation and retries.",
+      "dataloader.io (MuleSoft) is not the Salesforce Data Loader client.",
+      "The analogy does not encode duplicate rules, sharing, or governor limits."
+    ]
+  },
+  "teach_back_prompt": "Without calling anything a small versus large file, explain to a business analyst when you would use the Data Import Wizard, Data Loader, a Bulk API integration, or an ETL pipeline—and name one place the freight-terminal analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: Wizard versus Data Loader on export, objects, client versus browser, and one volume signal."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given four jobs (8k contacts, 400k custom object, nightly delta, live sync), pick Wizard, Loader, API, or ETL and say why."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain Bulk API hard delete versus Wizard, and why CLI is Windows-only per the Data Loader Guide."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a failed import using unmapped fields, success/error CSVs, and Bulk Data Load Jobs without notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: ETL decision criteria versus a one-off Data Loader insert, plus metadata versus record data."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-IMPORT-WIZARD",
+      "title": "Import Data with the Data Import Wizard",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.import_with_data_import_wizard.htm",
+      "supports": "In-browser wizard: prepare CSV, map fields, add/update options, unmapped fields not imported, Setup launch, Bulk Data Load Jobs status.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Exact supported-object list and record caps can vary by edition; reverify the org's wizard welcome page."
+    },
+    {
+      "source_id": "SF-HELP-DATA-LOADER",
+      "title": "Data Loader",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.data_loader.htm",
+      "supports": "Client application for insert, update, delete, or export; CSV or database; UI plus Windows CLI; all objects including custom; success/error logs; large files up to 5 million records in this Help topic.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Help's 5 million figure can differ from Data Loader Guide Bulk API 2.0 wording; cite the page you used."
+    },
+    {
+      "source_id": "SF-DEV-DATALOADER",
+      "title": "Data Loader Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/data_loader.htm",
+      "supports": "Data Loader capabilities, Bulk API 2.0 very-large-file note in the Summer '26 guide, UI versus command line.",
+      "release_or_version": "Data Loader Guide / Summer '26 (API 67.0)",
+      "last_verified": "2026-08-16",
+      "limits": "Client version in the org may lag the published guide."
+    },
+    {
+      "source_id": "SF-DEV-DATALOADER-OPS",
+      "title": "Data Loader Command-Line Operations and Exit Codes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/loader_operations.htm",
+      "supports": "extract, extract_all, insert, update, upsert, delete, hard_delete; Windows-only CLI; Enterprise/Performance/Unlimited/Developer editions for this CLI topic.",
+      "release_or_version": "Data Loader Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "CLI edition gates in this article may not match every UI-install path; reverify edition."
+    },
+    {
+      "source_id": "SF-DEV-DATALOADER-CFG",
+      "title": "Configure Data Loader",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.dataLoader.meta/dataLoader/configuring_the_data_loader.htm",
+      "supports": "Use Bulk API / Bulk API 2.0 for insert, update, upsert, delete, and hard-delete; hard-deleted records cannot be recovered from the Recycle Bin.",
+      "release_or_version": "Data Loader Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Hard-delete permission is a neighboring security setting (DQM-002 / DQM-005)."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and the Data Loader Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Wizard is in-browser",
+        "Loader is a client",
+        "Export only on Loader/API",
+        "Bulk API for volume",
+        "ETL is a pipeline",
+        "Metadata vs records"
+      ],
+      "accessible_description": "Portrait map: Data Import Wizard in the browser for supported objects; Data Loader as a client for all objects including export; APIs as the contract; ETL as scheduled transformation across systems."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-IMPORT-WIZARD",
+        "SF-HELP-DATA-LOADER",
+        "SF-DEV-DATALOADER",
+        "SF-DEV-DATALOADER-OPS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Which load path owns this job?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  CSV[Prepared CSV or database] --> Map[Field mapping]\n  Map --> Wiz[Data Import Wizard in browser]\n  Map --> DL[Data Loader client]\n  DL --> UI[Interactive UI]\n  DL --> CLI[Windows command line]\n  DL --> SOAP[Default SOAP-based API]\n  DL --> Bulk[Bulk API or Bulk API 2.0]\n  API[SOAP REST Bulk APIs] --> ETL[ETL middleware pipeline]\n  Wiz --> Rows[Business records]\n  DL --> Rows\n  ETL --> Rows\n  Meta[Object fields validation Flow] -.->|deploy separately| Map",
+      "decision": "flowchart TD\n  Job[Need to move records?] --> Q1{Need export or all objects including arbitrary custom?}\n  Q1 -->|No: supported Wizard objects, one-off import| Q2{Analyst can map in browser?}\n  Q2 -->|Yes| Wiz[Data Import Wizard]\n  Q1 -->|Yes| Q3{One-off or simple scheduled CSV?}\n  Q3 -->|Yes Windows batch or UI| DL[Data Loader]\n  Q3 -->|Transform many systems retries live sync| ETL[ETL on APIs]\n  Q2 -->|No programmatic contract| API[SOAP REST or Bulk API]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "The Data Import Wizard is an in-browser import path: prepare a CSV, map fields, choose add/update/add-and-update, and unmapped fields are not imported. Status appears on Recent Import Jobs or Bulk Data Load Jobs (not in Professional Edition for that Setup page).",
+      "source_ids": ["SF-HELP-IMPORT-WIZARD"],
+      "scope": "Wizard mechanics",
+      "validation": "Import Data with the Data Import Wizard Help topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Data Loader is a client application for bulk import or export that can insert, update, delete, or export records from CSV or a database connection, with a UI and a Windows-only command line, support for all objects including custom objects, and success/error CSV logs.",
+      "source_ids": ["SF-HELP-DATA-LOADER", "SF-DEV-DATALOADER"],
+      "scope": "Data Loader product",
+      "validation": "Data Loader Help and Data Loader Guide opening topics.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Data Loader command-line operations include extract, extract_all, insert, update, upsert, delete, and hard_delete. The CLI is documented as Windows only.",
+      "source_ids": ["SF-DEV-DATALOADER-OPS"],
+      "scope": "Loader operations as tool-choice signal",
+      "validation": "Data Loader Command-Line Operations and Exit Codes.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Enabling Use Bulk API or Use Bulk API 2.0 in Data Loader is the documented path for asynchronous bulk insert, update, upsert, delete, and hard-delete. Hard-deleted records cannot be recovered from the Recycle Bin.",
+      "source_ids": ["SF-DEV-DATALOADER-CFG"],
+      "scope": "Bulk API setting",
+      "validation": "Configure Data Loader settings table.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Data Loader Guide Summer '26 documents Bulk API 2.0 and a very-large-file note (up to 150 million records) that can differ from Help's 'up to 5 million records' wording. Reverify the client and Help page in the target org.",
+  "unresolved_uncertainty": [
+    "Exact Data Import Wizard object list and the 50,000-record comparison figure appear in Salesforce's import-tool comparison Help; confirm the live English comparison page and edition in the org before quoting a cap in an interview.",
+    "Whether a given org's Data Loader build matches Summer '26 Bulk API 2.0 file-size wording needs verification on the installed client."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Data Import Wizard",
+      "telugu": "బ్రౌజర్‌లో CSV ని Salesforce ఫీల్డ్‌లకు మ్యాప్ చేసి ఇంపోర్ట్ చేసే విజార్డ్."
+    },
+    {
+      "english": "Data Loader",
+      "telugu": "CSV లేదా డేటాబేస్ నుంచి రికార్డులను లోడ్ లేదా ఎక్స్‌పోర్ట్ చేసే క్లయింట్ యాప్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I pick the Data Import Wizard for a browser-mapped import of supported objects. I pick Data Loader when I need export, all objects, CLI, or bulk operations including upsert and delete. APIs are the contract. ETL is for scheduled transformation across systems, not a one-off CSV.",
+    "two_minutes": "I start from the job: import versus export, which object, one-off versus nightly, and whether fields must be transformed. Wizard is in-browser mapping; unmapped columns never land. Data Loader is a client with success/error CSVs and, on Windows, a command line. I enable Bulk API when volume or hard delete needs the asynchronous path. If middleware must join systems and retry, that is ETL on the APIs, not a bigger CSV. I never confuse dataloader.io with Salesforce Data Loader. Records are data; object fields and validation are metadata deployed separately."
+  },
+  "terminology": [
+    {
+      "term": "Data Import Wizard",
+      "plain": "The in-browser Setup tool that maps a CSV and imports supported records.",
+      "precise": "After you prepare a CSV, the wizard maps fields (automatically where it can) and runs add, update, or add-and-update. Unmapped fields are not imported. Users who are not administrators can launch it from personal settings or object tools.",
+      "example": "Import 2,000 LAB_ Contact rows in a sandbox from a prepared CSV, mapping Email to Email.",
+      "non_example": "Exporting those contacts to CSV—the wizard is not an export client.",
+      "confusable_neighbor": "Data Loader: a separate installable client, not a bigger Wizard screen.",
+      "boundary": "Duplicate matching during wizard import is neighboring DQM-003; this lesson is tool choice."
+    },
+    {
+      "term": "Data Loader",
+      "plain": "A desktop client that loads or exports Salesforce records in bulk.",
+      "precise": "Reads CSV or a database connection; can insert, update, delete, or export; UI plus Windows command line; all objects including custom; success and error CSVs.",
+      "example": "Export LAB_ Invoice__c rows to CSV, then insert a corrected file in the same sandbox.",
+      "non_example": "dataloader.io, which is a MuleSoft cloud product, not this client.",
+      "confusable_neighbor": "Bulk API: the asynchronous API Data Loader can use; not a separate admin 'Bulk Loader' app.",
+      "boundary": "Operation verbs insert/update/upsert/delete/hard_delete are DQM-002."
+    },
+    {
+      "term": "field mapping",
+      "plain": "Matching each CSV column to a Salesforce field.",
+      "precise": "The wizard maps what it can; you must map the rest or those columns never import. Data Loader uses drag-and-drop mapping saved for reuse, including in CLI config.",
+      "example": "Map CSV column Ext_Key to LAB_ExtId__c before an upsert.",
+      "non_example": "Deploying a new custom field—that is metadata, not a mapping row.",
+      "confusable_neighbor": "External ID: a field attribute used as the upsert match key, not the mapping UI itself.",
+      "boundary": "Migration mapping workbooks are DQM-007."
+    },
+    {
+      "term": "Bulk API",
+      "plain": "The asynchronous Salesforce API for loading or deleting many records.",
+      "precise": "Data Loader settings Use Bulk API or Use Bulk API 2.0 switch insert, update, upsert, delete, and hard-delete onto the bulk path, which the guide describes as faster than default SOAP because of parallel processing and fewer round-trips.",
+      "example": "Enable Use Bulk API 2.0 before a large LAB_ custom-object insert in sandbox.",
+      "non_example": "A single-record UI save is not a Bulk API job.",
+      "confusable_neighbor": "SOAP API: Data Loader's default when Bulk API is off.",
+      "boundary": "Exact batch sizes and daily bulk limits belong to later volume/limit topics; do not invent numbers here."
+    },
+    {
+      "term": "ETL decision criteria",
+      "plain": "The test for whether you need a pipeline, not a one-off file load.",
+      "precise": "Choose ETL/middleware when you must extract from other systems, transform fields, schedule, retry, and load through Salesforce APIs on an ongoing basis. Wizard and Data Loader remain valid for finite, file-shaped jobs.",
+      "example": "Nightly customer-master sync from ERP with address cleanup into Account.",
+      "non_example": "A one-time 3,000-row Contact import an analyst can map in the Wizard.",
+      "confusable_neighbor": "Data Loader CLI: scheduled CSV on Windows is automation, not full multi-system ETL.",
+      "boundary": "MuleSoft product catalogs are out of scope; the criterion is the job shape."
+    },
+    {
+      "term": "success and error files",
+      "plain": "The CSVs Data Loader writes after a job so you can see what landed and what failed.",
+      "precise": "Help and the Data Loader Guide list detailed success and error log files in CSV format as a key feature. Interview evidence is row counts plus error messages, not a green progress bar.",
+      "example": "error.csv shows INVALID_FIELD for an unmapped picklist value on LAB_ Status__c.",
+      "non_example": "A Setup deployment status page for an Apex class.",
+      "confusable_neighbor": "Bulk Data Load Jobs: the Setup monitoring page for bulk jobs, including some wizard imports.",
+      "boundary": "Exit codes for CLI (0–4 in version 62+) are operational detail, not the interview headline."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Classify the job",
+      "actor": "Admin + integration owner",
+      "trigger": "Someone asks to 'load the file into Salesforce'",
+      "before": "Tool is assumed (usually Data Loader)",
+      "after": "Import vs export, object list, volume order-of-magnitude, one-off vs repeating, transform need",
+      "observe": "Written job card with object API name and whether export is required",
+      "failure": "Opening the Wizard for an unsupported object or for export"
+    },
+    {
+      "step": 2,
+      "transition": "Prepare data, not just the tool",
+      "actor": "Admin",
+      "trigger": "CSV or source extract exists",
+      "before": "Dirty headers, extra sheets, encoded IDs",
+      "after": "One object per file, API field names or a mapping sheet, synthetic LAB_ rows in sandbox",
+      "observe": "Sample of 5–10 rows maps cleanly in a dry run",
+      "failure": "Starting the wizard before preparing data, which Help lists as the first step to prevent errors and duplication"
+    },
+    {
+      "step": 3,
+      "transition": "Pick Wizard, Loader, API, or ETL",
+      "actor": "Admin + architect",
+      "trigger": "Job card complete",
+      "before": "One tool for every load",
+      "after": "Wizard, Data Loader (SOAP or Bulk), custom API client, or middleware",
+      "observe": "Decision table row cited in the change ticket",
+      "failure": "Using ETL language for a one-off Wizard import, or Wizard language for a 400k custom-object delete"
+    },
+    {
+      "step": 4,
+      "transition": "Run in sandbox and keep receipts",
+      "actor": "Admin",
+      "trigger": "Mapping saved",
+      "before": "Unknown row outcomes",
+      "after": "Success/error CSVs or wizard job metrics; metadata unchanged unless a field was missing",
+      "observe": "Row counts match the source minus documented rejects",
+      "failure": "Treating a class deploy as if it loaded records, or loading production without a sandbox rehearsal (DQM-007)"
+    }
+  ],
+  "when_to_use": [
+    "When an interviewer asks you to choose Data Import Wizard versus Data Loader using object coverage, export, and client-versus-browser criteria.",
+    "When a sandbox job is a one-off CSV import of Wizard-supported objects and an analyst can complete field mapping in the browser.",
+    "When you need Data Loader because the object is arbitrary custom, you must export, you need upsert/delete, or you want Windows CLI batch.",
+    "When ETL decision criteria apply: ongoing extract-transform-load across systems, retries, and Salesforce APIs rather than a single CSV drop.",
+    "When you must explain Bulk API versus default SOAP inside Data Loader without turning the answer into a full integration architecture."
+  ],
+  "when_not_to_use": [
+    "Do not use the Data Import Wizard when the job is export, hard delete, or an object the wizard cannot import—those are Data Loader or API jobs.",
+    "Do not treat Data Loader CLI as a substitute for ETL decision criteria when multiple source systems and transformations must run every night.",
+    "Do not use this Import Wizard / Data Loader / APIs lesson as the place to design matching rules, duplicate rules, or External IDs (DQM-003).",
+    "Do not quote a single record-cap number from memory when Help and the Data Loader Guide disagree; cite the page and the installed client.",
+    "Do not run Wizard or Data Loader against production customer data as a lab for this topic—use a disposable sandbox and LAB_ rows."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Data Import Wizard (Quick Find), or object Tools / personal settings for non-admin launch.",
+    "Setup → Bulk Data Load Jobs to monitor wizard/bulk status (not available in Professional Edition per Help).",
+    "Installed Data Loader client: Settings for Use Bulk API / Use Bulk API 2.0; mapping files; success/error CSV folder.",
+    "Windows command line process.operation values: extract, extract_all, insert, update, upsert, delete, hard_delete."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab must load 2,500 LAB_ Contact rows from marketing, export and reload 80,000 LAB_ Invoice__c custom-object rows after a column fix, and define—not build—a nightly ERP customer sync. No production data.",
+    "inputs": [
+      "Prepared Contact CSV with Email and LastName",
+      "LAB_Invoice__c CSV at 80,000 rows",
+      "ERP customer extract that needs address standardization every night",
+      "Disposable sandbox; LAB_ names only"
+    ],
+    "decisions": [
+      {
+        "decision": "Use Data Import Wizard for the 2,500 LAB_ Contact insert.",
+        "because": "Contacts are a wizard-supported object, the job is a one-off browser mapping, and export is not required.",
+        "rejected": "Data Loader for every file 'because it is more professional'"
+      },
+      {
+        "decision": "Use Data Loader with Bulk API enabled for LAB_Invoice__c.",
+        "because": "Custom object, tens of thousands of rows, and we need export then insert; Help and the Guide position Loader for all objects and bulk files.",
+        "rejected": "Data Import Wizard for a custom object volume the wizard is not the interview-default tool for"
+      },
+      {
+        "decision": "Call the ERP feed an ETL/API pipeline, not a Wizard job.",
+        "because": "Ongoing transform and multi-system sync match ETL decision criteria; a CSV drop does not.",
+        "rejected": "Teaching someone to click the Wizard every morning"
+      }
+    ],
+    "configuration_or_code": [
+      "Wizard: Setup → Data Import Wizard → add new Contact records → map Email/LastName → Start Import → read Recent Import Jobs metrics.",
+      "Data Loader: export LAB_Invoice__c, fix CSV, Settings → Use Bulk API, insert, archive success/error CSVs.",
+      "Write one sentence in the ticket: ERP sync uses Salesforce APIs via middleware; this lab does not install that middleware."
+    ],
+    "output": "Contact wizard job succeeds for mapped columns; Invoice Loader success count matches source minus documented errors; ERP path is labeled ETL, not Wizard.",
+    "verification": [
+      "Unmapped Contact column is absent on the records, matching Help's unmapped-fields rule.",
+      "Invoice error.csv is empty or every error is explained.",
+      "No production alias appears in file names."
+    ],
+    "self_explanation": "Tool choice followed object, volume, export, and whether the job was a pipeline. I did not treat Data Loader as automatic for Contacts."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable Developer sandbox or scratch org; synthetic LAB_ records only.",
+    "starting_state_checks": [
+      "You can open Data Import Wizard in Setup.",
+      "No production CSV is in the working folder."
+    ],
+    "steps": [
+      "Create a 10-row LAB_ Contact CSV and import it with the Data Import Wizard, leaving one column unmapped on purpose.",
+      "Confirm the unmapped column did not land on the records.",
+      "If Data Loader is available, export those contacts and compare row count to the wizard success metric.",
+      "Write one sentence: which job would have been ETL instead of Wizard or Loader."
+    ],
+    "guided_completion": [
+      "If the unmapped column appeared on the record, the mapping step was not actually unmapped.",
+      "If you used production emails, stop and switch to LAB_ synthetic values."
+    ],
+    "independent_challenge": "List three signals that would move the Contact job from Wizard to Data Loader without inventing a record-cap number.",
+    "evidence": [
+      "Wizard job metrics or screenshot with LAB_ in the file name.",
+      "Written sentence on the unmapped-field behavior from Help."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Contact rows in the sandbox (soft delete is enough for this lab).",
+      "Do not connect Data Loader to production."
+    ],
+    "limitations": "This lab does not prove Bulk API 2.0 file-size limits, CLI exit codes, or middleware ETL."
+  },
+  "decision_table": [
+    {
+      "signal": "One-off import of Wizard-supported objects; analyst can map in the browser; no export.",
+      "choose": "Data Import Wizard after preparing the CSV.",
+      "not": "Data Loader solely because 'real admins never use the Wizard'.",
+      "why": "Help positions the wizard as the in-browser mapping and import path; object and export limits are the real gates."
+    },
+    {
+      "signal": "Need to export records, load an arbitrary custom object, or run insert/update/delete from a client.",
+      "choose": "Data Loader UI, with Bulk API enabled when volume or hard delete requires it.",
+      "not": "Data Import Wizard, which is not the export client and is not a general delete tool.",
+      "why": "Help defines Data Loader as the client for bulk import or export across objects, with success/error CSVs."
+    },
+    {
+      "signal": "Windows server must run the same mapping every night from a dropped CSV, no extra transform.",
+      "choose": "Data Loader command-line batch (Windows only) with process.operation set explicitly.",
+      "not": "An analyst clicking the Wizard each morning, or assuming CLI exists on macOS.",
+      "why": "The Data Loader Guide documents a Windows-only CLI for automated batch operations."
+    },
+    {
+      "signal": "Ongoing sync with field transformation, multiple source systems, and retries.",
+      "choose": "ETL/middleware using Salesforce APIs (SOAP, REST, Bulk, or Bulk 2.0).",
+      "not": "Calling a one-off Data Loader insert 'our ETL platform'.",
+      "why": "ETL decision criteria are pipeline shape, not CSV size. Loader remains a client, not a warehouse network."
+    },
+    {
+      "signal": "A custom integration must load or query without a human mapping UI.",
+      "choose": "Direct SOAP, REST, or Bulk API from the integration, with documented credentials.",
+      "not": "Screen-scraping the Data Import Wizard.",
+      "why": "APIs are the programmatic contract; the wizard is a browser tool for prepared files."
+    }
+  ],
+  "limitations": [
+    "Does not teach insert versus upsert mechanics in depth (DQM-002).",
+    "Does not configure matching or duplicate rules (DQM-003).",
+    "Does not replace LDV, indexing, or skew design (DQM-006).",
+    "Edition, wizard object list, and Data Loader client version change; reverify Help in the org."
+  ],
+  "security_notes": [
+    "Data Loader stores login configuration; treat it as a credentialed client, not a shared USB tool.",
+    "Never load production extracts into a scratch org without masking.",
+    "Hard delete is irreversible relative to the Recycle Bin; keep it out of this lesson's default path."
+  ],
+  "common_mistakes": [
+    "Saying the Wizard is just Data Loader with a smaller limit.",
+    "Using Data Loader when the Wizard fits a small supported-object import.",
+    "Confusing Salesforce Data Loader with dataloader.io.",
+    "Calling any scheduled CSV 'ETL' without transformation or multi-system criteria.",
+    "Assuming macOS has the documented Data Loader command-line interface."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Wizard import finishes but several CSV columns are missing on the records.",
+      "check": [
+        "Those columns were unmapped; Help states unmapped fields are not imported.",
+        "Review the mapping page and re-run in sandbox."
+      ],
+      "do_not_assume": "Salesforce dropped the columns as a storage bug."
+    },
+    {
+      "symptom": "Need to export Accounts and the Wizard has no export action.",
+      "check": [
+        "Switch to Data Loader extract or another API export.",
+        "Confirm Read access on the object."
+      ],
+      "do_not_assume": "The Wizard can export if you pick the right checkbox."
+    },
+    {
+      "symptom": "Data Loader job is slow or hits SOAP-style batch behavior on a large file.",
+      "check": [
+        "Whether Use Bulk API or Use Bulk API 2.0 is enabled in Settings.",
+        "Whether the job actually needs the bulk path."
+      ],
+      "do_not_assume": "The only fix is an ETL product."
+    }
+  ],
+  "production_notes": [
+    "Rehearse Wizard and Data Loader jobs in sandbox with LAB_ data before any production load (DQM-007).",
+    "Archive mapping files and success/error CSVs with the change ticket.",
+    "This lesson does not authorize production loads or hard delete."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where does the Data Import Wizard run according to Salesforce Help?",
+      "options": {
+        "A": "In the browser after you prepare a CSV and map fields",
+        "B": "Only as a Windows command-line executable",
+        "C": "Only inside Apex anonymous execution",
+        "D": "Only as a MuleSoft dataloader.io recipe"
+      },
+      "answer": "A",
+      "rationale": "Help describes launching the wizard from Setup or object/personal settings and mapping CSV fields in the browser.",
+      "distractor_explanations": {
+        "B": "The Windows CLI belongs to Data Loader, not the wizard.",
+        "C": "Apex is not the wizard runtime.",
+        "D": "dataloader.io is a different MuleSoft product."
+      },
+      "concept": "Wizard runtime",
+      "citation_ids": ["SF-HELP-IMPORT-WIZARD"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What happens to CSV columns the Data Import Wizard does not map?",
+      "options": {
+        "A": "They are not imported into Salesforce",
+        "B": "They always become Account Notes automatically",
+        "C": "They overwrite Salesforce Id",
+        "D": "They are stored as metadata in Setup"
+      },
+      "answer": "A",
+      "rationale": "Help states that unmapped fields are not imported.",
+      "distractor_explanations": {
+        "B": "Notes mapping is an optional choice for some account/contact fields, not the default for every unmapped column.",
+        "C": "You do not map leftover columns onto Id.",
+        "D": "CSV values are business data, not Setup metadata."
+      },
+      "concept": "Unmapped fields",
+      "citation_ids": ["SF-HELP-IMPORT-WIZARD"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which statement matches Salesforce Help's definition of Data Loader?",
+      "options": {
+        "A": "A client application for bulk import or export of records, including insert, update, delete, or export",
+        "B": "An in-browser wizard that cannot use CSV files",
+        "C": "A report type used to export dashboards",
+        "D": "A duplicate rule that blocks inserts"
+      },
+      "answer": "A",
+      "rationale": "Help defines Data Loader as a client for bulk import or export that inserts, updates, deletes, or exports records.",
+      "distractor_explanations": {
+        "B": "That describes neither product accurately; the wizard is in-browser and does use CSV.",
+        "C": "Reports are analytics, not Data Loader.",
+        "D": "Duplicate rules are DQM-003."
+      },
+      "concept": "Data Loader definition",
+      "citation_ids": ["SF-HELP-DATA-LOADER"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A team needs to export LAB_ custom-object rows to CSV, then reload them. Which tool matches official docs?",
+      "options": {
+        "A": "Data Loader (extract, then insert or update)",
+        "B": "Data Import Wizard export mode",
+        "C": "A validation rule with a CSV output",
+        "D": "A list view subscribe email"
+      },
+      "answer": "A",
+      "rationale": "Data Loader exports to CSV and can insert/update. The wizard is not documented as the export client.",
+      "distractor_explanations": {
+        "B": "The wizard is an import tool.",
+        "C": "Validation rules do not export CSV.",
+        "D": "Subscriptions are not a bulk export architecture."
+      },
+      "concept": "Export path",
+      "citation_ids": ["SF-HELP-DATA-LOADER", "SF-DEV-DATALOADER-OPS"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "The Data Loader Guide documents the command-line interface as available on which OS?",
+      "options": {
+        "A": "Windows only",
+        "B": "macOS only",
+        "C": "Any browser",
+        "D": "Linux only, never Windows"
+      },
+      "answer": "A",
+      "rationale": "The operations topic states the Data Loader command-line interface is supported for Windows only. Help also notes CLI for automated batch on Windows only.",
+      "distractor_explanations": {
+        "B": "The UI can run on Mac; the documented CLI is Windows.",
+        "C": "CLI is not a browser feature.",
+        "D": "The documented CLI is Windows, not Linux-only."
+      },
+      "concept": "CLI platform",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS", "SF-HELP-DATA-LOADER"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You need Data Loader to hard-delete records. What setting does the Configure Data Loader topic require you to understand?",
+      "options": {
+        "A": "Use Bulk API or Use Bulk API 2.0; hard-deleted records cannot be recovered from the Recycle Bin",
+        "B": "Only the Data Import Wizard hard-delete checkbox",
+        "C": "A report folder setting named Hard Delete",
+        "D": "Disabling field-level security"
+      },
+      "answer": "A",
+      "rationale": "Configure Data Loader documents hard delete with Bulk API / Bulk API 2.0 and warns records cannot be recovered from the Recycle Bin.",
+      "distractor_explanations": {
+        "B": "The wizard is not that hard-delete client.",
+        "C": "Reports do not hard-delete via a folder flag.",
+        "D": "FLS is unrelated to the Bulk API hard-delete switch."
+      },
+      "concept": "Hard delete setting",
+      "citation_ids": ["SF-DEV-DATALOADER-CFG"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which job best matches ETL decision criteria rather than a one-off Wizard import?",
+      "options": {
+        "A": "Nightly ERP extract, address transformation, and load into Account via APIs with retries",
+        "B": "A 200-row Contact CSV an analyst maps once in the Data Import Wizard",
+        "C": "Renaming a custom field in Object Manager",
+        "D": "Creating a list view"
+      },
+      "answer": "A",
+      "rationale": "ETL is ongoing extract-transform-load across systems. A small wizard CSV is not that architecture.",
+      "distractor_explanations": {
+        "B": "That is a Wizard-shaped job.",
+        "C": "That is metadata.",
+        "D": "List views are UI, not ETL."
+      },
+      "concept": "ETL criteria",
+      "citation_ids": ["SF-HELP-DATA-LOADER", "SF-DEV-DATALOADER"]
+    },
+    {
+      "id": "Q8",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How should you treat dataloader.io in an interview about Salesforce Data Loader?",
+      "options": {
+        "A": "As a MuleSoft cloud import product, not the Salesforce Data Loader client documented in Help",
+        "B": "As the only supported Mac command-line for Data Loader",
+        "C": "As a synonym for the Data Import Wizard",
+        "D": "As the metadata API"
+      },
+      "answer": "A",
+      "rationale": "Salesforce's import-tool comparison discusses dataloader.io as a MuleSoft offering. The Help 'Data Loader' topic is the installable client.",
+      "distractor_explanations": {
+        "B": "Official CLI is Windows-only for Salesforce Data Loader.",
+        "C": "They are different tools.",
+        "D": "Metadata API deploys metadata, not this client."
+      },
+      "concept": "Tool identity",
+      "citation_ids": ["SF-HELP-DATA-LOADER"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Help says add-new-and-update-existing in the Data Import Wizard can fire workflows that add new objects, but update-existing does not. What is the interview takeaway?",
+      "options": {
+        "A": "The wizard operation mode changes automation side effects; test the chosen mode in sandbox",
+        "B": "Update-existing always hard-deletes children",
+        "C": "Add-and-update ignores all validation rules",
+        "D": "Workflow cannot run on imported records"
+      },
+      "answer": "A",
+      "rationale": "Help explicitly ties add-and-update versus update-existing to whether those workflows fire. That is a rehearsal signal.",
+      "distractor_explanations": {
+        "B": "That is not the documented distinction.",
+        "C": "Validation still applies; this topic does not claim otherwise.",
+        "D": "Help describes workflows firing on some import modes."
+      },
+      "concept": "Wizard add vs update",
+      "citation_ids": ["SF-HELP-IMPORT-WIZARD"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates metadata from the records these tools load?",
+      "options": {
+        "A": "Deploying a custom field is metadata; Wizard or Data Loader rows are business data",
+        "B": "Every Data Loader CSV is metadata stored in Setup",
+        "C": "The Data Import Wizard deploys Apex classes",
+        "D": "Field mapping is a permission set group"
+      },
+      "answer": "A",
+      "rationale": "Object fields are metadata. Imported Account or custom-object rows are data. Mapping uses the metadata; it does not create it.",
+      "distractor_explanations": {
+        "B": "CSV rows are data.",
+        "C": "The wizard imports records, not Apex.",
+        "D": "Mapping is column-to-field matching."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-HELP-IMPORT-WIZARD", "SF-HELP-DATA-LOADER"]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which Data Loader command-line operation exports records including soft-deleted rows?",
+      "options": {
+        "A": "extract_all",
+        "B": "extract only",
+        "C": "insert",
+        "D": "hard_delete"
+      },
+      "answer": "A",
+      "rationale": "The operations table: extract excludes soft-deleted records; extract_all includes existing and soft-deleted records.",
+      "distractor_explanations": {
+        "B": "extract explicitly does not include soft-deleted records.",
+        "C": "insert loads new records.",
+        "D": "hard_delete permanently deletes."
+      },
+      "concept": "extract_all",
+      "citation_ids": ["SF-DEV-DATALOADER-OPS"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "An integration must upsert hundreds of thousands of rows without a human mapping UI. What belongs in the decision?",
+      "options": {
+        "A": "Salesforce APIs (often Bulk / Bulk 2.0), possibly behind ETL, not the Data Import Wizard",
+        "B": "Only the Data Import Wizard personal-settings launch",
+        "C": "A dashboard subscription",
+        "D": "Making the field globally required so APIs are unnecessary"
+      },
+      "answer": "A",
+      "rationale": "Programmatic volume and upsert are API/ETL jobs. The wizard is a browser mapping tool.",
+      "distractor_explanations": {
+        "B": "Personal settings launch still is the wizard.",
+        "C": "Dashboards do not upsert.",
+        "D": "Requiredness is DQM-004, not a load path."
+      },
+      "concept": "API vs wizard",
+      "citation_ids": ["SF-DEV-DATALOADER", "SF-DEV-DATALOADER-CFG"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is the Data Import Wizard, in Help's terms?",
+      "back": "An in-browser tool: prepare a CSV, map fields, run add/update/add-and-update. Unmapped fields are not imported."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "What is Salesforce Data Loader?",
+      "back": "A client for bulk import or export: insert, update, delete, or export from CSV or a database connection."
+    },
+    {
+      "id": "F3",
+      "category": "compare",
+      "front": "Wizard versus Data Loader on export?",
+      "back": "Data Loader exports to CSV. The Data Import Wizard is an import path, not the export client."
+    },
+    {
+      "id": "F4",
+      "category": "compare",
+      "front": "Does Data Loader support custom objects?",
+      "back": "Yes. Help lists support for all objects, including custom objects."
+    },
+    {
+      "id": "F5",
+      "category": "ops",
+      "front": "Windows-only Data Loader feature?",
+      "back": "The command-line interface for automated batch operations."
+    },
+    {
+      "id": "F6",
+      "category": "ops",
+      "front": "extract versus extract_all?",
+      "back": "extract exports via SOQL without soft-deleted rows. extract_all includes existing and soft-deleted records."
+    },
+    {
+      "id": "F7",
+      "category": "bulk",
+      "front": "Why enable Use Bulk API in Data Loader?",
+      "back": "To insert, update, upsert, delete, or hard-delete asynchronously; the guide describes it as faster than default SOAP for many records."
+    },
+    {
+      "id": "F8",
+      "category": "bulk",
+      "front": "Hard delete and the Recycle Bin?",
+      "back": "With Bulk API hard delete, records are not stored in the Recycle Bin and cannot be recovered from it."
+    },
+    {
+      "id": "F9",
+      "category": "etl",
+      "front": "Name one ETL decision criterion versus a CSV load.",
+      "back": "Ongoing transform across systems with schedule and retries via APIs, not a one-off Wizard file."
+    },
+    {
+      "id": "F10",
+      "category": "identity",
+      "front": "Is dataloader.io the same as Salesforce Data Loader?",
+      "back": "No. dataloader.io is a MuleSoft cloud product. Help's Data Loader is the Salesforce client."
+    },
+    {
+      "id": "F11",
+      "category": "evidence",
+      "front": "What receipts does Data Loader give you?",
+      "back": "Detailed success and error log files in CSV format, plus an optional CSV viewer."
+    },
+    {
+      "id": "F12",
+      "category": "wizard",
+      "front": "Where can non-admins launch the Data Import Wizard?",
+      "back": "Help: Tools on the object home page or personal settings, in addition to Setup for administrators."
+    },
+    {
+      "id": "F13",
+      "category": "boundary",
+      "front": "CSV rows versus custom fields?",
+      "back": "Imported rows are business data. Custom fields and validation are metadata you deploy separately."
+    },
+    {
+      "id": "F14",
+      "category": "wizard",
+      "front": "Add-and-update versus update-existing in the wizard?",
+      "back": "Help: add-and-update can fire workflows that add new objects; update existing records does not."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Need export of a custom object plus a later insert. Tool?",
+      "back": "Data Loader extract then insert/update, often with Bulk API for volume—not the Data Import Wizard."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you choose Data Import Wizard versus Data Loader?",
+      "answer_30_seconds": "Wizard is in-browser mapping for a prepared CSV on supported objects. Data Loader is a client for import or export, all objects including custom, UI plus Windows CLI, success/error CSVs.",
+      "answer_2_minutes": "I start from export need, object type, and whether a human should map in the browser. If it is a one-off supported-object import, I use the Data Import Wizard and I remember unmapped columns never land. If I need export, delete, upsert, arbitrary custom objects, or scheduled CLI, I use Data Loader and I decide SOAP versus Bulk API in settings. I do not say 'Wizard is the small one' as the whole answer. Volume caps differ across Help pages, so I cite the page rather than invent a number.",
+      "example": "2,500 LAB_ Contacts in sandbox → Wizard; export LAB_Invoice__c → Data Loader extract.",
+      "tradeoffs": [
+        "Browser speed vs client power",
+        "Analyst-owned mapping vs reusable Loader maps"
+      ],
+      "follow_ups": [
+        "What if they also need nightly transform from ERP?",
+        "Which OS has the documented CLI?"
+      ],
+      "weak_answer_warnings": [
+        "Only citing a memorized record limit",
+        "Calling the Wizard a small Data Loader"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What are ETL decision criteria in a Salesforce data conversation?",
+      "answer_30_seconds": "ETL means extract, transform, load as a pipeline: multiple systems, field cleanup, schedule, retries, APIs. A one-off CSV in the Wizard or Data Loader is not automatically ETL.",
+      "answer_2_minutes": "I ask whether the job is finite and file-shaped or continuous and multi-system. Finite Contact CSV: Wizard or Loader. Nightly ERP customers with address standardization: middleware calling Salesforce APIs, often Bulk. Data Loader CLI can schedule a CSV on Windows; that is automation, still not a warehouse network. I keep dataloader.io out of the Salesforce Data Loader definition.",
+      "example": "ERP customer master every night versus a marketing CSV dropped once.",
+      "tradeoffs": [
+        "CLI CSV vs true transform",
+        "Build versus buy middleware"
+      ],
+      "follow_ups": [
+        "Where do Bulk API and Bulk API 2.0 fit?",
+        "Who owns credentials?"
+      ],
+      "weak_answer_warnings": [
+        "Calling every Data Loader job ETL"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A load finished but several spreadsheet columns never appeared on the records. Diagnose it.",
+      "answer_30_seconds": "If it was the Data Import Wizard, unmapped fields are not imported. Open the mapping page and the job metrics. For Data Loader, read error.csv and the mapping file.",
+      "answer_2_minutes": "I reproduce in sandbox with a tiny LAB_ file. Wizard: Help's unmapped-fields rule is the first check, not a storage outage. Loader: mapping SDL/CSV headers, then error messages. I also check we did not confuse metadata (missing custom field) with mapping (field exists but column not mapped). I do not rerun in production to 'see if it catches up.'",
+      "example": "CSV column Region never mapped to LAB_Region__c; records saved without Region.",
+      "tradeoffs": [
+        "Remap and reload vs patch with update",
+        "Wizard UI vs saved Loader map"
+      ],
+      "follow_ups": [
+        "How would add-and-update change automation?",
+        "What evidence goes in the ticket?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Salesforce storage first"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "You need a Windows server to insert the same object every night from a dropped CSV. What do you propose?",
+      "answer_30_seconds": "Data Loader command-line batch on Windows with an explicit process.operation such as insert or upsert, plus archived success/error files. Confirm it is still a simple file, not multi-system ETL.",
+      "answer_2_minutes": "The Data Loader Guide documents CLI as Windows-only. I would not promise a Mac CLI. I set operation in lowercase as documented, keep mappings in version control, and monitor exit codes on v62+. If the night job must join three systems and transform addresses, I escalate to ETL on APIs instead of stretching CLI. I still rehearse in sandbox (DQM-007).",
+      "example": "Nightly LAB_Usage__c insert from a vendor drop folder on a Windows jump host.",
+      "tradeoffs": [
+        "CLI simplicity vs middleware",
+        "SOAP default vs Bulk API"
+      ],
+      "follow_ups": [
+        "When would you enable Bulk API 2.0?",
+        "How do you handle partial row failures?"
+      ],
+      "weak_answer_warnings": [
+        "Promising CLI on macOS"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you refuse the Data Import Wizard even if the file is 'not that big'?",
+      "answer_30_seconds": "When the job is export, hard delete, an unsupported object, or needs upsert on an external ID via the Loader/API path. Size is not the only criterion.",
+      "answer_2_minutes": "Interviewers ding 'Wizard for small, Loader for large' as the whole story. I add object coverage, export, operation type, and whether a client or API must own it. I mention Help's add-versus-update automation difference so they hear I think about side effects. For repeating multi-system work I skip both UI tools and talk ETL. I refuse production experiments.",
+      "example": "Export plus reload of LAB_Invoice__c is Loader even at 5,000 rows because of export and custom object operational control.",
+      "tradeoffs": [
+        "Analyst convenience vs operational verbs",
+        "Wizard duplicate options vs matching rules (DQM-003)"
+      ],
+      "follow_ups": [
+        "What operations does Loader CLI list?",
+        "Where do duplicate rules fire?"
+      ],
+      "weak_answer_warnings": [
+        "Using file size as the only gate"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Data Loader on a large insert is slower than expected. What official setting do you inspect?",
+      "answer_30_seconds": "Settings → Use Bulk API or Use Bulk API 2.0. The guide says bulk is optimized for many records versus default SOAP. Then I still check mapping errors, not just the checkbox.",
+      "answer_2_minutes": "I confirm we are not debugging a validation or lock issue while talking about APIs. If SOAP batching is the bottleneck and volume is high, enable Bulk API as documented. I note behavioral differences: empty values and truncation behave differently with Bulk API enabled. I do not invent daily bulk limits in this answer. If the real need is transform-plus-schedule, I pivot to ETL decision criteria.",
+      "example": "80,000 LAB_Invoice__c insert with Bulk API off, then rerun with Use Bulk API 2.0 in sandbox.",
+      "tradeoffs": [
+        "SOAP features vs bulk throughput",
+        "Null handling differences with Bulk API"
+      ],
+      "follow_ups": [
+        "What is #N/A for nulls in Bulk API?",
+        "Does hard delete require bulk?"
+      ],
+      "weak_answer_warnings": [
+        "Only saying 'use ETL' with no Bulk API mention"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "A Java developer says they will 'just call the Wizard from code.' How do you correct that?",
+      "answer_30_seconds": "The Data Import Wizard is a browser mapping UI, not a programmatic API. Code should use SOAP, REST, or Bulk APIs. Data Loader is a client that already wraps those APIs.",
+      "answer_2_minutes": "I separate three layers: human mapping tools (Wizard, Loader UI), the Data Loader CLI as a scheduled client, and first-class APIs for an application. Screen-scraping Setup is not an integration pattern. I mention Bulk API when volume is high and ETL when transformation lives outside Salesforce. I also separate metadata deploy from record load so they do not ship a class and think data arrived.",
+      "example": "A service upserts LAB_ accounts via Bulk API 2.0 using an External ID; no Wizard session is involved.",
+      "tradeoffs": [
+        "Client versus custom API code",
+        "Time-to-load vs long-term ownership"
+      ],
+      "follow_ups": [
+        "Where does External ID fit (DQM-003)?",
+        "What login integration should they use?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing that the Wizard is an API"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "How do you explain this topic's freight-terminal analogy, and where does it break?",
+      "answer_30_seconds": "Wizard is the walk-up counter, Data Loader the loading dock, APIs the trucking contract, ETL the warehouse network. It breaks if you think the Wizard is only a smaller dock—export and object coverage differ.",
+      "answer_2_minutes": "I map CSV to pallets and mapping to bay labels. I stress receipts: success/error CSVs. I then break the analogy: Bulk API is not ETL by itself; dataloader.io is another carrier brand; duplicate rules and sharing are customs inspections, not the dock. I finish with metadata versus cargo: deploying a field is changing the terminal layout, not unloading a truck.",
+      "example": "Teaching a BA why Contacts can go to the counter while Invoice__c export must use the dock.",
+      "tradeoffs": [
+        "Memorable analogy vs precise Help wording",
+        "One-off cargo vs scheduled network"
+      ],
+      "follow_ups": [
+        "Name Help's unmapped-field rule without the analogy.",
+        "Name the Windows CLI constraint."
+      ],
+      "weak_answer_warnings": [
+        "Using a generic catalog metaphor instead of the freight-terminal mapping"
+      ]
+    }
+  ]
+}

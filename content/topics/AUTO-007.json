@@ -1,0 +1,1016 @@
+{
+  "topic_id": "AUTO-007",
+  "slug": "get-create-update-delete-records-and-bulk-safe-design",
+  "title": "Get/Create/Update/Delete Records and bulk-safe design",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AUTO-006"
+  ],
+  "objectives": [
+    "Explain Get Records, Create Records, Update Records, and Delete Records as Flow database operations, not as screen labels.",
+    "Design bulk-safe record processing: Get before a loop, Assignments inside, Create/Update/Delete after the loop.",
+    "Choose before-save Fast Field Updates for same-record field changes versus after-save Create/Update/Delete for related records.",
+    "Troubleshoot a Flow that hits query or DML limits because a data element sits inside a Loop."
+  ],
+  "diagnostic_question": "A record-triggered Flow must create one Task per Opportunity Team Member when Stage becomes Closed Won. Where do Get Records and Create Records belong relative to the Loop, and what evidence would prove the design is bulk-safe?",
+  "definition": "Get Records looks up Salesforce records into a record or collection. Create Records, Update Records, and Delete Records perform DML. Bulk-safe design keeps those data elements outside Loops: query once, Assign into a collection, then one Create/Update/Delete on the collection. ([Bulkified Record Processing](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm); [Working with Data in a Flow](https://help.salesforce.com/s/articleView?id=sf.flow_build.htm))",
+  "why_it_matters": "A Flow that works for one Opportunity can fail when Data Loader or an API updates two hundred. Interviewers listen for whether you put Create Records inside a Loop or after it. Same-record field updates belong in before-save when they fit; related-record DML belongs after save.",
+  "sixty_second_explanation": "Treat Get/Create/Update/Delete like a warehouse pallet run. Scan the bins once (Get Records), stack boxes on one pallet while you walk the aisle (Assignment in a Loop), then one forklift trip to the dock (Create/Update/Delete after the Loop). One trip per box is not bulk-safe. If you are only relabeling the triggering record, use a before-save Fast Field Update instead of a separate Update Records.",
+  "deeper_explanation": [
+    "Salesforce Help describes working with data in a Flow as looking up values, creating records, updating records, and deleting records. Get Records is the lookup. Create, Update, and Delete are the DML elements that can fail and should have fault paths (AUTO-008). ([Build a Flow](https://help.salesforce.com/s/articleView?id=sf.flow_build.htm))",
+    "The official bulkified-processing example starts with a record-triggered after-save Flow on Opportunity, uses Get Records for Opportunity Team Members (store all records), loops with Assignment onto a Task record variable and a Task collection, then one Create Records after the Loop with How Many Records to Create = Multiple. It states: never perform DML inside loops; collect during the loop, DML after. ([Bulkified Record Processing](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm))",
+    "Trailhead’s Flow limits module maps Get Records (and filters on Update/Delete) to SOQL, and Create/Update/Delete to DML. Elements inside a Loop run once per item, so a Get or Create inside a Loop can exhaust the transaction. Place Get Records before the Loop and Create/Update/Delete after. Exact numeric limits are versioned; reverify Flow Limits and Considerations for the org. ([Avoid Flow Limits](https://trailhead.salesforce.com/content/learn/modules/flow-implementation-1/avoid-flow-limits))",
+    "Before-save record-triggered Flows (Fast Field Updates) may use Assignment, Decision, Get Records, and Loop, and they update the triggering record before it is saved. Help states they can update a Salesforce record about 10 times faster than a record-change process. Use after-save Actions and Related Records when you must Create/Update/Delete related records. ([Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm); [Flow Types](https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm))",
+    "Create/Update using a record variable can fail when the running user cannot edit a field. Help covers Filter inaccessible fields from flow requests. That is a security/context neighbor (AUTO-009), not a reason to put DML in a Loop. ([Flow Operations and Read-Only Fields](https://help.salesforce.com/s/articleView?id=sf.flow_considerations_readonlyfields_parent.htm))"
+  ],
+  "mental_model": {
+    "analogy": "A warehouse pallet run: Get Records is the barcode scan of the bins, the Loop is walking the aisle, Assignment is stacking onto one pallet, Create/Update/Delete after the Loop is one forklift trip to the dock.",
+    "useful_mapping": [
+      "Get Records → scan bins once into a collection",
+      "Loop + Assignment → stack boxes on the pallet without driving the forklift yet",
+      "Create/Update/Delete after the Loop → one dock trip for the whole pallet",
+      "Create Records inside a Loop → one forklift trip per box (not bulk-safe)",
+      "before-save Fast Field Update → relabel the triggering crate before it is put away",
+      "after-save related DML → create a new crate that is not the triggering one",
+      "Flow definition → warehouse procedure (metadata); Opportunity rows → physical crates (data)"
+    ],
+    "where_it_breaks": [
+      "The pallet analogy does not encode governor numbers, CPU time, or async paths.",
+      "Get Records is not always needed when the triggering record already has the fields.",
+      "Before-save cannot Create related Tasks; the pallet trip still happens after save.",
+      "Filter inaccessible fields is a permission issue, not a forklift-scheduling issue."
+    ]
+  },
+  "teach_back_prompt": "Using the warehouse pallet run, explain where Get Records, Assignment, and Create Records sit relative to a Loop, then name one case where before-save Fast Field Updates replace Update Records on the triggering record.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: Get before the Loop, Assign in the Loop, Create/Update/Delete after. Why?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given Closed Won plus team members, sketch bulk-safe Task creation without DML in the Loop."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "When is before-save enough, and when must after-save Create Records run?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose a Flow that works for one record and fails on a 200-row Data Loader update."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: bulk-safe Get/Create/Update/Delete plus one place the pallet analogy breaks."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-BULKIFY",
+      "title": "Bulkified Record Processing to Avoid CPU Limits Example",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm",
+      "supports": "Official pattern: Get Records for related rows, Assignment in a Loop into a collection, one Create Records after the Loop; never DML inside loops.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Example uses Opportunity Team Members and Tasks; object names in your org differ. CPU-limit framing is an example, not a complete governor catalog."
+    },
+    {
+      "source_id": "SF-HELP-FLOW-BUILD",
+      "title": "Build a Flow — Working with Data in a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_build.htm",
+      "supports": "Flows look up, create, update, and delete records; database-interacting elements can fail and should use fault paths.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Hub page; element-level field pickers vary by Flow type."
+    },
+    {
+      "source_id": "SF-TH-FLOW-LIMITS",
+      "title": "Trailhead — Optimize Salesforce Flow Limits & Best Practices",
+      "type": "Official Trailhead",
+      "url": "https://trailhead.salesforce.com/content/learn/modules/flow-implementation-1/avoid-flow-limits",
+      "supports": "Get Records maps to SOQL; Create/Update/Delete map to DML; do not put those elements inside Loops.",
+      "release_or_version": "Live Trailhead",
+      "last_verified": "2026-08-16",
+      "limits": "Numeric governor figures in Trailhead can change; reverify Flow Limits and Considerations for the running API version."
+    },
+    {
+      "source_id": "SF-HELP-TRIGGERED",
+      "title": "Triggered Flows — Before-Save Record-Triggered Flows",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm",
+      "supports": "Before-save Fast Field Updates on the triggering record; after-save for related-record work; Flow Trigger Explorer for managing triggers.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Supported elements in before-save are listed on Flow Types; do not invent extra before-save DML."
+    },
+    {
+      "source_id": "SF-HELP-READONLY",
+      "title": "Flow Operations and Read-Only Fields",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_considerations_readonlyfields_parent.htm",
+      "supports": "Create/Update via record variables can fail on fields the running user cannot edit; Filter inaccessible fields from flow requests.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace execution-context design in AUTO-009."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help bulkified-processing example over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Get Records before Loop",
+        "Assignment inside Loop",
+        "Create Update Delete after Loop",
+        "before-save vs after-save",
+        "collection variable",
+        "metadata vs records"
+      ],
+      "accessible_description": "Portrait map: Get Records loads a collection; Loop plus Assignment builds records in memory; one Create, Update, or Delete after the Loop writes them; before-save Fast Field Updates change the triggering record without a separate Update Records."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-BULKIFY",
+        "SF-TH-FLOW-LIMITS",
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Bulk-safe Get/Create/Update/Delete placement"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Trigger[Record-triggered interview] --> Need{Need related rows?}\n  Need -->|Yes| Get[Get Records once into collection]\n  Need -->|No triggering record fields| SkipGet[Use $Record / triggering record]\n  Get --> Loop[Loop collection]\n  SkipGet --> Loop\n  Loop --> Assign[Assignment: set record variable and add to output collection]\n  Assign --> After[After Loop]\n  After --> DML[Create or Update or Delete Records once]\n  DML --> Data[Business data rows]\n  Trigger --> Meta[Flow metadata in Setup]",
+      "decision": "flowchart TD\n  Job[Need to change data?] --> Q1{Only fields on the triggering record before save?}\n  Q1 -->|Yes| Before[before-save Fast Field Updates: Assignment]\n  Q1 -->|No related create update delete| Q2{Need related records?}\n  Q2 -->|Get then act| After[after-save: Get Records then Create/Update/Delete]\n  Q2 -->|Many children| Bulk{DML or Get inside Loop?}\n  Bulk -->|Yes anti-pattern| Fix[Move Get before Loop; DML after; Assign in Loop]\n  Bulk -->|No collection pattern| Safe[Bulk-safe collection Create/Update/Delete]\n  Q2 -->|Callout or huge volume| Later[Async path or Apex: later topics]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A Flow can look up, create, update, and delete Salesforce records using Get Records and Create/Update/Delete Records elements.",
+      "source_ids": ["SF-HELP-FLOW-BUILD"],
+      "scope": "Data elements",
+      "validation": "Build a Flow hub: Working with Data in a Flow.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Never perform DML (Create, Update, or Delete Records) inside a Loop. Collect records with Assignment during the Loop, then one data element after the Loop.",
+      "source_ids": ["SF-HELP-BULKIFY", "SF-TH-FLOW-LIMITS"],
+      "scope": "Bulk-safe design",
+      "validation": "Official bulkified Opportunity Team Member / Task example and Trailhead Avoid Flow Limits.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Get Records should run before a Loop that needs those rows; placing Get Records inside a Loop repeats the query per item.",
+      "source_ids": ["SF-TH-FLOW-LIMITS", "SF-HELP-BULKIFY"],
+      "scope": "Query placement",
+      "validation": "Trailhead maps Get Records to SOQL per element execution; bulkify example Gets team members once.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Before-save record-triggered Flows update the triggering record before it is saved and are limited to Assignment, Decision, Get Records, and Loop; after-save is the path for related-record Create/Update/Delete.",
+      "source_ids": ["SF-HELP-TRIGGERED"],
+      "scope": "Before-save vs after-save",
+      "validation": "Triggered Flows and Flow Types before-save element list.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "When Create Records or Update Records uses a record variable, fields the running user cannot edit can cause failures unless Filter inaccessible fields from flow requests is considered.",
+      "source_ids": ["SF-HELP-READONLY"],
+      "scope": "Read-only fields",
+      "validation": "Flow Operations and Read-Only Fields.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify Flow Limits and Considerations and before-save supported elements for Summer '26 / API 67.0. Do not treat Trailhead governor numbers as frozen.",
+  "unresolved_uncertainty": [
+    "Exact SOQL/DML numeric limits in a given org API version: Needs verification against current Flow Limits and Considerations, not memorized from a blog.",
+    "Whether Transform can replace a specific Loop+Assignment mapping: Needs verification against current Flow Builder element docs for the org."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Get Records",
+      "telugu": "ఫ్లోలో రికార్డులను ఒకసారి వెతికి కలెక్షన్‌లో పెట్టే అంశం."
+    },
+    {
+      "english": "bulk-safe",
+      "telugu": "లూప్ లోపల DML లేకుండా ఒకే Create/Update/Delete తో చాలా రికార్డులు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Get Records queries. Create, Update, and Delete are DML. I never put those inside a Loop. I Get once, Assign into a collection in the Loop, then one Create/Update/Delete after. Same-record field updates belong in before-save when they fit.",
+    "two_minutes": "Interviewers want bulk-safe design, not a happy-path screen Flow. I cite the official Opportunity Closed Won example: Get team members, Loop with Assignment onto a Task collection, Create Records once after the Loop. I distinguish before-save Fast Field Updates on the triggering record from after-save related DML. I treat the Flow as metadata and the Tasks as data. If a bulk load fails, I look for Get or DML inside a Loop before I blame the platform."
+  },
+  "terminology": [
+    {
+      "term": "Get Records",
+      "plain": "The Flow element that looks up Salesforce records and stores one record or a collection.",
+      "precise": "A database lookup in the interview. Trailhead maps it to SOQL. How Many Records to Store can be one record or all matching records.",
+      "example": "Get Opportunity Team Members where Opportunity ID equals the triggering Opportunity, store all records.",
+      "non_example": "An Assignment that copies $Record.Name into a text variable is not Get Records.",
+      "confusable_neighbor": "Update Records filter: Update/Delete can query as they act; that is still DML plus a query cost, not a Get Records element.",
+      "boundary": "HTTP callouts and external objects are not this lesson’s Get Records."
+    },
+    {
+      "term": "Create Records",
+      "plain": "The Flow element that inserts new Salesforce rows.",
+      "precise": "DML insert. Can create one record or multiple from a record collection. Official bulkify example uses How Many Records to Create = Multiple after the Loop.",
+      "example": "Create All Tasks from TasksToCreate after looping team members.",
+      "non_example": "A Screen that collects Task Subject does not insert until Create Records (or an action) runs.",
+      "confusable_neighbor": "Quick Action / Create record button: user-driven insert, not this Flow element.",
+      "boundary": "Fault paths for Create failures are AUTO-008."
+    },
+    {
+      "term": "Update Records",
+      "plain": "The Flow element that edits existing Salesforce rows.",
+      "precise": "DML update. Prefer before-save Assignment on the triggering record when only that row must change. Use Update Records after save for other records or when before-save cannot do the work.",
+      "example": "After the Loop, Update Records on a collection of related Contacts you already Got.",
+      "non_example": "before-save Assignment to $Record.Status__c is not an Update Records element.",
+      "confusable_neighbor": "Assignment: changes Flow variables in memory; Update Records writes to the database.",
+      "boundary": "Read-only / FLS failures are AUTO-009 neighbors."
+    },
+    {
+      "term": "Delete Records",
+      "plain": "The Flow element that deletes Salesforce rows.",
+      "precise": "DML delete. Same bulk rule: do not Delete inside a Loop; collect IDs or records, then one Delete Records after.",
+      "example": "Collect stale LAB_ Task Ids in a collection, then one Delete Records after the Loop.",
+      "non_example": "Removing an item from a Flow collection variable does not delete the Salesforce row.",
+      "confusable_neighbor": "before-delete record-triggered Flow: timing of the interview, not the Delete Records element itself.",
+      "boundary": "Recycle Bin / hard delete API behavior is DATA track, not this lesson."
+    },
+    {
+      "term": "bulk-safe design",
+      "plain": "Build the Flow as if many records enter the same transaction, not one click.",
+      "precise": "Keep Get Records and Create/Update/Delete outside Loops. Use a record variable plus a record collection: Assign field values, add to the collection, DML once after the Loop.",
+      "example": "Data Loader updates 200 Opportunities to Closed Won; one Get and one Create still serve all interviews in the transaction’s bulkified execution.",
+      "non_example": "Testing only a single Opportunity in Debug and calling it bulk-safe.",
+      "confusable_neighbor": "Batch Management / Batch Apex: different volume tools; this lesson is in-transaction Flow bulkification.",
+      "boundary": "Governor numeric catalogs belong to limits docs, not invented here."
+    },
+    {
+      "term": "record collection variable",
+      "plain": "A Flow variable that holds many records of one object to Create/Update/Delete together.",
+      "precise": "In the official example, TasksToCreate holds Task records built in the Loop; Create Records uses that collection with Multiple.",
+      "example": "Assignment: Add TaskRecord to TasksToCreate, then Create Records from TasksToCreate.",
+      "non_example": "A text collection of names is not a record collection you can Create Records from.",
+      "confusable_neighbor": "Loop: iterates a collection; it does not write DML by itself.",
+      "boundary": "Collection Filter / Transform behavior: Needs verification in current Builder for your use case."
+    },
+    {
+      "term": "Fast Field Updates",
+      "plain": "before-save record-triggered Flow that changes the triggering record before it is saved.",
+      "precise": "Help: can update a Salesforce record about 10 times faster than a record-change process. Supported elements include Assignment, Decision, Get Records, and Loop. Cannot Create related Tasks.",
+      "example": "Set LAB_Closed_Won_Stamp__c on the triggering Opportunity in before-save.",
+      "non_example": "Creating Tasks for team members requires after-save Actions and Related Records.",
+      "confusable_neighbor": "after-save Update Records on the same record: extra save and recursion risk (AUTO-010).",
+      "boundary": "Trigger order values are AUTO-010."
+    },
+    {
+      "term": "DML in a Loop",
+      "plain": "The anti-pattern of Create, Update, or Delete Records inside a Loop element.",
+      "precise": "Each Loop iteration runs the element again, multiplying DML (and Get Records multiplying SOQL). Official conversion steps: record variable, record collection, Assignment in Loop, one DML after.",
+      "example": "Create Records inside a team-member Loop is the before picture in the bulkify Help article.",
+      "non_example": "Assignment inside a Loop is expected and is not DML.",
+      "confusable_neighbor": "Nested Loops without DML can still cost CPU; that is performance (AUTO-010), not the same as DML-in-Loop.",
+      "boundary": "Do not quote unofficial 151-DML folklore; cite current limits docs."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose before-save vs after-save",
+      "actor": "Admin / automation owner",
+      "trigger": "Need to change fields or create related rows",
+      "before": "Unclear whether Update Records is required",
+      "after": "before-save Assignment for triggering record, or after-save for related Get/Create/Update/Delete",
+      "observe": "Start element Optimize the Flow for Fast Field Updates vs Actions and Related Records",
+      "failure": "After-save Update Records on the triggering record when before-save would do"
+    },
+    {
+      "step": 2,
+      "transition": "Get related records once",
+      "actor": "Admin",
+      "trigger": "Need children or related rows",
+      "before": "Empty collection",
+      "after": "Get Records with filters, How Many Records to Store = All records when the Loop needs the set",
+      "observe": "One Get Records element before any Loop that uses those rows",
+      "failure": "Get Records inside the Loop"
+    },
+    {
+      "step": 3,
+      "transition": "Build the output collection in memory",
+      "actor": "Admin",
+      "trigger": "Loop over the Get collection",
+      "before": "Empty TasksToCreate-style collection",
+      "after": "Assignment sets a record variable and adds it to a record collection",
+      "observe": "No Create/Update/Delete on the Loop path",
+      "failure": "Create Records on each iteration"
+    },
+    {
+      "step": 4,
+      "transition": "One DML after the Loop",
+      "actor": "Admin",
+      "trigger": "Loop completed",
+      "before": "Collection populated in memory",
+      "after": "Create, Update, or Delete Records with Multiple / the collection",
+      "observe": "Single data element after the Loop; add a fault path (AUTO-008)",
+      "failure": "Skipping Create Records because Debug with one record looked fine"
+    }
+  ],
+  "when_to_use": [
+    "When a record-triggered Flow must Get Records for related rows and then Create, Update, or Delete Records in a bulk-safe way.",
+    "When converting a Loop that currently Create Records or Update Records on each iteration into a collection-based design.",
+    "When choosing before-save Fast Field Updates instead of Update Records on the triggering record.",
+    "When a bulk Data Loader update of many records must not multiply Get Records or DML inside Loops.",
+    "When teaching that the Flow is metadata and the created Tasks or updated records are business data."
+  ],
+  "when_not_to_use": [
+    "Do not use this Get/Create/Update/Delete lesson as a substitute for fault paths, rollback, and logging (AUTO-008).",
+    "Do not treat bulk-safe design as a reason to run a screen Flow in system context; that is execution context (AUTO-009).",
+    "Do not use Create Records inside a Loop just because Debug with one record succeeded.",
+    "Do not force after-save Update Records on the triggering record when Fast Field Updates already fit.",
+    "Do not invent governor-limit numbers or edition gates; reverify Flow Limits and Considerations."
+  ],
+  "configuration_or_code_location": [
+    "Flow Builder: Get Records, Create Records, Update Records, Delete Records, Loop, Assignment.",
+    "Start element: object, trigger, entry conditions, Optimize for Fast Field Updates vs Actions and Related Records.",
+    "Record variable plus record collection variable for bulk Create/Update/Delete.",
+    "Process Automation Settings: Filter inaccessible fields from flow requests (read-only field neighbor)."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox lab: when a LAB_ Opportunity Stage becomes Closed Won, create one Task per Opportunity Team Member. Must survive a 200-row update, not only a single UI save. No production data.",
+    "inputs": [
+      "Record-triggered after-save Flow on Opportunity, entry: Stage equals Closed Won",
+      "Get Records: Opportunity Team Members for triggering Opportunity Id, all records",
+      "Task record variable and TasksToCreate record collection",
+      "Bulk update of LAB_ Opportunities in sandbox"
+    ],
+    "decisions": [
+      {
+        "decision": "Use after-save Actions and Related Records, not before-save.",
+        "because": "Creating Tasks is related-record DML; before-save cannot Create Records for related objects.",
+        "rejected": "before-save Fast Field Updates to 'create' Tasks"
+      },
+      {
+        "decision": "Get team members once, Assign Tasks in the Loop, Create Records once after the Loop.",
+        "because": "Official bulkified-processing example forbids DML inside Loops.",
+        "rejected": "Create Records inside the team-member Loop"
+      },
+      {
+        "decision": "Store all matching team members, not only the first record.",
+        "because": "Each member needs a Task; first-only would drop the rest.",
+        "rejected": "How Many Records to Store = Only the first record"
+      }
+    ],
+    "configuration_or_code": [
+      "Start: Opportunity updated, Stage equals Closed Won, optimize for Actions and Related Records.",
+      "Get Records: Opportunity Team Member, OpportunityId = triggering Opportunity Id, all records.",
+      "Loop the collection; Assignment sets Task fields on a record variable and adds it to TasksToCreate.",
+      "After Loop: Create Records from TasksToCreate, Multiple; add a fault path (owned by AUTO-008)."
+    ],
+    "output": "Each Closed Won Opportunity in a bulk update gets one Task per team member without a Create Records element inside the Loop.",
+    "verification": [
+      "Debug with one Closed Won Opportunity creates the expected Task count.",
+      "Sandbox Data Loader or API update of many LAB_ Opportunities does not fail with query/DML limit errors from in-Loop Create Records.",
+      "Flow interview in Debug shows Get Records once and Create Records once after the Loop."
+    ],
+    "self_explanation": "I copied the official pallet pattern: Get, Assign in Loop, Create after. I did not use before-save for Task creation. LAB_ data only."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox or Developer Edition; synthetic LAB_ Opportunities and Team Members only.",
+    "starting_state_checks": [
+      "You can create record-triggered Flows.",
+      "No production aliases in Opportunity names."
+    ],
+    "steps": [
+      "Build an after-save record-triggered Flow on Opportunity with Closed Won entry conditions.",
+      "Add Get Records for Opportunity Team Members, store all records.",
+      "Loop with Assignment into a Task collection; Create Records after the Loop only.",
+      "Debug one record, then update several LAB_ Opportunities together and confirm Task counts."
+    ],
+    "guided_completion": [
+      "If Create Records sits on the Loop connector, the design is not bulk-safe.",
+      "If you used before-save, you cannot Create the related Tasks."
+    ],
+    "independent_challenge": "Refactor a copy that Create Records inside the Loop into the official collection pattern and compare Debug element counts.",
+    "evidence": [
+      "Screenshot or notes: Create Records after the Loop, not inside.",
+      "Task count matches team-member count for two Opportunities updated together."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate the Flow and delete LAB_ Tasks created by the lab.",
+      "Do not activate this Flow in production."
+    ],
+    "limitations": "This lab does not prove CPU-time behavior at maximum org volume or async path design."
+  },
+  "decision_table": [
+    {
+      "signal": "Need to stamp fields on the same Opportunity that just changed, nothing related.",
+      "choose": "before-save Fast Field Updates with Assignment on the triggering record.",
+      "not": "after-save Update Records on the triggering record for that stamp.",
+      "why": "Help positions before-save as the faster same-record path; after-save same-record updates add save work and recursion risk."
+    },
+    {
+      "signal": "Closed Won must create one Task per Opportunity Team Member.",
+      "choose": "after-save Get Records, Loop with Assignment, Create Records once after the Loop.",
+      "not": "Create Records inside the team-member Loop, or before-save Create.",
+      "why": "Official bulkify example and before-save element limits."
+    },
+    {
+      "signal": "A Loop already walks a collection and you still need to edit those rows.",
+      "choose": "Assignment into a record collection, then one Update Records after the Loop.",
+      "not": "Update Records on the current item inside the Loop.",
+      "why": "Trailhead: Create/Update/Delete inside Loops multiply DML per item."
+    },
+    {
+      "signal": "You need related rows but only the first match matters.",
+      "choose": "Get Records with How Many Records to Store = first record, no Loop.",
+      "not": "Get All records and Loop just to take index 0.",
+      "why": "Avoid unnecessary collection work; still keep that single Get outside any other Loop."
+    },
+    {
+      "signal": "Bulk Data Loader updates fail with query or DML limit errors after a new Flow.",
+      "choose": "Inspect the canvas for Get/Create/Update/Delete on Loop paths and refactor to collections.",
+      "not": "Raise a case that Flow cannot bulkify, or add more Gets inside the Loop.",
+      "why": "The documented conversion is collection DML after the Loop."
+    }
+  ],
+  "limitations": [
+    "Does not cover fault paths, roll back records, or error emails (AUTO-008).",
+    "Does not set user vs system execution context (AUTO-009).",
+    "Does not replace Apex when collection logic or callouts exceed Flow.",
+    "Governor numbers in Trailhead must be rechecked against current Help for the API version."
+  ],
+  "security_notes": [
+    "Create/Update still honor FLS and read-only fields unless context and org preferences say otherwise (AUTO-009).",
+    "Get Records can expose fields the user should not see if the Flow runs in a wider context.",
+    "Use LAB_ synthetic data; do not bulk-update real customer Opportunities in production for this lesson."
+  ],
+  "common_mistakes": [
+    "Create Records, Update Records, or Delete Records inside a Loop.",
+    "Get Records inside a Loop for the same parent Id every iteration.",
+    "Using before-save to Create related records.",
+    "Storing only the first team member when the requirement is one Task each.",
+    "Calling a one-record Debug a bulk-safe proof."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Flow works in Debug for one Opportunity and fails on Data Loader.",
+      "check": [
+        "Get Records, Create Records, Update Records, or Delete Records on a Loop path",
+        "How Many Records to Store accidentally set to first record"
+      ],
+      "do_not_assume": "Data Loader is incompatible with Flow."
+    },
+    {
+      "symptom": "No Tasks created, or only one Task for many team members.",
+      "check": [
+        "Create Records after the Loop references the collection, not a single record variable overwritten each iteration",
+        "Get Records stored all records"
+      ],
+      "do_not_assume": "Team Members are missing until you inspect the Get output in Debug."
+    },
+    {
+      "symptom": "Create Records fails on a system or read-only field.",
+      "check": [
+        "Filter inaccessible fields from flow requests",
+        "Whether the field belongs on Task create at all"
+      ],
+      "do_not_assume": "The collection pattern is wrong; this can be FLS/read-only (AUTO-009)."
+    }
+  ],
+  "production_notes": [
+    "Activate only after sandbox bulk tests, not only one-record Debug.",
+    "Document which object’s Get/Create/Update/Delete this Flow owns so two Flows do not double-insert Tasks.",
+    "Entry conditions that limit Closed Won (AUTO-010) reduce wasted Gets."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In the official bulkified-processing example, where should Create Records sit relative to the Loop?",
+      "options": {
+        "A": "After the Loop, using a record collection (Multiple)",
+        "B": "Inside the Loop, once per team member",
+        "C": "Only in a before-save Fast Field Updates Flow",
+        "D": "Before Get Records, so Tasks exist first"
+      },
+      "answer": "A",
+      "rationale": "Help: collect in the Loop with Assignment, then one Create Records after the Loop.",
+      "distractor_explanations": {
+        "B": "That is the anti-pattern the article converts away from.",
+        "C": "before-save cannot Create related Tasks.",
+        "D": "You Get related members first; Create is the DML after building the collection."
+      },
+      "concept": "DML after Loop",
+      "citation_ids": ["SF-HELP-BULKIFY"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Trailhead maps Get Records primarily to which database operation?",
+      "options": {
+        "A": "SOQL (a query)",
+        "B": "DML insert only",
+        "C": "Apex callout",
+        "D": "Metadata deploy"
+      },
+      "answer": "A",
+      "rationale": "Avoid Flow Limits: Get Records causes SOQL; Create/Update/Delete cause DML.",
+      "distractor_explanations": {
+        "B": "Insert is Create Records.",
+        "C": "Callouts are not Get Records.",
+        "D": "The Flow is metadata; Get Records reads business data."
+      },
+      "concept": "Get Records as query",
+      "citation_ids": ["SF-TH-FLOW-LIMITS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You only need to set a custom stamp field on the Opportunity that triggered the Flow. Best first choice?",
+      "options": {
+        "A": "before-save Fast Field Updates with Assignment",
+        "B": "after-save Create Records of a new Opportunity",
+        "C": "Delete Records on the triggering Opportunity",
+        "D": "Get Records inside a Loop of all Opportunities"
+      },
+      "answer": "A",
+      "rationale": "Triggered Flows: before-save updates the triggering record before save and is the fast same-record path.",
+      "distractor_explanations": {
+        "B": "You do not Create a duplicate Opportunity for a stamp.",
+        "C": "Delete is not a field stamp.",
+        "D": "No Loop of all Opportunities is required."
+      },
+      "concept": "before-save vs DML",
+      "citation_ids": ["SF-HELP-TRIGGERED"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why is Create Records inside a Loop unsafe in a bulk Data Loader update?",
+      "options": {
+        "A": "Each iteration runs DML again, multiplying statements in the transaction",
+        "B": "Loops are forbidden in after-save Flows",
+        "C": "Create Records can only insert one record per Flow version",
+        "D": "Data Loader cannot fire record-triggered Flows"
+      },
+      "answer": "A",
+      "rationale": "Trailhead: elements in a Loop run per item; Create Records is DML each time.",
+      "distractor_explanations": {
+        "B": "Loops are valid; DML inside them is the problem.",
+        "C": "Create Records supports Multiple from a collection.",
+        "D": "Bulk API/Data Loader updates do fire record-triggered automation."
+      },
+      "concept": "Loop DML multiplication",
+      "citation_ids": ["SF-TH-FLOW-LIMITS"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which elements does Help list as supported in a before-save record-triggered Flow?",
+      "options": {
+        "A": "Assignment, Decision, Get Records, and Loop",
+        "B": "Create Records, Update Records, Delete Records, and Send Email",
+        "C": "Only Screen and Action elements",
+        "D": "Only Apex invocable actions"
+      },
+      "answer": "A",
+      "rationale": "Flow Types: before-save supports Assignment, Decision, Get Records, and Loop.",
+      "distractor_explanations": {
+        "B": "Those are after-save / other Flow types.",
+        "C": "Screens are not before-save background automation.",
+        "D": "Invocable Apex is not the before-save element list."
+      },
+      "concept": "before-save element list",
+      "citation_ids": ["SF-HELP-TRIGGERED"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "In the Closed Won team-member example, How Many Records should Get Records store?",
+      "options": {
+        "A": "All matching Opportunity Team Members",
+        "B": "Only the first team member",
+        "C": "Zero; use $Record instead of Get",
+        "D": "All Tasks in the org"
+      },
+      "answer": "A",
+      "rationale": "The bulkify article Gets team members with All records so the Loop can build one Task each.",
+      "distractor_explanations": {
+        "B": "First-only drops other members.",
+        "C": "Team members are related rows, not the triggering Opportunity fields alone.",
+        "D": "You are not querying every Task."
+      },
+      "concept": "Store all records",
+      "citation_ids": ["SF-HELP-BULKIFY"]
+    },
+    {
+      "id": "Q7",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Assignment inside a Loop versus Create Records inside a Loop?",
+      "options": {
+        "A": "Assignment changes variables in memory; Create Records is DML and should wait until after the Loop",
+        "B": "They are identical DML operations",
+        "C": "Assignment is forbidden inside Loops",
+        "D": "Create Records never counts as DML"
+      },
+      "answer": "A",
+      "rationale": "Official pattern uses Assignment in the Loop and Create Records after.",
+      "distractor_explanations": {
+        "B": "Assignment is not DML.",
+        "C": "Assignment in the Loop is required for the collection pattern.",
+        "D": "Create Records is DML."
+      },
+      "concept": "Assignment vs DML",
+      "citation_ids": ["SF-HELP-BULKIFY"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Create Records fails because a field on the record variable is read-only for the running user. What Help topic applies?",
+      "options": {
+        "A": "Flow Operations and Read-Only Fields, including Filter inaccessible fields from flow requests",
+        "B": "Always put Create Records inside the Loop to retry per field",
+        "C": "before-save can Create any related object",
+        "D": "Delete Records removes FLS"
+      },
+      "answer": "A",
+      "rationale": "Read-only field Help covers Create/Update with record variables and the filter preference.",
+      "distractor_explanations": {
+        "B": "Retries in a Loop worsen bulk safety and do not grant FLS.",
+        "C": "before-save cannot Create related records.",
+        "D": "Delete does not grant field access."
+      },
+      "concept": "Read-only fields",
+      "citation_ids": ["SF-HELP-READONLY"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A developer says the Flow is metadata so bulk-safe design does not matter. What is wrong?",
+      "options": {
+        "A": "The Flow is metadata, but Get/Create/Update/Delete operate on business data in a shared transaction",
+        "B": "Flows never query records",
+        "C": "Metadata deploys insert the Tasks automatically",
+        "D": "Only Apex has transactions"
+      },
+      "answer": "A",
+      "rationale": "Deploying the Flow does not insert Tasks; runtime DML/SOQL on records is what bulk-safe design protects.",
+      "distractor_explanations": {
+        "B": "Get Records queries records.",
+        "C": "Deploy does not create the Task rows.",
+        "D": "Flow interviews run in platform transactions (AUTO-008)."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-HELP-FLOW-BUILD"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does the official conversion recipe add after the Loop when removing in-Loop Create Records?",
+      "options": {
+        "A": "One Create Records element that processes the entire record collection",
+        "B": "A second Get Records inside the Loop",
+        "C": "A Screen for every record",
+        "D": "A Workflow Rule field update"
+      },
+      "answer": "A",
+      "rationale": "Help conversion steps: after the Loop, one DML element for the collection.",
+      "distractor_explanations": {
+        "B": "Get stays before the Loop.",
+        "C": "Record-triggered bulk Flows are not per-row Screens.",
+        "D": "Legacy Workflow is AUTO-012, not the bulkify recipe."
+      },
+      "concept": "Collection DML",
+      "citation_ids": ["SF-HELP-BULKIFY"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "When must you use after-save instead of Fast Field Updates?",
+      "options": {
+        "A": "When you must Create or Update related records such as Tasks",
+        "B": "When you only Assign a field on $Record",
+        "C": "When no database change is needed",
+        "D": "When the Flow has no Start element"
+      },
+      "answer": "A",
+      "rationale": "before-save cannot Create related Tasks; after-save Actions and Related Records can.",
+      "distractor_explanations": {
+        "B": "That is the before-save sweet spot.",
+        "C": "Then you may not need a record-triggered Flow.",
+        "D": "Record-triggered Flows always have a Start trigger."
+      },
+      "concept": "after-save related DML",
+      "citation_ids": ["SF-HELP-TRIGGERED"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Update Records and Delete Records can also cause queries via their filters. What is the bulk-safe placement?",
+      "options": {
+        "A": "Still keep them outside Loops; prefer Get once plus collection DML after",
+        "B": "Put them inside Loops so each filter is cheaper",
+        "C": "Only use them in screen Flows",
+        "D": "Replace them with formula fields"
+      },
+      "answer": "A",
+      "rationale": "Trailhead: Update/Delete filters cost SOQL as well as DML; Loop placement multiplies both.",
+      "distractor_explanations": {
+        "B": "Inside Loops multiplies cost.",
+        "C": "Record-triggered Flows use them constantly.",
+        "D": "Formulas do not Delete related rows."
+      },
+      "concept": "Update/Delete query cost",
+      "citation_ids": ["SF-TH-FLOW-LIMITS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What does Get Records do?",
+      "back": "Looks up Salesforce records into a record or collection (query/SOQL-like), not DML."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "What do Create, Update, and Delete Records do?",
+      "back": "They perform DML: insert, edit, or delete Salesforce rows."
+    },
+    {
+      "id": "F3",
+      "category": "bulk",
+      "front": "Where does DML belong relative to a Loop?",
+      "back": "After the Loop, using a record collection. Never Create/Update/Delete inside the Loop."
+    },
+    {
+      "id": "F4",
+      "category": "bulk",
+      "front": "Where does Get Records belong relative to a Loop that needs those rows?",
+      "back": "Before the Loop, once. Do not Get the same related set on every iteration."
+    },
+    {
+      "id": "F5",
+      "category": "bulk",
+      "front": "What happens inside the Loop in the official bulkify pattern?",
+      "back": "Assignment sets a record variable and adds it to a collection. No DML element on that path."
+    },
+    {
+      "id": "F6",
+      "category": "before-save",
+      "front": "When do you choose Fast Field Updates?",
+      "back": "Same-record field changes before save. Supported: Assignment, Decision, Get Records, Loop."
+    },
+    {
+      "id": "F7",
+      "category": "after-save",
+      "front": "When do you need after-save Actions and Related Records?",
+      "back": "When you Create, Update, or Delete related records such as Tasks for team members."
+    },
+    {
+      "id": "F8",
+      "category": "collections",
+      "front": "Why store All records in the team-member Get?",
+      "back": "Each member needs a Task. First-record-only drops the rest of the team."
+    },
+    {
+      "id": "F9",
+      "category": "limits",
+      "front": "Why does a one-record Debug not prove bulk-safe design?",
+      "back": "Loop DML multiplies only when many items or many triggering records share a transaction."
+    },
+    {
+      "id": "F10",
+      "category": "security",
+      "front": "Create Records fails on a field the user cannot edit. Where do you look?",
+      "back": "Read-only fields Help and Filter inaccessible fields from flow requests—not a Loop retry."
+    },
+    {
+      "id": "F11",
+      "category": "metadata",
+      "front": "Is deploying the Flow the same as creating Tasks?",
+      "back": "No. The Flow is metadata. Create Records at runtime writes business data."
+    },
+    {
+      "id": "F12",
+      "category": "anti-pattern",
+      "front": "What is DML in a Loop?",
+      "back": "Create, Update, or Delete Records on a Loop connector, multiplying DML per item."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Closed Won plus one Task per team member: three-element skeleton?",
+      "back": "Get team members; Loop+Assignment into Task collection; Create Records after the Loop."
+    },
+    {
+      "id": "F14",
+      "category": "compare",
+      "front": "Assignment vs Update Records?",
+      "back": "Assignment changes Flow variables. Update Records writes the database (DML)."
+    },
+    {
+      "id": "F15",
+      "category": "boundary",
+      "front": "Does bulk-safe design replace fault paths?",
+      "back": "No. Collection DML can still fail; fault paths and rollback are AUTO-008."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you keep Get Records and Create Records bulk-safe in a Flow with a Loop?",
+      "answer_30_seconds": "Get Records once before the Loop. Inside the Loop, only Assignment into a collection. Create Records once after the Loop from that collection. Never DML inside the Loop.",
+      "answer_2_minutes": "I treat Get Records as the query and Create/Update/Delete as DML. Trailhead and the official bulkify article both say those elements inside a Loop run per item. I copy the Closed Won pattern: Get Opportunity Team Members (all records), Loop with Assignment onto a Task collection, Create Records Multiple after the Loop. I do not call a one-record Debug a bulk test.",
+      "example": "LAB_ Opportunity Closed Won creates Tasks for each team member after a 200-row sandbox update.",
+      "tradeoffs": [
+        "One collection Create vs per-item Create",
+        "before-save stamp vs after-save Task create"
+      ],
+      "follow_ups": [
+        "What if you also need Update Records?",
+        "Where do fault paths go?"
+      ],
+      "weak_answer_warnings": [
+        "Create Records inside the Loop because it is easier to read"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "When do you use before-save Fast Field Updates instead of Update Records?",
+      "answer_30_seconds": "When you only change fields on the triggering record before it is saved. Help lists Assignment, Decision, Get Records, and Loop as supported. Related Create/Update/Delete needs after-save.",
+      "answer_2_minutes": "I ask whether the write is the same row or related rows. Same-row stamps belong in before-save Fast Field Updates. Creating Tasks for team members cannot happen there. After-save Update Records on the triggering record is a common recursion source, which AUTO-010 covers. I still keep any Get/DML outside Loops.",
+      "example": "LAB_Closed_Won_Stamp__c on the Opportunity in before-save; Tasks in a separate after-save Flow.",
+      "tradeoffs": [
+        "Speed of before-save vs related-record capability",
+        "One Flow vs split before/after"
+      ],
+      "follow_ups": [
+        "Can before-save Create a Task?",
+        "What is Optimize the Flow for?"
+      ],
+      "weak_answer_warnings": [
+        "Using after-save Update Records for every same-record field"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A Flow creates Tasks in Debug for one Opportunity but fails when Sales Ops loads two hundred Closed Won updates. What do you inspect first?",
+      "answer_30_seconds": "The canvas for Get Records, Create Records, Update Records, or Delete Records on a Loop path. That multiplies SOQL/DML in a bulk transaction.",
+      "answer_2_minutes": "I open Flow Builder and look at Loop connectors, not the email alert. I count how many times Create Records would run if each Opportunity has many team members. I refactor to the official collection pattern and retest with a bulk sandbox update. I do not tell the business that Data Loader cannot use Flow.",
+      "example": "Create Records was on the team-member Loop; after moving it after the Loop, the 200-row load succeeds in sandbox.",
+      "tradeoffs": [
+        "Refactor time vs splitting to Apex",
+        "Bulk test cost vs production incident"
+      ],
+      "follow_ups": [
+        "How would you prove it in Debug details?",
+        "What if CPU time is the error instead of DML?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Data Loader instead of in-Loop DML"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Why not Get Records inside a Loop of Opportunities to load each Account?",
+      "answer_30_seconds": "Each iteration runs another query. Get the related set once with a filter that covers the bulk, or use relationship data you already have, then Loop in memory.",
+      "answer_2_minutes": "Get Records is SOQL per execution. A Loop of 200 Opportunities with a Get each is the query version of DML-in-Loop. Prefer one Get with an IN-style filter on a collection of Account Ids built by Assignment, or Get children of the triggering record once as in the team-member example. Exact query-limit numbers are verified in current limits Help, not guessed.",
+      "example": "Build a collection of AccountIds from $Record, Get Contacts where AccountId in that collection once, then Loop.",
+      "tradeoffs": [
+        "One wide Get vs many narrow Gets",
+        "Get vs using $Record relationship fields"
+      ],
+      "follow_ups": [
+        "What if the related set is huge?",
+        "When is Apex the better query tool?"
+      ],
+      "weak_answer_warnings": [
+        "Get Records in the Loop because the filter is easier to type"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "Walk the official Closed Won team-member design.",
+      "answer_30_seconds": "After-save Flow on Opportunity when Stage is Closed Won. Get all Opportunity Team Members. Loop: Assignment builds Tasks into a collection. Create Records Multiple after the Loop. Fault path on Create.",
+      "answer_2_minutes": "I cite the Help example by name. Start is after-save because we Create Tasks. Get is filtered to the triggering Opportunity. How Many Records is All. The Loop does not contain Create Records. After the Loop, Create Records uses the collection. I mention that Help also adds a fault path email using $Flow.FaultMessage, which AUTO-008 owns. I would bulk-test, not only Debug one row.",
+      "example": "TasksToCreate collection populated in the Loop, Create All Tasks after.",
+      "tradeoffs": [
+        "One Flow vs subflow",
+        "Email on fault vs custom log object"
+      ],
+      "follow_ups": [
+        "What if there are no team members?",
+        "Would you use Transform instead of Loop?"
+      ],
+      "weak_answer_warnings": [
+        "Skipping Get because 'the Opportunity is already in the Flow'"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Create Records from a collection inserts only one Task even though the Loop ran five times. What went wrong?",
+      "answer_30_seconds": "The Assignment likely overwrote one record variable without adding to a collection, or Create Records pointed at the single variable instead of the collection.",
+      "answer_2_minutes": "I check two Assignment steps from the Help recipe: set fields on the record variable, then Add that variable to the record collection. I check Create Records How Many = Multiple and Record Collection = TasksToCreate. I inspect Debug: Loop count versus collection size before Create. I also confirm Get stored All records, not first.",
+      "example": "Five Loop iterations, collection size 1 because Add to collection was missing.",
+      "tradeoffs": [
+        "Record collection vs creating from current item",
+        "All records vs first record on Get"
+      ],
+      "follow_ups": [
+        "How do you see collection size in Debug?",
+        "Could a Decision skip the Add?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming Salesforce creates one Task per Loop automatically"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How do you explain metadata versus data for this topic?",
+      "answer_30_seconds": "The Flow definition, elements, and collection variables are metadata. The Opportunities you Get and the Tasks you Create are business data. Deploying the Flow does not insert Tasks.",
+      "answer_2_minutes": "I keep the handbook split. Change sets move the Flow. Data Loader moves rows. Bulk-safe design is about runtime DML/SOQL on those rows in one transaction. Tests should use LAB_ Opportunities, not production. Recursion and security are later AUTO topics.",
+      "example": "Retrieving the Flow XML does not list the Task rows created last week.",
+      "tradeoffs": [
+        "Metadata deploy vs data load",
+        "Sandbox volume vs production volume"
+      ],
+      "follow_ups": [
+        "What belongs in a change set?",
+        "Who owns Task cleanup after a failed rehearsal?"
+      ],
+      "weak_answer_warnings": [
+        "Calling Get Records a metadata operation"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "A teammate wants to 'just add another Get Records inside the Loop' to pick a Price Book Entry. How do you answer?",
+      "answer_30_seconds": "That is another query per iteration. Get Price Book Entries once with a collection filter, or redesign so the Loop only Assigns. DML stays after the Loop.",
+      "answer_2_minutes": "I acknowledge the filter looks easier inside the Loop. Then I map it to Trailhead: Get Records is SOQL per execution. I sketch Get-all-needed-entries before the Loop, or a Map-like collection if the org’s Flow features support it—Needs verification for Transform. If the matching logic is too heavy for Flow, that is an Apex conversation, not a Loop-Get. I still would not Create Records inside the Loop.",
+      "example": "Get all LAB_ PricebookEntry rows for the products on the Opportunity before looping OpportunityLineItems.",
+      "tradeoffs": [
+        "Flow collection matching vs invocable Apex",
+        "One wide Get vs per-item Get"
+      ],
+      "follow_ups": [
+        "What is Collection Filter for?",
+        "When do you stop and write Apex?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to Get inside the Loop for readability"
+      ]
+    }
+  ]
+}

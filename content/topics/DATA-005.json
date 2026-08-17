@@ -1,0 +1,1057 @@
+{
+  "topic_id": "DATA-005",
+  "slug": "schema-design-normalization-selective-denormalization-a",
+  "title": "Schema design, normalization, selective denormalization, and data skew",
+  "track": "Data model and configuration",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-004"
+  ],
+  "objectives": [
+    "Design a Salesforce schema by choosing objects, fields, and relationships that match the business grain.",
+    "Normalize so each fact lives on one object, then denormalize only when a stamped field is justified and maintained.",
+    "Define ownership data skew and parent-child data skew using official 10,000-record guidance.",
+    "Refuse dummy parent accounts and dummy owners as a parking lot for unassigned records."
+  ],
+  "diagnostic_question": "Marketing wants 80,000 unassigned contacts under one 'Unassigned' account owned by a dummy user. Before reading, what schema and skew problems do you name, and what alternative would you propose?",
+  "definition": "Schema design is the choice of objects, fields, and relationships that store business facts. Normalization keeps each fact on one object; selective denormalization copies a value for a stated performance or usability reason. Data skew is a volume concentration that makes sharing maintenance expensive: ownership skew is one user owning more than 10,000 records of an object; parent-child skew is 10,000 or more children under one parent. ([Ownership Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_group_membership_data_skew.htm); [Parent-Child Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_object_relationships_parent_child_data_skew.htm); [Relationships Among Standard Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm))",
+  "why_it_matters": "A tidy-looking dummy account or dummy owner is a common interview fail. Official record-access guidance says those concentrations force huge sharing-table work when a role or implicit share changes. Interviewers also listen for whether you stamp copies of parent fields without a maintenance plan.",
+  "sixty_second_explanation": "Think of a warehouse loading dock. Normalization is one SKU card per product, not rewriting the product name on every box. Selective denormalization is stamping a frequently needed status on the box so pickers do not walk back to the card. Ownership skew is one forklift driver assigned more than 10,000 pallets. Parent-child skew is one pallet stacked with 10,000 or more boxes. Do not park leftover freight on a dummy pallet or dummy driver.",
+  "deeper_explanation": [
+    "Schema design in this handbook means choosing objects (DATA-001), field types (DATA-002), lookup vs master-detail (DATA-003), and junction grain (DATA-004) so each business noun has a home. That object/field/relationship vocabulary is official; the words normalization and denormalization are handbook design language applied to that schema, not a separate Salesforce Setup menu. ([Relationships Among Standard Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm))",
+    "Normalize first: vendor phone lives on Vendor, not copied onto every Property. Denormalize only when you can name the reader (report, list view, mobile) and the writer (formula, Flow, integration) that will keep the copy true. A formula field is often the safer stamp because it is calculated, not a second stored truth (DATA-006).",
+    "Ownership data skew: a single user owns more than 10,000 records of an object. Common when unused leads or contacts are assigned to a dummy user. Moving that user in the role hierarchy or in a sharing-rule source group forces a long-running recalculation of access rights. Distribute ownership. If skew is unavoidable, official guidance includes placing that user in a separate top-level role and not moving them. ([Ownership Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_group_membership_data_skew.htm))",
+    "Parent-child data skew: 10,000 or more children associated with a single parent account. Parking unallocated contacts under one dummy account makes implicit-share maintenance expensive: losing access to one child can require scanning the other children. Configure parent-child relationships with no more than 10,000 children to one parent. ([Parent-Child Data Skew](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_object_relationships_parent_child_data_skew.htm); [Takeaway: Tuning Data Relationships](https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_object_relationships_takeaway.htm))",
+    "Lookup skew (many children pointing at one lookup target) and lock contention during loads are neighboring LDV concerns. Sequence operations by ParentID when loading. Do not invent unofficial lock-timeout numbers. Needs verification of current lookup-skew Help wording before quoting extra numeric gates."
+  ],
+  "mental_model": {
+    "analogy": "A warehouse loading dock: SKU cards are normalized facts, a stamp on the box is selective denormalization, one driver with 10,000+ pallets is ownership skew, and one pallet with 10,000+ boxes is parent-child skew.",
+    "useful_mapping": [
+      "schema → dock layout of objects, fields, and relationships",
+      "normalized field → fact stored once on the SKU card",
+      "denormalized field → stamp copied onto the box for pickers",
+      "ownership skew → one driver assigned more than 10,000 pallets",
+      "parent-child skew → one pallet holding 10,000 or more boxes",
+      "dummy owner / dummy account → the leftover pile that looks tidy and performs badly",
+      "role move of a skewed owner → restacking the entire dock's access list"
+    ],
+    "where_it_breaks": [
+      "Salesforce sharing tables are not cardboard pallets; implicit share scans are the real cost.",
+      "10,000 is official guidance in Designing Record Access for Enterprise Scale, not a hard governor that always errors at 10,001.",
+      "A formula stamp is not the same as a stored copy that Flow must update.",
+      "The analogy does not encode junction cascade delete or edition limits."
+    ]
+  },
+  "teach_back_prompt": "Explain normalization versus a stamped field, then define ownership skew and parent-child skew with the official 10,000 guidance and one dummy-account refusal.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Write ownership skew vs parent-child skew in one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given a dummy Unassigned account, name the skew and an alternative schema."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "When would you denormalize a vendor name onto a junction vs use a formula?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a long-running sharing recalc after a dummy owner changed roles."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: schema grain plus both skew types."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-DRAES-OWN",
+      "title": "Ownership Data Skew",
+      "type": "Official Salesforce Developer Guide",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_group_membership_data_skew.htm",
+      "supports": "Ownership skew as one user owning more than 10,000 records; dummy-user parking; role/group moves trigger large sharing recalculation; distribute ownership; top-level role guidance if unavoidable.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-DRAES-PARENT",
+      "title": "Parent-Child Data Skew",
+      "type": "Official Salesforce Developer Guide",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_object_relationships_parent_child_data_skew.htm",
+      "supports": "Parent-child skew as 10,000 or more children on one parent; dummy account parking; implicit share maintenance cost.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-DRAES-TAKE",
+      "title": "Takeaway: Tuning Data Relationships and Updates for Performance",
+      "type": "Official Salesforce Developer Guide",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.draes.meta/draes/draes_object_relationships_takeaway.htm",
+      "supports": "Configure parent-child relationships with no more than 10,000 children to one parent; sequence operations by ParentID; Controlled by Parent to avoid some implicit shares.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-OBJREF-REL",
+      "title": "Relationships Among Standard Objects and Fields",
+      "type": "Official Salesforce Object Reference",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm",
+      "supports": "Official relationship types that form the schema: lookup, master-detail, many-to-many via junction.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Schema grain",
+        "Normalize first",
+        "Selective stamp",
+        "Ownership skew 10k",
+        "Parent-child skew 10k",
+        "No dummy piles"
+      ],
+      "accessible_description": "Schema map from grain to normalized fields, optional stamps, and two official skew patterns with a 10,000 guidance line."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-DRAES-OWN",
+        "SF-DRAES-PARENT",
+        "SF-DRAES-TAKE",
+        "SF-OBJREF-REL"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Grain → objects/fields/relationships → volume check for dummy owners and dummy parents"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Grain[Business grain] --> Obj[Objects fields relationships]\n  Obj --> Norm[Store each fact once]\n  Norm --> Den[Optional stamp with a writer]\n  Obj --> Own[Ownership distribution]\n  Obj --> Par[Children per parent]\n  Own --> SkewO[Ownership skew if one user over 10000]\n  Par --> SkewP[Parent-child skew if 10000 or more children]",
+      "decision": "flowchart TD\n  Need[New fact or load] --> Q1{Does an object already own this fact?}\n  Q1 -->|Yes| Norm[Keep it there: normalize]\n  Q1 -->|No| Schema[New field or object]\n  Schema --> Q2{Is this a copy for convenience?}\n  Q2 -->|Yes| Den[Denormalize only with a named writer]\n  Q2 -->|No| Rel[Relationship or junction]\n  Rel --> Q3{Will one parent or owner exceed about 10000?}\n  Q3 -->|Yes| Dist[Distribute owners or parents; no dummy pile]\n  Q3 -->|No| Ok[Proceed and remeasure]",
+      "sequence": "sequenceDiagram\n  participant Load\n  participant DummyAccount\n  participant Sharing\n  Load->>DummyAccount: Park 300000 contacts\n  Note over Sharing: User loses one contact\n  Sharing->>DummyAccount: May scan remaining children for implicit shares"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Ownership data skew is when a single user owns more than 10,000 records of an object. Concentrating unused records on a dummy user can cause long-running sharing recalculation when that user is moved in the hierarchy or a sharing-rule source group.",
+      "source_ids": [
+        "SF-DRAES-OWN",
+        "SF-DRAES-TAKE"
+      ],
+      "scope": "Ownership skew",
+      "validation": "Designing Record Access for Enterprise Scale ownership topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Parent-child data skew is associating a large number of child records (10,000 or more) with a single parent account. Parking unallocated contacts under a dummy account can make implicit-share maintenance expensive.",
+      "source_ids": [
+        "SF-DRAES-PARENT",
+        "SF-DRAES-TAKE"
+      ],
+      "scope": "Parent-child skew",
+      "validation": "Parent-Child Data Skew plus the 10,000-children takeaway.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Official takeaway: configure parent-child relationships with no more than 10,000 children to one parent record, and sequence operations on parent and child objects by ParentID.",
+      "source_ids": [
+        "SF-DRAES-TAKE",
+        "SF-DRAES-PARENT"
+      ],
+      "scope": "Volume guidance",
+      "validation": "Tuning takeaway plus parent-child article.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Salesforce schema is expressed as objects, fields, and relationship types (lookup, master-detail, junction). Normalization and denormalization in this lesson are design heuristics applied to that official schema, not a separate product feature.",
+      "source_ids": [
+        "SF-OBJREF-REL",
+        "SF-DRAES-PARENT"
+      ],
+      "scope": "Schema vs heuristic",
+      "validation": "Object Reference relationships plus skew articles that assume those relationships.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Sharing internals and LDV guidance are release-sensitive. Reverify Designing Record Access for Enterprise Scale for Summer '26.",
+  "unresolved_uncertainty": [
+    "Lookup-skew numeric gates beyond the 10,000 parent/owner guidance are Needs verification in current LDV docs.",
+    "Whether a specific org already exceeds 10,000 children is an org measurement, not a handbook claim."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Normalization",
+      "telugu": "Store each business fact once on the object that owns it."
+    },
+    {
+      "english": "Data skew",
+      "telugu": "Too many records on one owner or one parent, making sharing expensive."
+    },
+    {
+      "english": "Dummy account",
+      "telugu": "A parking-lot parent that creates parent-child skew."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Design the schema from grain: objects, fields, relationships. Normalize first. Denormalize only with a writer. Ownership skew is one user over 10,000 records; parent-child skew is 10,000 or more children on one parent. Never use a dummy owner or dummy account as a parking lot.",
+    "two_minutes": "I start from nouns and cardinality (DATA-001 to DATA-004). I keep vendor phone on Vendor. If a list view needs a stamp, I prefer a formula or a maintained field. I refuse 80,000 contacts under Unassigned. I cite Designing Record Access: 10,000 for owner and for children, implicit shares, and do not move a skewed owner around the role hierarchy. I do not recite unofficial lock timeouts."
+  },
+  "terminology": [
+    {
+      "term": "schema design",
+      "plain": "Choosing objects, fields, and relationships for the business.",
+      "precise": "The official Salesforce model is objects, fields, and relationship types. Design means matching grain before adding copies or dummy piles.",
+      "example": "LAB_Property__c, LAB_Unit__c MD, LAB_PropertyVendor__c junction.",
+      "non_example": "A spreadsheet imported as one custom object with 80 text columns.",
+      "confusable_neighbor": "Page layout: presentation, not schema.",
+      "boundary": "SEC sharing model is neighboring."
+    },
+    {
+      "term": "normalization",
+      "plain": "Store each fact once on the object that owns it.",
+      "precise": "Handbook heuristic: vendor phone on Vendor, pairing date on the junction, not copied everywhere.",
+      "example": "LAB_Vendor__c.Phone__c referenced via relationship.",
+      "non_example": "Vendor_Phone__c text copied onto every property.",
+      "confusable_neighbor": "Formula field: a calculated display, often safer than a stored copy.",
+      "boundary": "Not a Setup menu named Normalization."
+    },
+    {
+      "term": "selective denormalization",
+      "plain": "Copy a value on purpose, with a writer.",
+      "precise": "Handbook heuristic: stamp a field only when a reader needs it and a formula, Flow, or integration keeps it true.",
+      "example": "LAB_VendorName__c stamped on a junction for a mobile list, updated by Flow.",
+      "non_example": "Copying every vendor field onto Property 'for reports'.",
+      "confusable_neighbor": "Roll-up summary: official aggregate on a master (DATA-007), not a random stamp.",
+      "boundary": "Unmaintained copies become data-quality bugs."
+    },
+    {
+      "term": "ownership data skew",
+      "plain": "One user owns too many records of an object.",
+      "precise": "Official: a single user owns more than 10,000 records of an object. Dummy-user parking is the common anti-pattern.",
+      "example": "All unassigned leads owned by Dummy Integration User.",
+      "non_example": "Ten owners with 900 records each.",
+      "confusable_neighbor": "Queue: a possible owner type; concentrating a queue can still be a volume problem—Needs verification of queue-specific wording.",
+      "boundary": "Do not move that user across roles casually."
+    },
+    {
+      "term": "parent-child data skew",
+      "plain": "One parent has too many children.",
+      "precise": "Official: 10,000 or more child records associated with a single parent account; dummy-account parking hurts implicit sharing maintenance.",
+      "example": "300,000 contacts under Unassigned account.",
+      "non_example": "Contacts spread across real business accounts.",
+      "confusable_neighbor": "Master-detail cascade: delete behavior, not the same as skew.",
+      "boundary": "Takeaway: no more than 10,000 children to one parent."
+    },
+    {
+      "term": "dummy account",
+      "plain": "A parking-lot parent for leftover children.",
+      "precise": "The parent-child article's unallocated-contacts-under-one-account example.",
+      "example": "Account named Unassigned holding all leftover contacts.",
+      "non_example": "A real customer account with a few contacts.",
+      "confusable_neighbor": "Person account: a different model, not a parking lot.",
+      "boundary": "Refuse this in design reviews."
+    },
+    {
+      "term": "dummy owner",
+      "plain": "A parking-lot user who owns leftover records.",
+      "precise": "The ownership-skew article's dummy user for unassigned leads.",
+      "example": "Integration User owning every imported lead.",
+      "non_example": "Round-robin assignment to real reps.",
+      "confusable_neighbor": "Automated process user: still counts as an owner for skew.",
+      "boundary": "If unavoidable, isolate the role and do not move it."
+    },
+    {
+      "term": "implicit sharing",
+      "plain": "Platform-maintained parent access from child access.",
+      "precise": "Parent-child skew is expensive because implicit shares on the parent may require scanning siblings when child access changes.",
+      "example": "Access to one contact implying account access that must be rechecked.",
+      "non_example": "A sharing rule you authored.",
+      "confusable_neighbor": "OWD and sharing rules: SEC-004 territory.",
+      "boundary": "Do not quote unofficial share-table row counts."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name grain and owners",
+      "actor": "Architect + admin",
+      "trigger": "New object or large load",
+      "before": "Unclear cardinality and ownership",
+      "after": "Written object/field/relationship map plus who will own rows",
+      "observe": "No dummy Unassigned parent or owner in the design",
+      "failure": "Parking leftovers for later"
+    },
+    {
+      "step": 2,
+      "transition": "Normalize facts",
+      "actor": "Admin",
+      "trigger": "Map exists",
+      "before": "Repeated fields on many objects",
+      "after": "Each fact on one object; relationships navigate",
+      "observe": "Vendor phone only on Vendor",
+      "failure": "Text copies of parent names everywhere"
+    },
+    {
+      "step": 3,
+      "transition": "Justify any stamp",
+      "actor": "Admin + developer",
+      "trigger": "A list view or integration wants a copy",
+      "before": "No writer named",
+      "after": "Formula or maintained field with an owner",
+      "observe": "Documented recalculation path",
+      "failure": "A stale text stamp with no owner"
+    },
+    {
+      "step": 4,
+      "transition": "Measure volume",
+      "actor": "Admin",
+      "trigger": "Load or assignment design",
+      "before": "Unknown children per parent / records per owner",
+      "after": "Plan to stay under official 10,000 guidance or distribute",
+      "observe": "Sample counts in sandbox/full copy",
+      "failure": "Assuming 10,001 always throws an error"
+    }
+  ],
+  "when_to_use": [
+    "When designing a schema of objects, fields, and relationships and you must decide where each fact lives.",
+    "When a request would copy parent fields onto children without a formula or other writer.",
+    "When a load or assignment would put more than 10,000 records on one owner (ownership data skew).",
+    "When a load would put 10,000 or more children under one parent account (parent-child data skew).",
+    "When someone proposes a dummy account or dummy user as a parking lot for unassigned records."
+  ],
+  "when_not_to_use": [
+    "Do not use this schema-and-skew lesson as a substitute for choosing lookup vs master-detail (DATA-003) or a junction object (DATA-004).",
+    "Do not treat 10,000 as a hard save-error governor; it is official performance guidance.",
+    "Do not denormalize to avoid building a relationship or a report type.",
+    "Do not use skew talk to replace query-selectivity and indexing (DQM large-data-volume topics).",
+    "Do not 'fix' skew by deleting production records from this lesson."
+  ],
+  "configuration_or_code_location": [
+    "Object Manager: objects, fields, relationships that form the schema.",
+    "Assignment rules, queues, and default owners that can create ownership skew.",
+    "Data Loader / Bulk loads sequenced by ParentID per the takeaway.",
+    "Role hierarchy placement of any unavoidable skewed owner."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox marketing lab will import 20,000 LAB_ contacts that are not yet matched to real accounts. A teammate wants Account 'Unassigned' owned by user LAB_Dummy. You must design the schema and assignment without official skew anti-patterns.",
+    "inputs": [
+      "20,000 synthetic contacts",
+      "No real customer match yet",
+      "Need later reassignment",
+      "Full-copy-style rehearsal mindset"
+    ],
+    "decisions": [
+      {
+        "decision": "Do not create a single Unassigned account for all contacts.",
+        "because": "Parent-child guidance: 10,000 or more children on one parent is skew.",
+        "rejected": "One dummy account parking lot"
+      },
+      {
+        "decision": "Do not assign all 20,000 to LAB_Dummy.",
+        "because": "Ownership skew is one user over 10,000 records.",
+        "rejected": "Dummy integration owner for the whole pile"
+      },
+      {
+        "decision": "Keep account name on Account; use a status field on Contact plus later matching, or multiple holding accounts/owners below the 10,000 guidance.",
+        "because": "Normalize the account fact; distribute volume.",
+        "rejected": "Contact.AccountName__c text copies plus one dummy parent"
+      }
+    ],
+    "configuration_or_code": [
+      "Create several LAB_ holding accounts or leave Account blank if the model allows, rather than one 20k parent.",
+      "Distribute ownership across multiple LAB_ users or a planned assignment rule.",
+      "Document that 10,000 is guidance to design against, not a guaranteed error."
+    ],
+    "output": "A schema and assignment plan that avoids dummy-pile skew and keeps account identity on Account.",
+    "verification": [
+      "No single LAB_ account has 10,000+ contacts in the rehearsal.",
+      "No single LAB_ user owns 10,000+ contacts.",
+      "Account name is not duplicated as an unmaintained text field on Contact."
+    ],
+    "self_explanation": "I treated dummy piles as a documented anti-pattern, not a convenience."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; tiny LAB_ volumes that demonstrate the design, not 10,000-row loads.",
+    "starting_state_checks": [
+      "You can create accounts and contacts.",
+      "No production data."
+    ],
+    "steps": [
+      "Write a one-page schema: where account name, contact email, and owner live.",
+      "Create two LAB_ holding accounts and two LAB_ owners instead of one dummy pile.",
+      "Create a few contacts under each; record child counts per account and per owner.",
+      "Write why you would refuse a single Unassigned account at 20,000 rows."
+    ],
+    "guided_completion": [
+      "If you created Unassigned anyway, delete those LAB_ contacts and split them.",
+      "If you added Account_Name__c on Contact, remove it and use the relationship."
+    ],
+    "independent_challenge": "Add a justified denormalized LAB_AccountTypeStamp__c only if you also name the Flow or formula that maintains it.",
+    "evidence": [
+      "Written counts per owner and parent.",
+      "Schema note refusing dummy piles."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ contacts and holding accounts.",
+      "Do not load tens of thousands of rows into a shared org."
+    ],
+    "limitations": "This lab does not reproduce production sharing-table timing."
+  },
+  "decision_table": [
+    {
+      "signal": "A fact already lives on the parent object and users can navigate or report via the relationship.",
+      "choose": "Keep the schema normalized; do not copy the field.",
+      "not": "A text stamp on every child 'for convenience'.",
+      "why": "Normalization avoids two truths; formulas can display parent values (DATA-006)."
+    },
+    {
+      "signal": "A mobile list must show a parent value offline-style and a writer is funded.",
+      "choose": "Selective denormalization with a named formula, Flow, or integration writer.",
+      "not": "Copy the field and hope users keep it updated.",
+      "why": "A stamp without a writer becomes bad data."
+    },
+    {
+      "signal": "A load would assign more than 10,000 records to one user.",
+      "choose": "Distribute ownership; avoid a dummy owner. If unavoidable, isolate that user's role and do not move it.",
+      "not": "Park everything on Integration User.",
+      "why": "Official ownership-skew definition and dummy-user warning."
+    },
+    {
+      "signal": "A load would place 10,000 or more children under one account.",
+      "choose": "Split parents or leave unmatched children without a dummy account pile.",
+      "not": "Account Unassigned as the parking lot.",
+      "why": "Official parent-child skew and 10,000-children takeaway."
+    },
+    {
+      "signal": "Someone wants a dummy account so Contact.AccountId can be required.",
+      "choose": "Revisit whether Account should be required, or use multiple holding accounts under the 10,000 guidance.",
+      "not": "One required dummy parent for all leftovers.",
+      "why": "Requiredness is not an excuse for skew."
+    }
+  ],
+  "limitations": [
+    "Does not measure your org's actual share-table size.",
+    "Does not replace Bulk API tuning beyond sequencing by ParentID.",
+    "Normalization/denormalization labels are handbook heuristics.",
+    "10,000 is guidance, not a documented hard save limit."
+  ],
+  "security_notes": [
+    "Skew is a sharing-performance issue, not a reason to open OWD to Public Read/Write without a security review.",
+    "A top-level skewed owner inherits access below them—read the ownership article before using that pattern.",
+    "Do not use production customer files to rehearse 10,000-row piles."
+  ],
+  "common_mistakes": [
+    "Dummy Unassigned account for all leftover contacts.",
+    "Dummy owner for all imported leads.",
+    "Copying parent names into text fields with no writer.",
+    "Treating 10,000 as a hard error code.",
+    "Moving a skewed owner between roles to 'clean up' the hierarchy."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Sharing or role change runs for a very long time after a dummy owner moved.",
+      "check": [
+        "How many records that user owns.",
+        "Whether they sit in a sharing-rule source group."
+      ],
+      "do_not_assume": "The role UI is merely slow."
+    },
+    {
+      "symptom": "Updates on one popular account lock or run slowly.",
+      "check": [
+        "Child count on that account against the 10,000 guidance.",
+        "Whether it is a dummy parking lot."
+      ],
+      "do_not_assume": "The page layout is the cause."
+    },
+    {
+      "symptom": "Reports show conflicting vendor phones.",
+      "check": [
+        "Whether phone is stamped on many objects.",
+        "Which object is the source of truth."
+      ],
+      "do_not_assume": "A validation rule will fix two stored truths."
+    }
+  ],
+  "production_notes": [
+    "Rehearse large relationship changes in a recently refreshed full-copy sandbox, as the takeaway states.",
+    "Do not move skewed owners in production as an experiment.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "What is ownership data skew in Designing Record Access for Enterprise Scale?",
+      "options": {
+        "A": "A single user owns more than 10,000 records of an object",
+        "B": "A user has no role",
+        "C": "An object has more than two fields",
+        "D": "A report has more than two groupings"
+      },
+      "answer": "A",
+      "rationale": "Ownership data skew is when a single user owns more than 10,000 records of an object.",
+      "distractor_explanations": {
+        "B": "Missing role is a different concern.",
+        "C": "Field count is not ownership skew.",
+        "D": "Reports are not the definition."
+      },
+      "concept": "Ownership skew",
+      "citation_ids": [
+        "SF-DRAES-OWN",
+        "SF-DRAES-TAKE"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "What child volume does the parent-child article call out as a common poor-performance configuration?",
+      "options": {
+        "A": "A large number of child records (10,000 or more) with a single parent account",
+        "B": "Two children on a parent",
+        "C": "One child with two parents and no junction",
+        "D": "Any master-detail field"
+      },
+      "answer": "A",
+      "rationale": "Association of 10,000 or more children with a single parent account.",
+      "distractor_explanations": {
+        "B": "Two children is not the cited pattern.",
+        "C": "That is a grain error, not the skew definition.",
+        "D": "MD alone is not skew."
+      },
+      "concept": "Parent-child skew",
+      "citation_ids": [
+        "SF-DRAES-PARENT",
+        "SF-DRAES-TAKE"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why is parking leftover contacts under one Unassigned account a problem?",
+      "options": {
+        "A": "It creates parent-child skew and expensive implicit-share maintenance",
+        "B": "Contacts cannot look up Account",
+        "C": "Accounts cannot have related lists",
+        "D": "Unassigned is a reserved API name"
+      },
+      "answer": "A",
+      "rationale": "The parent-child article uses dummy-account parking as the anti-pattern.",
+      "distractor_explanations": {
+        "B": "Contacts can look up Account.",
+        "C": "Related lists are fine.",
+        "D": "Unassigned is not a reserved API name in that article."
+      },
+      "concept": "Dummy account",
+      "citation_ids": [
+        "SF-DRAES-PARENT",
+        "SF-DRAES-TAKE"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A dummy user owns all imported leads. What official risk is called out when that user is moved in the hierarchy?",
+      "options": {
+        "A": "Salesforce must adjust a very large number of sharing-table entries",
+        "B": "The user loses MFA",
+        "C": "All leads become master-detail details",
+        "D": "The object API name changes"
+      },
+      "answer": "A",
+      "rationale": "Moving a skewed owner in the hierarchy can cause a long-running recalculation of access rights.",
+      "distractor_explanations": {
+        "B": "MFA is unrelated.",
+        "C": "Ownership skew does not convert relationships.",
+        "D": "API names do not change."
+      },
+      "concept": "Dummy owner move",
+      "citation_ids": [
+        "SF-DRAES-OWN",
+        "SF-DRAES-TAKE"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "What child-to-parent count does the tuning takeaway recommend?",
+      "options": {
+        "A": "No more than 10,000 children to one parent record",
+        "B": "Exactly 11 children",
+        "C": "Unlimited children if the parent is dummy",
+        "D": "No more than 2 children on custom objects"
+      },
+      "answer": "A",
+      "rationale": "Configure parent-child relationships with no more than 10,000 children to one parent.",
+      "distractor_explanations": {
+        "B": "Not a cited number.",
+        "C": "Dummy parents are the anti-pattern.",
+        "D": "Not a 2-child rule."
+      },
+      "concept": "10,000 children takeaway",
+      "citation_ids": [
+        "SF-DRAES-TAKE",
+        "SF-DRAES-PARENT"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Vendor phone is copied as text onto every property. What schema issue is that?",
+      "options": {
+        "A": "Unjustified denormalization / two truths",
+        "B": "Ownership skew",
+        "C": "A missing junction object by definition",
+        "D": "A standard field on Property"
+      },
+      "answer": "A",
+      "rationale": "The fact belongs on Vendor; copies need a writer or should be formulas.",
+      "distractor_explanations": {
+        "B": "That is not an owner-count problem.",
+        "C": "A junction may still exist; the stamp is the issue.",
+        "D": "A custom text copy is not a standard field."
+      },
+      "concept": "Normalization",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-DRAES-PARENT"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "When is selective denormalization reasonable in this lesson?",
+      "options": {
+        "A": "When a reader needs a stamp and a formula or automation will maintain it",
+        "B": "Whenever a report might one day need the value",
+        "C": "Whenever you want to avoid relationships",
+        "D": "Whenever you have a dummy account"
+      },
+      "answer": "A",
+      "rationale": "Denormalize only with a named writer; otherwise keep the schema normalized.",
+      "distractor_explanations": {
+        "B": "Future maybe is not a writer.",
+        "C": "Avoiding relationships hides grain.",
+        "D": "Dummy accounts are refused."
+      },
+      "concept": "Selective denormalization",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-DRAES-TAKE"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Lookup, master-detail, and junction objects are part of which official schema vocabulary?",
+      "options": {
+        "A": "Relationship types among objects and fields",
+        "B": "Named credentials",
+        "C": "Compact layouts",
+        "D": "Custom labels"
+      },
+      "answer": "A",
+      "rationale": "The Object Reference defines those relationship types as how objects associate.",
+      "distractor_explanations": {
+        "B": "Named credentials are DATA-012.",
+        "C": "Layouts are DATA-009.",
+        "D": "Labels are DATA-012."
+      },
+      "concept": "Schema relationships",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-DRAES-TAKE"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "If a skewed owner cannot be avoided, which official idea appears in the ownership article?",
+      "options": {
+        "A": "Place them in a separate role at the top of the hierarchy and do not move them out of it",
+        "B": "Give them Modify All Data so sharing does not matter",
+        "C": "Convert all their records to master-detail children of User",
+        "D": "Store owner names in a text field instead of OwnerId"
+      },
+      "answer": "A",
+      "rationale": "The article recommends a separate top-level role and not moving that user.",
+      "distractor_explanations": {
+        "B": "Modify All Data is not the cited mitigation.",
+        "C": "User cannot be used as that MD primary in the usual blocked list.",
+        "D": "Text owner names are not ownership."
+      },
+      "concept": "Unavoidable owner skew",
+      "citation_ids": [
+        "SF-DRAES-OWN",
+        "SF-DRAES-TAKE"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why can losing access to one of 300,000 contacts under one account be expensive?",
+      "options": {
+        "A": "Salesforce may need to scan the other contacts before removing parent implicit share",
+        "B": "The contact API name changes",
+        "C": "Formulas cannot span Account",
+        "D": "Queues cannot own contacts"
+      },
+      "answer": "A",
+      "rationale": "The parent-child article's 300,000-contact example.",
+      "distractor_explanations": {
+        "B": "API names do not change.",
+        "C": "Cross-object formulas can span Account (DATA-006).",
+        "D": "Queue ownership is a different topic."
+      },
+      "concept": "Implicit share scan",
+      "citation_ids": [
+        "SF-DRAES-PARENT",
+        "SF-DRAES-TAKE"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "The tuning takeaway says to sequence operations on parent and child objects by what?",
+      "options": {
+        "A": "ParentID",
+        "B": "CreatedDate only",
+        "C": "Owner profile name",
+        "D": "Compact layout"
+      },
+      "answer": "A",
+      "rationale": "Sequence operations by ParentID and keep threads on unique record sets.",
+      "distractor_explanations": {
+        "B": "CreatedDate is not the cited sequence key.",
+        "C": "Profile name is not ParentID.",
+        "D": "Layouts are presentation."
+      },
+      "concept": "ParentID sequencing",
+      "citation_ids": [
+        "SF-DRAES-TAKE",
+        "SF-DRAES-PARENT"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Is 10,000 a hard save error in this lesson?",
+      "options": {
+        "A": "No. It is official performance guidance, not described here as a governor that always errors at 10,001",
+        "B": "Yes. The 10,001st child cannot insert",
+        "C": "Yes. The 10,001st owned record deletes the user",
+        "D": "Yes. It is an edition gate for Professional Edition only"
+      },
+      "answer": "A",
+      "rationale": "The docs describe probability of performance problems, not a hard insert error in the cited text.",
+      "distractor_explanations": {
+        "B": "Do not invent a hard stop.",
+        "C": "Users are not deleted.",
+        "D": "Do not invent edition gates."
+      },
+      "concept": "Guidance vs governor",
+      "citation_ids": [
+        "SF-DRAES-OWN",
+        "SF-DRAES-PARENT"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "ownership",
+      "front": "Ownership data skew definition?",
+      "back": "One user owns more than 10,000 records of an object."
+    },
+    {
+      "id": "F2",
+      "category": "parent",
+      "front": "Parent-child data skew definition?",
+      "back": "10,000 or more children associated with a single parent account."
+    },
+    {
+      "id": "F3",
+      "category": "dummy",
+      "front": "Why not an Unassigned account pile?",
+      "back": "It creates parent-child skew and expensive implicit-share maintenance."
+    },
+    {
+      "id": "F4",
+      "category": "dummy",
+      "front": "Why not a dummy owner for all leftovers?",
+      "back": "Ownership skew; role or group moves recalculate huge sharing tables."
+    },
+    {
+      "id": "F5",
+      "category": "takeaway",
+      "front": "Recommended children per parent?",
+      "back": "No more than 10,000 children to one parent record."
+    },
+    {
+      "id": "F6",
+      "category": "norm",
+      "front": "What is normalization here?",
+      "back": "Store each fact once on the object that owns it."
+    },
+    {
+      "id": "F7",
+      "category": "denorm",
+      "front": "When may you stamp a copy?",
+      "back": "When a reader needs it and a formula or automation maintains it."
+    },
+    {
+      "id": "F8",
+      "category": "schema",
+      "front": "What is schema in this lesson?",
+      "back": "Objects, fields, and relationships that match business grain."
+    },
+    {
+      "id": "F9",
+      "category": "implicit",
+      "front": "Why are 300,000 contacts on one account expensive?",
+      "back": "Losing access to one child may require scanning the other children for implicit shares."
+    },
+    {
+      "id": "F10",
+      "category": "role",
+      "front": "If a skewed owner is unavoidable?",
+      "back": "Separate top-level role; do not move them out of it."
+    },
+    {
+      "id": "F11",
+      "category": "load",
+      "front": "How should parent-child operations be sequenced?",
+      "back": "By ParentID, with threads on unique record sets."
+    },
+    {
+      "id": "F12",
+      "category": "guidance",
+      "front": "Is 10,000 a hard insert governor here?",
+      "back": "No. It is official performance guidance."
+    },
+    {
+      "id": "F13",
+      "category": "formula",
+      "front": "Safer than a stored stamp?",
+      "back": "A cross-object formula that reads the parent (DATA-006)."
+    },
+    {
+      "id": "F14",
+      "category": "junction",
+      "front": "Where does a pairing date live in a normalized schema?",
+      "back": "On the junction object, not copied onto both parents."
+    },
+    {
+      "id": "F15",
+      "category": "owd",
+      "front": "Does skew mean you should open OWD?",
+      "back": "No. Skew is performance of sharing maintenance, not a license to overshare."
+    },
+    {
+      "id": "F16",
+      "category": "heuristic",
+      "front": "Are normalize/denormalize Setup objects?",
+      "back": "No. They are design words applied to official objects, fields, and relationships."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is data skew in Salesforce schema terms?",
+      "answer_30_seconds": "A volume concentration that makes sharing maintenance expensive. Ownership skew is one user over 10,000 records of an object. Parent-child skew is 10,000 or more children on one parent.",
+      "answer_2_minutes": "I cite Designing Record Access for Enterprise Scale. I give the dummy-user and dummy-account anti-patterns. I say 10,000 is guidance, not a hard save error. I separate this from query selectivity. I mention implicit shares on parent accounts as the cost of child-access changes.",
+      "example": "Refusing 80,000 contacts under Unassigned owned by LAB_Dummy.",
+      "tradeoffs": [
+        "Distribute vs isolate a skewed owner",
+        "Guidance vs governor"
+      ],
+      "follow_ups": [
+        "What is lookup skew?",
+        "What is implicit sharing?"
+      ],
+      "weak_answer_warnings": [
+        "Saying skew means the org is out of storage"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "Marketing wants all unmatched contacts under Account Unassigned. Your answer?",
+      "answer_30_seconds": "No. That is the documented parent-child skew anti-pattern once you approach 10,000 or more children. Split holding accounts, leave Account blank if allowed, or match to real accounts.",
+      "answer_2_minutes": "I explain implicit-share scans with the 300,000-contact example. I also check who owns those contacts so we do not add ownership skew. I do not create Contact.AccountName__c as a workaround. I offer a matching process and multiple holding buckets under the 10,000 guidance.",
+      "example": "Design review note rejecting Unassigned as a single parent for 20,000 LAB_ contacts.",
+      "tradeoffs": [
+        "Multiple holding accounts vs blank Account",
+        "Required Account vs skew"
+      ],
+      "follow_ups": [
+        "How would you report unmatched contacts?",
+        "What if AccountId is required?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing because required fields feel tidy"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "design",
+      "question": "When do you denormalize a field on a Salesforce object?",
+      "answer_30_seconds": "Only when a reader needs a stamped value and you can name the writer—often a formula, sometimes Flow. Otherwise keep the fact on the object that owns it.",
+      "answer_2_minutes": "I treat normalize/denormalize as design language on official schema. Vendor phone stays on Vendor. If a junction list must show it without spanning, I prefer a formula. Stored copies without owners become two truths. I do not denormalize to avoid a relationship.",
+      "example": "Rejected Property.VendorPhone__c text; used a formula or the vendor relationship.",
+      "tradeoffs": [
+        "Formula vs stored stamp",
+        "Report type vs copy"
+      ],
+      "follow_ups": [
+        "Who owns the Flow that updates the stamp?",
+        "When is a roll-up the right aggregate?"
+      ],
+      "weak_answer_warnings": [
+        "Copying everything for reports"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "troubleshooting",
+      "question": "A role change for Integration User has been running for hours. What do you suspect?",
+      "answer_30_seconds": "Ownership skew: that user owns a huge number of records, so sharing tables are being recalculated. The ownership article warns about moving such users in the hierarchy or sharing-rule groups.",
+      "answer_2_minutes": "I ask how many records the user owns and whether they are a sharing-rule source. I do not move them again to 'speed it up.' Going forward I distribute ownership or isolate that role at the top and leave it. I do not invent a timeout number.",
+      "example": "LAB_Dummy owns 40,000 leads; a role tweak triggered a long sharing recalc in a full sandbox rehearsal.",
+      "tradeoffs": [
+        "Distribute now vs isolate role",
+        "Wait vs cancel a sharing job—Needs verification"
+      ],
+      "follow_ups": [
+        "Should this user have a role at all?",
+        "What is a public group source?"
+      ],
+      "weak_answer_warnings": [
+        "Restarting the user record to clear the job"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "foundational",
+      "question": "How does schema design relate to lookup, master-detail, and junctions?",
+      "answer_30_seconds": "Those relationship types are the official schema. Normalization chooses which object holds a fact. Skew checks whether one parent or owner will hold too many rows.",
+      "answer_2_minutes": "I walk grain first: one-to-many vs many-to-many. Then I place fields. Then I ask owner and parent counts against the 10,000 guidance. A correct junction can still be skewed if one vendor has 50,000 property pairings. Schema without volume is incomplete.",
+      "example": "LAB_PropertyVendor__c is correct grain, but one vendor must not collect 20,000 pairings without a plan.",
+      "tradeoffs": [
+        "Correct grain vs safe volume",
+        "MD cascade vs skew"
+      ],
+      "follow_ups": [
+        "How do you split a hot parent?",
+        "Does Controlled by Parent reduce implicit shares?"
+      ],
+      "weak_answer_warnings": [
+        "Talking only about objects and never volume"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "scenario",
+      "question": "An integration will load children. How do you reduce lock and share pain?",
+      "answer_30_seconds": "Do not target one dummy parent. Keep children per parent under the 10,000 guidance. Sequence operations by ParentID as the takeaway states.",
+      "answer_2_minutes": "I want unique parent sets per thread. I mention Controlled by Parent where it meets security, because the takeaway says that avoids creating some parent implicit shares. I rehearse in a recently refreshed full-copy sandbox. I do not claim a specific Bulk batch size unless I have current docs.",
+      "example": "Split LAB_ load files by Property Id instead of one Unassigned parent file.",
+      "tradeoffs": [
+        "One file vs files by ParentID",
+        "Public Read OWD vs private plus implicit shares"
+      ],
+      "follow_ups": [
+        "What is lookup delete clear-value doing for locks?",
+        "When do you add retry logic?"
+      ],
+      "weak_answer_warnings": [
+        "One giant file against one parent"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Is 10,000 a platform error you can demo in a 5-row sandbox?",
+      "answer_30_seconds": "No. It is official performance guidance. A 5-row lab proves the schema decision, not the sharing-table cost.",
+      "answer_2_minutes": "I am honest in interviews: I have not timed a 300,000-row implicit-share scan in this lesson. I have read the Designing Record Access articles and I design so we never create the dummy pile. I would use a full-copy sandbox to rehearse real volumes.",
+      "example": "Lab writes the refusal note instead of inserting 10,001 contacts.",
+      "tradeoffs": [
+        "Guidance vs demoable governor",
+        "Full-copy rehearsal vs Developer Edition"
+      ],
+      "follow_ups": [
+        "Where is the 10,000 number written?",
+        "What other LDV topics exist?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming the 10,001st insert always fails"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "foundational",
+      "question": "How do you explain normalization without sounding like generic SQL class?",
+      "answer_30_seconds": "I map it to Salesforce objects, fields, and relationships. The vendor's phone is a field on the vendor object. The pairing date is a field on the junction. A text copy on Property is a second truth unless a formula maintains it.",
+      "answer_2_minutes": "Interviewers want platform nouns. I mention related lists and cross-object formulas as ways to read a fact without storing it twice. I mention skew if copies encourage dummy parents. I do not say labeled drawers or libraries.",
+      "example": "LAB_Vendor__c.Phone__c vs Property.VendorPhone__c text.",
+      "tradeoffs": [
+        "Navigate vs stamp",
+        "Formula vs Flow writer"
+      ],
+      "follow_ups": [
+        "When is a roll-up the right summary?",
+        "When do you add an External ID?"
+      ],
+      "weak_answer_warnings": [
+        "Giving only a third-normal-form lecture"
+      ]
+    }
+  ]
+}

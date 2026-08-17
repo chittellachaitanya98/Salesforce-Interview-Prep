@@ -1,0 +1,1007 @@
+{
+  "topic_id": "INT-005",
+  "slug": "json-xml-serialization-http-status-codes-pagination-rat",
+  "title": "JSON/XML serialization, HTTP status codes, pagination, rate limits, and error contracts",
+  "track": "Integration and APIs",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "INT-004"
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer official Help and Developer Guides over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "objectives": [
+    "Read REST success and error HTTP status codes from the official error-codes table, including 403 REQUEST_LIMIT_EXCEEDED.",
+    "Page SOQL results with done, nextRecordsUrl, and the query locator instead of inventing offsets.",
+    "Check remaining API capacity with the Limits resource rather than guessing daily allocations.",
+    "Treat JSON vs XML as Accept/Content-Type contracts, not as a security control."
+  ],
+  "diagnostic_question": "A REST query returns done=false. Another client gets HTTP 403 with REQUEST_LIMIT_EXCEEDED. What do you do next for pagination versus rate limits, and which status means created versus bad JSON?",
+  "definition": "Salesforce REST API responses carry an HTTP status code and usually a JSON or XML body. Success codes include 200, 201, and 204. Errors include 400 for malformed JSON/XML, 401 unauthorized, 403 refused (including REQUEST_LIMIT_EXCEEDED), and 404 not found or sharing. SOQL queries return at most 2,000 records per synchronous batch; more rows arrive via nextRecordsUrl and a query locator. The Limits resource reports remaining allocations. ([Status codes](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/errorcodes.htm); [Query](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_query.htm); [Limits](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_limits.htm))",
+  "why_it_matters": "Clients that ignore done=false drop rows. Clients that retry 403 limit errors in a tight loop make the outage worse. Interviewers listen for nextRecordsUrl and REQUEST_LIMIT_EXCEEDED by name.",
+  "sixty_second_explanation": "Treat every REST call like a freight shipment. The HTTP status is the stamp on the label: 201 means a new crate was created, 400 means the packing list JSON was unreadable, 403 with REQUEST_LIMIT_EXCEEDED means the dock's daily quota is blown. Pagination is the next-crate ticket: if done is false, you must present nextRecordsUrl. Rate limits are the dock quota; ask the Limits window rather than guessing the number.",
+  "deeper_explanation": [
+    "Official success codes: 200 OK for GET/HEAD and some PATCH; 201 Created for POST and some PATCH; 204 No Content for DELETE and some PATCH. 300 is returned when an external ID matches more than one record. 304 is not-modified with If-Modified-Since. 400 usually means the JSON or XML body could not be understood. 401 unauthorized. 403 refused—verify permissions; if the error code is REQUEST_LIMIT_EXCEEDED you exceeded API request limits. 404 missing URI or sharing. Other codes exist in the table—do not invent meanings. ([Error codes](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/errorcodes.htm))",
+    "Query: up to 2,000 records per synchronous SOQL response; the batch can be smaller. If more remain, done is false and nextRecordsUrl / query locator fetch the next batch until done is true. Query More Results uses GET /query/queryLocator. ([Query](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_query.htm); [Query More](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_query_more_results.htm))",
+    "Limits resource GET /services/data/vXX.X/limits returns Max and Remaining for org limits including Daily API Requests. Exact license math is edition-specific—Needs verification in the org, do not memorize a handbook number as law.",
+    "JSON vs XML is requested with HTTP headers. Apex JSON.serialize / XML serializers are later coding detail; the contract is the wire format plus error shape. SOAP clients speak XML by definition (INT-002)."
+  ],
+  "mental_model": {
+    "analogy": "A freight dock: HTTP status stamps, JSON/XML packing lists, next-crate tickets (pagination), and a posted daily quota board (rate limits).",
+    "useful_mapping": [
+      "200/201/204 → accepted / created / no body",
+      "400 → packing list unreadable (JSON/XML)",
+      "401 → no valid badge (INT-004)",
+      "403 REQUEST_LIMIT_EXCEEDED → quota board empty",
+      "404 → wrong bay or sharing",
+      "done=false → more crates, use nextRecordsUrl",
+      "Limits resource → look at the quota board",
+      "error[] body → the dock's error contract, not a mystery string"
+    ],
+    "where_it_breaks": [
+      "Bulk API 2.0 jobs use job state APIs, not nextRecordsUrl.",
+      "Composite subrequest errors can nest—read that topic, do not assume one top-level 200 means all children succeeded without checking.",
+      "Daily allocations vary by edition—do not tattoo a number from a blog.",
+      "XML vs JSON does not bypass FLS or sharing."
+    ]
+  },
+  "teach_back_prompt": "Explain 201 vs 400 vs 403 REQUEST_LIMIT_EXCEEDED, then how you page a SOQL query until done is true.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "List 200, 201, 204, 400, 401, 403, 404 meanings."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Draw a nextRecordsUrl loop."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Where is Remaining API count?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Client retries 403 in a hot loop—what is wrong?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: error contract plus pagination."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-REST-ERRORS",
+      "title": "Status Codes and Error Responses",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/errorcodes.htm",
+      "supports": "HTTP codes 200/201/204/300/304/400/401/403/404 and REQUEST_LIMIT_EXCEEDED on 403.",
+      "release_or_version": "REST API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Table has more codes; do not invent undocumented ones."
+    },
+    {
+      "source_id": "SF-REST-QUERY",
+      "title": "Query resource",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_query.htm",
+      "supports": "Up to 2,000 records; done, totalSize, nextRecordsUrl, records; smaller batches possible.",
+      "release_or_version": "REST API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Query Options header can change batch size—verify current docs."
+    },
+    {
+      "source_id": "SF-REST-QUERYMORE",
+      "title": "Query More Results",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_query_more_results.htm",
+      "supports": "Use query locator / nextRecordsUrl until done is true.",
+      "release_or_version": "REST API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Open query locator caps are neighboring SOAP notes; do not invent cursor counts here."
+    },
+    {
+      "source_id": "SF-REST-LIMITS",
+      "title": "List Org Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_limits.htm",
+      "supports": "Limits resource returns Max and Remaining for org limits.",
+      "release_or_version": "REST API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Which keys appear can change with API version."
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Status stamps",
+        "JSON vs XML",
+        "done/nextRecordsUrl",
+        "403 limits",
+        "Limits resource"
+      ],
+      "accessible_description": "REST contracts: status codes, JSON/XML bodies, pagination via nextRecordsUrl, and the Limits resource for remaining API calls."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-REST-ERRORS",
+        "SF-REST-QUERY",
+        "SF-REST-LIMITS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "REST status, paging, and limits"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Req[REST request JSON or XML] --> St{HTTP status}\n  St -->|200 201 204| Ok[Success body or empty]\n  St -->|400| Bad[Malformed JSON or XML]\n  St -->|401| Auth[Token problem INT-004]\n  St -->|403| Lim[Permissions or REQUEST_LIMIT_EXCEEDED]\n  St -->|404| Miss[URI or sharing]\n  Ok --> Page{SOQL done?}\n  Page -->|false| Next[GET nextRecordsUrl]\n  Page -->|true| Done[All rows]",
+      "decision": "flowchart TD\n  See[See a REST result] --> Q1{Status 2xx?}\n  Q1 -->|No 401| T[Fix token INT-004]\n  Q1 -->|No 403 REQUEST_LIMIT_EXCEEDED| Wait[Stop hot retries; check Limits resource]\n  Q1 -->|No 400| Body[Fix JSON/XML contract]\n  Q1 -->|Yes SOQL| Q2{done false?}\n  Q2 -->|Yes| Page[Follow nextRecordsUrl]\n  Q2 -->|No| Fin[Complete]\n  Q1 -->|Yes create| C[201 means created]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "REST responses include HTTP codes such as 200, 201, 204 for success; 400 for malformed JSON/XML; 401 unauthorized; 403 refused including REQUEST_LIMIT_EXCEEDED; 404 not found or sharing issues.",
+      "source_ids": [
+        "SF-REST-ERRORS"
+      ],
+      "scope": "Status codes",
+      "validation": "Status Codes and Error Responses table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "A SOQL Query returns up to 2,000 records per synchronous batch (sometimes fewer). If more remain, done is false and nextRecordsUrl/query locator retrieves the next batch until done is true.",
+      "source_ids": [
+        "SF-REST-QUERY",
+        "SF-REST-QUERYMORE"
+      ],
+      "scope": "Pagination",
+      "validation": "Query and Query More Results topics.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "The Limits resource lists org limits with Max and Remaining values.",
+      "source_ids": [
+        "SF-REST-LIMITS"
+      ],
+      "scope": "Rate limits",
+      "validation": "List Org Limits.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "300 is returned when an external ID matches more than one record; 304 is not modified when If-Modified-Since is satisfied.",
+      "source_ids": [
+        "SF-REST-ERRORS"
+      ],
+      "scope": "Additional codes",
+      "validation": "Same error-codes table.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify the error-codes table and Limits keys for API 67.0 / Summer '26.",
+  "unresolved_uncertainty": [
+    "Daily API allocation formulas are license-specific.",
+    "Sforce-Limit-Info header details: confirm in current REST headers topic before quoting fields."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "nextRecordsUrl",
+      "telugu": "తర్వాతి SOQL బ్యాచ్ URL."
+    },
+    {
+      "english": "REQUEST_LIMIT_EXCEEDED",
+      "telugu": "API కోటా మించింది అనే 403 లోపం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I read the HTTP status first. 201 created, 400 bad JSON/XML, 401 token, 403 maybe REQUEST_LIMIT_EXCEEDED, 404 URI or sharing. For SOQL I loop nextRecordsUrl until done is true. I check Limits Remaining instead of guessing quotas.",
+    "two_minutes": "The error-codes table is the contract. I do not treat 200 as 'all Composite children succeeded' without reading nested results. Pagination is not OFFSET invented by me; it is the query locator. Rate-limit retries need backoff and a Limits look, not a tight loop. JSON vs XML is a header choice; SOAP is XML-only from INT-002."
+  },
+  "terminology": [
+    {
+      "term": "HTTP status code",
+      "plain": "The stamp that says whether the HTTP trip worked and why it failed.",
+      "precise": "REST response header code; body usually includes error details. Official table lists 200/201/204/400/401/403/404 and others.",
+      "example": "POST sObject returns 201 with the new id.",
+      "non_example": "Apex DML exception with no HTTP.",
+      "confusable_neighbor": "Flow fault messages.",
+      "boundary": "Do not invent codes absent from the table."
+    },
+    {
+      "term": "JSON/XML serialization",
+      "plain": "How the packing list is written on the wire.",
+      "precise": "REST supports JSON and XML. Malformed bodies commonly yield 400. SOAP is XML-only (INT-002).",
+      "example": "Accept: application/json on a sandbox query.",
+      "non_example": "Apex JSON.serialize as a substitute for reading HTTP status.",
+      "confusable_neighbor": "GraphQL JSON which is a different API family.",
+      "boundary": "Parser internals are not this lesson."
+    },
+    {
+      "term": "error contract",
+      "plain": "The agreed shape of failure: status plus body, not a random HTML page.",
+      "precise": "REST error responses typically include HTTP code and a body describing the error; REQUEST_LIMIT_EXCEEDED is a named error code on 403.",
+      "example": "Client branches on errorCode REQUEST_LIMIT_EXCEEDED vs INVALID_SESSION_ID.",
+      "non_example": "Parsing a Visualforce error page as REST.",
+      "confusable_neighbor": "Apex exception types on callouts (INT-006).",
+      "boundary": "Composite nested errors need the Composite topic."
+    },
+    {
+      "term": "pagination",
+      "plain": "Getting the next crate when the first truck was full.",
+      "precise": "SOQL Query: totalSize, done, nextRecordsUrl, records. Query More uses the query locator until done is true. Max 2,000 per synchronous batch, sometimes fewer.",
+      "example": "Loop GET nextRecordsUrl for LAB_Item__c query.",
+      "non_example": "Guessing OFFSET 10000 without a locator.",
+      "confusable_neighbor": "UI API / GraphQL cursors—verify those guides separately.",
+      "boundary": "Bulk query jobs are a different paging model."
+    },
+    {
+      "term": "query locator",
+      "plain": "The ticket printed on the last crate.",
+      "precise": "String used with Query More Results / present in nextRecordsUrl to fetch the next SOQL batch.",
+      "example": "Follow /services/data/v67.0/query/01g... from nextRecordsUrl.",
+      "non_example": "Re-running the original SOQL with a new OFFSET you invented.",
+      "confusable_neighbor": "Replay ID on events (INT-007).",
+      "boundary": "Locator lifetime/cursor caps: Needs verification in current limits docs."
+    },
+    {
+      "term": "rate limits",
+      "plain": "The dock's daily (and other) quotas.",
+      "precise": "Org API request limits. 403 with REQUEST_LIMIT_EXCEEDED means you exceeded API request limits. Limits resource shows Max/Remaining.",
+      "example": "GET /limits before a large REST test in sandbox.",
+      "non_example": "Assuming unlimited REST because JSON is small.",
+      "confusable_neighbor": "Apex governor limits (APEX-007).",
+      "boundary": "Do not quote a handbook number as the org's allocation."
+    },
+    {
+      "term": "Limits resource",
+      "plain": "The posted quota board.",
+      "precise": "GET /services/data/vXX.X/limits returns Max and Remaining for multiple org limits.",
+      "example": "Read Daily API Requests Remaining in a sandbox.",
+      "non_example": "Setup → Company Information as the only API for remaining calls (it may show usage; REST Limits is the API contract).",
+      "confusable_neighbor": "Event Monitoring (INT-010).",
+      "boundary": "Key names can vary by version."
+    },
+    {
+      "term": "2000-record query batch",
+      "plain": "One synchronous SOQL truck-load cap cited by the Query topic.",
+      "precise": "Up to 2,000 records per Query response; batches may be smaller based on size/complexity.",
+      "example": "A 5,000-row query needs at least three round trips if batches are full.",
+      "non_example": "Bulk 2.0 ingest batching.",
+      "confusable_neighbor": "Bulk 2.0 2,000-record candidate guidance (INT-002) is about choosing Bulk, not SOQL page size.",
+      "boundary": "Query Options header may change size—verify."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Parse status before body",
+      "actor": "Client developer",
+      "trigger": "HTTP returns",
+      "before": "Assume JSON always 200",
+      "after": "Branch on 2xx vs 4xx",
+      "observe": "Logged status and errorCode",
+      "failure": "Ignoring 403"
+    },
+    {
+      "step": 2,
+      "transition": "Honor pagination",
+      "actor": "Client developer",
+      "trigger": "SOQL 200",
+      "before": "Take first page only",
+      "after": "Loop until done true",
+      "observe": "Row count matches totalSize",
+      "failure": "Dropping rows when done is false"
+    },
+    {
+      "step": 3,
+      "transition": "Watch remaining limits",
+      "actor": "Ops + developer",
+      "trigger": "Integration volume rises",
+      "before": "Guess quota",
+      "after": "Limits Remaining monitored",
+      "observe": "GET /limits in sandbox tests",
+      "failure": "Hot retry on REQUEST_LIMIT_EXCEEDED"
+    },
+    {
+      "step": 4,
+      "transition": "Keep JSON/XML valid",
+      "actor": "Developer",
+      "trigger": "400s appear",
+      "before": "Mystery failures",
+      "after": "Schema/Content-Type fixed",
+      "observe": "400s drop in sandbox",
+      "failure": "Sending HTML to REST"
+    }
+  ],
+  "when_to_use": [
+    "When designing or debugging REST JSON/XML serialization, HTTP status codes, pagination, rate limits, and error contracts.",
+    "When a SOQL REST query might exceed one page and you must follow nextRecordsUrl.",
+    "When HTTP 403 returns REQUEST_LIMIT_EXCEEDED and you must stop hot retries.",
+    "When you need Remaining API capacity from the Limits resource instead of a memorized number.",
+    "When explaining 201 Created versus 400 malformed JSON in an interview."
+  ],
+  "when_not_to_use": [
+    "Do not use this REST contract lesson as Bulk 2.0 job-state documentation.",
+    "Do not invent daily allocation numbers or extra HTTP codes not in the official table.",
+    "Do not treat JSON versus XML as a substitute for OAuth (INT-004) or FLS.",
+    "Do not page events with nextRecordsUrl—that is replay IDs (INT-007).",
+    "Do not hammer production Limits or queries from this lesson."
+  ],
+  "configuration_or_code_location": [
+    "REST /query, /query/{locator}, /limits on a sandbox host",
+    "Error-codes table in the REST API Developer Guide",
+    "Client Accept / Content-Type headers",
+    "LAB_ data only"
+  ],
+  "worked_example": {
+    "scenario": "Sandbox client queries all LAB_Item__c rows. First response done=false. A second test org returns 403 REQUEST_LIMIT_EXCEEDED. A POST of bad JSON returns 400.",
+    "inputs": [
+      "SOQL over 2,000 LAB_ rows",
+      "A depleted test org",
+      "Malformed JSON POST"
+    ],
+    "decisions": [
+      {
+        "decision": "Loop GET nextRecordsUrl until done is true; compare count to totalSize.",
+        "because": "Official Query More contract.",
+        "rejected": "Keep only the first 2,000 rows"
+      },
+      {
+        "decision": "On REQUEST_LIMIT_EXCEEDED, stop the loop, read /limits, backoff—do not tight-retry.",
+        "because": "403 means request limits exceeded.",
+        "rejected": "Retry immediately 100 times"
+      }
+    ],
+    "configuration_or_code": [
+      "Pseudocode while not done: GET nextRecordsUrl.",
+      "Do not run against production."
+    ],
+    "output": "Complete row set or a controlled pause on limits.",
+    "verification": [
+      "Client log shows multiple query locators when done started false.",
+      "403 path does not tight-loop.",
+      "400 path logs malformed JSON, not 201."
+    ],
+    "self_explanation": "Pagination and limits are different stamps on the same dock."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; Workbench or a small Apex/HTTP client; LAB_Item__c or Account.",
+    "starting_state_checks": [
+      "API Enabled",
+      "Synthetic rows only"
+    ],
+    "steps": [
+      "Run GET /query?q=SELECT+Id+FROM+Account (or LAB_ object) and note done, totalSize, nextRecordsUrl if present.",
+      "If done is true, document that paging was unnecessary; optionally insert enough LAB_ rows in sandbox to exceed one page and repeat.",
+      "GET /limits and record Daily API Requests Remaining (do not publish the number as a universal constant).",
+      "Write a unit-test style assertion in a scratch class: if status == 403 and body contains REQUEST_LIMIT_EXCEEDED then retrying immediately is forbidden."
+    ],
+    "guided_completion": [
+      "If you ignored nextRecordsUrl when done was false, you failed pagination.",
+      "If you copied Remaining as 'all Salesforce orgs have this many calls,' you invented an allocation."
+    ],
+    "independent_challenge": "Map 201 vs 204 vs 400 to POST create, DELETE, and bad JSON using the official table.",
+    "evidence": [
+      "Screenshot or log of a query JSON with done field.",
+      "Limits Remaining captured in notes (sandbox)."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete extra LAB_ rows.",
+      "Do not leave a paging loop against production."
+    ],
+    "limitations": "May not exceed 2,000 rows in a tiny playground; then document the contract anyway."
+  },
+  "decision_table": [
+    {
+      "signal": "SOQL REST response has done=false and nextRecordsUrl.",
+      "choose": "GET the nextRecordsUrl / query locator until done is true.",
+      "not": "Treat the first page as the full result set.",
+      "why": "Official Query More Results contract."
+    },
+    {
+      "signal": "HTTP 403 with errorCode REQUEST_LIMIT_EXCEEDED.",
+      "choose": "Halt hot retries; inspect Limits Remaining; backoff; reduce chattiness or use Bulk (INT-002).",
+      "not": "Tight-loop the same REST call.",
+      "why": "The error-codes table says API request limits were exceeded."
+    },
+    {
+      "signal": "HTTP 400 after a POST/PATCH.",
+      "choose": "Fix JSON/XML serialization and Content-Type; read the error body.",
+      "not": "Assume 401 and rotate OAuth first without reading the body.",
+      "why": "400 is typically malformed JSON/XML."
+    },
+    {
+      "signal": "You need remaining API capacity in an integration dashboard.",
+      "choose": "GET the Limits resource (Max/Remaining).",
+      "not": "Hard-code a blog's edition number as the org quota.",
+      "why": "List Org Limits is the API contract; allocations are org-specific."
+    },
+    {
+      "signal": "POST created a record.",
+      "choose": "Expect 201 Created (per table) and parse the id from the body.",
+      "not": "Require 204 No Content for a create.",
+      "why": "201 is the documented success code for POST creates."
+    }
+  ],
+  "limitations": [
+    "Not Bulk job states.",
+    "Not event replay.",
+    "Not a full HTTP code encyclopedia beyond the table.",
+    "Allocations not quoted as constants."
+  ],
+  "security_notes": [
+    "Error bodies can leak field names—minimize logs.",
+    "401 handling must not print tokens.",
+    "Sharing can look like 404."
+  ],
+  "common_mistakes": [
+    "Dropping paged rows.",
+    "Hot retry on 403 limits.",
+    "Inventing OFFSET pagination.",
+    "Assuming 200 means Composite children all succeeded.",
+    "Memorizing a fake daily limit."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Client row counts mismatch Salesforce.",
+      "check": [
+        "done flag and nextRecordsUrl loop.",
+        "Sharing hiding rows (404/empty)."
+      ],
+      "do_not_assume": "Salesforce lost data."
+    },
+    {
+      "symptom": "Intermittent 403.",
+      "check": [
+        "REQUEST_LIMIT_EXCEEDED vs permission 403.",
+        "Limits Remaining trend."
+      ],
+      "do_not_assume": "Named credential is wrong without reading errorCode."
+    }
+  ],
+  "production_notes": [
+    "Monitor Remaining.",
+    "Alert before zero.",
+    "No production paging storms from this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "HTTP 201 in the REST error-codes table?",
+      "options": {
+        "A": "Created success for POST and some PATCH",
+        "B": "Always a malformed JSON error",
+        "C": "REQUEST_LIMIT_EXCEEDED",
+        "D": "Query locator missing"
+      },
+      "answer": "A",
+      "rationale": "Table: 201 Created for POST and some PATCH.",
+      "distractor_explanations": {
+        "B": "400.",
+        "C": "403.",
+        "D": "Pagination."
+      },
+      "concept": "201",
+      "citation_ids": [
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "HTTP 400 commonly means?",
+      "options": {
+        "A": "JSON or XML body could not be understood",
+        "B": "Record created",
+        "C": "Query finished",
+        "D": "Token is always valid"
+      },
+      "answer": "A",
+      "rationale": "400: request not understood, usually JSON/XML.",
+      "distractor_explanations": {
+        "B": "201.",
+        "C": "done true.",
+        "D": "401 territory."
+      },
+      "concept": "400",
+      "citation_ids": [
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "REQUEST_LIMIT_EXCEEDED appears with which status?",
+      "options": {
+        "A": "403",
+        "B": "201",
+        "C": "204",
+        "D": "300 duplicate external id"
+      },
+      "answer": "A",
+      "rationale": "403 refused; REQUEST_LIMIT_EXCEEDED means API request limits exceeded.",
+      "distractor_explanations": {
+        "B": "Success.",
+        "C": "No content.",
+        "D": "Different code."
+      },
+      "concept": "403 limits",
+      "citation_ids": [
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Query JSON has done=false. Next?",
+      "options": {
+        "A": "GET nextRecordsUrl / query locator",
+        "B": "Stop; you have all rows",
+        "C": "Switch to Metadata API",
+        "D": "Invent OFFSET 50000"
+      },
+      "answer": "A",
+      "rationale": "Query More Results.",
+      "distractor_explanations": {
+        "B": "Rows remain.",
+        "C": "Wrong family.",
+        "D": "Not the REST contract."
+      },
+      "concept": "Paging",
+      "citation_ids": [
+        "SF-REST-QUERY",
+        "SF-REST-QUERYMORE"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Synchronous Query max records cited?",
+      "options": {
+        "A": "Up to 2,000 per response; batches may be smaller",
+        "B": "Always exactly 50,000",
+        "C": "Unlimited",
+        "D": "One record only"
+      },
+      "answer": "A",
+      "rationale": "Query topic: up to 2,000; may be fewer.",
+      "distractor_explanations": {
+        "B": "Invented.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "2000",
+      "citation_ids": [
+        "SF-REST-QUERY",
+        "SF-REST-QUERYMORE"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How to read remaining API calls via REST?",
+      "options": {
+        "A": "GET /services/data/vXX.X/limits and read Remaining",
+        "B": "Guess from edition folklore",
+        "C": "Use GraphQL introspection only",
+        "D": "Deploy Metadata"
+      },
+      "answer": "A",
+      "rationale": "List Org Limits: Max and Remaining.",
+      "distractor_explanations": {
+        "B": "Unsafe.",
+        "C": "Wrong tool.",
+        "D": "Wrong family."
+      },
+      "concept": "Limits",
+      "citation_ids": [
+        "SF-REST-LIMITS"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "External ID matches two records. Documented status?",
+      "options": {
+        "A": "300 with matching records in the body",
+        "B": "201",
+        "C": "204",
+        "D": "REQUEST_LIMIT_EXCEEDED"
+      },
+      "answer": "A",
+      "rationale": "300 when external ID exists in more than one record.",
+      "distractor_explanations": {
+        "B": "Create.",
+        "C": "Delete success.",
+        "D": "Limits."
+      },
+      "concept": "300",
+      "citation_ids": [
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Client retries a 403 REQUEST_LIMIT_EXCEEDED every 50 ms. Harm?",
+      "options": {
+        "A": "It consumes more of the same exhausted allocation and delays recovery",
+        "B": "It automatically raises the org limit",
+        "C": "It pages nextRecordsUrl",
+        "D": "It converts XML to JSON"
+      },
+      "answer": "A",
+      "rationale": "You already exceeded API request limits.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Hot retry",
+      "citation_ids": [
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "DELETE succeeds with no body. Likely status?",
+      "options": {
+        "A": "204 No Content",
+        "B": "201 Created",
+        "C": "300",
+        "D": "401 required"
+      },
+      "answer": "A",
+      "rationale": "204 for DELETE and some PATCH.",
+      "distractor_explanations": {
+        "B": "Create.",
+        "C": "Duplicate ext id.",
+        "D": "Auth fail."
+      },
+      "concept": "204",
+      "citation_ids": [
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "404 on a known Id. Official check besides typos?",
+      "options": {
+        "A": "Sharing issues as well as URI errors",
+        "B": "Always REQUEST_LIMIT_EXCEEDED",
+        "C": "Always malformed XML",
+        "D": "Always 201"
+      },
+      "answer": "A",
+      "rationale": "404: resource not found; verify URI and sharing.",
+      "distractor_explanations": {
+        "B": "403 limits.",
+        "C": "400.",
+        "D": "Success."
+      },
+      "concept": "404 sharing",
+      "citation_ids": [
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "JSON vs XML on REST?",
+      "options": {
+        "A": "Both are supported wire formats; 400 if the body cannot be understood",
+        "B": "XML is forbidden on REST",
+        "C": "JSON bypasses 403 limits",
+        "D": "XML skips OAuth"
+      },
+      "answer": "A",
+      "rationale": "REST supports JSON and XML; 400 on bad bodies.",
+      "distractor_explanations": {
+        "B": "Trailhead says both.",
+        "C": "False.",
+        "D": "Auth separate."
+      },
+      "concept": "JSON XML",
+      "citation_ids": [
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "nextRecordsUrl vs Bulk 2.0?",
+      "options": {
+        "A": "nextRecordsUrl pages synchronous SOQL Query results; Bulk 2.0 is a separate async job API",
+        "B": "They are identical resources",
+        "C": "Bulk uses only 201 Created",
+        "D": "Query More is Metadata API"
+      },
+      "answer": "A",
+      "rationale": "Different families (INT-002 vs this paging contract).",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Page vs bulk",
+      "citation_ids": [
+        "SF-REST-QUERY",
+        "SF-REST-QUERYMORE"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "st",
+      "front": "REST 200 vs 201 vs 204?",
+      "back": "200 OK; 201 Created (POST/some PATCH); 204 No Content (DELETE/some PATCH)."
+    },
+    {
+      "id": "F2",
+      "category": "st",
+      "front": "REST 400 typical cause?",
+      "back": "JSON or XML body could not be understood."
+    },
+    {
+      "id": "F3",
+      "category": "st",
+      "front": "403 REQUEST_LIMIT_EXCEEDED?",
+      "back": "API request limits for the org were exceeded."
+    },
+    {
+      "id": "F4",
+      "category": "st",
+      "front": "401 vs 404?",
+      "back": "401 unauthorized/token; 404 URI or sharing/not found."
+    },
+    {
+      "id": "F5",
+      "category": "pg",
+      "front": "Fields on a Query response for paging?",
+      "back": "totalSize, done, nextRecordsUrl, records."
+    },
+    {
+      "id": "F6",
+      "category": "pg",
+      "front": "When to call Query More?",
+      "back": "When done is false; use the query locator / nextRecordsUrl until done is true."
+    },
+    {
+      "id": "F7",
+      "category": "pg",
+      "front": "Synchronous Query batch cap cited?",
+      "back": "Up to 2,000 records; actual batch may be smaller."
+    },
+    {
+      "id": "F8",
+      "category": "lim",
+      "front": "Limits resource returns?",
+      "back": "Max and Remaining for org limits."
+    },
+    {
+      "id": "F9",
+      "category": "lim",
+      "front": "Hot retry on limit 403?",
+      "back": "Do not. Back off and inspect Remaining."
+    },
+    {
+      "id": "F10",
+      "category": "er",
+      "front": "300 status?",
+      "back": "External ID matched more than one record; body lists matches."
+    },
+    {
+      "id": "F11",
+      "category": "fmt",
+      "front": "REST JSON vs XML?",
+      "back": "Both supported; choose with headers; bad body → 400."
+    },
+    {
+      "id": "F12",
+      "category": "trap",
+      "front": "First page only if done=false?",
+      "back": "You dropped remaining rows."
+    },
+    {
+      "id": "F13",
+      "category": "trap",
+      "front": "Invent OFFSET instead of locator?",
+      "back": "Not the official REST Query More contract."
+    },
+    {
+      "id": "F14",
+      "category": "cmp",
+      "front": "Composite 200 means all children OK?",
+      "back": "Do not assume; inspect nested subrequest results (INT-002)."
+    },
+    {
+      "id": "F15",
+      "category": "auth",
+      "front": "Fix 401 with pagination?",
+      "back": "No. 401 is token/session (INT-004)."
+    },
+    {
+      "id": "F16",
+      "category": "num",
+      "front": "Memorize daily allocation?",
+      "back": "No. Read Remaining; allocations are org-specific."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk through JSON/XML, HTTP status codes, pagination, and rate limits on Salesforce REST.",
+      "answer_30_seconds": "Status first: 201 created, 400 bad JSON/XML, 401 token, 403 maybe REQUEST_LIMIT_EXCEEDED, 404 URI/sharing. Page with nextRecordsUrl until done. Read Limits Remaining.",
+      "answer_2_minutes": "I treat the error-codes table as the contract. I never invent codes. Pagination is the query locator, not OFFSET folklore. Rate limits are not Apex governors. JSON vs XML is headers, not security.",
+      "example": "Sandbox query of LAB_Item__c that spans two pages plus a 403 lab org.",
+      "tradeoffs": [
+        "Completeness vs quota"
+      ],
+      "follow_ups": [
+        "What is 300?"
+      ],
+      "weak_answer_warnings": [
+        "Ignoring done"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What is the REST error contract you actually code to?",
+      "answer_30_seconds": "HTTP status plus a body that often includes error codes such as REQUEST_LIMIT_EXCEEDED. Clients branch on those codes.",
+      "answer_2_minutes": "I log status and errorCode, never tokens. 400 means fix serialization. 401 goes to INT-004. 403 splits permission versus limits. I will not scrape Visualforce HTML.",
+      "example": "Client switch on errorCode after a failed PATCH.",
+      "tradeoffs": [
+        "Verbose logs vs leak risk"
+      ],
+      "follow_ups": [
+        "INVALID_SESSION_ID?"
+      ],
+      "weak_answer_warnings": [
+        "One catch-all retry"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Your ETL downloaded 2,000 Accounts but Salesforce has 9,000. Diagnosis?",
+      "answer_30_seconds": "Almost certainly done=false was ignored. Follow nextRecordsUrl until done is true and compare to totalSize.",
+      "answer_2_minutes": "Query topic caps a synchronous page around 2,000. I check sharing next if counts still differ. I do not switch to Metadata API. If volume is huge, consider Bulk query (INT-002) instead of endless REST pages during business hours.",
+      "example": "Nightly extract that always stops at 2,000.",
+      "tradeoffs": [
+        "REST paging vs Bulk query"
+      ],
+      "follow_ups": [
+        "Locator expired?"
+      ],
+      "weak_answer_warnings": [
+        "Salesforce deleted 7,000 rows"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Integration gets 403 after a marketing burst of REST calls.",
+      "answer_30_seconds": "Read the body for REQUEST_LIMIT_EXCEEDED, GET /limits, stop the burst, backoff, consider Bulk or fewer chatty calls.",
+      "answer_2_minutes": "Tight retries make Remaining worse. I separate permission 403 from limit 403. I will not quote a fake 100,000 as every org's cap. INT-002 may say this job should have been Bulk 2.0.",
+      "example": "Campaign sync that fired one REST POST per lead until HTTP 403.",
+      "tradeoffs": [
+        "Burst vs quota"
+      ],
+      "follow_ups": [
+        "Purchase extra API calls?"
+      ],
+      "weak_answer_warnings": [
+        "Disable OAuth"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "POST returns 400. Partner swears JSON is valid.",
+      "answer_30_seconds": "Compare Content-Type, encoding, and the official field names. 400 means the platform did not understand the body.",
+      "answer_2_minutes": "I capture raw request (redacted) in sandbox. Trailing commas, extra wrappers, or XML sent as JSON are common. I do not rotate the named credential first unless the status is 401.",
+      "example": "Extra data wrapper around sobject fields.",
+      "tradeoffs": [
+        "Schema strictness vs client convenience"
+      ],
+      "follow_ups": [
+        "XML instead?"
+      ],
+      "weak_answer_warnings": [
+        "Treat 400 as 401"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "DELETE returns 204 but the UI still shows the row.",
+      "answer_30_seconds": "204 means the HTTP delete succeeded; the UI may be cache, sharing, or a different org. Do not treat 204 as failure.",
+      "answer_2_minutes": "I requery with REST, check recycle bin, and confirm the Id. Pagination is irrelevant here. If they wanted 200 with a body, they misread the table.",
+      "example": "Workbench DELETE of a LAB_ row still visible on an old list view.",
+      "tradeoffs": [
+        "Cache vs actual delete"
+      ],
+      "follow_ups": [
+        "Sharing?"
+      ],
+      "weak_answer_warnings": [
+        "Assume 204 is an error"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How should a client combine pagination and rate limits?",
+      "answer_30_seconds": "Page until done, but watch Remaining and status. If 403 limits, persist the locator if still valid, wait, resume. Do not invent locator lifetime.",
+      "answer_2_minutes": "I would Needs-verify query locator expiration in current limits docs rather than guess. For very large extracts I prefer Bulk 2.0 query so I am not holding many REST cursors during the day.",
+      "example": "Multi-hour Account extract with Limits checks every N pages.",
+      "tradeoffs": [
+        "Cursor lifetime vs job type"
+      ],
+      "follow_ups": [
+        "Parallel locators?"
+      ],
+      "weak_answer_warnings": [
+        "Ignore Remaining"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the freight-dock analogy and where it breaks.",
+      "answer_30_seconds": "Stamps are statuses, packing lists JSON/XML, next-crate tickets pagination, quota board Limits. It breaks for Bulk jobs and nested Composite errors.",
+      "answer_2_minutes": "I map 201/400/403, then say 404 can be sharing, not a missing dock. I will not paint a fake daily number on the quota board, and I will not treat Bulk job state as nextRecordsUrl pagination.",
+      "example": "Whiteboard a two-page Account query plus a 403 REQUEST_LIMIT_EXCEEDED.",
+      "tradeoffs": [
+        "Clarity vs false numbers"
+      ],
+      "follow_ups": [
+        "Where does 300 sit?"
+      ],
+      "weak_answer_warnings": [
+        "Generic furniture metaphor"
+      ]
+    }
+  ]
+}

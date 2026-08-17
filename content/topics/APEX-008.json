@@ -1,0 +1,950 @@
+{
+  "topic_id": "APEX-008",
+  "slug": "triggers-context-variables-before-after-events-and-trig",
+  "title": "Triggers, context variables, before/after events, and trigger frameworks",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-007"
+  ],
+  "objectives": [
+    "Choose before versus after trigger events from record state: mutable Trigger.new before save, read-only after save, Id present after insert.",
+    "Use context variables (isBefore, isAfter, operationType, new, old, newMap, oldMap, size) with the official availability rules.",
+    "Keep one trigger per object that delegates to a handler class (a trigger framework) instead of unordered duplicate triggers.",
+    "Bulkify Trigger.new and never DML Trigger.new/old lists directly."
+  ],
+  "diagnostic_question": "You must stamp a status on LAB_Shipment__c before it is written, then create child LAB_Stop__c rows that need the parent Id. Which trigger events, which context variables, and why not two competing before-insert triggers?",
+  "definition": "Apex triggers run custom logic before or after record changes—insert, update, delete, merge, upsert, and after undelete. Before triggers update or validate values before the database save. After triggers see system-set fields such as Id and may change other records; the records that fired the after trigger are read-only. Context variables on System.Trigger describe the event and the batch. ([Triggers](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers.htm); [Trigger Context Variables](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_context_variables.htm))",
+  "why_it_matters": "Wrong event is the most common trigger interview fail: mutating Trigger.new after save throws; inserting children before the parent Id exists fails; two triggers on the same event have no guaranteed order and share governors (APEX-007).",
+  "sixty_second_explanation": "Think of airport security. Before the boarding pass is written, agents can still correct the name on the form—that is a before trigger and Trigger.new is writable. After the pass is in the system the barcode (Id) exists, the pass itself is read-only, and you can print bag tags for other records—that is after. The manifest for this group of 200 passengers is Trigger.new, Trigger.old, and operationType. A trigger framework is one doorway per terminal that hands work to handler classes so two doorways do not argue about order.",
+  "deeper_explanation": [
+    "Before triggers run before save and may change Trigger.new field values or addError. After triggers run after save (not yet committed): Id and audit fields exist; Trigger.new is read-only; related DML is typical. After undelete exists; there is no before undelete. ([Triggers](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers.htm))",
+    "Context variables: isInsert/Update/Delete/Undelete, isBefore/isAfter, operationType (BEFORE_INSERT … AFTER_UNDELETE), new/newMap/old/oldMap, size. new is available on insert, update, undelete and is writable only in before. newMap is not available in before insert. old is always read-only. Do not DML trigger.new or trigger.old. ([Trigger Context Variables](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_context_variables.htm); [Context Variable Considerations](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_context_variables_considerations.htm))",
+    "Event-versus-state table (official considerations): before insert may change Trigger.new; after insert cannot, but may update/delete the original via separate DML. before update may change Trigger.new but must not update/delete the original via DML. after update may DML the original (recursion risk). before delete has no Trigger.new. ([Context Variable Considerations](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_context_variables_considerations.htm))",
+    "A trigger framework here means one trigger per object that switches on operationType and calls a handler class. Salesforce does not guarantee order among multiple triggers on the same object and event; they share one governor pool. Recursion and static flags continue with APEX-009/010. Prefer Flow when AUTO-001 says so."
+  ],
+  "mental_model": {
+    "analogy": "Airport security: correct the form before the boarding pass is written; after the barcode exists the pass is read-only and you print bag tags for other bags.",
+    "useful_mapping": [
+      "before trigger → agents still writing on the paper form (Trigger.new writable)",
+      "after trigger → pass is in the system; barcode/Id exists; pass is read-only",
+      "Trigger.new → this batch's passenger list (up to 200)",
+      "Trigger.old → the previous names on an update/delete",
+      "operationType → which checkpoint lane (BEFORE_INSERT …)",
+      "one trigger + handler class → one doorway per terminal (framework)",
+      "commit → plane pushback (later in APEX-009)"
+    ],
+    "where_it_breaks": [
+      "After save is not yet commit; rollback can still erase the pass.",
+      "Multiple triggers are not two orderly lanes—order is not guaranteed.",
+      "Workflow extra passes (APEX-009) are not a second airport.",
+      "The analogy does not encode governor numbers."
+    ]
+  },
+  "teach_back_prompt": "Explain before versus after using the boarding-pass idea, then name one place the airport analogy breaks (commit versus save, or unordered triggers).",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: which events can change Trigger.new, and when is Id available?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given same-row stamp vs child insert, pick before vs after."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "List context variables available in before insert versus after insert."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a recursion from after-update DML on the same record."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: one trigger plus handler versus two raw triggers."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-TRIGGERS",
+      "title": "Triggers",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers.htm",
+      "supports": "Before vs after purpose; events including undelete; recursion shares one unit of work; Bulk API 200-record chunks.",
+      "release_or_version": "Apex Developer Guide / API 67.0 / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Order of execution details are the sibling APEX-009 page."
+    },
+    {
+      "source_id": "SF-APEX-TRIG-CTX",
+      "title": "Trigger Context Variables",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_context_variables.htm",
+      "supports": "isBefore/isAfter, operationType enum, new/old maps, size as current batch.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Availability of newMap in before insert is a considerations-page rule."
+    },
+    {
+      "source_id": "SF-APEX-TRIG-CONSID",
+      "title": "Context Variable Considerations",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_context_variables_considerations.htm",
+      "supports": "Cannot DML trigger.new/old; Trigger.new writable only in before; event-versus-state table for update/delete of the original.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Table is the interview source of truth for 'can I update the original in before update?'"
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Before vs after",
+        "Record state and Id",
+        "Context variables",
+        "Event vs DML table",
+        "One trigger framework",
+        "Bulk Trigger.new"
+      ],
+      "accessible_description": "Portrait map: before triggers mutate Trigger.new before save; after triggers see Id and must not mutate Trigger.new; context variables describe the batch; one trigger delegates to handlers."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-TRIGGERS",
+        "SF-APEX-TRIG-CTX",
+        "SF-APEX-TRIG-CONSID"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Trigger events versus record state"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Evt[Trigger event] --> BI[before insert: no Id, Trigger.new writable]\n  Evt --> AI[after insert: Id exists, Trigger.new read-only]\n  Evt --> BU[before update: Trigger.new writable, no DML on original]\n  Evt --> AU[after update: Trigger.new read-only, DML on original allowed]\n  Evt --> BD[before delete: Trigger.old, no Trigger.new]\n  Evt --> AD[after delete: original gone]\n  Evt --> AU2[after undelete: recovered rows read-only]",
+      "decision": "flowchart TD\n  Need[Need trigger logic?] --> Q1{Same-row field change before save?}\n  Q1 -->|Yes| Before[before insert or before update set Trigger.new]\n  Q1 -->|Need Id or other records| After[after insert or after update]\n  After --> Q2{Child rows need parent Id?}\n  Q2 -->|Yes| AfterIns[after insert]\n  Need --> Q3{Two Apex triggers on same event?}\n  Q3 -->|Yes| Fw[One trigger plus handler class framework]\n  Q3 -->|Flow can do it| Flow[Stay declarative AUTO-001]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Before triggers update or validate values before save. After triggers access system-set fields such as Id and affect other records; after-trigger records are read-only.",
+      "source_ids": ["SF-APEX-TRIGGERS"],
+      "scope": "Before vs after",
+      "validation": "Triggers topic in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Context variables include isBefore/isAfter, operationType, new/old/maps, and size (current batch). new is writable only in before triggers.",
+      "source_ids": ["SF-APEX-TRIG-CTX", "SF-APEX-TRIG-CONSID"],
+      "scope": "Context variables",
+      "validation": "Trigger Context Variables and Considerations.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "You cannot use trigger.new or trigger.old in Apex DML operations. In after triggers, changing Trigger.new is not saved and throws. before update cannot update or delete the original via DML.",
+      "source_ids": ["SF-APEX-TRIG-CONSID"],
+      "scope": "Event versus record state",
+      "validation": "Context Variable Considerations table.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "operationType switch is the current recommended branching style. Reverify context-variable availability if the class API version is old.",
+  "unresolved_uncertainty": [
+    "Exact current Trigger Handler framework library names are team conventions, not Salesforce product—do not treat a blog framework as official."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Before trigger",
+      "telugu": "Change Trigger.new before the row is saved."
+    },
+    {
+      "english": "After trigger",
+      "telugu": "Id exists; Trigger.new is read-only."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Before: mutate Trigger.new or addError before save; no Id on insert. After: Id exists, Trigger.new is read-only, DML other records. I use operationType and one trigger per object that calls a handler class.",
+    "two_minutes": "I pick the event from record state, not habit. Same-row stamp is before. Children that need the parent Id are after insert. I never DML Trigger.new. I never update the original in before update. Two triggers on the same event are unordered and share governors, so I use one trigger plus a handler—that is the framework I mean. Recursion and order of execution are APEX-009."
+  },
+  "terminology": [
+    {
+      "term": "Apex trigger",
+      "plain": "Apex that runs automatically on a record change event.",
+      "precise": "A trigger on an sObject for before/after insert, update, delete, or after undelete (plus merge/upsert participation).",
+      "example": "trigger LAB_ShipmentTrigger on LAB_Shipment__c (before insert, after insert) { ... }",
+      "non_example": "A record-triggered Flow, which is declarative automation.",
+      "confusable_neighbor": "Apex class: the handler a trigger should call.",
+      "boundary": "Prefer Flow when AUTO-001 says the requirement is declarative."
+    },
+    {
+      "term": "before trigger",
+      "plain": "Logic that runs before the row is written.",
+      "precise": "Trigger.new field values for the current row can be modified; addError can block the save. On insert, Id is not yet available.",
+      "example": "Normalize LAB_Shipment__c.Status__c on before insert.",
+      "non_example": "Inserting child stops that need the parent Id.",
+      "confusable_neighbor": "Before-save Flow, which runs earlier in APEX-009.",
+      "boundary": "Do not DML the original in before update."
+    },
+    {
+      "term": "after trigger",
+      "plain": "Logic that runs after the row is saved but before commit.",
+      "precise": "Id and system fields exist. Trigger.new is read-only. Typical work is related DML or async enqueue.",
+      "example": "Insert LAB_Stop__c children after shipment insert.",
+      "non_example": "row.Status__c = 'X' on Trigger.new in after context.",
+      "confusable_neighbor": "Post-commit async (APEX-009/011).",
+      "boundary": "Extra same-row DML re-enters the save and must be idempotent."
+    },
+    {
+      "term": "context variable",
+      "plain": "Trigger.isBefore, Trigger.new, operationType, and the rest of the batch API.",
+      "precise": "Implicit System.Trigger members describing the event and the sObject lists/maps for this invocation.",
+      "example": "switch on Trigger.operationType { when BEFORE_INSERT { ... } }",
+      "non_example": "A custom checkbox named Is_Before__c on the record.",
+      "confusable_neighbor": "Limits.getQueries: a governor counter, not trigger context.",
+      "boundary": "newMap is not available in before insert."
+    },
+    {
+      "term": "trigger framework",
+      "plain": "One trigger per object that delegates to handler classes.",
+      "precise": "A team pattern: a single trigger file switches on operationType and calls an Apex class. It is not a Salesforce product name. It avoids unordered duplicate triggers sharing governors.",
+      "example": "LAB_ShipmentTrigger calls LAB_ShipmentHandler.afterInsert(Trigger.new).",
+      "non_example": "Three before-update triggers on Account with no agreed order.",
+      "confusable_neighbor": "fLib or a named GitHub handler—optional, not official.",
+      "boundary": "Frameworks do not replace bulkification or order-of-execution knowledge."
+    },
+    {
+      "term": "Trigger.new / Trigger.old",
+      "plain": "The new and previous versions of the batch.",
+      "precise": "Lists of sObjects. new on insert/update/undelete; old on update/delete. old is always read-only. Do not pass these lists to DML.",
+      "example": "for (LAB_Shipment__c row : Trigger.new) { row.Status__c = 'Open'; } // before only",
+      "non_example": "update Trigger.new;",
+      "confusable_neighbor": "newMap/oldMap keyed by Id (not in before insert for newMap).",
+      "boundary": "size is this batch, not the whole Data Loader file."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose before versus after from record state",
+      "actor": "Developer",
+      "trigger": "A requirement looks like a trigger",
+      "before": "Unknown whether Id or other records are needed",
+      "after": "Event list on one trigger",
+      "observe": "Written: same-row before; children after insert",
+      "failure": "after trigger assigning Trigger.new fields"
+    },
+    {
+      "step": 2,
+      "transition": "Branch on operationType",
+      "actor": "Developer",
+      "trigger": "Multiple events on one trigger",
+      "before": "Nested if isBefore && isInsert",
+      "after": "switch on Trigger.operationType calling a handler",
+      "observe": "Handler methods named afterInsert/beforeUpdate",
+      "failure": "Copy-paste logic in two trigger files"
+    },
+    {
+      "step": 3,
+      "transition": "Bulkify the handler class",
+      "actor": "Developer",
+      "trigger": "Trigger.new has up to 200 rows",
+      "before": "Per-row SOQL",
+      "after": "Maps and list DML (APEX-007)",
+      "observe": "One SOQL in the handler",
+      "failure": "Query inside for (sObject row : Trigger.new)"
+    },
+    {
+      "step": 4,
+      "transition": "Prevent duplicate triggers",
+      "actor": "Reviewer",
+      "trigger": "Second trigger on the same object/event",
+      "before": "Two unordered entry points",
+      "after": "One trigger, second logic moved into the handler",
+      "observe": "Only one trigger metadata file on that object",
+      "failure": "Relying on 'it usually runs first'"
+    }
+  ],
+  "when_to_use": [
+    "When same-row values must be set in a before trigger on Trigger.new before the save.",
+    "When child records or other sObjects need the parent Id in an after trigger.",
+    "When context variables and operationType must drive a single trigger framework (one trigger plus handler class).",
+    "When diagnosing an after-context write to Trigger.new or a DML of Trigger.new/old."
+  ],
+  "when_not_to_use": [
+    "Do not use an after trigger to stamp same-row fields on Trigger.new—that throws or is discarded.",
+    "Do not use a before insert trigger to insert children that need the parent Id.",
+    "Do not add a second Apex trigger on the same event instead of extending the handler class.",
+    "Do not use this triggers lesson as a full record-save order-of-execution map (APEX-009) or as a Flow-versus-Apex product choice (AUTO-001)."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Apex Triggers, or sfdx retrieve of triggers/*.trigger.",
+    "Handler class in classes/*.cls.",
+    "Developer Console for 'execution of after insert' runtime errors on Trigger.new.",
+    "Debug logs: CODE_UNIT_STARTED for each trigger."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox LAB_Shipment__c must default Status__c to Open on insert and create one LAB_Stop__c child that needs the shipment Id. A second developer started a second before-insert trigger. No production data.",
+    "inputs": [
+      "before insert + after insert on one trigger",
+      "Handler class LAB_ShipmentHandler",
+      "Child needs LAB_Shipment__c lookup"
+    ],
+    "decisions": [
+      {
+        "decision": "Set Status__c on Trigger.new in before insert.",
+        "because": "Same-row, no Id required, Trigger.new is writable.",
+        "rejected": "after insert assignment to Trigger.new"
+      },
+      {
+        "decision": "Insert LAB_Stop__c in after insert using row.Id.",
+        "because": "Id exists only after save.",
+        "rejected": "Child insert in before insert"
+      },
+      {
+        "decision": "Delete the second trigger; move its logic into the handler.",
+        "because": "Multiple triggers on one event are unordered and share governors.",
+        "rejected": "Keep both and 'hope ours runs first'"
+      }
+    ],
+    "configuration_or_code": [
+      "trigger LAB_ShipmentTrigger on LAB_Shipment__c (before insert, after insert) { LAB_ShipmentHandler.dispatch(); }",
+      "before insert: for (LAB_Shipment__c s : Trigger.new) s.Status__c = 'Open';",
+      "after insert: list DML of LAB_Stop__c(LAB_Shipment__c = s.Id, Name = 'LAB_Dock-1');"
+    ],
+    "output": "New shipments show Open without a second update DML; one child exists per shipment; only one trigger file.",
+    "verification": [
+      "After-insert debug shows Id populated.",
+      "Assigning Trigger.new in a scratch after method throws.",
+      "Metadata retrieve lists one trigger on LAB_Shipment__c."
+    ],
+    "self_explanation": "Event followed record state. The framework was one doorway, not two."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; Account/Contact or LAB_ objects.",
+    "starting_state_checks": [
+      "You can create triggers and classes.",
+      "No production objects."
+    ],
+    "steps": [
+      "Create one trigger on Account (or LAB_) for before insert and after insert that calls a handler class.",
+      "In before insert, stamp Description (or a text field) on Trigger.new.",
+      "In after insert, insert a related Contact (or child) using the Account Id.",
+      "On purpose, in a scratch after method, assign Trigger.new[0].Description and record the error; then remove that line."
+    ],
+    "guided_completion": [
+      "If the child insert is in before insert, it will fail for lack of parent Id or be the wrong design.",
+      "If you created two triggers, merge them."
+    ],
+    "independent_challenge": "Add before update that compares Trigger.oldMap and Trigger.newMap and only stamps when a field changed.",
+    "evidence": [
+      "Debug of before versus after Id values.",
+      "Runtime error text from the illegal after assignment."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ trigger, handler, and test rows.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not prove workflow re-entry (APEX-009) or a third-party handler package."
+  },
+  "decision_table": [
+    {
+      "signal": "Same-row field must change before the database write.",
+      "choose": "before insert or before update; assign Trigger.new; no extra DML.",
+      "not": "after trigger assignment to Trigger.new.",
+      "why": "Before triggers exist to update values before save; after Trigger.new is read-only."
+    },
+    {
+      "signal": "Child rows need the new parent Id.",
+      "choose": "after insert; list DML of children.",
+      "not": "before insert child insert.",
+      "why": "Id is set by the system save; after triggers are for that state."
+    },
+    {
+      "signal": "You are tempted to update Trigger.new via update in before update.",
+      "choose": "Assign fields on Trigger.new only.",
+      "not": "update Trigger.new or update the original via DML.",
+      "why": "Considerations table: before update cannot DML the original; do not DML trigger.new."
+    },
+    {
+      "signal": "A second before-update trigger appears on the same object.",
+      "choose": "One trigger plus handler class (framework); move the logic.",
+      "not": "Two triggers and an assumed order.",
+      "why": "Order among multiple triggers is not guaranteed; they share governors."
+    }
+  ],
+  "limitations": [
+    "Does not list the full save-order pipeline (APEX-009).",
+    "Does not choose Queueable versus @future (APEX-011).",
+    "Named handler libraries are conventions, not official product.",
+    "Entity-specific field exceptions (fields not set in before) need the entity-considerations page."
+  ],
+  "security_notes": [
+    "Triggers often run in system mode; CRUD/FLS is APEX-014.",
+    "Do not log Trigger.new payloads with customer PII.",
+    "LAB_ data only."
+  ],
+  "common_mistakes": [
+    "Mutating Trigger.new in after context.",
+    "DML on Trigger.new or Trigger.old.",
+    "Child insert in before insert.",
+    "Two triggers on one event.",
+    "SOQL inside a loop over Trigger.new."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "System.FinalException or runtime error that Trigger.new is read-only / already saved.",
+      "check": [
+        "You are in after context.",
+        "Move the field assignment to before."
+      ],
+      "do_not_assume": "You need update Trigger.new to persist the field."
+    },
+    {
+      "symptom": "REQUIRED_FIELD_MISSING or null parent on child insert.",
+      "check": [
+        "Child DML is in after insert using row.Id.",
+        "You did not run it in before insert."
+      ],
+      "do_not_assume": "The lookup API name is the only bug."
+    },
+    {
+      "symptom": "Logic sometimes runs in a different order after deploy.",
+      "check": [
+        "Multiple triggers on the same object and event.",
+        "Consolidate into one trigger plus handler."
+      ],
+      "do_not_assume": "Salesforce sorts trigger files alphabetically as a contract."
+    }
+  ],
+  "production_notes": [
+    "One trigger per object is the default review standard.",
+    "Test 200-row batches (APEX-007).",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What are before triggers for, according to the Triggers topic?",
+      "options": {
+        "A": "Update or validate record values before they are saved",
+        "B": "Access Id that does not exist yet on insert",
+        "C": "Only send email after commit",
+        "D": "Replace SOQL"
+      },
+      "answer": "A",
+      "rationale": "Before triggers update or validate values before save.",
+      "distractor_explanations": {
+        "B": "Id is not available in before insert.",
+        "C": "Email after commit is later in APEX-009.",
+        "D": "Triggers may contain SOQL; they do not replace it."
+      },
+      "concept": "before trigger",
+      "citation_ids": ["SF-APEX-TRIGGERS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "After-trigger records are:",
+      "options": {
+        "A": "Read-only",
+        "B": "Writable on Trigger.new like before",
+        "C": "Missing an Id after insert",
+        "D": "Unavailable in Apex"
+      },
+      "answer": "A",
+      "rationale": "The records that fire the after trigger are read-only.",
+      "distractor_explanations": {
+        "B": "After assignment to Trigger.new is not saved / throws.",
+        "C": "Id exists after insert.",
+        "D": "After triggers are core Apex."
+      },
+      "concept": "after trigger",
+      "citation_ids": ["SF-APEX-TRIGGERS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "When is Trigger.new writable?",
+      "options": {
+        "A": "Only in before triggers",
+        "B": "In all after triggers",
+        "C": "Never",
+        "D": "Only in before delete"
+      },
+      "answer": "A",
+      "rationale": "You can change field values using Trigger.new only in before triggers.",
+      "distractor_explanations": {
+        "B": "After is read-only.",
+        "C": "Before insert/update allow it.",
+        "D": "before delete does not have Trigger.new."
+      },
+      "concept": "context variable",
+      "citation_ids": ["SF-APEX-TRIG-CONSID"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Can you update the original record via DML in before update?",
+      "options": {
+        "A": "No. A runtime error is thrown",
+        "B": "Yes, it is the recommended pattern",
+        "C": "Only with SOSL",
+        "D": "Only if you DML Trigger.old"
+      },
+      "answer": "A",
+      "rationale": "The considerations table: before update cannot update or delete the original via DML.",
+      "distractor_explanations": {
+        "B": "Assign Trigger.new instead.",
+        "C": "SOSL is search.",
+        "D": "Do not DML Trigger.old either."
+      },
+      "concept": "event vs state",
+      "citation_ids": ["SF-APEX-TRIG-CONSID"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Trigger.size represents what?",
+      "options": {
+        "A": "Records in the current trigger batch, not the whole DML job",
+        "B": "All rows in Data Loader",
+        "C": "Governor heap",
+        "D": "Number of triggers in the org"
+      },
+      "answer": "A",
+      "rationale": "size is the current batch; DML over 200 is processed in batches.",
+      "distractor_explanations": {
+        "B": "A 1,000-row load can be multiple invocations.",
+        "C": "Heap is APEX-007.",
+        "D": "Unrelated."
+      },
+      "concept": "context variable",
+      "citation_ids": ["SF-APEX-TRIG-CTX"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which enum should you switch on for event branching?",
+      "options": {
+        "A": "Trigger.operationType (BEFORE_INSERT, AFTER_UPDATE, …)",
+        "B": "Schema.SObjectType only",
+        "C": "SaveResult",
+        "D": "FIND"
+      },
+      "answer": "A",
+      "rationale": "The context-variables page recommends switch on TriggerOperation.",
+      "distractor_explanations": {
+        "B": "Describe is APEX-002.",
+        "C": "SaveResult is APEX-005.",
+        "D": "FIND is SOSL."
+      },
+      "concept": "operationType",
+      "citation_ids": ["SF-APEX-TRIG-CTX"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Child tasks need the new Case Id. Which event?",
+      "options": {
+        "A": "after insert",
+        "B": "before insert",
+        "C": "before delete",
+        "D": "SOSL after undelete only"
+      },
+      "answer": "A",
+      "rationale": "Id exists after save; after triggers are for related records.",
+      "distractor_explanations": {
+        "B": "No Id yet.",
+        "C": "Delete is the wrong event.",
+        "D": "SOSL is not the event."
+      },
+      "concept": "after trigger",
+      "citation_ids": ["SF-APEX-TRIGGERS"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "update Trigger.new; is wrong because?",
+      "options": {
+        "A": "trigger.new cannot be used in Apex DML operations",
+        "B": "DML is illegal in all Apex",
+        "C": "Trigger.new is always empty",
+        "D": "You must use SOSL"
+      },
+      "answer": "A",
+      "rationale": "Context Variable Considerations: trigger.new and trigger.old cannot be used in Apex DML.",
+      "distractor_explanations": {
+        "B": "DML of other lists is normal in after.",
+        "C": "new is populated on insert/update/undelete.",
+        "D": "SOSL is unrelated."
+      },
+      "concept": "Trigger.new",
+      "citation_ids": ["SF-APEX-TRIG-CONSID"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Two before-update Account triggers exist. What is true?",
+      "options": {
+        "A": "Execution order is not guaranteed; they share governors",
+        "B": "Salesforce always runs them alphabetically as a contract",
+        "C": "The second never runs",
+        "D": "They get separate 100-SOQL pools"
+      },
+      "answer": "A",
+      "rationale": "Multiple triggers on one event are unordered and share the transaction pool (APEX-007).",
+      "distractor_explanations": {
+        "B": "Alphabetical order is not a documented contract.",
+        "C": "Both can run.",
+        "D": "One pool."
+      },
+      "concept": "trigger framework",
+      "citation_ids": ["SF-APEX-TRIGGERS"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Is there a before undelete trigger?",
+      "options": {
+        "A": "No. Undelete is after only",
+        "B": "Yes, before undelete is required",
+        "C": "Only on User",
+        "D": "Only in Flow"
+      },
+      "answer": "A",
+      "rationale": "The Triggers topic lists after undelete, not before undelete.",
+      "distractor_explanations": {
+        "B": "There is no before undelete event.",
+        "C": "Not User-specific.",
+        "D": "Flow is a different tool."
+      },
+      "concept": "undelete",
+      "citation_ids": ["SF-APEX-TRIGGERS"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates a trigger file from business data?",
+      "options": {
+        "A": "Deploying LAB_ShipmentTrigger.trigger does not insert shipments; Trigger.new holds the rows of this DML",
+        "B": "Triggers are Account records",
+        "C": "Context variables are custom objects",
+        "D": "operationType inserts metadata"
+      },
+      "answer": "A",
+      "rationale": "The trigger is metadata. Trigger.new is the data of the current DML.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "They are language variables.",
+        "D": "operationType is an enum."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-APEX-TRIGGERS"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "newMap availability in before insert?",
+      "options": {
+        "A": "Not available; Ids do not exist yet",
+        "B": "Always available and writable",
+        "C": "Only in SOSL",
+        "D": "It replaces Trigger.old"
+      },
+      "answer": "A",
+      "rationale": "newMap is available in before update, after insert, after update, and after undelete—not before insert.",
+      "distractor_explanations": {
+        "B": "before insert has Trigger.new as a list, not a reliable Id map.",
+        "C": "SOSL is unrelated.",
+        "D": "old is a different variable."
+      },
+      "concept": "newMap",
+      "citation_ids": ["SF-APEX-TRIG-CTX"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "before",
+      "front": "What may you do in a before trigger?",
+      "back": "Change Trigger.new field values and addError before save. No Id on insert."
+    },
+    {
+      "id": "F2",
+      "category": "after",
+      "front": "What is true of after-trigger records?",
+      "back": "They are read-only. Id and system fields exist. Related DML is typical."
+    },
+    {
+      "id": "F3",
+      "category": "dml",
+      "front": "May you DML Trigger.new or Trigger.old?",
+      "back": "No. The considerations page forbids using those lists in DML."
+    },
+    {
+      "id": "F4",
+      "category": "update",
+      "front": "before update DML on the original?",
+      "back": "Not allowed. Assign Trigger.new instead."
+    },
+    {
+      "id": "F5",
+      "category": "insert",
+      "front": "When does the insert Id appear?",
+      "back": "After save—in after insert, not before insert."
+    },
+    {
+      "id": "F6",
+      "category": "context",
+      "front": "What is Trigger.operationType?",
+      "back": "Enum BEFORE_INSERT, BEFORE_UPDATE, BEFORE_DELETE, AFTER_INSERT, AFTER_UPDATE, AFTER_DELETE, AFTER_UNDELETE."
+    },
+    {
+      "id": "F7",
+      "category": "size",
+      "front": "Trigger.size?",
+      "back": "Rows in this invocation (batch), not the whole API job."
+    },
+    {
+      "id": "F8",
+      "category": "framework",
+      "front": "What is a trigger framework in this lesson?",
+      "back": "One trigger per object that delegates to a handler class. Not an official product name."
+    },
+    {
+      "id": "F9",
+      "category": "order",
+      "front": "Two triggers on the same event?",
+      "back": "Order is not guaranteed; they share governors."
+    },
+    {
+      "id": "F10",
+      "category": "undelete",
+      "front": "before undelete?",
+      "back": "Does not exist. Undelete is after only."
+    },
+    {
+      "id": "F11",
+      "category": "old",
+      "front": "Is Trigger.old writable?",
+      "back": "No. old is always read-only."
+    },
+    {
+      "id": "F12",
+      "category": "map",
+      "front": "newMap in before insert?",
+      "back": "Not available. Use the Trigger.new list."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Stamp Status on insert?",
+      "back": "before insert on Trigger.new."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Create child needing parent Id?",
+      "back": "after insert; list DML."
+    },
+    {
+      "id": "F15",
+      "category": "bulk",
+      "front": "SOQL in a loop over Trigger.new?",
+      "back": "Forbidden pattern. Bulkify (APEX-007)."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Before versus after triggers—how do you choose?",
+      "answer_30_seconds": "Before: same-row values and validation before save; Trigger.new writable; no Id on insert. After: Id and other records; Trigger.new read-only.",
+      "answer_2_minutes": "I start from record state, not habit. Stamping Status is before. Child stops that need the parent Id are after insert. I never assign Trigger.new after save. I mention before-save Flow runs earlier (APEX-009) so they hear I do not ignore declarative options.",
+      "example": "LAB_Shipment__c Status in before insert; LAB_Stop__c in after insert.",
+      "tradeoffs": [
+        "Before-save Flow vs before trigger",
+        "After DML vs Queueable"
+      ],
+      "follow_ups": [
+        "What about before delete?",
+        "When is LastModifiedDate reliable?"
+      ],
+      "weak_answer_warnings": [
+        "after trigger for every field stamp"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Name the trigger context variables you actually use.",
+      "answer_30_seconds": "operationType, isBefore/isAfter, new, old, newMap, oldMap, size. I switch on operationType and I never DML new/old.",
+      "answer_2_minutes": "I mention newMap is missing in before insert because Ids do not exist. old is read-only. size is this 200-row batch. isExecuting is rarely useful in interviews compared with operationType. I keep Boolean soup (isBefore && isInsert) as the legacy form.",
+      "example": "switch on Trigger.operationType { when BEFORE_UPDATE { handler.beforeUpdate(Trigger.new, Trigger.oldMap); } }",
+      "tradeoffs": [
+        "switch vs Boolean flags",
+        "Maps vs lists"
+      ],
+      "follow_ups": [
+        "When is oldMap null?",
+        "What is Trigger.isExecuting?"
+      ],
+      "weak_answer_warnings": [
+        "DML Trigger.new"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "After-insert code sets Trigger.new[0].Status__c = 'Open' and nothing sticks—or it throws. Why?",
+      "answer_30_seconds": "After Trigger.new is read-only and already saved. Stamp in before insert, or issue a separate update in after (and handle recursion).",
+      "answer_2_minutes": "I prefer before so I do not burn a DML statement or re-enter the save. If they already used after, I show the considerations table. I do not update Trigger.new as a list. I mention workflow re-entry only as APEX-009.",
+      "example": "Move the assignment into before insert on Trigger.new.",
+      "tradeoffs": [
+        "Before assignment vs after update DML",
+        "Recursion guard vs before-save Flow"
+      ],
+      "follow_ups": [
+        "What error text do you expect?",
+        "Would a formula field be enough?"
+      ],
+      "weak_answer_warnings": [
+        "update Trigger.new"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Two before-update triggers on Account disagree after a deploy. How do you fix it?",
+      "answer_30_seconds": "Order is not guaranteed. Collapse to one trigger that calls a handler class—the framework I mean.",
+      "answer_2_minutes": "I retrieve both files, move methods into LAB_AccountHandler, delete the extra trigger. I add tests for both behaviors in one 200-row update. I remind them they share governors so two fat triggers are worse than one. I do not rely on filename sort.",
+      "example": "AccountTrigger plus AccountTrigger2 become AccountTrigger → AccountHandler.",
+      "tradeoffs": [
+        "One handler vs domain services",
+        "Managed-package trigger you cannot delete"
+      ],
+      "follow_ups": [
+        "How do you coexist with a package trigger?",
+        "What about Flow trigger order?"
+      ],
+      "weak_answer_warnings": [
+        "Renaming so it sorts first"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you refuse to write a trigger?",
+      "answer_30_seconds": "When a before-save Flow or validation rule already does the same-row job safely. Triggers are for bulk Apex that Flow cannot express cleanly.",
+      "answer_2_minutes": "AUTO-001 owns the product choice, but trigger interviews still expect judgment. I refuse a trigger that only sets one field Flow can set. I refuse a second trigger. I write a trigger when I need maps, complex related DML, or reuse from a handler class. I still bulkify.",
+      "example": "Stamp a status: Flow. Split shipments into stops with maps: after-insert handler.",
+      "tradeoffs": [
+        "Admin-owned Flow vs developer-owned trigger",
+        "One handler vs many Flows"
+      ],
+      "follow_ups": [
+        "What if Flow hits limits?",
+        "Who tests the handler?"
+      ],
+      "weak_answer_warnings": [
+        "Trigger for every field update"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "Walk the official event-versus-state rules for DML on the original record.",
+      "answer_30_seconds": "before insert: N/A. after insert: update/delete allowed. before update: DML on original forbidden. after update: update allowed, recursion risk. before delete: update allowed, delete forbidden. after delete: N/A.",
+      "answer_2_minutes": "I treat the considerations table as the interview source. The memorable bits: do not DML Trigger.new/old; do not DML the original in before update; after update same-row DML re-enters and must be idempotent. I do not recite unofficial blog tables.",
+      "example": "before update: row.Status__c = 'X'; not update row;",
+      "tradeoffs": [
+        "before assignment vs after update",
+        "Recursion vs static boolean"
+      ],
+      "follow_ups": [
+        "Why would you update in before delete?",
+        "What happens if you delete in after insert?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing a before undelete DML rule"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Child insert in before insert fails. Walk the diagnosis.",
+      "answer_30_seconds": "The parent Id does not exist yet. Move the child DML to after insert and bulkify.",
+      "answer_2_minutes": "I confirm the event in the debug log. I collect parent Ids from Trigger.new in after insert and insert a list of children. I do not query the parent back one-by-one. If they used after insert but still have null lookups, I check they used row.Id and the correct relationship field.",
+      "example": "LAB_Stop__c(LAB_Shipment__c = shipment.Id) in after insert.",
+      "tradeoffs": [
+        "after insert vs Queueable",
+        "One child per parent vs aggregate"
+      ],
+      "follow_ups": [
+        "What if the child has its own trigger?",
+        "How do you avoid recursion?"
+      ],
+      "weak_answer_warnings": [
+        "Inserting children in a loop in before insert"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "What do you mean by a trigger framework, and what is it not?",
+      "answer_30_seconds": "One trigger per object, switch on operationType, handler class. It is a team pattern, not a Salesforce SKU. It does not replace bulkification or order of execution.",
+      "answer_2_minutes": "I contrast three raw triggers with one doorway. I show recursion control and bypass flags as handler concerns, not as a reason to add more trigger files. I refuse to treat a specific GitHub library as official. I keep APEX-009 for the save pipeline.",
+      "example": "LAB_ShipmentTrigger.dispatch() → LAB_ShipmentHandler.afterInsert(Trigger.new).",
+      "tradeoffs": [
+        "Thin trigger vs logic in the trigger file",
+        "Domain layer vs one god handler"
+      ],
+      "follow_ups": [
+        "How do you unit-test a handler without DML?",
+        "Where does the static bypass live?"
+      ],
+      "weak_answer_warnings": [
+        "Naming a blog framework as if it were platform product"
+      ]
+    }
+  ]
+}

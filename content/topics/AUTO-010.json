@@ -1,0 +1,1023 @@
+{
+  "topic_id": "AUTO-010",
+  "slug": "entry-criteria-recursion-control-performance-and-mainta",
+  "title": "Entry criteria, recursion control, performance, and maintainability",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AUTO-009"
+  ],
+  "objectives": [
+    "Write Start-element entry conditions that keep a record-triggered Flow from running on every save.",
+    "Use ‘only when the record is updated to meet the condition requirements’ to reduce recursion and repeat work.",
+    "Order multiple Flows on one object with Flow Trigger Explorer and trigger order values (1–2000).",
+    "Explain maintainability: one job per Flow, descriptions, and why after-save Update Records on the triggering record is a recursion risk."
+  ],
+  "diagnostic_question": "An after-save Flow updates the triggering Opportunity and fires itself until it hits a limit. What entry-criteria setting and which Update placement would you change first?",
+  "definition": "Entry criteria are the Start-element conditions that decide whether a record-triggered Flow even begins. Recursion control is keeping that Flow from re-entering because it updated the same record. Performance is reducing unnecessary interviews (entry conditions, before-save when it fits, no extra Gets). Maintainability is ordering and owning Flows so the next admin can change one job without reading ten canvases. ([Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm); [Planning Your Switch to Flow Builder](https://help.salesforce.com/s/articleView?id=platform.flow_migrate_to_flow_best_practices.htm))",
+  "why_it_matters": "A Flow with no entry conditions runs on every edit. An after-save Update of the triggering record can call the Flow again. Interviewers listen for ‘updated to meet the condition’, Flow Trigger Explorer, and before-save versus after-save—not a vague ‘we optimized it’.",
+  "sixty_second_explanation": "Think of a thermostat, not a fan that never stops. Entry criteria are the temperature threshold: only run when the room crosses 72°F. ‘Updated to meet the condition’ is hysteresis: do not cycle again just because the AC is still on. Recursion is the AC cooling so hard it retriggers itself. Flow Trigger Explorer is the panel that sequences two thermostats on the same floor (order 1–2000). The wiring diagram is metadata; the room temperature is data.",
+  "deeper_explanation": [
+    "Help: add conditions on the Start element so the Flow runs only when necessary. Planning Your Switch: entry conditions decrease performance impact and prevent unnecessary runs. You can require a field to have a value, or enable Run When Conditions Met so the Flow runs when a record is created or edited and a field is changed to a specified value. That setting prevents repeat operations. ([Bulkify example / entry conditions](https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm); [Planning Your Switch](https://help.salesforce.com/s/articleView?id=platform.flow_migrate_to_flow_best_practices.htm))",
+    "Triggered Flows: before-save Fast Field Updates change the triggering record before save and are described as about 10 times faster than a record-change process. After-save is for related records. Updating the triggering record again in after-save can start another save and another interview—the usual recursion story. ([Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm))",
+    "Flow Trigger Explorer shows record-triggered Flows for an object and trigger type. You can assign a trigger order value from 1 to 2000 so before-save or after-save Flows on the same object run in a predictable sequence. ([Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm))",
+    "Planning Your Switch: migration is not one Flow per old process; structure by performance, maintenance, and change management. Multiple Flows per object are manageable if you order them. Identify redundant automation. ([Planning Your Switch](https://help.salesforce.com/s/articleView?id=platform.flow_migrate_to_flow_best_practices.htm))",
+    "Bulk-safe DML (AUTO-007) is still the other half of performance. Entry criteria that never fire are faster than a perfectly bulkified Flow that runs on every chatter-edit of Description."
+  ],
+  "mental_model": {
+    "analogy": "A thermostat with hysteresis: threshold = entry criteria, ‘updated to meet’ = do not retrip while already in band, runaway AC = recursion, two thermostats on one floor = trigger order 1–2000.",
+    "useful_mapping": [
+      "entry conditions → temperature threshold on the Start element",
+      "Run when conditions met / updated to meet → hysteresis so the same true condition does not retrip every save",
+      "after-save Update of $Record → AC that changes the thermostat setting and starts another cycle",
+      "before-save Assignment → adjust the same save without a second trip",
+      "Flow Trigger Explorer → panel listing every thermostat on that object",
+      "trigger order 1–2000 → which thermostat runs first",
+      "Flow metadata → wiring diagram; record field values → room temperature"
+    ],
+    "where_it_breaks": [
+      "Some platform updates (for example certain approval field updates) can fire Flows more than once despite entry criteria—Needs verification against current known issues.",
+      "Trigger order does not replace order of execution across validation rules, Apex, and assignment rules.",
+      "ISCLONE() in entry criteria has had debug limitations; prefer a Decision if Debug fails.",
+      "The analogy does not encode CPU time numbers."
+    ]
+  },
+  "teach_back_prompt": "Using the thermostat, explain entry criteria versus ‘updated to meet the condition’, then say why after-save Update Records on the triggering record can recurse.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Write one entry condition and say whether ‘updated to meet’ should be on."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Where do you set trigger order 1–2000?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Recursion: after-save same-record Update versus before-save Assignment."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "An object has six after-save Flows. How do you make that maintainable?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: entry criteria, recursion, performance, maintainability."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-TRIGGERED",
+      "title": "Triggered Flows",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm",
+      "supports": "Before-save vs after-save; Flow Trigger Explorer; trigger order values 1–2000.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every order-of-execution step; see Triggers and Order of Execution for the full save order."
+    },
+    {
+      "source_id": "SF-HELP-SWITCH",
+      "title": "Planning Your Switch to Flow Builder",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_migrate_to_flow_best_practices.htm",
+      "supports": "Optimize entry conditions; Run When Conditions Met; order automation; not one-to-one migration; performance and maintenance questions.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Written for Workflow/Process migration but the entry-condition and ordering guidance applies to new Flows too."
+    },
+    {
+      "source_id": "SF-HELP-BULKIFY",
+      "title": "Bulkified Record Processing — Use Entry Conditions to Limit Execution",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.automate_flow_build_example_bulkified_processing.htm",
+      "supports": "Add Start conditions so the Flow runs only when necessary (example: Stage equals Closed Won).",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Example object is Opportunity; your filters differ."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Triggered Flows Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "entry conditions",
+        "updated to meet",
+        "before-save vs after-save",
+        "recursion",
+        "trigger order",
+        "one job per Flow"
+      ],
+      "accessible_description": "Portrait map: Start conditions gate the interview; updated-to-meet reduces retrips; before-save avoids a second save; after-save same-record updates can recurse; Explorer orders Flows 1–2000."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-TRIGGERED",
+        "SF-HELP-SWITCH",
+        "SF-HELP-BULKIFY"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Entry criteria and trigger order"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Save[Record save] --> Entry{Start entry conditions met?}\n  Entry -->|No| Skip[Interview does not start]\n  Entry -->|Yes| Meet{Only when updated to meet conditions?}\n  Meet -->|Would retrip same true values| Skip\n  Meet -->|Newly meets or create| Type{before-save or after-save}\n  Type -->|before-save| Assign[Assignment on triggering record in this save]\n  Type -->|after-save| Work[Related Get/Create/Update/Delete]\n  Work --> Recurse{Updated triggering record again?}\n  Recurse -->|Yes| Save\n  Assign --> Explorer[Flow Trigger Explorer order 1 to 2000]",
+      "decision": "flowchart TD\n  Need[Record-triggered work] --> Q1{Only fields on the triggering record?}\n  Q1 -->|Yes| Before[before-save Fast Field Updates]\n  Q1 -->|Related records| After[after-save plus entry conditions]\n  After --> Q2{Must not run on every edit?}\n  Q2 -->|Yes| Entry[Start conditions plus updated-to-meet when the field must change into the band]\n  After --> Q3{Flow updates the triggering record?}\n  Q3 -->|Yes| Risk[Recursion risk: prefer before-save or a guard field / updated-to-meet]\n  Need --> Q4{Several Flows on one object?}\n  Q4 -->|Yes| Order[Flow Trigger Explorer trigger order 1-2000; one job per Flow]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Start-element entry conditions limit when a record-triggered Flow runs; Help examples use them so the Flow runs only when necessary.",
+      "source_ids": [
+        "SF-HELP-BULKIFY",
+        "SF-HELP-SWITCH"
+      ],
+      "scope": "Entry criteria",
+      "validation": "Bulkify entry-conditions section and Planning Your Switch optimize-entry-conditions section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Enabling the setting that runs the Flow when conditions are newly met (field changed to a value) prevents repeat operations compared with checking the value on every edit.",
+      "source_ids": [
+        "SF-HELP-SWITCH"
+      ],
+      "scope": "Recursion / repeat control",
+      "validation": "Planning Your Switch: Run When Conditions Met / IS CHANGED-style entry.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Before-save Fast Field Updates change the triggering record in the same save and are described as about 10 times faster than a record-change process; after-save is the related-record path.",
+      "source_ids": [
+        "SF-HELP-TRIGGERED"
+      ],
+      "scope": "Performance / before-save",
+      "validation": "Triggered Flows before-save topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Flow Trigger Explorer lists record-triggered Flows for an object; trigger order values 1–2000 set run order for before-save or after-save Flows on that object.",
+      "source_ids": [
+        "SF-HELP-TRIGGERED",
+        "SF-HELP-SWITCH"
+      ],
+      "scope": "Maintainability / order",
+      "validation": "Triggered Flows manage/order topics and Planning Your Switch order-your-automation.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify Start-element labels (‘Run the flow only when a record is updated to meet the condition requirements’) for Summer '26 UI wording.",
+  "unresolved_uncertainty": [
+    "Exact recursion-guard behavior when an after-save Flow updates the triggering record: platform has protections that are versioned—Needs verification; do not invent a ‘Flows never recurse’ rule.",
+    "Known issue: approval final-step plus final-action updates can fire Flows twice despite entry criteria—Needs verification if still open."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "entry criteria",
+      "telugu": "Start element conditions on a record-triggered Flow."
+    },
+    {
+      "english": "recursion",
+      "telugu": "The Flow runs again because it updated the same record."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Entry criteria on Start decide if the interview begins. Use ‘updated to meet the condition’ so a still-true Stage does not retrip. Prefer before-save for same-record fields. After-save Update of the triggering record can recurse. Order multiple Flows 1–2000 in Flow Trigger Explorer.",
+    "two_minutes": "I treat every-edit Flows as a performance bug. I write Start conditions like Stage equals Closed Won and, when the requirement is the transition, I enable the updated-to-meet setting from Planning Your Switch. I put same-record stamps in before-save. I use Explorer when two teams own after-save Flows on Opportunity. I still bulkify DML (AUTO-007). I do not claim trigger order replaces the full save order of execution."
+  },
+  "terminology": [
+    {
+      "term": "entry criteria",
+      "plain": "Start-element conditions that must be true for the record-triggered Flow to run.",
+      "precise": "Condition requirements on the triggering record (and optionally the updated-to-meet / Run When Conditions Met behavior).",
+      "example": "Stage equals Closed Won on Opportunity after-save.",
+      "non_example": "A Decision in the middle of the canvas after the Flow already started.",
+      "confusable_neighbor": "Decision element: runs only after entry criteria already passed.",
+      "boundary": "Formula entry criteria exist; some formulas (historically ISCLONE) have had Debug limits."
+    },
+    {
+      "term": "updated to meet the condition",
+      "plain": "Run when the record changes into the criteria, not on every later save that still matches.",
+      "precise": "Planning Your Switch: Run When Conditions Met / field IS CHANGED to a value prevents repeat operations.",
+      "example": "Closed Won Flow does not run again when Amount is edited while Stage stays Closed Won.",
+      "non_example": "Conditions Are Met with no updated-to-meet, so every Closed Won edit starts the Flow.",
+      "confusable_neighbor": "ISCHANGED in a formula: related idea; UI checkbox is the interview-friendly name.",
+      "boundary": "Create-only triggers do not need the same hysteresis story."
+    },
+    {
+      "term": "recursion",
+      "plain": "The Flow causes another save that starts the same (or another) Flow again.",
+      "precise": "Common pattern: after-save Update Records on the triggering record. Entry criteria and before-save reduce it. Do not invent that the platform never re-enters.",
+      "example": "After-save sets LAB_Stamp__c on the Opportunity, which is another update.",
+      "non_example": "A Loop over a collection inside one interview (that is iteration, not save recursion).",
+      "confusable_neighbor": "Scheduled path: a later interview, not the same-save recursion loop.",
+      "boundary": "Apex static recursion guards are a different tool."
+    },
+    {
+      "term": "Flow Trigger Explorer",
+      "plain": "The tool that lists record-triggered Flows for an object and trigger type.",
+      "precise": "Help: view, filter, reorder, and navigate before-save, after-save, and asynchronous paths for an object.",
+      "example": "Open Opportunity after-save and see three Flows plus their order.",
+      "non_example": "The Automation app Flows list with no object filter.",
+      "confusable_neighbor": "Debug: one interview, not the object’s full trigger set.",
+      "boundary": "Does not show Apex triggers."
+    },
+    {
+      "term": "trigger order",
+      "plain": "A number from 1 to 2000 that sequences same-object before-save or after-save Flows.",
+      "precise": "Define the Run Order of Record-Triggered Flows: assign a trigger order value so Flows run in a predictable sequence.",
+      "example": "Validation-prep Flow at 1000, Task-create Flow at 1100.",
+      "non_example": "Order of execution position versus validation rules (different framework).",
+      "confusable_neighbor": "Scheduled path timing: clock time, not trigger order.",
+      "boundary": "Needs verification of ties/default when two Flows share a number."
+    },
+    {
+      "term": "Fast Field Updates",
+      "plain": "before-save record-triggered Flow optimized for the triggering record.",
+      "precise": "Help: about 10 times faster than a record-change process; limited elements; no related Create.",
+      "example": "Stamp LAB_Closed_Won_Date__c in before-save.",
+      "non_example": "Creating Tasks for team members.",
+      "confusable_neighbor": "after-save Update Records on $Record: slower and recursion-prone.",
+      "boundary": "AUTO-007 owns the element list."
+    },
+    {
+      "term": "maintainability",
+      "plain": "Whether the next admin can find, order, and change the automation without a scavenger hunt.",
+      "precise": "Planning Your Switch: who owns the process, likelihood of change, not one-to-one migration, order with Trigger Order.",
+      "example": "One after-save Flow named LAB_Opp_ClosedWon_Tasks with a description and order 1100.",
+      "non_example": "Twelve unnamed after-save Flows that all start with no entry conditions.",
+      "confusable_neighbor": "Subflow reuse: a maintainability tactic, not a trigger-order substitute.",
+      "boundary": "Deployment/versioning is AUTO-013."
+    },
+    {
+      "term": "performance",
+      "plain": "Avoiding interviews and database work the business does not need.",
+      "precise": "Entry conditions first, before-save when it fits, bulk-safe DML (AUTO-007), fewer redundant Flows.",
+      "example": "Closed Won entry so Description edits do not Get team members.",
+      "non_example": "Removing fault paths to ‘go faster’.",
+      "confusable_neighbor": "Async path: higher limits later, not a substitute for entry criteria.",
+      "boundary": "Do not quote unofficial CPU milliseconds."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Write Start conditions",
+      "actor": "Admin",
+      "trigger": "New record-triggered Flow",
+      "before": "No conditions; runs on every create/update of the object",
+      "after": "Conditions match the business event (for example Stage equals Closed Won)",
+      "observe": "Debug of a non-matching edit does not start the interview",
+      "failure": "Empty Start conditions ‘so we can Decision later’"
+    },
+    {
+      "step": 2,
+      "transition": "Decide updated-to-meet",
+      "actor": "Admin",
+      "trigger": "Update trigger, not create-only",
+      "before": "Every matching save retrips",
+      "after": "Run only when the record is updated to meet the conditions, if the event is the transition",
+      "observe": "Editing Amount on an already Closed Won Opportunity does not create duplicate Tasks",
+      "failure": "Leaving updated-to-meet off when the requirement is the Stage change"
+    },
+    {
+      "step": 3,
+      "transition": "Choose before-save vs after-save",
+      "actor": "Admin",
+      "trigger": "Same-record fields versus related DML",
+      "before": "Default after-save Update of $Record",
+      "after": "before-save Assignment for stamps; after-save for related Create/Update/Delete",
+      "observe": "No second save for the stamp field",
+      "failure": "After-save Update Records on the triggering record for a simple stamp"
+    },
+    {
+      "step": 4,
+      "transition": "Order and name",
+      "actor": "Admin / team lead",
+      "trigger": "More than one Flow on the object",
+      "before": "Unknown run order",
+      "after": "Trigger order 1–2000 in Flow Trigger Explorer; description states owner and job",
+      "observe": "Explorer list matches the intended sequence",
+      "failure": "Six Flows named ‘Opportunity Flow 2’"
+    }
+  ],
+  "when_to_use": [
+    "When a record-triggered Flow needs Start entry criteria so it does not run on every save.",
+    "When you must stop repeat interviews with ‘updated to meet the condition’ / Run When Conditions Met.",
+    "When after-save Update Records on the triggering record risks recursion and before-save is the better stamp.",
+    "When several Flows on one object need Flow Trigger Explorer and trigger order 1–2000 for maintainability.",
+    "When performance work starts with fewer interviews, not only fewer Get Records."
+  ],
+  "when_not_to_use": [
+    "Do not use entry criteria as a substitute for bulk-safe Create/Update/Delete (AUTO-007).",
+    "Do not claim trigger order replaces the full Salesforce order of execution.",
+    "Do not turn off entry criteria in production to ‘debug faster’ and leave them off.",
+    "Do not put related-record Create in before-save in the name of performance.",
+    "Do not invent a numeric recursion cap; verify current platform behavior."
+  ],
+  "configuration_or_code_location": [
+    "Flow Start: object, trigger, condition requirements, updated-to-meet / Run When Conditions Met.",
+    "Optimize the Flow for Fast Field Updates vs Actions and Related Records.",
+    "Flow Trigger Explorer: object + trigger type + trigger order 1–2000.",
+    "Flow properties: label, API name, description, owner in the description."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox: Closed Won must stamp LAB_Closed_Won_Date__c and create Tasks (AUTO-007). A first draft after-save Flow has no entry conditions and Updates the Opportunity date, creating duplicate Tasks on every Amount edit. No production data.",
+    "inputs": [
+      "Opportunity after-save Flow",
+      "Stage equals Closed Won business event",
+      "Date stamp plus related Tasks"
+    ],
+    "decisions": [
+      {
+        "decision": "Split: before-save Fast Field Updates for the date stamp; after-save for Tasks.",
+        "because": "Same-record stamp belongs in the original save; Tasks need after-save.",
+        "rejected": "One after-save Flow that Updates $Record and Creates Tasks"
+      },
+      {
+        "decision": "Both Starts: Stage equals Closed Won, and updated-to-meet on the after-save Task Flow.",
+        "because": "Planning Your Switch: prevent repeat operations when the field is already in band.",
+        "rejected": "No entry conditions, Decision after a Get of all team members"
+      },
+      {
+        "decision": "Set trigger order (for example 1000 before-save, 1100 after-save) and name each Flow for one job.",
+        "because": "Explorer plus order keeps two automations maintainable.",
+        "rejected": "Leave default order and generic names"
+      }
+    ],
+    "configuration_or_code": [
+      "before-save: Stage equals Closed Won; Assignment sets LAB_Closed_Won_Date__c.",
+      "after-save: Stage equals Closed Won AND updated to meet; Get/Assign/Create Tasks (AUTO-007).",
+      "Explorer: confirm both appear under Opportunity; set order values.",
+      "Debug: edit Amount on an already Closed Won LAB_ Opportunity—Task Flow should not run."
+    ],
+    "output": "One stamp, one Task set per Closed Won transition, not per Amount edit.",
+    "verification": [
+      "Debug a Stage change to Closed Won runs both intended interviews.",
+      "Debug an Amount-only edit on Closed Won does not create more Tasks.",
+      "Explorer shows the two Flows with the documented order."
+    ],
+    "self_explanation": "I used the thermostat: threshold plus hysteresis, and I moved the stamp off the after-save Update that was retripping."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ Opportunity fields only.",
+    "starting_state_checks": [
+      "You can create record-triggered Flows and open Flow Trigger Explorer.",
+      "A custom date or checkbox field exists for a stamp."
+    ],
+    "steps": [
+      "Create an after-save Flow with no entry conditions that Updates a stamp and note how often it runs in Debug.",
+      "Add Stage equals Closed Won and updated-to-meet; Debug an Amount-only edit.",
+      "Move the stamp to a before-save Flow; keep related work after-save.",
+      "Set trigger order values in Flow Trigger Explorer and record them."
+    ],
+    "guided_completion": [
+      "If Amount edits still create work, updated-to-meet is off or the Flow Updates $Record again.",
+      "If before-save tries to Create Tasks, that is the wrong optimize setting."
+    ],
+    "independent_challenge": "Add a second after-save Flow on the same object and assign a later trigger order; prove Explorer lists both.",
+    "evidence": [
+      "Notes: Debug runs with and without updated-to-meet.",
+      "Trigger order values written down."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate lab Flows.",
+      "Clear LAB_ stamp fields if needed."
+    ],
+    "limitations": "This lab does not prove maximum CPU time or approval-process double-fire known issues."
+  },
+  "decision_table": [
+    {
+      "signal": "Need to stamp a field on the same record that just changed.",
+      "choose": "before-save Fast Field Updates with Start entry criteria.",
+      "not": "after-save Update Records on the triggering record for that stamp.",
+      "why": "Before-save is the faster same-record path and avoids an extra save that can recurse."
+    },
+    {
+      "signal": "Closed Won should create Tasks only when Stage becomes Closed Won, not on later Amount edits.",
+      "choose": "Start conditions plus run only when the record is updated to meet them.",
+      "not": "No entry criteria and a Decision after Get Records of team members.",
+      "why": "Planning Your Switch: entry conditions and Run When Conditions Met prevent repeat operations."
+    },
+    {
+      "signal": "Two teams own after-save Flows on Opportunity and testers see unpredictable Task timing.",
+      "choose": "Flow Trigger Explorer and explicit trigger order values between 1 and 2000.",
+      "not": "Merge both into one unnamed Flow without discussion, or ignore order.",
+      "why": "Help: assign trigger order so same-object Flows run in a predictable sequence."
+    },
+    {
+      "signal": "Every Description edit on Account starts a Flow that Gets Contacts.",
+      "choose": "Tighten Start entry criteria so the interview does not begin.",
+      "not": "Only micro-optimize the Get after the Flow already started.",
+      "why": "The cheapest interview is the one that never starts."
+    },
+    {
+      "signal": "You are migrating several Process Builder processes on one object.",
+      "choose": "Redesign into fewer Flows with entry criteria and order; not one Flow per old diamond.",
+      "not": "Literal one-to-one migration with no Start conditions.",
+      "why": "Planning Your Switch: migration is not one-to-one; structure for performance and maintenance."
+    }
+  ],
+  "limitations": [
+    "Does not replace AUTO-007 bulk DML rules.",
+    "Trigger order is not the full save order of execution.",
+    "Some platform features can still double-fire interviews; verify known issues.",
+    "Formula entry criteria can be harder to Debug."
+  ],
+  "security_notes": [
+    "Entry criteria are not a security control; execution context is AUTO-009.",
+    "Do not put confidential filter values in Flow descriptions that all builders can see if that violates policy.",
+    "Test with LAB_ records only."
+  ],
+  "common_mistakes": [
+    "No Start entry conditions.",
+    "After-save Update of the triggering record for a simple stamp.",
+    "Using a Decision instead of entry criteria so every save still starts.",
+    "Ignoring Flow Trigger Explorer when many Flows share an object.",
+    "Leaving updated-to-meet off when the event is a transition."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Duplicate Tasks every time someone edits Amount on a Closed Won Opportunity.",
+      "check": [
+        "Start updated-to-meet / Run When Conditions Met",
+        "Whether the Flow Updates the triggering record and retriggers"
+      ],
+      "do_not_assume": "Users clicked Closed Won twice."
+    },
+    {
+      "symptom": "Two after-save Flows seem to race.",
+      "check": [
+        "Flow Trigger Explorer order values",
+        "Whether both should be one Flow"
+      ],
+      "do_not_assume": "Salesforce randomizes order with no control."
+    },
+    {
+      "symptom": "Flow never runs in Debug.",
+      "check": [
+        "Entry criteria versus the Debug record’s field values",
+        "Create vs update trigger",
+        "Known Debug issues with some formula criteria (for example historical ISCLONE)"
+      ],
+      "do_not_assume": "The Flow is inactive before you check Start conditions."
+    }
+  ],
+  "production_notes": [
+    "Document owner and trigger order in the Flow description.",
+    "Change entry criteria in sandbox with a matrix of create/update/no-op edits.",
+    "After adding a Flow to a busy object, re-open Explorer before activation."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where do record-triggered entry criteria live?",
+      "options": {
+        "A": "On the Start element",
+        "B": "Only in a permission set",
+        "C": "Only in a report filter",
+        "D": "Only in Apex sharing keywords"
+      },
+      "answer": "A",
+      "rationale": "Start-element condition requirements gate the interview.",
+      "distractor_explanations": {
+        "B": "Permissions are AUTO-009.",
+        "C": "Reports are another track.",
+        "D": "Apex sharing is not entry criteria."
+      },
+      "concept": "Start conditions",
+      "citation_ids": [
+        "SF-HELP-BULKIFY"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What range does Help give for record-triggered Flow trigger order values?",
+      "options": {
+        "A": "1–2000",
+        "B": "Only 0 or 1",
+        "C": "Unlimited negative numbers",
+        "D": "Exactly 99"
+      },
+      "answer": "A",
+      "rationale": "Triggered Flows: assign a trigger order value (1–2000).",
+      "distractor_explanations": {
+        "B": "Too narrow.",
+        "C": "Not the documented range.",
+        "D": "Not a single required value."
+      },
+      "concept": "Trigger order range",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why enable Run When Conditions Met / updated-to-meet on a Closed Won Task Flow?",
+      "options": {
+        "A": "To prevent repeat operations when Stage is already Closed Won on later edits",
+        "B": "To allow Create Records in before-save",
+        "C": "To grant Run Flows",
+        "D": "To deploy the Flow as data"
+      },
+      "answer": "A",
+      "rationale": "Planning Your Switch: that setting prevents repeat operations.",
+      "distractor_explanations": {
+        "B": "Element limits unchanged.",
+        "C": "AUTO-009.",
+        "D": "Flows are metadata."
+      },
+      "concept": "Hysteresis",
+      "citation_ids": [
+        "SF-HELP-SWITCH"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Best place for a same-record date stamp when Stage becomes Closed Won?",
+      "options": {
+        "A": "before-save Fast Field Updates",
+        "B": "after-save Update Records on the triggering Opportunity plus no entry criteria",
+        "C": "A screen Flow in the save order",
+        "D": "Delete Records on the Opportunity"
+      },
+      "answer": "A",
+      "rationale": "Triggered Flows: before-save updates the triggering record faster and in the same save.",
+      "distractor_explanations": {
+        "B": "Recursion and performance risk.",
+        "C": "Screens are not part of that save path.",
+        "D": "Not a stamp."
+      },
+      "concept": "before-save stamp",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does Flow Trigger Explorer show?",
+      "options": {
+        "A": "Record-triggered Flows for a specified object and trigger type",
+        "B": "Only Apex test classes",
+        "C": "Only report subscriptions",
+        "D": "Only Experience Cloud themes"
+      },
+      "answer": "A",
+      "rationale": "Help: Explorer shows Flows associated with a specified object for create/update/delete.",
+      "distractor_explanations": {
+        "B": "Apex tests are AUTO-013 neighbors.",
+        "C": "Analytics.",
+        "D": "Unrelated."
+      },
+      "concept": "Explorer",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Duplicate Tasks appear on every Amount edit of a Closed Won Opportunity. First Flow checks?",
+      "options": {
+        "A": "Missing updated-to-meet and/or after-save Update of the triggering record",
+        "B": "Whether the org has reports",
+        "C": "Apex public versus Java public",
+        "D": "Price book currency only"
+      },
+      "answer": "A",
+      "rationale": "Repeat interviews come from still-true criteria or a retriggering same-record update.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "APEX-001.",
+        "D": "Unrelated."
+      },
+      "concept": "Duplicate work",
+      "citation_ids": [
+        "SF-HELP-SWITCH"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Entry criteria versus a Decision after Get Records?",
+      "options": {
+        "A": "Entry criteria can prevent the interview and the Get; a Decision runs after the Flow already started",
+        "B": "They are identical in cost",
+        "C": "Decisions run before Start",
+        "D": "Entry criteria cannot use field values"
+      },
+      "answer": "A",
+      "rationale": "Performance starts by not starting.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Start is first.",
+        "D": "Entry criteria are field conditions."
+      },
+      "concept": "Gate vs branch",
+      "citation_ids": [
+        "SF-HELP-BULKIFY",
+        "SF-HELP-SWITCH"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Planning Your Switch says migration is not one-to-one. What should you do with five similar processes on one object?",
+      "options": {
+        "A": "Redesign into fewer Flows with entry criteria and trigger order",
+        "B": "Create five Flows with no Start conditions to match each diamond",
+        "C": "Leave Process Builder forever",
+        "D": "Convert them to reports"
+      },
+      "answer": "A",
+      "rationale": "Help: you do not always create a Flow for each process; order and structure for maintenance.",
+      "distractor_explanations": {
+        "B": "Repeats the unmaintainable shape.",
+        "C": "AUTO-012: end of support.",
+        "D": "Wrong tool."
+      },
+      "concept": "Not one-to-one",
+      "citation_ids": [
+        "SF-HELP-SWITCH"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Help describes before-save record-triggered Flows as able to update a Salesforce record how, compared with a record-change process?",
+      "options": {
+        "A": "About 10 times faster",
+        "B": "Always slower",
+        "C": "Only in Classic",
+        "D": "Only via SOAP"
+      },
+      "answer": "A",
+      "rationale": "Triggered Flows: a record-triggered flow can update a Salesforce record 10 times faster than a record-change process.",
+      "distractor_explanations": {
+        "B": "Opposite of Help.",
+        "C": "Not Classic-only.",
+        "D": "Not a SOAP feature."
+      },
+      "concept": "before-save speed",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A Loop over team members is not recursion. Why?",
+      "options": {
+        "A": "It is iteration inside one interview, not another save that starts the Flow again",
+        "B": "Loops are illegal",
+        "C": "Loops always start a new transaction",
+        "D": "Loops set trigger order"
+      },
+      "answer": "A",
+      "rationale": "Recursion here means re-entry from another save, not a Loop element.",
+      "distractor_explanations": {
+        "B": "Loops are valid (AUTO-007).",
+        "C": "Not the Loop’s job.",
+        "D": "Explorer sets order."
+      },
+      "concept": "Loop vs recursion",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Trigger order versus order of execution?",
+      "options": {
+        "A": "Trigger order sequences Flows on the same object/trigger; order of execution is the whole save pipeline",
+        "B": "They are the same list",
+        "C": "Trigger order replaces validation rules",
+        "D": "Order of execution only applies to reports"
+      },
+      "answer": "A",
+      "rationale": "Help points to Triggers and Order of Execution for the broader save order.",
+      "distractor_explanations": {
+        "B": "A common mix-up.",
+        "C": "Validation still runs in the save order.",
+        "D": "False."
+      },
+      "concept": "Two different orders",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Debug never starts the interview. The Flow is active. What is a likely Start issue?",
+      "options": {
+        "A": "The Debug record does not meet entry criteria, or the trigger is create-only while you updated",
+        "B": "Flows cannot be debugged",
+        "C": "Trigger order 1–2000 disables Debug",
+        "D": "Entry criteria only work in production"
+      },
+      "answer": "A",
+      "rationale": "If conditions fail, the interview does not begin.",
+      "distractor_explanations": {
+        "B": "Debug exists (AUTO-013).",
+        "C": "Order does not disable Debug.",
+        "D": "False."
+      },
+      "concept": "Debug vs criteria",
+      "citation_ids": [
+        "SF-HELP-BULKIFY"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What are record-triggered entry criteria?",
+      "back": "Start-element conditions that must be true for the interview to begin."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "What does ‘updated to meet the condition’ prevent?",
+      "back": "Repeat interviews when the record still matches but did not newly enter the criteria."
+    },
+    {
+      "id": "F3",
+      "category": "recursion",
+      "front": "Common recursion pattern in after-save Flows?",
+      "back": "Update Records on the triggering record, causing another save and another interview."
+    },
+    {
+      "id": "F4",
+      "category": "performance",
+      "front": "Why prefer before-save for a same-record stamp?",
+      "back": "Help: about 10 times faster than a record-change process, and it avoids a second save."
+    },
+    {
+      "id": "F5",
+      "category": "explorer",
+      "front": "What is Flow Trigger Explorer for?",
+      "back": "See, filter, reorder, and open record-triggered Flows for an object and trigger type."
+    },
+    {
+      "id": "F6",
+      "category": "order",
+      "front": "Trigger order values?",
+      "back": "1 to 2000 for before-save or after-save Flows on the same object."
+    },
+    {
+      "id": "F7",
+      "category": "compare",
+      "front": "Entry criteria versus Decision?",
+      "back": "Entry criteria can skip the interview. A Decision runs after the Flow already started."
+    },
+    {
+      "id": "F8",
+      "category": "maintain",
+      "front": "Planning Your Switch on one-to-one migration?",
+      "back": "Not required. Redesign, remove redundant processes, and order Flows."
+    },
+    {
+      "id": "F9",
+      "category": "compare",
+      "front": "Loop versus recursion?",
+      "back": "A Loop iterates in one interview. Recursion is another save that starts automation again."
+    },
+    {
+      "id": "F10",
+      "category": "scenario",
+      "front": "Amount edits create more Closed Won Tasks. Check what?",
+      "back": "Updated-to-meet is off, or the Flow updates the triggering record and retriggers."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Does trigger order replace order of execution?",
+      "back": "No. It only sequences Flows on that object/trigger. Validation and Apex still have their save-order slots."
+    },
+    {
+      "id": "F12",
+      "category": "performance",
+      "front": "Cheapest performance win?",
+      "back": "Start entry criteria so Get Records never runs on irrelevant edits."
+    },
+    {
+      "id": "F13",
+      "category": "naming",
+      "front": "Maintainable Flow name example?",
+      "back": "A name that states object, event, and job, plus a description with owner—not ‘Opportunity Flow 2’."
+    },
+    {
+      "id": "F14",
+      "category": "before-save",
+      "front": "Can before-save Create related Tasks for performance?",
+      "back": "No. Fast Field Updates cannot Create related records. Use after-save for that DML."
+    },
+    {
+      "id": "F15",
+      "category": "metadata",
+      "front": "Are entry criteria metadata or data?",
+      "back": "The conditions are Flow metadata. The Stage value that satisfies them is record data."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you keep a record-triggered Flow from running too often?",
+      "answer_30_seconds": "Put real entry criteria on Start. If the event is a transition, enable updated-to-meet / Run When Conditions Met. Do not start the Flow just to Decision after a Get.",
+      "answer_2_minutes": "I cite Planning Your Switch and the Closed Won example. I write the business event as Start conditions. I explain hysteresis so Amount edits do not retrip Closed Won work. I still bulkify DML. I mention Explorer if many Flows share the object.",
+      "example": "Stage equals Closed Won plus updated-to-meet on the Task Flow.",
+      "tradeoffs": [
+        "Tight criteria vs missing a legitimate edit",
+        "One Flow vs split before/after"
+      ],
+      "follow_ups": [
+        "Create and update both?",
+        "Formula criteria?"
+      ],
+      "weak_answer_warnings": [
+        "Empty Start and a Decision after Get Records"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What is recursion in record-triggered Flow, and how do you control it?",
+      "answer_30_seconds": "The Flow updates the triggering record and starts another save. Prefer before-save for stamps, tight entry criteria, and updated-to-meet. Do not claim Flows never re-enter.",
+      "answer_2_minutes": "I distinguish a Loop from a new save. I move same-record writes to Fast Field Updates. If after-save must touch $Record, I use a guard field or criteria that the second save does not meet—and I verify current platform recursion behavior instead of quoting a blog cap. I test with two edits in sandbox.",
+      "example": "After-save set LAB_Stamp__c caused a second interview; stamp moved to before-save.",
+      "tradeoffs": [
+        "before-save vs guarded after-save",
+        "One Flow vs two"
+      ],
+      "follow_ups": [
+        "What about Apex static variables?",
+        "Scheduled paths?"
+      ],
+      "weak_answer_warnings": [
+        "Flows never recurse"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Closed Won creates five Tasks, then every Amount edit creates five more. Diagnose.",
+      "answer_30_seconds": "The after-save Flow is still matching Closed Won on every update. Turn on updated-to-meet and check for an Update of the Opportunity that retriggers.",
+      "answer_2_minutes": "I Debug an Amount-only change and watch whether Start is entered. I inspect entry criteria and the updated-to-meet checkbox. I look for Update Records on $Record. I do not blame the user for ‘saving twice’ until those are checked. I add Explorer if a second Flow also creates Tasks.",
+      "example": "Conditions Are Met without updated-to-meet on Stage equals Closed Won.",
+      "tradeoffs": [
+        "updated-to-meet vs a processed-flag field",
+        "One Flow vs two"
+      ],
+      "follow_ups": [
+        "What if they change Stage away and back to Closed Won?",
+        "Should Tasks be idempotent?"
+      ],
+      "weak_answer_warnings": [
+        "Adding a Decision after Get without fixing Start"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Two after-save Flows on Account seem to overwrite each other’s field. What tool do you open?",
+      "answer_30_seconds": "Flow Trigger Explorer for Account after-save. I read both canvases, assign trigger order 1–2000, and decide if they should be one maintainable Flow.",
+      "answer_2_minutes": "I do not guess order. Explorer lists the set. I check whether both lack entry criteria. I talk to both owners—Planning Your Switch asks who is responsible. I do not hide the conflict by adding more Decisions. Full order of execution still includes Apex I cannot see in Explorer.",
+      "example": "Flow A order 1000 sets Status; Flow B order 1200 sets Status again.",
+      "tradeoffs": [
+        "Two ordered Flows vs one Flow",
+        "Entry criteria vs letting both run"
+      ],
+      "follow_ups": [
+        "What if a managed package owns one Flow?",
+        "Where do Apex triggers show?"
+      ],
+      "weak_answer_warnings": [
+        "Saying order is random and unfixable"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "How do you design for maintainability on a busy object?",
+      "answer_30_seconds": "One job per Flow, clear names, descriptions with owners, Start criteria, Explorer order, and no one-to-one clone of every old process.",
+      "answer_2_minutes": "I use Planning Your Switch questions: performance, who maintains it, chance of change. I split before-save stamps from after-save related work. I refuse twelve ‘Opportunity Flow’ names. Versioning and tests are AUTO-013, but I mention them as the release side of maintainability.",
+      "example": "LAB_Account_TypeChange_OwnerAlert at order 1500 with a description naming the sales-ops owner.",
+      "tradeoffs": [
+        "Fewer larger Flows vs more small ordered Flows",
+        "Subflows vs copy-paste"
+      ],
+      "follow_ups": [
+        "When is a subflow worth it?",
+        "How do you document trigger order?"
+      ],
+      "weak_answer_warnings": [
+        "One giant Flow with no Start conditions"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Debug says the Flow did not run. It is active. Walk the Start checks.",
+      "answer_30_seconds": "Compare the Debug record to entry criteria, create versus update, and updated-to-meet. If you used a formula like ISCLONE, Debug may fail even when runtime works—Needs verification; try a Decision instead.",
+      "answer_2_minutes": "I read Start first, not the middle of the canvas. I pick a record that should match and one that should not. I check the trigger type. I look at Explorer to be sure I am debugging the version I think I am (AUTO-013). I do not deactivate everything on the object as step one.",
+      "example": "Debug used an already Closed Won record while updated-to-meet was on.",
+      "tradeoffs": [
+        "Formula criteria vs condition builder",
+        "Debug vs a Flow test (AUTO-013)"
+      ],
+      "follow_ups": [
+        "How do Flow tests help?",
+        "Can you Debug as another user?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming inactive without reading Start"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Where does performance work start: entry criteria or bulkification?",
+      "answer_30_seconds": "Both. Entry criteria avoid interviews. Bulk-safe Get/Create/Update/Delete avoid limit errors when interviews do run. Neither replaces the other.",
+      "answer_2_minutes": "I tell a story: a perfectly bulkified Flow that runs on every Description edit still wastes Gets. A tightly filtered Flow that Create Records inside a Loop still dies on Data Loader. I cite both Help articles. Async paths are a later escape hatch, not the first answer.",
+      "example": "Closed Won entry plus collection Create after the Loop.",
+      "tradeoffs": [
+        "Tight filters vs missing edge edits",
+        "Async path vs fixing Start"
+      ],
+      "follow_ups": [
+        "When do you use an asynchronous path?",
+        "What about scheduled Flows?"
+      ],
+      "weak_answer_warnings": [
+        "Only talking about Loops, or only talking about filters"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "An interviewer asks you to ‘just put everything in one after-save Flow with Decisions so it is easier.’ Respond.",
+      "answer_30_seconds": "A single Flow with no entry criteria still starts on every save. I will use Decisions inside a Flow that already should run, but I will not skip Start conditions or before-save stamps for convenience.",
+      "answer_2_minutes": "I acknowledge one canvas can be easier to find. Then I apply Planning Your Switch: performance, ownership, change rate. I may keep related Closed Won work together after a tight Start. I will not mix unrelated Account automations just to have one Flow. I will still set trigger order if another Flow remains. Maintainability is findable jobs, not the fewest XML files at any cost.",
+      "example": "Closed Won Tasks and Closed Won date stamp: two Starts (before/after), not one unfiltered after-save.",
+      "tradeoffs": [
+        "One Flow vs two typed Flows",
+        "Ownership boundaries"
+      ],
+      "follow_ups": [
+        "How large is too large?",
+        "When do you use a subflow?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to no entry criteria"
+      ]
+    }
+  ]
+}

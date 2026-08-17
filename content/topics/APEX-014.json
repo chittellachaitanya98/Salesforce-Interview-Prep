@@ -1,0 +1,1046 @@
+{
+  "topic_id": "APEX-014",
+  "slug": "email-services-inbound-outbound-email-and-limits-overvi",
+  "title": "Email services, inbound/outbound email, and limits overview",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-013"
+  ],
+  "objectives": [
+    "Distinguish inbound Apex email services from outbound Messaging.sendEmail.",
+    "Cite Execution Governors and Limits: 10 sendEmail methods per transaction and 50 MB email-services heap.",
+    "Refuse invented daily mass-email allocations; point at the email section of the governors page.",
+    "Keep email sending after a successful transaction unless the product explicitly needs otherwise."
+  ],
+  "diagnostic_question": "A trigger sends an email per LAB_Case__c in a 200-row insert and also exposes an inbound email service. Which governors apply, and what breaks first?",
+  "definition": "Outbound Apex email uses Messaging.sendEmail (SingleEmailMessage / MassEmailMessage). Inbound Apex email services implement Messaging.InboundEmailHandler to parse messages sent to an email-service address. Per-transaction governors include 10 sendEmail method calls and a 50 MB heap for email services. Daily deliverability allocations are on the same governors topic's email section and are org/edition-sensitive—do not invent them. ([Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm); [Apex Developer Guide — email](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_email_outbound.htm))",
+  "why_it_matters": "Triggers that sendEmail in a loop die at 10 calls. Inbound handlers that load huge attachments hit the 50 MB email-services heap. Interviewers also listen for 'email is not a Queueable substitute' and 'do not invent daily caps.'",
+  "sixty_second_explanation": "Think of a company mailroom. Outbound is the franking machine: Messaging.sendEmail, 10 button-presses per transaction on the governors table. Inbound is the receiving chute: InboundEmailHandler on an email-service address, with a 50 MB heap. Daily postage is a different table on the same governors page—look it up, do not guess. Sending inside a transaction that later rolls back is a product decision; prefer send after commit via the save-order post-commit path or a Queueable. Never put secrets in email bodies.",
+  "deeper_explanation": [
+    "Execution Governors and Limits lists total sendEmail methods allowed as 10 per transaction (sync and async). Email services heap size is 50 MB (footnote on heap). Quote only these unless you re-open the email-limits section of that same page for daily/mass numbers. ([Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+    "Outbound: Messaging.sendEmail with SingleEmailMessage or MassEmailMessage. Prefer setTargetObjectId / templates over raw HTML with PII. Bulkify: one sendEmail call can take a list—do not call sendEmail 200 times. ([Apex email outbound](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_email_outbound.htm))",
+    "Inbound: configure an Email Service in Setup, bind a class implementing Messaging.InboundEmailHandler.handleInboundEmail. That class is metadata; the messages are data. Attachments and large bodies consume the 50 MB email-services heap. Authenticate senders; do not auto-run DML from untrusted mail.",
+    "Limits overview means: per-transaction 10 sendEmail + 50 MB inbound heap from the governors page, plus a pointer to that page's email section for daily allocations. Deliverability, bounce handling, and Org-Wide Email Addresses are neighboring admin topics."
+  ],
+  "mental_model": {
+    "analogy": "A company mailroom: outbound franking machine (sendEmail, 10 presses per shift window), inbound chute (email service + 50 MB bin), daily postage meter on the wall chart (look up, do not guess).",
+    "useful_mapping": [
+      "franking press → Messaging.sendEmail call (max 10 per transaction)",
+      "tray of letters in one press → list of SingleEmailMessage",
+      "inbound chute → Email Service + InboundEmailHandler",
+      "50 MB bin → email services heap footnote",
+      "wall postage chart → governors email section (reverify daily numbers)",
+      "night truck → Queueable / post-commit send"
+    ],
+    "where_it_breaks": [
+      "Workflow email alerts are not Apex sendEmail and have different limits.",
+      "List Email / Marketing Cloud is a different product.",
+      "The mailroom does not encode SPF/DKIM setup clicks."
+    ]
+  },
+  "teach_back_prompt": "Explain inbound vs outbound Apex email, quote 10 sendEmail and 50 MB heap, and say what you will not invent.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "10 sendEmail vs 50 MB inbound heap."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "InboundEmailHandler vs sendEmail."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why a 200-row trigger cannot sendEmail per row."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Where daily email caps live (same governors page, email section)."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: mailroom plus transaction/commit."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-GOV",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "10 sendEmail methods per transaction; email services heap 50 MB; email limits section for daily/mass numbers.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Daily/mass email numbers must be re-read from this page's email section—not invented in this JSON."
+    },
+    {
+      "source_id": "SF-APEX-EMAIL-OUT",
+      "title": "Apex Developer Guide — outbound email classes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_email_outbound.htm",
+      "supports": "Messaging outbound email classes live in the Apex Developer Guide family (Summer '26 nav).",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "If the TOC lands on the guide home, drill to Messaging / SingleEmailMessage in the Apex Reference Guide."
+    },
+    {
+      "source_id": "SF-APEX-EMAIL-IN",
+      "title": "Apex Email Service / InboundEmail",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_forcecom_email_inbound.htm",
+      "supports": "Inbound email services invoke Apex to handle inbound messages.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Setup Email Service address configuration is Help-neighboring; class is metadata."
+    },
+    {
+      "source_id": "SF-APEX-TXN",
+      "title": "Apex Transactions",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_transaction.htm",
+      "supports": "Email send timing relative to commit is a transaction-design choice; rollback does not unsend committed mail.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Do not claim unofficial 'emails always send after commit' without the current Transaction Control wording."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Inbound chute",
+        "Outbound franking",
+        "10 sendEmail",
+        "50 MB heap",
+        "Daily caps on governors page",
+        "Not Queueable"
+      ],
+      "accessible_description": "Inbound chute; Outbound franking; 10 sendEmail; 50 MB heap; Daily caps on governors page; Not Queueable"
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-GOV",
+        "SF-APEX-EMAIL-OUT",
+        "SF-APEX-EMAIL-IN",
+        "SF-APEX-TXN"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Inbound service vs outbound sendEmail"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  In[SMTP inbound to email-service address] --> Handler[InboundEmailHandler Apex]\n  Handler --> Heap[Email services heap 50 MB]\n  Apex[Apex transaction] --> Send[Messaging.sendEmail]\n  Send --> Ten[Max 10 sendEmail methods per transaction]\n  Send --> Daily[Daily/mass caps: re-read governors email section]\n  Apex --> Commit[Commit then post-commit delivery]",
+      "decision": "flowchart TD\n  Need[Need email in Apex?] --> Q1{Inbound parse vs outbound send?}\n  Q1 -->|Inbound| Svc[Email Service + InboundEmailHandler]\n  Q1 -->|Outbound| Q2{How many messages this transaction?}\n  Q2 -->|Up to a list in few sendEmail calls| Out[Messaging.sendEmail list; stay at or under 10 calls]\n  Q2 -->|200 per-row sendEmail| No[Redesign: one list or Queueable batches]\n  Need --> Q3{Need a number not on the 10 / 50 MB lines?}\n  Q3 -->|Daily mass/single| Lookup[Open Execution Governors and Limits email section]\n  Q3 -->|Invent a blog number| Stop[Do not]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Total sendEmail methods allowed per Apex transaction is 10 (synchronous and asynchronous).",
+      "source_ids": [
+        "SF-APEX-GOV"
+      ],
+      "scope": "Outbound per-transaction cap",
+      "validation": "Governors table sendEmail row.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Email services heap size is 50 MB.",
+      "source_ids": [
+        "SF-APEX-GOV"
+      ],
+      "scope": "Inbound heap",
+      "validation": "Governors heap footnote.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Inbound email services use Apex handlers for messages sent to an email-service address; that class is metadata.",
+      "source_ids": [
+        "SF-APEX-EMAIL-IN"
+      ],
+      "scope": "Inbound service",
+      "validation": "Apex inbound email documentation.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Daily and mass-email allocations are documented on the Execution Governors and Limits email section and must be re-read per org/edition—not invented here.",
+      "source_ids": [
+        "SF-APEX-GOV"
+      ],
+      "scope": "Daily caps humility",
+      "validation": "Governors page structure (email limits included later in the topic).",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify the email section of Execution Governors and Limits for Summer '26 daily numbers before quoting them.",
+  "unresolved_uncertainty": [
+    "Exact daily single/mass email allocations: Needs verification on the current governors email section for the org's license type.",
+    "Whether a given send is reserved until commit: re-read Transaction Control rather than unofficial blogs."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Email service",
+      "telugu": "లోపలికి వచ్చే మెయిల్‌ను Apexతో పార్స్ చేసే చ్యూట్."
+    },
+    {
+      "english": "sendEmail",
+      "telugu": "ఒక ట్రాన్సాక్షన్‌లో గరిష్టం 10 కాల్స్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Inbound: Email Service plus InboundEmailHandler, 50 MB heap. Outbound: Messaging.sendEmail, 10 calls per transaction. Daily caps live on the governors email section—I will not invent them. Do not sendEmail in a 200-row loop.",
+    "two_minutes": "I split inbound vs outbound. I bulk outbound into list sends so I stay at or under 10 method calls. I treat the handler class as metadata and inbound messages as data. I look up daily allocations on Execution Governors and Limits instead of quoting a blog. I do not use email as a platform-event bus. I consider Queueable if sending must happen after a heavy save."
+  },
+  "terminology": [
+    {
+      "term": "email service",
+      "plain": "Setup address that invokes Apex on inbound mail.",
+      "precise": "Binds to an InboundEmailHandler class. Heap for this context is 50 MB.",
+      "example": "LAB_CaseInbound service creating LAB_Case__c from email.",
+      "non_example": "Org-Wide Email Address is outbound identity, not a handler.",
+      "confusable_neighbor": "Email-to-Case standard feature vs custom handler.",
+      "boundary": "Authenticate senders."
+    },
+    {
+      "term": "InboundEmailHandler",
+      "plain": "Apex interface for inbound messages.",
+      "precise": "handleInboundEmail receives Messaging.InboundEmail and InboundEnvelope.",
+      "example": "public class LAB_CaseInbound implements Messaging.InboundEmailHandler",
+      "non_example": "HttpCalloutMock is for HTTP tests, not inbound email.",
+      "confusable_neighbor": "Outbound SingleEmailMessage.",
+      "boundary": "Large attachments: 50 MB heap."
+    },
+    {
+      "term": "Messaging.sendEmail",
+      "plain": "Apex outbound send API.",
+      "precise": "Counts toward 10 sendEmail methods per transaction. Accepts lists of emails.",
+      "example": "Messaging.sendEmail(new List<Messaging.Email>{mail1, mail2});",
+      "non_example": "Flow email alert is not this method.",
+      "confusable_neighbor": "Database.insert of EmailMessage may still be neighboring.",
+      "boundary": "Bulkify the list."
+    },
+    {
+      "term": "SingleEmailMessage",
+      "plain": "One outbound message object.",
+      "precise": "Set to, template, target object, what to send.",
+      "example": "mail.setTargetObjectId(contactId);",
+      "non_example": "MassEmailMessage: list of targets with a template.",
+      "confusable_neighbor": "Platform event __e.",
+      "boundary": "Avoid stuffing secrets."
+    },
+    {
+      "term": "MassEmailMessage",
+      "plain": "Templated send to many targets.",
+      "precise": "Still uses sendEmail; daily mass allocations are on the governors email section—look up.",
+      "example": "Weekly LAB newsletter to a campaign.",
+      "non_example": "200 sendEmail calls in a trigger.",
+      "confusable_neighbor": "Marketing Cloud.",
+      "boundary": "Needs verification of current daily mass cap before quoting."
+    },
+    {
+      "term": "limits overview",
+      "plain": "This lesson's job: quote per-transaction figures and point to the rest.",
+      "precise": "10 sendEmail; 50 MB email-services heap; daily/mass on the same official page.",
+      "example": "Interview answer that opens the governors URL.",
+      "non_example": "A memorized '5000 emails/day' from a 2014 blog.",
+      "confusable_neighbor": "Callout 100/120 s: APEX-013.",
+      "boundary": "Edition-sensitive daily numbers."
+    },
+    {
+      "term": "outbound email",
+      "plain": "Apex-initiated send.",
+      "precise": "Messaging.sendEmail after you construct messages.",
+      "example": "Confirmation mail after LAB_Order__c commit.",
+      "non_example": "Inbound handler creating a case.",
+      "confusable_neighbor": "Workflow email alert.",
+      "boundary": "Deliverability is neighboring admin work."
+    },
+    {
+      "term": "inbound email",
+      "plain": "Mail the org receives into an Apex service.",
+      "precise": "Email Service address → handler → DML.",
+      "example": "Vendor forwards invoices to lab-invoices@org.example",
+      "non_example": "User clicking Send Email on a record (UI).",
+      "confusable_neighbor": "Named credential callout.",
+      "boundary": "Treat body as untrusted input."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose inbound vs outbound",
+      "actor": "Developer + admin",
+      "trigger": "Email requirement",
+      "before": "Unclear direction",
+      "after": "Service+handler or sendEmail",
+      "observe": "One sentence on the class",
+      "failure": "Using sendEmail to 'receive' mail"
+    },
+    {
+      "step": 2,
+      "transition": "Bulk outbound",
+      "actor": "Developer",
+      "trigger": "Trigger on many rows",
+      "before": "Per-row sendEmail",
+      "after": "List under 10 sendEmail calls",
+      "observe": "Limits.getEmailInvocations()",
+      "failure": "200 sendEmail in a loop"
+    },
+    {
+      "step": 3,
+      "transition": "Guard inbound heap",
+      "actor": "Developer",
+      "trigger": "Attachments",
+      "before": "Load all bytes",
+      "after": "Stream/limit attachments; 50 MB heap",
+      "observe": "Failure on large MIME",
+      "failure": "Ignoring the heap footnote"
+    },
+    {
+      "step": 4,
+      "transition": "Look up daily caps",
+      "actor": "Developer",
+      "trigger": "Campaign-scale send",
+      "before": "Guessed number",
+      "after": "Governors email section for this org",
+      "observe": "Written URL in the design doc",
+      "failure": "Inventing 1000/day"
+    }
+  ],
+  "when_to_use": [
+    "When Apex must send mail: outbound Messaging.sendEmail with list bulkification and the 10-call cap.",
+    "When vendors mail a mailbox you control: inbound email services with InboundEmailHandler.",
+    "When quoting limits: 10 sendEmail and 50 MB email-services heap from Execution Governors and Limits.",
+    "When someone asks for daily mass-email numbers: open that governors page's email section rather than inventing.",
+    "When sending must not run on a rolled-back save: after-commit / Queueable design (APEX-010/011).",
+    "When inbound mail should create LAB_ cases with untrusted-body hygiene."
+  ],
+  "when_not_to_use": [
+    "Do not sendEmail once per row in a 200-row trigger.",
+    "Do not invent daily email allocation numbers in an interview.",
+    "Do not use Apex email as a substitute for platform events (APEX-012) or HTTP callouts (APEX-013).",
+    "Do not treat inbound handlers as trusted; they are unauthenticated SMTP unless you add checks.",
+    "Do not put session IDs or named-credential secrets in templates.",
+    "Do not use production customer mailboxes for the lab."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Email Services; Apex class implementing InboundEmailHandler.",
+    "Apex: Messaging.SingleEmailMessage + Messaging.sendEmail.",
+    "Setup → Org-Wide Email Addresses / Deliverability (admin neighboring).",
+    "Limits.getEmailInvocations() in debug."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox: after LAB_Case__c insert, email the synthetic contact. Also accept inbound mail to create LAB_Case__c. No real customers.",
+    "inputs": [
+      "200-row possible inserts",
+      "Inbound service address",
+      "API 67.0"
+    ],
+    "decisions": [
+      {
+        "decision": "Build a list of SingleEmailMessage and one or few sendEmail calls.",
+        "because": "10 sendEmail methods per transaction.",
+        "rejected": "sendEmail inside for (Case c : Trigger.new)."
+      },
+      {
+        "decision": "Inbound handler creates LAB_Case__c from subject/body with a sender allowlist.",
+        "because": "Untrusted SMTP.",
+        "rejected": "Blind DML from any sender."
+      },
+      {
+        "decision": "Quote 50 MB heap for attachments; refuse unofficial daily caps.",
+        "because": "Governors footnote plus humility on the email section.",
+        "rejected": "Memorized 5000/day."
+      }
+    ],
+    "configuration_or_code": [
+      "Messaging.sendEmail(mails); where mails.size() is the messages, not 200 method calls.",
+      "global class LAB_CaseInbound implements Messaging.InboundEmailHandler { ... }",
+      "If more than 10 sends are required, Queueable chunks (APEX-011) each with their own 10."
+    ],
+    "output": "200-row test uses one sendEmail with a list (or chunked Queueables). Inbound test uses a constructed InboundEmail in Apex tests.",
+    "verification": [
+      "Limits.getEmailInvocations() <= 10 in the trigger transaction.",
+      "Large-attachment test documented against 50 MB.",
+      "No real addresses in source."
+    ],
+    "self_explanation": "Ten franking presses, 50 MB inbound bin, daily meter looked up not guessed."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; synthetic email addresses only.",
+    "starting_state_checks": [
+      "Email deliverability may be off in sandbox—assert invocations, not inboxes.",
+      "No production addresses"
+    ],
+    "steps": [
+      "Write LAB_CaseMailer that sendEmail's a list for Trigger.new Ids.",
+      "Write a test inserting 20 LAB_Case__c and asserting email invocations are 1 (or a small number), never 20.",
+      "Implement a stub InboundEmailHandler that inserts LAB_Case__c from a constructed InboundEmail in a test.",
+      "Read the governors sendEmail and heap footnote; write the two numbers in a class comment with the URL."
+    ],
+    "guided_completion": [
+      "If invocations equal row count, you did not bulkify.",
+      "If you quoted a daily number, add Needs verification unless copied from the page."
+    ],
+    "independent_challenge": "Chunk 25 messages across Queueable execute methods so each transaction stays at or under 10 sendEmail calls.",
+    "evidence": [
+      "Test log of Limits.getEmailInvocations()",
+      "Comment with governors URL"
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ email service and classes"
+    ],
+    "limitations": "Sandbox often does not deliver real mail; that does not invalidate invocation counts."
+  },
+  "decision_table": [
+    {
+      "signal": "Vendor emails invoices to a mailbox you own.",
+      "choose": "Inbound email service + InboundEmailHandler.",
+      "not": "Polling Gmail via callout every minute.",
+      "why": "Inbound email services exist for this; callouts are APEX-013."
+    },
+    {
+      "signal": "Trigger must notify contacts for up to 200 new cases.",
+      "choose": "One (or few) sendEmail of a list; stay at or under 10 method calls.",
+      "not": "sendEmail inside the for-loop.",
+      "why": "Governors: 10 sendEmail methods per transaction."
+    },
+    {
+      "signal": "You need a daily mass-email ceiling for a campaign.",
+      "choose": "Open Execution Governors and Limits email section for this org.",
+      "not": "Quote a memorized unofficial daily number.",
+      "why": "This lesson's limits overview is: look up, do not invent."
+    },
+    {
+      "signal": "Inbound attachments are large.",
+      "choose": "Design for 50 MB email-services heap; reject or store externally.",
+      "not": "Assume normal 6 MB heap.",
+      "why": "Governors heap footnote: email services 50 MB."
+    },
+    {
+      "signal": "Send must not happen if DML rolls back.",
+      "choose": "Send on a post-commit path / Queueable after success.",
+      "not": "sendEmail then throw, hoping nothing queued.",
+      "why": "Transaction design (APEX-010); do not invent unsend behavior."
+    },
+    {
+      "signal": "You need many unknown subscribers, not a human inbox.",
+      "choose": "Platform events / CDC (APEX-012).",
+      "not": "Email as an integration bus.",
+      "why": "Email is not the event bus."
+    }
+  ],
+  "limitations": [
+    "Daily/mass numbers not copied.",
+    "Not Email-to-Case admin setup.",
+    "Not Marketing Cloud.",
+    "Sandbox delivery often off."
+  ],
+  "security_notes": [
+    "Inbound mail is untrusted.",
+    "No secrets in templates.",
+    "Respect individual email preference flags where required."
+  ],
+  "common_mistakes": [
+    "sendEmail in a loop.",
+    "Inventing daily caps.",
+    "Trusting inbound SMTP.",
+    "Using 6 MB heap math for email services."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Too many sendEmail invocations.",
+      "check": [
+        "Loop vs list",
+        "10 cap",
+        "Queueable chunks"
+      ],
+      "do_not_assume": "Deliverability is the governor."
+    },
+    {
+      "symptom": "Inbound handler heap error.",
+      "check": [
+        "50 MB footnote",
+        "Attachment size"
+      ],
+      "do_not_assume": "Normal 12 MB async heap applies."
+    },
+    {
+      "symptom": "Tests pass but nobody receives mail.",
+      "check": [
+        "Sandbox deliverability",
+        "Assert invocations not inboxes"
+      ],
+      "do_not_assume": "sendEmail was not called."
+    },
+    {
+      "symptom": "Need a daily number in a design review.",
+      "check": [
+        "Governors email section",
+        "Edition/licenses"
+      ],
+      "do_not_assume": "A 2018 blog is current."
+    }
+  ],
+  "production_notes": [
+    "Confirm deliverability and OWEA before production sends.",
+    "No production mail from this lab."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "sendEmail methods allowed per Apex transaction?",
+      "options": {
+        "A": "10",
+        "B": "100",
+        "C": "50",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "Governors table: 10 sendEmail methods.",
+      "distractor_explanations": {
+        "B": "100 is callouts/SOQL sync.",
+        "C": "50 is enqueueJob.",
+        "D": "There is a cap."
+      },
+      "concept": "10 sendEmail",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Email services heap size on the governors page?",
+      "options": {
+        "A": "50 MB",
+        "B": "6 MB always",
+        "C": "12 MB always",
+        "D": "1 MB"
+      },
+      "answer": "A",
+      "rationale": "Heap footnote: email services heap size is 50 MB.",
+      "distractor_explanations": {
+        "B": "6 MB is general sync heap.",
+        "C": "12 MB is general async heap.",
+        "D": "Too small."
+      },
+      "concept": "50 MB",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "200-row trigger calling sendEmail once per row fails because:",
+      "options": {
+        "A": "It can exceed 10 sendEmail methods",
+        "B": "FOR UPDATE forbids email",
+        "C": "CDC forbids email",
+        "D": "Queueable cannot send email"
+      },
+      "answer": "A",
+      "rationale": "10 method calls, not 200.",
+      "distractor_explanations": {
+        "B": "Locks are APEX-010.",
+        "C": "Events.",
+        "D": "Queueable can send within its own 10."
+      },
+      "concept": "Loop send",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Inbound Apex email is typically implemented with:",
+      "options": {
+        "A": "Messaging.InboundEmailHandler on an Email Service",
+        "B": "Named credential only",
+        "C": "Schedulable cron only",
+        "D": "FOR UPDATE"
+      },
+      "answer": "A",
+      "rationale": "Inbound email services invoke handler Apex.",
+      "distractor_explanations": {
+        "B": "Callouts.",
+        "C": "Scheduler.",
+        "D": "Locks."
+      },
+      "concept": "Inbound handler",
+      "citation_ids": [
+        "SF-APEX-EMAIL-IN"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where do you get daily mass-email numbers for an interview?",
+      "options": {
+        "A": "The email section of Execution Governors and Limits for this org—not invented memory",
+        "B": "Always 5000",
+        "C": "The 50 enqueueJob cap",
+        "D": "CPU ms"
+      },
+      "answer": "A",
+      "rationale": "This lesson's overview is humility plus the official page.",
+      "distractor_explanations": {
+        "B": "Invented.",
+        "C": "Wrong feature.",
+        "D": "Wrong governor."
+      },
+      "concept": "Daily humility",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Best outbound bulk pattern?",
+      "options": {
+        "A": "List of SingleEmailMessage passed to few sendEmail calls",
+        "B": "sendEmail per Trigger.new row",
+        "C": "One callout per email",
+        "D": "Publish Immediately platform events to Gmail"
+      },
+      "answer": "A",
+      "rationale": "Lists plus the 10-call cap.",
+      "distractor_explanations": {
+        "B": "Hits 10 quickly.",
+        "C": "APEX-013.",
+        "D": "Wrong bus."
+      },
+      "concept": "Bulk outbound",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Email-services heap vs normal async heap?",
+      "options": {
+        "A": "Email services 50 MB vs general async 12 MB on the governors page",
+        "B": "They are identical 6 MB",
+        "C": "Email is unlimited",
+        "D": "Email uses 10 minutes CPU as heap"
+      },
+      "answer": "A",
+      "rationale": "Footnote vs async heap column.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "No.",
+        "D": "CPU is not heap."
+      },
+      "concept": "Heap distinction",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Inbound handler should treat the body as:",
+      "options": {
+        "A": "Untrusted input",
+        "B": "System-mode gospel",
+        "C": "A named credential secret",
+        "D": "A savepoint"
+      },
+      "answer": "A",
+      "rationale": "SMTP is not authenticated like a named credential.",
+      "distractor_explanations": {
+        "B": "Dangerous.",
+        "C": "Wrong store.",
+        "D": "APEX-010."
+      },
+      "concept": "Untrusted inbound",
+      "citation_ids": [
+        "SF-APEX-EMAIL-IN"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Is a workflow email alert the same governor as Messaging.sendEmail?",
+      "options": {
+        "A": "No; it is a different feature with its own limits",
+        "B": "Yes, always 10 together",
+        "C": "Yes, 50 MB heap",
+        "D": "Yes, 100 callouts"
+      },
+      "answer": "A",
+      "rationale": "Do not collapse declarative alerts into the Apex sendEmail 10.",
+      "distractor_explanations": {
+        "B": "Different features.",
+        "C": "Heap is inbound services.",
+        "D": "Callouts."
+      },
+      "concept": "Not workflow alerts",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Need more than 10 sends for one user click?",
+      "options": {
+        "A": "Chunk via Queueable/Batch so each transaction has its own 10",
+        "B": "Catch LimitException and continue",
+        "C": "Raise a Setup toggle to 10,000",
+        "D": "Use FOR UPDATE"
+      },
+      "answer": "A",
+      "rationale": "Governor exceptions are not handleable; new transactions reset the 10.",
+      "distractor_explanations": {
+        "B": "Cannot handle governor exceptions.",
+        "C": "Invented.",
+        "D": "Locks."
+      },
+      "concept": "Chunk sends",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Email vs platform event for ERP integration?",
+      "options": {
+        "A": "Prefer CDC/platform events; email is for humans",
+        "B": "Always email XML to the ERP",
+        "C": "sendEmail is EventBus.publish",
+        "D": "Inbound handler is CDC"
+      },
+      "answer": "A",
+      "rationale": "APEX-012 vs this mailroom.",
+      "distractor_explanations": {
+        "B": "Fragile.",
+        "C": "Different APIs.",
+        "D": "Different products."
+      },
+      "concept": "Not an event bus",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Limits.getEmailInvocations tracks:",
+      "options": {
+        "A": "sendEmail-style invocations in the transaction",
+        "B": "Named credential callouts",
+        "C": "CDC deliveries",
+        "D": "SOQL rows"
+      },
+      "answer": "A",
+      "rationale": "Use it to verify bulkification under the 10 cap.",
+      "distractor_explanations": {
+        "B": "Callouts.",
+        "C": "Events.",
+        "D": "SOQL."
+      },
+      "concept": "Invocations",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "out",
+      "front": "sendEmail cap per transaction?",
+      "back": "10 method calls (governors table)."
+    },
+    {
+      "id": "F2",
+      "category": "in",
+      "front": "Email services heap?",
+      "back": "50 MB (governors footnote)."
+    },
+    {
+      "id": "F3",
+      "category": "in",
+      "front": "Inbound Apex type?",
+      "back": "Messaging.InboundEmailHandler on an Email Service."
+    },
+    {
+      "id": "F4",
+      "category": "out",
+      "front": "Bulk outbound pattern?",
+      "back": "List of messages, few sendEmail calls."
+    },
+    {
+      "id": "F5",
+      "category": "daily",
+      "front": "Daily mass-email number in this lesson?",
+      "back": "Look up the governors email section; do not invent."
+    },
+    {
+      "id": "F6",
+      "category": "loop",
+      "front": "200 sendEmail in a trigger?",
+      "back": "Exceeds 10 invocations."
+    },
+    {
+      "id": "F7",
+      "category": "vs",
+      "front": "Workflow email alert vs Apex sendEmail?",
+      "back": "Different features and limits."
+    },
+    {
+      "id": "F8",
+      "category": "trust",
+      "front": "Inbound SMTP trust?",
+      "back": "Untrusted until you authenticate senders."
+    },
+    {
+      "id": "F9",
+      "category": "chunk",
+      "front": "Need 25 sends?",
+      "back": "Queueable/Batch chunks with their own 10."
+    },
+    {
+      "id": "F10",
+      "category": "heap",
+      "front": "Use 6 MB math for inbound attachments?",
+      "back": "No—email services heap is 50 MB."
+    },
+    {
+      "id": "F11",
+      "category": "txn",
+      "front": "Send if DML may roll back?",
+      "back": "Prefer post-commit/Queueable; do not invent unsend rules."
+    },
+    {
+      "id": "F12",
+      "category": "gov",
+      "front": "Async sendEmail cap?",
+      "back": "Still 10 per transaction (table lists 10 | 10)."
+    },
+    {
+      "id": "F13",
+      "category": "meta",
+      "front": "Handler class vs messages?",
+      "back": "Class is metadata; inbound rows/files are data."
+    },
+    {
+      "id": "F14",
+      "category": "sec",
+      "front": "Secrets in email body?",
+      "back": "Never log inbound bodies that contain credentials or send real customer PII from a lab."
+    },
+    {
+      "id": "F15",
+      "category": "lab",
+      "front": "Sandbox inbox empty?",
+      "back": "Assert invocations; deliverability may be off."
+    },
+    {
+      "id": "F16",
+      "category": "int",
+      "front": "Email as ERP bus?",
+      "back": "No—use events/callouts."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Inbound vs outbound Apex email?",
+      "answer_30_seconds": "Inbound: Email Service plus InboundEmailHandler, 50 MB heap. Outbound: Messaging.sendEmail, 10 calls per transaction. Daily caps: look up.",
+      "answer_2_minutes": "I keep humans on email and systems on events/callouts. I bulk outbound lists. I treat inbound as untrusted. I cite Execution Governors and Limits rather than blogs.",
+      "example": "LAB_CaseInbound handler vs LAB_CaseMailer.sendEmail(list).",
+      "tradeoffs": [
+        "Human channel vs integration bus",
+        "Heap vs invocation caps"
+      ],
+      "follow_ups": [
+        "What is MassEmailMessage?",
+        "Org-Wide Email Address?"
+      ],
+      "weak_answer_warnings": [
+        "Collapsing Email-to-Case, alerts, and sendEmail into one limit"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Which email limits will you quote from the Apex Developer Guide?",
+      "answer_30_seconds": "10 sendEmail per transaction and 50 MB email-services heap. Anything daily/mass I re-open the governors email section.",
+      "answer_2_minutes": "Interviewers reward this humility. I also know async still has 10 sendEmail. I do not mix in 100 callouts. I mention Limits.getEmailInvocations for evidence.",
+      "example": "Whiteboard: 10 | 10 sendEmail, footnote 50 MB.",
+      "tradeoffs": [
+        "Per-transaction vs daily",
+        "Honesty vs fake fluency"
+      ],
+      "follow_ups": [
+        "Where is the email section?",
+        "Do templates count extra?"
+      ],
+      "weak_answer_warnings": [
+        "Quoting 5000/day from memory"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Case trigger emails each contact on a 200-row insert. What fails?",
+      "answer_30_seconds": "sendEmail per row can exceed 10 method calls. Build a list or chunk Queueables.",
+      "answer_2_minutes": "I would show Limits.getEmailInvocations in a test with 20 rows expecting 1. I would not catch the governor. I would check duplicate emails and individual email preferences as neighboring.",
+      "example": "for (Case c : Trigger.new) Messaging.sendEmail(new Messaging.Email[]{mail});",
+      "tradeoffs": [
+        "List send vs Queueable chunks",
+        "User experience vs governors"
+      ],
+      "follow_ups": [
+        "Single vs mass email?",
+        "How do you test without sending?"
+      ],
+      "weak_answer_warnings": [
+        "Raising a phantom Setup limit"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Inbound service dies on a huge attachment. First check?",
+      "answer_30_seconds": "Email services heap is 50 MB, not the normal 6/12 MB. Reject or offload attachments.",
+      "answer_2_minutes": "I look at MIME size, debug heap, and whether the handler concatenates all parts. I do not raise CPU first. I add a test with a large Blob if practical, or document the cap.",
+      "example": "PDF plus many images in one inbound invoice mail.",
+      "tradeoffs": [
+        "Heap vs CPU",
+        "Store in Files vs inline Blob"
+      ],
+      "follow_ups": [
+        "Is 50 MB sync or inbound-only?",
+        "What about heap in Queueable after inbound?"
+      ],
+      "weak_answer_warnings": [
+        "Applying 6 MB blindly"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When is Apex email the wrong integration tool?",
+      "answer_30_seconds": "When an ERP or many subscribers need structured facts—use CDC/platform events or callouts.",
+      "answer_2_minutes": "Email is human-scale, lossy, and hard to parse. I keep inbound handlers for mailbox use cases. I do not XML-email an ERP that can subscribe to the bus.",
+      "example": "CDC on LAB_Order__c instead of emailing XML.",
+      "tradeoffs": [
+        "Human vs machine channels",
+        "Deliverability vs event replay"
+      ],
+      "follow_ups": [
+        "Email relay products?",
+        "Attachment as integration payload?"
+      ],
+      "weak_answer_warnings": [
+        "Building an integration bus on sendEmail"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Tests pass, UAT inbox empty.",
+      "answer_30_seconds": "Sandbox deliverability is often off. Assert sendEmail invocations and reserved addresses, not Gmail.",
+      "answer_2_minutes": "I check Organization-Wide defaults, deliverability set to system email only, and bounce. I do not 'fix' by SeeAllData. I use setTargetObjectId in tests carefully with synthetic contacts.",
+      "example": "Messaging.sendEmail in test with deliverability suppressed.",
+      "tradeoffs": [
+        "Invocation proof vs mailbox proof",
+        "Sandbox vs prod deliverability"
+      ],
+      "follow_ups": [
+        "How to send to a real tester in UAT?",
+        "Email logs?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming the method never ran"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "Need 25 emails from one user save.",
+      "answer_30_seconds": "Cannot handle the governor. Chunk across Queueable/Batch transactions, each with ≤10 sendEmail calls.",
+      "answer_2_minutes": "I design idempotent sends (custom 'already mailed' field) so retries do not spam. I watch daily allocations on the governors email section. I consider whether a template + mass email fits better.",
+      "example": "LAB_MailChunkQueueable processes 10 Ids per execute.",
+      "tradeoffs": [
+        "Spam risk vs completeness",
+        "MassEmailMessage vs 25 singles"
+      ],
+      "follow_ups": [
+        "Does finish() of Batch send a summary instead?",
+        "How do you halt?"
+      ],
+      "weak_answer_warnings": [
+        "try/catch around sendEmail to swallow LimitException"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "How do you secure an inbound email service?",
+      "answer_30_seconds": "Allowlist senders, treat body as untrusted, least-privilege handler, no secrets in replies, synthetic LAB_ data in tests.",
+      "answer_2_minutes": "Email services can create records as the running context of the service—I check the Setup user and sharing (APEX-015). I do not expose a public address that runs unrestricted DML. I log message-ids not bodies with PII.",
+      "example": "LAB_CaseInbound ignores senders not in LAB_AllowedSender__mdt.",
+      "tradeoffs": [
+        "Convenience vs abuse",
+        "Metadata allowlist vs hardcoded emails"
+      ],
+      "follow_ups": [
+        "What user does the service run as?",
+        "Attachment malware?"
+      ],
+      "weak_answer_warnings": [
+        "Trusting From: headers blindly"
+      ]
+    }
+  ]
+}

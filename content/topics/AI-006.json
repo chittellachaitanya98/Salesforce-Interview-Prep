@@ -1,0 +1,995 @@
+{
+  "topic_id": "AI-006",
+  "slug": "agent-testing-observability-versioning-limitations-and-",
+  "title": "Agent testing, observability, versioning, limitations, and responsible rollout",
+  "track": "Agentforce and AI on Salesforce",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AI-005"
+  ],
+  "objectives": [
+    "Use Agentforce Testing Center to evaluate whether an agent selects the intended subagent and action.",
+    "Explain agent versioning so you can change a draft without taking the active version down.",
+    "Name observability surfaces Help actually lists: Testing Center results, Agent Analytics, utterance analysis, audit and feedback.",
+    "State limitations and a responsible rollout sequence; mark uncited SKUs Needs verification."
+  ],
+  "diagnostic_question": "A VP wants the service agent live on Enhanced Chat tomorrow. Before reading, what tests, version, observability, and limitations would make you refuse that rollout?",
+  "definition": "Agent testing is generating and running utterances—often from subagents, actions, or Knowledge—to confirm the agent selects the intended job and tool. Observability is watching those tests plus production conversations through analytics, utterance analysis, and Trust Layer audit data. Versioning lets you iterate on a draft while an active version keeps serving. Limitations include builder differences (Studio Testing Center versus legacy Setup), source types that cannot auto-generate tests, and concurrent-active-version rules. Responsible rollout means sandbox tests, a versioned activate, one cited channel, and a watch window—not a same-day production blast. ([Generate Tests from Subagents and Actions](https://help.salesforce.com/s/articleView?id=ai.agent_studio_testing_center_topics_actions.htm); [Generate Tests from Knowledge Sources](https://help.salesforce.com/s/articleView?id=ai.agent_testing_center_knowledge_sources.htm); [Agentforce release notes](https://help.salesforce.com/s/articleView?id=release-notes.rn_einstein_copilot.htm); [Design and Implement Agents](https://help.salesforce.com/s/articleView?id=ai.copilot_intro.htm))",
+  "why_it_matters": "An agent that looks clever in a five-utterance demo will pick the wrong action in week two. Interviewers listen for Testing Center, versions (Help cites up to 20), and a refusal to skip monitoring. Legacy Testing Center and Studio Testing Center are not the same article.",
+  "sixty_second_explanation": "Think of a theater dress rehearsal. Testing Center writes a script of cue lines from the cast list (subagents and actions) or from the prompt book (Knowledge) and checks whether the actor hits the right mark. Versions are the understudy cast: you rehearse a new version without cancelling tonight's show. Observability is the stage manager's headset log after curtain. Limitations are the fire code: some source types cannot auto-generate cues, and Agentforce (Default) has only one active version. Responsible rollout is preview night, not opening on Broadway with no rehearsal.",
+  "deeper_explanation": [
+    "Studio Testing Center Help (does not apply to legacy Setup): generate test cases from subagents and actions using metadata and connected data libraries. Tests are conversations for single-utterance and multi-turn evaluation. The system drafts utterances aimed at triggering selected subagents and then confirms the agent selected the intended subagent and action. You can generate up to 200 test cases at a time. Permissions cited: Manage Agentforce Grids AND Manage Agentforce Testing. ([Generate Tests from Subagents and Actions](https://help.salesforce.com/s/articleView?id=ai.agent_studio_testing_center_topics_actions.htm))",
+    "Legacy Testing Center in Setup: when the agent is connected to a Data Library based on Knowledge or uploaded files, you can generate up to 100 question-and-answer test cases from that content. Custom retrievers or web sources are not supported for that generator. Tests draft in the agent's default language. Permissions cited: Manage AI Agents plus type-required permissions. ([Generate Tests from Knowledge Sources](https://help.salesforce.com/s/articleView?id=ai.agent_testing_center_knowledge_sources.htm))",
+    "Versioning Help: create multiple versions of an agent to iterate, test, and troubleshoot while minimizing downtime. Create a version of an active agent to change and test without taking the active version out of production, or keep a backup. You can create up to 20 versions of a single agent. Concurrently active agents vary by type; for example only one active version of Agentforce (Default). ([Agentforce release notes](https://help.salesforce.com/s/articleView?id=release-notes.rn_einstein_copilot.htm))",
+    "Observability on the Design and Implement Agents map includes Agentforce Analytics and monitoring, Agent Analytics, Agent Optimization, and Einstein Audit and Feedback Data. Release notes also describe Utterance Analysis clustering user inputs. Preview conditions in Builder let you simulate record or user context. Treat dashboard folder names that still say Copilot as transition leftovers. ([Design and Implement Agents](https://help.salesforce.com/s/articleView?id=ai.copilot_intro.htm); [Agentforce release notes](https://help.salesforce.com/s/articleView?id=release-notes.rn_einstein_copilot.htm))",
+    "Limitations to say out loud: Studio versus legacy Testing Center; 200 versus 100 generation caps in the cited articles; Knowledge generator excludes custom retrievers and web sources; channel denials from AI-002 still apply; SKUs Needs verification. Responsible rollout: sandbox, Ready index, tests, version, one channel, monitor, then widen."
+  ],
+  "mental_model": {
+    "analogy": "A theater dress rehearsal: cue script, understudy cast, stage-manager log, fire-code limits, and preview night before opening.",
+    "useful_mapping": [
+      "Testing Center → generating and running cue lines",
+      "subagent/action tests → cues from the cast list",
+      "Knowledge tests → cues from the prompt book",
+      "version → understudy production you can rehearse",
+      "active version → tonight's show",
+      "observability → headset log and audience notes",
+      "limitations → fire code and unsupported source types",
+      "responsible rollout → preview night, not surprise opening"
+    ],
+    "where_it_breaks": [
+      "A play has a human director; test generation still uses generative AI and can draft weak cues if the description is sloppy.",
+      "Help caps generated cases; a real org will need more than 200 over its life.",
+      "Analytics dashboards may still live in folders named for Copilot.",
+      "The analogy does not encode Einstein Requests."
+    ]
+  },
+  "teach_back_prompt": "Explain Testing Center versus versions versus observability to a service VP who wants to go live tomorrow, then name one Help limitation that would make you refuse.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: Studio vs legacy Testing Center, 200 vs 100 caps, 20 versions, one active Default."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given a refund subagent change, pick tests, a new version, and a watch metric."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "List three limitations that block auto-generated Knowledge tests."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a responsible rollout from sandbox to one channel."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: testing, observability, versioning, limitations, rollout."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-TEST-STUDIO",
+      "title": "Generate Tests from Subagents and Actions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=ai.agent_studio_testing_center_topics_actions.htm",
+      "supports": "Studio Testing Center (Beta): up to 200 cases, conversation tests, intended subagent/action checks, Manage Agentforce Testing permission.",
+      "release_or_version": "Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not apply to legacy Testing Center in Setup. Studio labeled Beta in Help."
+    },
+    {
+      "source_id": "SF-HELP-TEST-KNOW",
+      "title": "Generate Tests from Knowledge Sources",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=ai.agent_testing_center_knowledge_sources.htm",
+      "supports": "Legacy Testing Center: up to 100 Q&A cases from Knowledge or file libraries; custom retrievers/web sources unsupported.",
+      "release_or_version": "Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Applies to legacy Setup Testing Center, not Studio Beta."
+    },
+    {
+      "source_id": "SF-HELP-AF-RN",
+      "title": "Agentforce release notes",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=release-notes.rn_einstein_copilot.htm",
+      "supports": "Up to 20 versions; one active Agentforce (Default); utterance analysis; preview conditions.",
+      "release_or_version": "Cited Agentforce RN",
+      "last_verified": "2026-08-16",
+      "limits": "Older Copilot names appear; pair with current Builder Help."
+    },
+    {
+      "source_id": "SF-HELP-AF-INTRO",
+      "title": "Design and Implement Agents",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=ai.copilot_intro.htm",
+      "supports": "Map: Testing Center, deploy to channels, monitor with Agent Analytics and Einstein Audit and Feedback Data.",
+      "release_or_version": "Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Add-on licenses vary by agent type."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Testing Center",
+        "Versions",
+        "Observability",
+        "Limitations",
+        "Rollout",
+        "Studio vs legacy"
+      ],
+      "accessible_description": "Portrait map: generate tests, version drafts beside an active show, watch analytics and audit, respect Help caps, roll out one channel after sandbox."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": ["SF-HELP-TEST-STUDIO", "SF-HELP-TEST-KNOW", "SF-HELP-AF-RN", "SF-HELP-AF-INTRO"]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Test, version, observe, roll out"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Draft[Draft agent version] --> Test[Testing Center utterances]\n  Test --> Pass{Intended subagent and action?}\n  Pass -->|No| Fix[Fix jobs or instructions]\n  Pass -->|Yes| Ver[Keep active version serving]\n  Ver --> Mon[Analytics utterance analysis audit]\n  Mon --> Roll[Responsible one-channel rollout]",
+      "decision": "flowchart TD\n  Ready[Ready to go live?] --> Q1{Sandbox tests on the changed subagents?}\n  Q1 -->|No| Test[Run Testing Center first]\n  Q1 -->|Yes| Q2{Active version protected by a new draft version?}\n  Q2 -->|No| Ver[Create a version; do not edit production in place]\n  Q2 -->|Yes| Q3{Index Ready and human path tested?}\n  Q3 -->|No| Block[Limitation: refuse rollout]\n  Q3 -->|Yes| Q4{One cited channel plus a watch owner?}\n  Q4 -->|No| Wait[Not a responsible rollout]\n  Q4 -->|Yes| Go[Activate that version on that channel]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "New Testing Center in Agentforce Studio can generate up to 200 conversation test cases from selected subagents and actions and checks that the agent selected the intended subagent and action.",
+      "source_ids": ["SF-HELP-TEST-STUDIO"],
+      "scope": "Studio tests",
+      "validation": "Generate Tests from Subagents and Actions.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Legacy Testing Center can generate up to 100 Knowledge-based Q&A tests for agents connected to Knowledge or file Data Libraries; custom retrievers and web sources are not supported for that generator.",
+      "source_ids": ["SF-HELP-TEST-KNOW"],
+      "scope": "Legacy Knowledge tests",
+      "validation": "Generate Tests from Knowledge Sources.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "You can create up to 20 versions of a single agent. Concurrently active versions vary by type; only one active version of Agentforce (Default) is cited.",
+      "source_ids": ["SF-HELP-AF-RN"],
+      "scope": "Versioning",
+      "validation": "Agentforce release notes on agent versions.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Help's Agentforce success path includes testing, deploying to channels, and monitoring via Agent Analytics and Einstein Audit and Feedback Data.",
+      "source_ids": ["SF-HELP-AF-INTRO"],
+      "scope": "Observe and roll out",
+      "validation": "Design and Implement Agents map.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Help currently distinguishes a Beta Studio Testing Center from a legacy Setup Testing Center. Reverify which builder the org uses before quoting 200 versus 100 caps.",
+  "unresolved_uncertainty": [
+    "Whether Studio Testing Center is generally available in a given org is Needs verification because Help labels it Beta.",
+    "Exact analytics folder names may still say Copilot."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Agent version",
+      "telugu": "యాక్టివ్ ఏజెంట్‌ను ఆపకుండా మార్పులు టెస్ట్ చేసే డ్రాఫ్ట్ కాపీ."
+    },
+    {
+      "english": "Testing Center",
+      "telugu": "ఉచ్చారణలను నడిపి సరైన సబ్‌ఏజెంట్/యాక్షన్ వచ్చిందో చూసే స్థలం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I test utterances in Testing Center, version drafts beside the live agent, watch analytics and audit, and I refuse a same-day channel blast. Help cites up to 20 versions and different test generators for Studio versus legacy.",
+    "two_minutes": "I ask which builder we are on. Studio: generate up to 200 conversation tests from subagents and check intended job and action. Legacy: up to 100 Knowledge Q&A tests, not for custom retrievers or web sources. I create a new version instead of editing the active show. I watch Agent Analytics and audit data after a one-channel rollout. Limitations I say out loud: Beta labels, caps, unsupported sources, channel denials, SKUs."
+  },
+  "terminology": [
+    {
+      "term": "Agentforce Testing Center",
+      "plain": "The place you generate and run utterances against an agent.",
+      "precise": "Help splits a new Studio Testing Center (Beta) from a legacy Setup Testing Center with different generators, caps, and permissions.",
+      "example": "Generate tests for the Refund Request subagent after an instruction change.",
+      "non_example": "Prompt Builder Preview Settings on one Case record (AI-003).",
+      "confusable_neighbor": "Apex test class: compiles code, does not score subagent selection.",
+      "boundary": "Which Testing Center you have is Needs verification."
+    },
+    {
+      "term": "observability",
+      "plain": "Seeing what users asked and how the agent responded after go-live.",
+      "precise": "Help map: Agent Analytics, monitoring, optimization, Einstein Audit and Feedback Data; RN adds Utterance Analysis clusters.",
+      "example": "Weekly review of mis-routed refund utterances.",
+      "non_example": "A single happy-path demo recording.",
+      "confusable_neighbor": "Debug logs for Apex.",
+      "boundary": "Dashboard locations may still say Copilot."
+    },
+    {
+      "term": "versioning",
+      "plain": "A draft copy of the agent you can test without cancelling tonight's show.",
+      "precise": "Help: up to 20 versions; create a version of an active agent to test without taking the active version out of production; one active Agentforce (Default).",
+      "example": "Version 3 draft for new FAQ instructions while version 2 stays active.",
+      "non_example": "Editing the live agent in place during peak chat.",
+      "confusable_neighbor": "Salesforce application version (Winter/Summer).",
+      "boundary": "Concurrent active counts vary by type—Needs verification beyond the Default example."
+    },
+    {
+      "term": "limitations",
+      "plain": "The fire code: caps, unsupported sources, builder splits, channel denials.",
+      "precise": "Cited: 200 Studio cases, 100 legacy Knowledge cases, no Knowledge generator for custom retrievers/web sources, Beta Studio label, one active Default version.",
+      "example": "Cannot auto-generate Knowledge tests for a web-source library.",
+      "non_example": "Inventing a 10,000-test SLA Help never published.",
+      "confusable_neighbor": "Governor limits in Apex.",
+      "boundary": "Uncited numeric SLAs are Needs verification."
+    },
+    {
+      "term": "responsible rollout",
+      "plain": "Preview night: sandbox, tests, version, one cited channel, a watch owner.",
+      "precise": "Follow Help's test → deploy → monitor path; do not skip Ready indexes or human-approval paths from earlier lessons.",
+      "example": "Enhanced Chat in sandbox for a week, then production web chat only.",
+      "non_example": "WhatsApp plus Slack plus email on Friday afternoon.",
+      "confusable_neighbor": "Change sets for Apex (different pipeline).",
+      "boundary": "No production authorization from this lesson."
+    },
+    {
+      "term": "intended subagent check",
+      "plain": "Did the agent pick the job and tool you meant?",
+      "precise": "Studio Help: when the agent processes an utterance, confirm it selected the intended subagent and action.",
+      "example": "Shipping FAQ utterance must not fire Update Case.",
+      "non_example": "A fluency score with no job check.",
+      "confusable_neighbor": "BLEU/ROUGE metrics Help did not cite here.",
+      "boundary": "Do not invent unofficial quality numbers."
+    },
+    {
+      "term": "preview conditions",
+      "plain": "Simulating record or user context in Builder conversation preview.",
+      "precise": "RN: preview conditions vary by agent type—language, app, page, object/record for employee agents; end-user id or language for ASA.",
+      "example": "Preview ASA as a specific language user.",
+      "non_example": "Assuming generic preview equals production Omni-Channel.",
+      "confusable_neighbor": "Testing Center batch tests.",
+      "boundary": "Preview is not a load test."
+    },
+    {
+      "term": "Utterance Analysis",
+      "plain": "Clustering what people actually typed to the agent.",
+      "precise": "RN: gathers user inputs and reports clusters/categories, including whether a topic/subagent responded and whether it was correct.",
+      "example": "Cluster of 'where's my stuff' mis-routed to Case Update.",
+      "non_example": "A single Tester screenshot.",
+      "confusable_neighbor": "Einstein Opportunity Scoring (predictive, AI-007).",
+      "boundary": "Older notes say topic; teach subagent as current."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Freeze a version",
+      "actor": "Admin",
+      "trigger": "Change requested on a live agent",
+      "before": "Editing production in place",
+      "after": "New draft version; active version still serving",
+      "observe": "Version count still under 20",
+      "failure": "Live-edit during peak"
+    },
+    {
+      "step": 2,
+      "transition": "Generate tests",
+      "actor": "Admin",
+      "trigger": "Draft version exists",
+      "before": "Five manual chats",
+      "after": "Studio or legacy tests covering changed subagents",
+      "observe": "Intended subagent/action pass rate reviewed",
+      "failure": "Skipping tests because the demo was fluent"
+    },
+    {
+      "step": 3,
+      "transition": "Read limitations",
+      "actor": "Admin",
+      "trigger": "Generator skipped a source",
+      "before": "Assumed 100% coverage",
+      "after": "Manual cases for unsupported retrievers; Ready index confirmed",
+      "observe": "Written limitation in LAB_notes",
+      "failure": "Claiming Knowledge tests for a web-source library"
+    },
+    {
+      "step": 4,
+      "transition": "Roll out and watch",
+      "actor": "Admin + owner",
+      "trigger": "Tests pass in sandbox",
+      "before": "All channels at once",
+      "after": "One cited channel, analytics owner, rollback version",
+      "observe": "Utterance analysis scheduled",
+      "failure": "Unmonitored production blast"
+    }
+  ],
+  "when_to_use": [
+    "When you must plan Agentforce testing, observability, versioning, limitations, and responsible rollout for an interview or go-live.",
+    "When a subagent or action changed and you need Testing Center to prove the intended job still fires.",
+    "When a VP wants same-day production chat and you need a versioned, one-channel refusal.",
+    "When observability questions come up: Agent Analytics, utterance analysis, or audit and feedback data."
+  ],
+  "when_not_to_use": [
+    "Do not use Testing Center as a substitute for Prompt Builder preview of a single template (AI-003).",
+    "Do not treat passing tests as proof that Trust Layer permissions and human approval are designed (AI-005).",
+    "Do not use versioning vocabulary to choose Flow versus an agent (AI-007).",
+    "Do not quote 200 or 100 caps for the other Testing Center than the article you are in."
+  ],
+  "configuration_or_code_location": [
+    "Agentforce Studio Testing Center (Beta) or Setup legacy Testing Center.",
+    "Agent versions on the agent record in Builder.",
+    "Agent Analytics / dashboards (folder names may still say Copilot).",
+    "Einstein Audit and Feedback Data in Data 360."
+  ],
+  "worked_example": {
+    "scenario": "LAB_ ASA is active on sandbox Enhanced Chat. You change FAQ instructions. A VP wants production WhatsApp tomorrow. Sandbox only for this lesson.",
+    "inputs": [
+      "Active version 2",
+      "Draft instruction change on FAQ",
+      "Data Library Ready",
+      "WhatsApp not yet connected"
+    ],
+    "decisions": [
+      {
+        "decision": "Create version 3; leave version 2 active.",
+        "because": "Help: test changes without taking the active version out of production; max 20 versions.",
+        "rejected": "Edit version 2 in place"
+      },
+      {
+        "decision": "Generate Studio tests for the FAQ subagent (or legacy Knowledge tests if that is the org's center).",
+        "because": "Help checks intended subagent and action; Knowledge generator needs a Knowledge/file library.",
+        "rejected": "Three manual chats as the only evidence"
+      },
+      {
+        "decision": "Refuse production WhatsApp tomorrow; responsible rollout is sandbox Enhanced Chat plus a watch owner.",
+        "because": "Deploy and monitor are later map steps; WhatsApp is a new channel with its own Help, not a test artifact.",
+        "rejected": "Same-day extra channel because tests 'looked fine'"
+      }
+    ],
+    "configuration_or_code": [
+      "Version 3 draft; Testing Center on FAQ; no production channel added.",
+      "Write limitations: confirm Studio vs legacy; if web-source library, Knowledge generator will not apply."
+    ],
+    "output": "A go-live checklist with version, tests, observability owner, and a refused channel.",
+    "verification": [
+      "Version 2 still active during tests.",
+      "FAQ utterances select FAQ, not Case Update.",
+      "WhatsApp remains unconnected."
+    ],
+    "self_explanation": "I protected the live version, tested the change, and refused an unmonitored extra door."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox. If Testing Center is unavailable, complete a paper rehearsal script from Help.",
+    "starting_state_checks": [
+      "No production messaging channel.",
+      "LAB_ agent only."
+    ],
+    "steps": [
+      "Write whether your org's Help path is Studio (Beta) or legacy Setup Testing Center.",
+      "Draft 5 utterances for a FAQ subagent and 2 that should escalate.",
+      "Write the versioning rule you would use instead of live-edit.",
+      "Write one limitation (cap, unsupported source, or one-active-Default) and one observability owner."
+    ],
+    "guided_completion": [
+      "If you cannot generate tests, the paper script still counts.",
+      "If Studio is Beta in this org, record Needs verification for GA status."
+    ],
+    "independent_challenge": "A teammate wants 500 auto-generated tests from a web-source library. Respond with the cited caps and unsupported-source limitation.",
+    "evidence": [
+      "LAB_notes with Studio vs legacy, version rule, and refused 500-test claim.",
+      "Help URLs for Testing Center and versions."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate extra sandbox versions if you created them.",
+      "Do not connect production channels."
+    ],
+    "limitations": "Does not prove load or telephony quality."
+  },
+  "decision_table": [
+    {
+      "signal": "You changed a subagent's instructions or actions.",
+      "choose": "New agent version plus Testing Center cases aimed at that subagent.",
+      "not": "Live-edit the active version during peak chat.",
+      "why": "Help supports draft versions beside an active version and intended subagent/action checks."
+    },
+    {
+      "signal": "The agent uses a Knowledge or file Data Library and you are on legacy Testing Center.",
+      "choose": "Generate up to 100 Q&A tests from that library.",
+      "not": "The same generator for custom retrievers or web sources.",
+      "why": "Legacy Knowledge article excludes those source types."
+    },
+    {
+      "signal": "You are on Studio Testing Center and need breadth.",
+      "choose": "Generate up to 200 conversation tests from selected subagents.",
+      "not": "Quoting the 100 Knowledge cap as if it applied to Studio.",
+      "why": "Each Help article states which center it applies to."
+    },
+    {
+      "signal": "A VP wants every channel in production tomorrow.",
+      "choose": "Refuse: sandbox tests, one cited channel, observability owner, rollback version.",
+      "not": "A fluent demo as rollout evidence.",
+      "why": "Help's path is test, deploy, monitor; limitations and channel denials still apply."
+    }
+  ],
+  "limitations": [
+    "Studio Testing Center is labeled Beta in Help.",
+    "Knowledge auto-tests do not support custom retrievers or web sources in the cited legacy article.",
+    "Version concurrent-active rules beyond Agentforce (Default) Need verification.",
+    "Analytics folder names may lag the Copilot rename."
+  ],
+  "security_notes": [
+    "Test utterances can include realistic PII—use LAB_ data only.",
+    "Audit logs of prompts are sensitive (AI-005).",
+    "Do not open production channels to 'get better test data.'"
+  ],
+  "common_mistakes": [
+    "Editing the active version in place.",
+    "Mixing 200 and 100 caps across Testing Centers.",
+    "Generating Knowledge tests for unsupported source types.",
+    "Skipping observability after go-live.",
+    "Treating a Builder preview as Testing Center."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Generate Tests is missing or errors on Knowledge.",
+      "check": [
+        "Studio versus legacy article.",
+        "Library type is Knowledge or files, not custom retriever/web.",
+        "Index Ready (AI-004).",
+        "Cited testing permission set."
+      ],
+      "do_not_assume": "Testing Center is broken globally."
+    },
+    {
+      "symptom": "You cannot activate a second Agentforce (Default).",
+      "check": [
+        "Help: only one active version of that type.",
+        "Deactivate or use a draft version instead."
+      ],
+      "do_not_assume": "The 20-version cap is the issue."
+    },
+    {
+      "symptom": "Tests pass but production users get different answers.",
+      "check": [
+        "Preview conditions versus real channel context.",
+        "Which version is active.",
+        "Omni-Channel and user language."
+      ],
+      "do_not_assume": "Sandbox tests equal every channel."
+    }
+  ],
+  "production_notes": [
+    "One channel, one owner, one rollback version.",
+    "No production rollout is authorized by this lesson.",
+    "Reverify Beta versus GA Testing Center in the org."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Studio Testing Center Help says you can generate up to how many test cases at a time from subagents and actions?",
+      "options": {
+        "A": "200",
+        "B": "2",
+        "C": "10000",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "Generate Tests from Subagents and Actions cites up to 200.",
+      "distractor_explanations": {
+        "B": "Too small.",
+        "C": "Not cited.",
+        "D": "There is a cap."
+      },
+      "concept": "Studio cap",
+      "citation_ids": ["SF-HELP-TEST-STUDIO"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Legacy Knowledge Testing Center generates up to:",
+      "options": {
+        "A": "100 question-and-answer style test cases",
+        "B": "200 conversation cases (that number is the Studio article)",
+        "C": "One test ever",
+        "D": "No tests"
+      },
+      "answer": "A",
+      "rationale": "Generate Tests from Knowledge Sources cites up to 100 for the legacy center.",
+      "distractor_explanations": {
+        "B": "200 is the Studio subagent generator.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Legacy cap",
+      "citation_ids": ["SF-HELP-TEST-KNOW"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Studio tests confirm the agent selected:",
+      "options": {
+        "A": "The intended subagent and action",
+        "B": "A random report",
+        "C": "OWD",
+        "D": "Apex heap size"
+      },
+      "answer": "A",
+      "rationale": "Studio Help: confirm the agent correctly selected the intended subagent and action.",
+      "distractor_explanations": {
+        "B": "Not analytics.",
+        "C": "Sharing.",
+        "D": "Governors."
+      },
+      "concept": "Intended job",
+      "citation_ids": ["SF-HELP-TEST-STUDIO"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Legacy Knowledge test generation is not supported when the library is based on:",
+      "options": {
+        "A": "Custom retrievers or web sources",
+        "B": "Knowledge articles and fields",
+        "C": "Uploaded files",
+        "D": "The agent's default language note alone"
+      },
+      "answer": "A",
+      "rationale": "The Knowledge Testing Center article excludes custom retrievers and web sources.",
+      "distractor_explanations": {
+        "B": "Those are supported sources.",
+        "C": "Files are supported.",
+        "D": "Language is a drafting note, not the exclusion."
+      },
+      "concept": "Unsupported sources",
+      "citation_ids": ["SF-HELP-TEST-KNOW"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How many versions of a single agent can you create, per the cited release note?",
+      "options": {
+        "A": "Up to 20",
+        "B": "Exactly 2",
+        "C": "Unlimited",
+        "D": "Zero; versions are illegal"
+      },
+      "answer": "A",
+      "rationale": "Agentforce RN: create up to 20 versions of a single agent.",
+      "distractor_explanations": {
+        "B": "Not the cited cap.",
+        "C": "There is a cap.",
+        "D": "Versions are a documented feature."
+      },
+      "concept": "Version cap",
+      "citation_ids": ["SF-HELP-AF-RN"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "For Agentforce (Default), the cited note says you can have:",
+      "options": {
+        "A": "Only one active version",
+        "B": "Twenty concurrently active versions",
+        "C": "No active versions",
+        "D": "Active versions only in Classic"
+      },
+      "answer": "A",
+      "rationale": "RN example: only one active version of type Agentforce (Default).",
+      "distractor_explanations": {
+        "B": "20 is total versions, not concurrent Default actives.",
+        "C": "You can have one active.",
+        "D": "Lightning / Agentforce."
+      },
+      "concept": "Active Default",
+      "citation_ids": ["SF-HELP-AF-RN"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Studio Testing Center permissions cited include:",
+      "options": {
+        "A": "Manage Agentforce Grids AND Manage Agentforce Testing",
+        "B": "Chatter Free only",
+        "C": "Guest User",
+        "D": "View Setup only"
+      },
+      "answer": "A",
+      "rationale": "Generate Tests from Subagents and Actions user-permissions table.",
+      "distractor_explanations": {
+        "B": "Insufficient.",
+        "C": "Insufficient.",
+        "D": "Not the cited pair."
+      },
+      "concept": "Studio perms",
+      "citation_ids": ["SF-HELP-TEST-STUDIO"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why create a version of an active agent?",
+      "options": {
+        "A": "To make and test changes without taking the active version out of production",
+        "B": "To delete Salesforce",
+        "C": "To disable MFA",
+        "D": "To change OWD automatically"
+      },
+      "answer": "A",
+      "rationale": "RN versioning paragraph.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Sharing is unrelated."
+      },
+      "concept": "Why version",
+      "citation_ids": ["SF-HELP-AF-RN"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Design and Implement Agents places monitoring with:",
+      "options": {
+        "A": "Agent Analytics and Einstein Audit and Feedback Data among other monitor topics",
+        "B": "Only Debug Logs for validation rules",
+        "C": "Only Schema Builder",
+        "D": "Only Territory Management"
+      },
+      "answer": "A",
+      "rationale": "The Help map's Monitor Your Agent column.",
+      "distractor_explanations": {
+        "B": "Not the cited AI monitor path.",
+        "C": "Data model.",
+        "D": "Sales alignment."
+      },
+      "concept": "Observability map",
+      "citation_ids": ["SF-HELP-AF-INTRO"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Studio Help labels the new Testing Center as applying to:",
+      "options": {
+        "A": "New Testing Center in Agentforce Studio (Beta), not legacy Setup",
+        "B": "Only Process Builder",
+        "C": "Only Salesforce Classic reports",
+        "D": "Only Experience Cloud CMS"
+      },
+      "answer": "A",
+      "rationale": "The article's 'This article applies to' table.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Which center",
+      "citation_ids": ["SF-HELP-TEST-STUDIO"]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Utterance Analysis in the cited RN is for:",
+      "options": {
+        "A": "Gathering user inputs and reporting clusters, including whether a topic responded correctly",
+        "B": "Deleting agents",
+        "C": "Changing API versions of Apex",
+        "D": "Setting OWD"
+      },
+      "answer": "A",
+      "rationale": "Agentforce RN Utterance Analysis bullet.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Sharing."
+      },
+      "concept": "Utterance Analysis",
+      "citation_ids": ["SF-HELP-AF-RN"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A responsible rollout after tests pass is best described as:",
+      "options": {
+        "A": "Activate the tested version on one cited channel and monitor with analytics/audit",
+        "B": "Connect every messaging network the same afternoon",
+        "C": "Skip versions because the demo was fluent",
+        "D": "Grant Modify All Data"
+      },
+      "answer": "A",
+      "rationale": "Help's path is test, deploy to channels, monitor. This lesson treats multi-channel same-day blasts as irresponsible.",
+      "distractor_explanations": {
+        "B": "Ignores limitations and monitoring.",
+        "C": "Versions exist to reduce that risk.",
+        "D": "Security anti-pattern."
+      },
+      "concept": "Rollout",
+      "citation_ids": ["SF-HELP-AF-INTRO", "SF-HELP-AF-RN"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "studio",
+      "front": "Studio Testing Center generation cap?",
+      "back": "Up to 200 test cases at a time from subagents and actions, as conversation tests."
+    },
+    {
+      "id": "F2",
+      "category": "legacy",
+      "front": "Legacy Knowledge test cap?",
+      "back": "Up to 100 question-and-answer tests from Knowledge or file Data Libraries."
+    },
+    {
+      "id": "F3",
+      "category": "check",
+      "front": "What does a Studio test confirm?",
+      "back": "That the agent selected the intended subagent and action for the utterance."
+    },
+    {
+      "id": "F4",
+      "category": "limit",
+      "front": "Knowledge generator unsupported sources?",
+      "back": "Agents connected to data libraries based on custom retrievers or web sources."
+    },
+    {
+      "id": "F5",
+      "category": "version",
+      "front": "Version cap per agent?",
+      "back": "You can create up to 20 versions of a single agent."
+    },
+    {
+      "id": "F6",
+      "category": "active",
+      "front": "Agentforce (Default) active versions?",
+      "back": "Only one active version of that type is cited in the release note."
+    },
+    {
+      "id": "F7",
+      "category": "why",
+      "front": "Why version an active agent?",
+      "back": "To test changes without taking the active version out of production, or to keep a backup."
+    },
+    {
+      "id": "F8",
+      "category": "obs",
+      "front": "Name Help observability surfaces.",
+      "back": "Agent Analytics, monitoring/optimization topics, Einstein Audit and Feedback Data, and Utterance Analysis in the RN."
+    },
+    {
+      "id": "F9",
+      "category": "perms",
+      "front": "Studio testing permissions?",
+      "back": "Manage Agentforce Grids AND Manage Agentforce Testing, per the Studio article."
+    },
+    {
+      "id": "F10",
+      "category": "beta",
+      "front": "Is Studio Testing Center GA in Help?",
+      "back": "The article labels New Testing Center in Agentforce Studio as Beta. Treat GA as Needs verification."
+    },
+    {
+      "id": "F11",
+      "category": "preview",
+      "front": "What are preview conditions?",
+      "back": "Builder settings to simulate conversation context such as language, page, or record, varying by agent type."
+    },
+    {
+      "id": "F12",
+      "category": "rollout",
+      "front": "Responsible rollout in one line?",
+      "back": "Sandbox tests, a draft version, one cited channel, an observability owner, and a rollback version."
+    },
+    {
+      "id": "F13",
+      "category": "mistake",
+      "front": "Live-edit the active agent?",
+      "back": "No. Create a version so tonight's show keeps running while you rehearse."
+    },
+    {
+      "id": "F14",
+      "category": "mixup",
+      "front": "200 versus 100?",
+      "back": "200 is Studio subagent/action generation. 100 is legacy Knowledge generation. Do not mix the articles."
+    },
+    {
+      "id": "F15",
+      "category": "utterance",
+      "front": "What is Utterance Analysis for?",
+      "back": "Clustering user inputs and seeing whether the agent responded with the correct topic/subagent."
+    },
+    {
+      "id": "F16",
+      "category": "map",
+      "front": "Help success path after build?",
+      "back": "Test your agent, deploy to channels, then monitor and improve with analytics and audit data."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you test, version, observe, and roll out an Agentforce agent?",
+      "answer_30_seconds": "I generate Testing Center utterances, keep a draft version beside the active one, watch analytics and audit, and I only open one cited channel after sandbox. I name Help caps and builder splits as limitations.",
+      "answer_2_minutes": "I start by asking Studio versus legacy. Studio: up to 200 conversation tests from subagents, checking intended job and action. Legacy: up to 100 Knowledge tests if the library type is supported. I create a version so production stays up. After activate I watch Agent Analytics and Utterance Analysis. Responsible rollout is preview night, not every channel tomorrow.",
+      "example": "Version 3 FAQ change tested in Studio; version 2 still active; Enhanced Chat only.",
+      "tradeoffs": [
+        "Coverage vs generator caps",
+        "Speed vs one-channel caution"
+      ],
+      "follow_ups": [
+        "What if Studio is Beta?",
+        "How many versions can you keep?"
+      ],
+      "weak_answer_warnings": [
+        "Demo equals tested",
+        "Mixing 200 and 100"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "You must change FAQ instructions on a live agent. Walk the versioning move.",
+      "answer_30_seconds": "Create a new version, edit the draft, test it, then activate when ready. Do not live-edit the active version. Remember the 20-version cap and one-active-Default rule if that type applies.",
+      "answer_2_minutes": "Help's point is minimizing downtime and risk. I treat versions like understudies. If we are at 20, I delete an old unused draft first—Needs verification of delete rules in current Builder Help. I never use versions as a substitute for source control of other metadata, but I do use them as the agent-specific safety switch.",
+      "example": "Version 2 active on Enhanced Chat; version 3 draft for FAQ; tests pass; then switch.",
+      "tradeoffs": [
+        "More versions vs clutter",
+        "Fast hotfix vs protected show"
+      ],
+      "follow_ups": [
+        "Can two Default versions be active?",
+        "How do you roll back?"
+      ],
+      "weak_answer_warnings": [
+        "Edit production in place"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "design",
+      "question": "How do you choose Studio tests versus Knowledge tests?",
+      "answer_30_seconds": "If I am on Studio, I generate from subagents and actions. If I am on legacy Setup and the library is Knowledge or files, I generate Q&A from that content. I do not use the Knowledge generator for custom retrievers or web sources.",
+      "answer_2_minutes": "I read the 'This article applies to' table so I do not quote the wrong cap. For a refund-instruction change, subagent tests are the fit. For a new article corpus, Knowledge tests are the fit—after Ready (AI-004). I still add a few manual escalate utterances either way. Description text should not include the test count; Help says the description is focus, not configuration.",
+      "example": "Refund subagent: Studio generator. New PDF library: wait Ready, then legacy Knowledge tests if that center exists.",
+      "tradeoffs": [
+        "Job coverage vs corpus coverage",
+        "Auto-generated vs hand-written cues"
+      ],
+      "follow_ups": [
+        "What should you not put in the test description?",
+        "Multi-turn versus single utterance?"
+      ],
+      "weak_answer_warnings": [
+        "One generator for every library type"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A VP wants WhatsApp, Slack, and web chat in production tomorrow after a fluent demo. Your answer?",
+      "answer_30_seconds": "I refuse that as a responsible rollout. We test in sandbox, protect the active version, open one cited channel, and assign an observability owner. Extra doors are a later change.",
+      "answer_2_minutes": "Help's map is test, deploy, monitor—not demo, blast, hope. Channel denials from IT Service Help still apply. WhatsApp on an unsupported template is a limitation, not a stretch goal. I offer a dated plan: week one web chat sandbox, week two production web, later channels after utterance analysis. SKUs stay Needs verification.",
+      "example": "Written refusal: no WhatsApp until Enhanced Chat metrics are owned for two weeks.",
+      "tradeoffs": [
+        "Executive date vs incident cost",
+        "One door vs brand coverage"
+      ],
+      "follow_ups": [
+        "What do you monitor in week one?",
+        "Who is the rollback owner?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing because the demo was fluent"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "foundational",
+      "question": "What observability will you actually look at after go-live?",
+      "answer_30_seconds": "Agent Analytics, Utterance Analysis clusters, and Einstein Audit and Feedback Data. I also keep Testing Center regressions on the last failed jobs.",
+      "answer_2_minutes": "I do not pretend I have a custom Datadog board unless the org built one. I use Help's monitor column. If dashboards still sit in a Copilot-named folder, I treat that as a rename leftover. I look for wrong-subagent clusters first, then toxic or injection-looking prompts with security (AI-005). I schedule a human review of escalations.",
+      "example": "Weekly: top utterance clusters, FAQ miss rate, transfer rate.",
+      "tradeoffs": [
+        "Out-of-the-box analytics vs custom reports",
+        "Privacy of logs vs debug need"
+      ],
+      "follow_ups": [
+        "Where do those dashboards live?",
+        "What is Agent Optimization?"
+      ],
+      "weak_answer_warnings": [
+        "We will just watch the group chat"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Knowledge test generation is greyed out. Diagnose.",
+      "answer_30_seconds": "Check that I am on the legacy article's center, that the library is Knowledge or files, that custom retriever/web is not the source, that index is Ready, and that I have Manage AI Agents.",
+      "answer_2_minutes": "If we are on Studio, I should be using the subagent generator, not expecting the 100-case Knowledge button. If the library is web-source, Help says generation is unsupported—limitation, not a bug. I write manual tests instead. I do not rebuild production indexes to 'force' a generator.",
+      "example": "Web-source library: Knowledge generator unavailable; 15 manual FAQ utterances added.",
+      "tradeoffs": [
+        "Manual coverage vs unsupported auto-gen",
+        "Studio vs legacy skill"
+      ],
+      "follow_ups": [
+        "What permission does legacy cite?",
+        "Default language of generated tests?"
+      ],
+      "weak_answer_warnings": [
+        "The product is broken so skip tests"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How is Builder preview different from Testing Center?",
+      "answer_30_seconds": "Preview is an interactive conversation, optionally with preview conditions. Testing Center batches generated utterances and can score intended subagent and action. I need both.",
+      "answer_2_minutes": "Preview conditions help me simulate language or a record. They do not replace 200 targeted cases. I use preview to feel the conversation and Testing Center to catch regressions when instructions change. Neither is a load test. Neither proves Omni-Channel in production.",
+      "example": "Preview as Spanish end user; Testing Center batch on Refund Request.",
+      "tradeoffs": [
+        "Interactive insight vs batch coverage",
+        "Preview conditions vs real channel variables"
+      ],
+      "follow_ups": [
+        "What preview conditions exist for ASA?",
+        "Can you test email channel in preview?"
+      ],
+      "weak_answer_warnings": [
+        "Preview equals tested"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Name three limitations you will say in an interview without being asked.",
+      "answer_30_seconds": "Studio Testing Center is Beta in Help. Knowledge auto-tests skip custom retrievers and web sources. Agentforce (Default) has one active version. I also mention 200 versus 100 caps so I do not mix articles.",
+      "answer_2_minutes": "Limitations are how you sound senior. I add channel denials from IT Service Help, Ready-index gates, masking caveats from AI-005, and SKUs Needs verification. I would rather under-promise a rollout than invent a 10,000-test factory Help never described. Responsible rollout is the practical expression of those limits.",
+      "example": "Whiteboard corner: Beta, 200/100, unsupported web sources, one active Default, one-channel go-live.",
+      "tradeoffs": [
+        "Honesty vs executive optimism",
+        "Cited caps vs wishful coverage"
+      ],
+      "follow_ups": [
+        "What else is Needs verification?",
+        "How do you track versions against 20?"
+      ],
+      "weak_answer_warnings": [
+        "No limitations; Agentforce just works"
+      ]
+    }
+  ]
+}

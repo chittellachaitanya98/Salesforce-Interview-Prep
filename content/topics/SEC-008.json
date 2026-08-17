@@ -1,0 +1,969 @@
+{
+  "topic_id": "SEC-008",
+  "slug": "external-user-and-experience-cloud-access-fundamentals",
+  "title": "External-user and Experience Cloud access fundamentals",
+  "track": "Identity, access, and security",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "SEC-007"
+  ],
+  "objectives": [
+    "Distinguish authenticated Experience Cloud members from unauthenticated guest users who share one guest user record per site.",
+    "Explain that guest users get record access through guest user sharing rules, not manual sharing, under Secure guest user record access.",
+    "Keep external organization-wide defaults and guest profiles as least-privilege baselines, not clones of internal System Administrator.",
+    "Refuse to treat Experience Cloud as 'just another profile' without checking licenses, sharing, and guest policies."
+  ],
+  "diagnostic_question": "A public Experience Cloud site shows LAB_FAQ articles to people who never log in, while LAB_Customer should see only their own Cases after login. A teammate wants to manually share a Case to the guest user. What is the guest identity, what sharing mechanism is allowed, and what would you not clone from internal Salesforce?",
+  "definition": "Experience Cloud sites connect customers and partners. Unauthenticated visitors use a site guest user: Salesforce creates a guest profile and one guest user record per site, and all guest visitors share that identity. Secure guest user record access is enabled and cannot be disabled; guests get Read Only record access only through guest user sharing rules, a special criteria-based sharing rule, not manual sharing. Guest users are not automatically the owner of records they create; a default active user becomes owner. Authenticated external users use external licenses, profiles, and sharing that are not the same as internal users. ([Securely Share Sites with Guest Users](https://help.salesforce.com/s/articleView?id=platform.networks_secure_community.htm); [Review Guest User Access](https://help.salesforce.com/s/articleView?id=xcloud.shr_guest_user_access.htm))",
+  "why_it_matters": "Guest access is unauthenticated. A casual manual share or a cloned internal profile can publish CRM data to the internet. Interviewers listen for guest sharing rules, the one-guest-user-per-site model, default owners, and the refusal to use internal sharing habits on a public site.",
+  "sixty_second_explanation": "Think of a hotel. The lobby brochure rack is the guest user: everyone who walks in without a key shares the same public identity. They only get what the hotel explicitly put on the rack (guest user sharing rules), not a front-desk one-off key (manual sharing). A registered guest with a room key is an authenticated Experience Cloud member with an external license. Staff badges are internal users. Do not give the brochure rack a staff master key.",
+  "deeper_explanation": [
+    "When you create an Experience Cloud site, Salesforce creates a guest user profile and a site guest user record. All unauthenticated visitors share that one guest user record per site and therefore the same access. ([Guest user setup](https://help.salesforce.com/s/articleView?id=platform.networks_secure_community.htm))",
+    "Secure guest user record access is enabled in orgs with Experience Cloud sites and cannot be disabled. Guests can be granted Read Only access to records only through guest user sharing rules. Guest users cannot access records via manual sharing. ([Guest policies](https://help.salesforce.com/s/articleView?id=platform.networks_secure_community.htm); [Review Guest User Access](https://help.salesforce.com/s/articleView?id=xcloud.shr_guest_user_access.htm))",
+    "Records created by guest users are assigned to a default active user in the org, not kept as guest-owned. Configure that default owner deliberately. ([Guest user setup](https://help.salesforce.com/s/articleView?id=platform.networks_secure_community.htm))",
+    "Use the guest user profile to control public object, field, and app access. Test as the guest before go-live. The Guest User Sharing Rule Access Report in Setup helps see what guests can reach. Do not invent license names or edition matrices; inspect the org's Experience Cloud licenses.",
+    "Authenticated external users still have object, field, and record gates (SEC-003/004), plus external OWD. Sharing sets and super-user access are neighboring Experience Cloud tools; treat their exact behavior as Needs verification in current Help rather than reciting unofficial matrices."
+  ],
+  "mental_model": {
+    "analogy": "A hotel: lobby brochure rack = guest user (shared public identity), rack policy = guest sharing rules, room key = authenticated external member, staff badge = internal user.",
+    "useful_mapping": [
+      "brochure rack → one guest user record per site",
+      "what is on the rack → guest user sharing rules (Read Only)",
+      "front-desk one-off key → manual sharing (not allowed for guests)",
+      "room key guest → authenticated Experience Cloud user",
+      "staff badge → internal Salesforce user",
+      "who files a lobby form → default owner, not the guest user"
+    ],
+    "where_it_breaks": [
+      "External licenses and sharing sets are more specific than 'room keys'.",
+      "API and site preference controls add extra guest gates not visible in a hotel lobby.",
+      "Partner versus customer sites differ by license; do not invent which objects each license includes."
+    ]
+  },
+  "teach_back_prompt": "Explain why you cannot manually share a Case to 'the internet user,' and what identity all anonymous visitors actually share.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Guest user vs authenticated Experience Cloud user vs internal user."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Why manual sharing fails for guests."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Who owns a record a guest creates?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "How would you test guest access before go-live?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: public site least privilege."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-GUEST-SECURE",
+      "title": "Securely Share Your Experience Cloud Sites with Guest Users",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.networks_secure_community.htm",
+      "supports": "Guest profile and one guest user per site; guest sharing rules; no manual sharing; default owner; Secure guest user record access cannot be disabled.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Site-type UI names vary; reverify navigation."
+    },
+    {
+      "source_id": "SF-HELP-GUEST-REVIEW",
+      "title": "Review Guest User Access",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=xcloud.shr_guest_user_access.htm",
+      "supports": "Guest API access, record access, external OWD, site preferences, and related guest controls as a review checklist.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Control names are review-oriented; confirm each in the org."
+    },
+    {
+      "source_id": "SF-HELP-GUEST-SHARING",
+      "title": "Create Guest User Sharing Rules",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.security_sharing_rules_guest.htm",
+      "supports": "Guest user sharing rules as the documented grant path for unauthenticated record access.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Criteria and object support are org-sensitive; do not invent maxima here."
+    },
+    {
+      "source_id": "SF-HELP-DATA-ACCESS",
+      "title": "Control Who Sees What",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.security_data_access.htm",
+      "supports": "External users still sit in the object/field/record model; user sharing can include external users.",
+      "release_or_version": "Salesforce Help / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace Experience Cloud license documentation."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Internal users",
+        "Authenticated external users",
+        "Guest user per site",
+        "Guest sharing rules only",
+        "Default owner",
+        "Test as guest"
+      ],
+      "accessible_description": "Three identities: internal, authenticated external, shared guest, with guest sharing rules as the public grant."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-GUEST-SECURE",
+        "SF-HELP-GUEST-REVIEW",
+        "SF-HELP-GUEST-SHARING",
+        "SF-HELP-DATA-ACCESS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Internal, member, guest"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Site[Experience Cloud site] --> Internal[Internal Salesforce users]\n  Site --> Ext[Authenticated external users]\n  Site --> Guest[One guest user record per site]\n  Guest --> GProf[Guest profile CRUD/FLS]\n  Guest --> GRule[Guest user sharing rules Read Only]\n  Guest -->|Not allowed| Manual[Manual sharing]\n  Guest --> Owner[Records created: default active owner]",
+      "decision": "flowchart TD\n  Need[Who must see the data?] --> Q1{Must they log in?}\n  Q1 -->|No public| Guest[Guest profile + guest sharing rules + test as guest]\n  Q1 -->|Yes customer/partner| Ext[External license, profile, external OWD, sharing]\n  Q1 -->|Employees| Int[Internal users SEC-002 to SEC-004]\n  Guest --> Q2{Manual share to guest?}\n  Q2 -->|Requested| No[Refuse: not allowed under secure guest record access]\n  Ext --> Q3{Clone System Administrator?}\n  Q3 -->|Requested| No2[Refuse: least privilege external profile]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Each Experience Cloud site has a guest user profile and one guest user record. All unauthenticated visitors share that guest identity.",
+      "source_ids": ["SF-HELP-GUEST-SECURE"],
+      "scope": "Guest identity",
+      "validation": "Securely Share Your Experience Cloud Sites with Guest Users.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Secure guest user record access cannot be disabled. Guests receive record access through guest user sharing rules (Read Only), not manual sharing.",
+      "source_ids": ["SF-HELP-GUEST-SECURE", "SF-HELP-GUEST-REVIEW"],
+      "scope": "Guest record access",
+      "validation": "Guest security Help and Review Guest User Access.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Guest users are not automatically owners of records they create; a default active user in the org becomes the owner.",
+      "source_ids": ["SF-HELP-GUEST-SECURE"],
+      "scope": "Ownership",
+      "validation": "Assign records created by guest users to a default user.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Secure guest user record access remains enforced. Reverify guest sharing-rule UI and site preferences in the target org.",
+  "unresolved_uncertainty": [
+    "Customer Community versus Partner Community (and current license names) object access matrices are Needs verification in the org.",
+    "Sharing sets and super user access: confirm current Help before an interview deep-dive."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Guest user",
+      "telugu": "లాగిన్ కాని సైట్ సందర్శకులందరూ పంచుకునే ఒక పబ్లిక్ గుర్తింపు."
+    },
+    {
+      "english": "Experience Cloud",
+      "telugu": "కస్టమర్లు/పార్టనర్ల కోసం బాహ్య సైట్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Unauthenticated visitors share one guest user per site. They get records only via guest user sharing rules, not manual sharing. Authenticated external users have licenses and external sharing. Do not clone internal admin profiles for either.",
+    "two_minutes": "I split public versus logged-in. Public: guest profile least privilege, criteria-based guest sharing rules, test with the Guest User Sharing Rule Access Report, default owner for creates. Logged-in customers: external license, then the same object/field/record gates. I mention Secure guest user record access cannot be turned off. I do not invent license object lists."
+  },
+  "terminology": [
+    {
+      "term": "Experience Cloud site",
+      "plain": "A Salesforce-branded site for customers or partners.",
+      "precise": "An Experience Cloud (community/site) with its own membership, guest identity, and sharing. Creating it creates guest profile and guest user artifacts.",
+      "example": "LAB_Support_Site for synthetic FAQ and Case defection tests.",
+      "non_example": "The internal Lightning app for employees.",
+      "confusable_neighbor": "Salesforce Sites / Site.com remnants: still in the guest-security policy family; confirm product name in org.",
+      "boundary": "Full Experience Builder UX is an APP/Experience topic."
+    },
+    {
+      "term": "Guest user",
+      "plain": "The shared identity of people who use the site without logging in.",
+      "precise": "One guest user record per site, tied to the guest profile. All anonymous visitors share that access level.",
+      "example": "Two browsers on LAB_Support_Site without login share the same guest identity.",
+      "non_example": "LAB_Customer after they authenticate.",
+      "confusable_neighbor": "Authenticated external user.",
+      "boundary": "Not a second internal Salesforce license seat in the usual employee sense."
+    },
+    {
+      "term": "Guest user sharing rule",
+      "plain": "The allowed way to grant guests Read Only record access.",
+      "precise": "A special criteria-based sharing rule for unauthenticated guest users. Manual sharing to guests is not allowed under Secure guest user record access.",
+      "example": "Share LAB_FAQ__c records where LAB_Public__c is true to the site guest.",
+      "non_example": "Clicking Share on a Case and picking the guest user.",
+      "confusable_neighbor": "Ordinary sharing rules for internal groups (SEC-004).",
+      "boundary": "Warning: this grants access without login credentials."
+    },
+    {
+      "term": "External user",
+      "plain": "A logged-in customer or partner on the site.",
+      "precise": "An authenticated user with an Experience Cloud / community license, not the guest user. Object and record access still apply.",
+      "example": "LAB_Customer logs in and sees their own Cases.",
+      "non_example": "Anonymous brochure-rack visitor.",
+      "confusable_neighbor": "Internal user with a Salesforce license.",
+      "boundary": "Exact license names Need verification in the org."
+    },
+    {
+      "term": "Default owner",
+      "plain": "The internal user who owns records guests create.",
+      "precise": "Guests are no longer automatically owners of records they create; assign a default active user.",
+      "example": "LAB_Web_Owner owns web-to-case-like records created from the public form.",
+      "non_example": "Leaving ownership on the guest user as a security strategy.",
+      "confusable_neighbor": "Queue assignment: a possible neighboring routing design; verify in org.",
+      "boundary": "Ownership then drives internal sharing."
+    },
+    {
+      "term": "External organization-wide default",
+      "plain": "The record-access baseline for external users.",
+      "precise": "Review Guest User Access describes setting a restrictive baseline for external users so data is not shared by default unless authorized.",
+      "example": "External OWD Private for Case in a lab site.",
+      "non_example": "Copying internal Public Read/Write to external because 'it is the same object'.",
+      "confusable_neighbor": "Internal OWD (SEC-004).",
+      "boundary": "Confirm Sharing Settings UI for external access in the org."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name the audience",
+      "actor": "Admin + site owner",
+      "trigger": "Site requirement",
+      "before": "Everyone lumped as 'community users'",
+      "after": "Guest vs authenticated external vs internal",
+      "observe": "Written access matrix",
+      "failure": "Cloning System Administrator for the site"
+    },
+    {
+      "step": 2,
+      "transition": "Lock down the guest profile",
+      "actor": "Admin",
+      "trigger": "Public access enabled",
+      "before": "Default guest permissions unknown",
+      "after": "Least-privilege object and field access",
+      "observe": "Guest profile CRUD/FLS list",
+      "failure": "API Enabled left on the guest (review control exists to remove it)"
+    },
+    {
+      "step": 3,
+      "transition": "Grant records only with guest sharing rules",
+      "actor": "Admin",
+      "trigger": "Public records required",
+      "before": "Temptation to manual share",
+      "after": "Criteria-based guest sharing rule",
+      "observe": "Guest User Sharing Rule Access Report",
+      "failure": "Manual share to guest"
+    },
+    {
+      "step": 4,
+      "transition": "Test as guest and as member",
+      "actor": "Admin",
+      "trigger": "Before publish",
+      "before": "Only tested while logged in as admin",
+      "after": "Incognito guest test plus LAB_Customer test",
+      "observe": "Two browsers, two identities",
+      "failure": "Admin preview mistaken for guest access"
+    }
+  ],
+  "when_to_use": [
+    "When designing Experience Cloud access for unauthenticated visitors versus logged-in external users.",
+    "When a public site must show selected records without granting internal CRM access.",
+    "When someone tries to manually share to the guest user or clone an internal admin profile for the site.",
+    "When records created from a public form need a default owner instead of guest ownership."
+  ],
+  "when_not_to_use": [
+    "Do not use guest user sharing rules as a substitute for authenticated customer access to private Cases.",
+    "Do not use internal manual sharing habits on guest users; they are not allowed for that identity.",
+    "Do not treat this fundamentals lesson as a full Experience Builder or license-SKU catalog.",
+    "Do not use Experience Cloud guest access to bypass MFA for employees (employees are internal users)."
+  ],
+  "configuration_or_code_location": [
+    "Digital Experiences / All Sites, then the site's Guest User profile.",
+    "Sharing Settings → guest user sharing rules.",
+    "Guest User Sharing Rule Access Report.",
+    "Site preferences for guest API and user visibility (Review Guest User Access)."
+  ],
+  "worked_example": {
+    "scenario": "LAB_Support_Site should show public LAB_FAQ__c rows where LAB_Public__c is true to anyone. LAB_Customer, once logged in, should see only their Cases. A developer wants to Share a Case to Guest User and to clone System Administrator for 'site admins on the web.' Disposable org.",
+    "inputs": [
+      "Public FAQ requirement",
+      "Private customer Cases",
+      "Invalid manual share and admin-clone requests"
+    ],
+    "decisions": [
+      {
+        "decision": "Guest profile: Read on LAB_FAQ__c only as needed; no Case Read for guests.",
+        "because": "Guest identity is unauthenticated and shared.",
+        "rejected": "Case Read on the guest 'temporarily'"
+      },
+      {
+        "decision": "Guest user sharing rule for public FAQs only.",
+        "because": "Secure guest record access allows this path, not manual sharing.",
+        "rejected": "Manual share of a Case to Guest User"
+      },
+      {
+        "decision": "Authenticated LAB_Customer uses external sharing/OWD, not the guest rule, for Cases.",
+        "because": "They are a different identity with a login.",
+        "rejected": "Publishing Cases through the guest rule"
+      },
+      {
+        "decision": "Refuse cloning System Administrator onto a site profile.",
+        "because": "Least privilege; guest and external profiles are internet-facing or customer-facing.",
+        "rejected": "Internal admin clone"
+      }
+    ],
+    "configuration_or_code": [
+      "Configure guest profile object permissions for FAQ only.",
+      "Create a LAB guest sharing rule on public FAQs.",
+      "Set default owner LAB_Web_Owner for guest-created records if a form exists.",
+      "Test incognito as guest and as LAB_Customer."
+    ],
+    "output": "Anonymous users see public FAQs only. Customers see their Cases after login. No Case is on the guest identity.",
+    "verification": [
+      "Incognito: FAQ public row visible; Case URL not.",
+      "LAB_Customer: own Case visible per sharing design.",
+      "Manual share to guest is not used."
+    ],
+    "self_explanation": "I treated the guest as a shared unauthenticated principal and used only guest sharing rules for public rows."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable org with Experience Cloud available. If the feature is not licensed, stop and write Needs verification.",
+    "starting_state_checks": [
+      "Non-production.",
+      "You can create a LAB site or use an existing unused lab site."
+    ],
+    "steps": [
+      "Identify the site guest user and guest profile.",
+      "List object permissions currently on the guest; note anything that should not be public.",
+      "Find or create a synthetic public-flagged LAB record type you are allowed to use.",
+      "If you can create a guest user sharing rule, do so for that public set only; otherwise document the gap.",
+      "Open an incognito window and test as guest—not as your admin session."
+    ],
+    "guided_completion": [
+      "If you remain logged in as admin, you are not testing guest access.",
+      "If you created a manual share to guest, undo it."
+    ],
+    "independent_challenge": "Write who would own a record created by the guest and which internal sharing that owner would then use.",
+    "evidence": [
+      "Guest profile object list (LAB org).",
+      "Incognito test notes."
+    ],
+    "stop_recovery_cleanup": [
+      "Disable public access if you enabled it only for the lab.",
+      "Remove LAB guest sharing rules you created."
+    ],
+    "limitations": "License availability may block the lab; that is acceptable."
+  },
+  "decision_table": [
+    {
+      "signal": "Anonymous internet visitors must read a filtered set of records.",
+      "choose": "Guest profile least privilege plus a guest user sharing rule; test incognito.",
+      "not": "Manual sharing to the guest user.",
+      "why": "Secure guest user record access allows guest sharing rules, not manual sharing."
+    },
+    {
+      "signal": "A customer must see their own Cases after login.",
+      "choose": "Authenticated external user with external license/sharing, not the guest identity.",
+      "not": "A guest sharing rule that publishes Cases.",
+      "why": "Guest is unauthenticated and shared across all visitors."
+    },
+    {
+      "signal": "A public form creates records.",
+      "choose": "Default active owner for guest-created records, then internal sharing from that owner.",
+      "not": "Leaving the guest as owner as a security design.",
+      "why": "Help: guests are not automatically owners of records they create."
+    },
+    {
+      "signal": "Someone clones System Administrator for the community.",
+      "choose": "A least-privilege external or guest profile.",
+      "not": "Internal admin clone.",
+      "why": "The audience is internet- or customer-facing; least privilege applies harder."
+    }
+  ],
+  "limitations": [
+    "Does not catalog every Experience Cloud license SKU.",
+    "Sharing sets and super users are neighboring; Needs verification.",
+    "Guest API and site preference toggles should be reviewed in the org."
+  ],
+  "security_notes": [
+    "Guest sharing rules grant access without login credentials.",
+    "Test incognito before go-live.",
+    "Remove API Enabled from guests per review controls unless a documented public API exists."
+  ],
+  "common_mistakes": [
+    "Manual sharing to the guest user.",
+    "Testing only as an internal admin.",
+    "Putting Case Read on the guest profile.",
+    "Cloning System Administrator for Experience Cloud."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Public site shows no records.",
+      "check": [
+        "Guest profile object Read and FLS.",
+        "Guest user sharing rule criteria.",
+        "Whether you tested while logged in as admin."
+      ],
+      "do_not_assume": "Experience Cloud is down."
+    },
+    {
+      "symptom": "Public site shows too many records.",
+      "check": [
+        "Guest sharing rule criteria.",
+        "Guest profile object permissions.",
+        "Guest User Sharing Rule Access Report."
+      ],
+      "do_not_assume": "A manual share is required to fix it."
+    },
+    {
+      "symptom": "Guest-created records are invisible internally.",
+      "check": [
+        "Default owner and that owner's sharing.",
+        "Whether the record type is the expected one."
+      ],
+      "do_not_assume": "The guest still owns them."
+    }
+  ],
+  "production_notes": [
+    "Public access is a go-live security event; review guest reports.",
+    "Document default owners.",
+    "This lesson does not authorize production Experience Cloud publish."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How many guest user records does an Experience Cloud site use for unauthenticated visitors?",
+      "options": {
+        "A": "One guest user record per site, shared by all guest visitors",
+        "B": "One guest user per browser cookie unlimited",
+        "C": "The same as internal user licenses",
+        "D": "Guests do not have a user record"
+      },
+      "answer": "A",
+      "rationale": "All guest visitors share the same guest user record (one per site).",
+      "distractor_explanations": {
+        "B": "They share one identity.",
+        "C": "Different model.",
+        "D": "Salesforce creates a guest user record."
+      },
+      "concept": "One guest user",
+      "citation_ids": ["SF-HELP-GUEST-SECURE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How do guests get record access under Secure guest user record access?",
+      "options": {
+        "A": "Guest user sharing rules (Read Only), not manual sharing",
+        "B": "Manual sharing only",
+        "C": "Role hierarchy only",
+        "D": "Without sharing Apex only"
+      },
+      "answer": "A",
+      "rationale": "Guests cannot use manual sharing; guest sharing rules are the path.",
+      "distractor_explanations": {
+        "B": "Explicitly not allowed.",
+        "C": "Guests are not in the internal role tree as employees.",
+        "D": "Not the admin guest model."
+      },
+      "concept": "Guest sharing rules",
+      "citation_ids": ["SF-HELP-GUEST-SECURE"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Who owns records created by guest users?",
+      "options": {
+        "A": "A default active user in the org, not automatically the guest",
+        "B": "Always the guest user",
+        "C": "Always System Administrator",
+        "D": "No owner"
+      },
+      "answer": "A",
+      "rationale": "Guests are no longer automatically owners; assign a default user.",
+      "distractor_explanations": {
+        "B": "Old behavior Help moved away from.",
+        "C": "Not automatic.",
+        "D": "Records have owners."
+      },
+      "concept": "Default owner",
+      "citation_ids": ["SF-HELP-GUEST-SECURE"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Can Secure guest user record access be disabled?",
+      "options": {
+        "A": "No. Help says it is enabled and cannot be disabled in orgs with Experience Cloud sites",
+        "B": "Yes, from Session Settings",
+        "C": "Yes, by turning off MFA",
+        "D": "Yes, by Public Read/Write OWD"
+      },
+      "answer": "A",
+      "rationale": "The setting is enforced and cannot be disabled.",
+      "distractor_explanations": {
+        "B": "Sessions are a different topic.",
+        "C": "MFA is authentication.",
+        "D": "OWD is not that toggle."
+      },
+      "concept": "Cannot disable",
+      "citation_ids": ["SF-HELP-GUEST-SECURE"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Customer must see their own Cases after login. Use the guest user?",
+      "options": {
+        "A": "No. Use an authenticated external user; guest is shared and unauthenticated",
+        "B": "Yes, guest sharing rule on all Cases",
+        "C": "Yes, manual share each Case to guest",
+        "D": "Yes, clone System Administrator onto the guest"
+      },
+      "answer": "A",
+      "rationale": "Private customer data is not a guest use case.",
+      "distractor_explanations": {
+        "B": "Would publish Cases without login.",
+        "C": "Manual sharing not allowed for guests.",
+        "D": "Dangerous and wrong identity."
+      },
+      "concept": "Member vs guest",
+      "citation_ids": ["SF-HELP-GUEST-SECURE", "SF-HELP-DATA-ACCESS"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Developer clicks Share on a Case and selects Guest User. What do you say?",
+      "options": {
+        "A": "Not allowed; use a guest user sharing rule for truly public records instead, and not for this Case",
+        "B": "Correct for all Cases",
+        "C": "Correct if OWD is Public",
+        "D": "Correct if MFA is off"
+      },
+      "answer": "A",
+      "rationale": "Manual sharing to guests is not allowed; Cases should not be on the guest identity.",
+      "distractor_explanations": {
+        "B": "Unsafe.",
+        "C": "Does not legalize manual guest shares.",
+        "D": "Authentication layer."
+      },
+      "concept": "No manual guest share",
+      "citation_ids": ["SF-HELP-GUEST-SECURE"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You tested the site while logged in as System Administrator and it 'looks public.' Risk?",
+      "options": {
+        "A": "You did not test the guest identity; admin access is not guest access",
+        "B": "Admin preview is identical to guest",
+        "C": "Roles make them the same",
+        "D": "with sharing makes them the same"
+      },
+      "answer": "A",
+      "rationale": "Help tells you to test guest user access; admin sessions over-see.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Apex is not the test method here."
+      },
+      "concept": "Test as guest",
+      "citation_ids": ["SF-HELP-GUEST-SECURE"]
+    },
+    {
+      "id": "Q8",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Guest user versus authenticated Experience Cloud user?",
+      "options": {
+        "A": "Guest is unauthenticated and shared per site; members log in with an external license",
+        "B": "They are the same user record",
+        "C": "Guests have System Administrator",
+        "D": "Members cannot have profiles"
+      },
+      "answer": "A",
+      "rationale": "Two different identities and privilege models.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Opposite of least privilege.",
+        "D": "Members have profiles."
+      },
+      "concept": "Two identities",
+      "citation_ids": ["SF-HELP-GUEST-SECURE"]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Review Guest User Access mentions a mandatory private sharing model for unauthenticated users. What does that imply?",
+      "options": {
+        "A": "Guests only get records specifically shared via dedicated guest user sharing rules",
+        "B": "Guests inherit the CEO's role",
+        "C": "Guests use internal Public Read/Write",
+        "D": "Guests bypass FLS"
+      },
+      "answer": "A",
+      "rationale": "Record Access Control in the review article: private model plus guest sharing rules.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Opposite.",
+        "D": "FLS still applies on the guest profile."
+      },
+      "concept": "Private guest model",
+      "citation_ids": ["SF-HELP-GUEST-REVIEW"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Public form creates LAB_Web_Case records. First ownership question?",
+      "options": {
+        "A": "Which default active user is assigned as owner, and what sharing do they have?",
+        "B": "How to keep the guest as owner forever",
+        "C": "Which permission set group the guest needs for Modify All Data",
+        "D": "Which login hours the guest uses"
+      },
+      "answer": "A",
+      "rationale": "Default owner then internal sharing from that owner.",
+      "distractor_explanations": {
+        "B": "Help moved off guest ownership.",
+        "C": "Dangerous.",
+        "D": "Guests are unauthenticated."
+      },
+      "concept": "Ownership chain",
+      "citation_ids": ["SF-HELP-GUEST-SECURE"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Guest user sharing rule versus ordinary internal sharing rule?",
+      "options": {
+        "A": "Guest rules grant unauthenticated Read Only access; they are a special type and a serious public-data decision",
+        "B": "They are identical to role-hierarchy grants",
+        "C": "Guest rules grant Modify All Data",
+        "D": "Internal rules are only for guests"
+      },
+      "answer": "A",
+      "rationale": "Help warns that guest sharing grants access without login credentials.",
+      "distractor_explanations": {
+        "B": "Different audience.",
+        "C": "Read Only for guests.",
+        "D": "Reversed."
+      },
+      "concept": "Special rule type",
+      "citation_ids": ["SF-HELP-GUEST-SHARING", "SF-HELP-GUEST-SECURE"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Clone System Administrator for the Experience Cloud 'so partners can help.' Interview answer?",
+      "options": {
+        "A": "Refuse. Use a least-privilege external profile and permission sets; internet-facing or partner-facing identities are not internal admins",
+        "B": "Agree; partners need Modify All Data",
+        "C": "Agree; put it on the guest user",
+        "D": "Agree; disable Secure guest user record access"
+      },
+      "answer": "A",
+      "rationale": "Least privilege; the secure guest setting cannot be disabled anyway.",
+      "distractor_explanations": {
+        "B": "Over-privilege.",
+        "C": "Worse.",
+        "D": "Cannot disable."
+      },
+      "concept": "No admin clone",
+      "citation_ids": ["SF-HELP-GUEST-SECURE", "SF-HELP-DATA-ACCESS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "guest",
+      "front": "What identity do unauthenticated site visitors share?",
+      "back": "One guest user record per Experience Cloud site, plus the guest profile."
+    },
+    {
+      "id": "F2",
+      "category": "share",
+      "front": "How do guests get records?",
+      "back": "Guest user sharing rules (Read Only), not manual sharing."
+    },
+    {
+      "id": "F3",
+      "category": "share",
+      "front": "Can you disable Secure guest user record access?",
+      "back": "No. Help says it cannot be disabled."
+    },
+    {
+      "id": "F4",
+      "category": "owner",
+      "front": "Who owns guest-created records?",
+      "back": "A default active user you configure, not automatically the guest."
+    },
+    {
+      "id": "F5",
+      "category": "member",
+      "front": "Authenticated customer vs guest?",
+      "back": "Customers log in with an external license. Guests never log in and share one public identity."
+    },
+    {
+      "id": "F6",
+      "category": "test",
+      "front": "How must you test public access?",
+      "back": "As the guest (incognito), not as an internal admin session."
+    },
+    {
+      "id": "F7",
+      "category": "report",
+      "front": "Where can you review guest record grants?",
+      "back": "Guest User Sharing Rule Access Report in Setup."
+    },
+    {
+      "id": "F8",
+      "category": "case",
+      "front": "Should Cases go on the guest user?",
+      "back": "Not for private customer Cases. Use authenticated external access."
+    },
+    {
+      "id": "F9",
+      "category": "profile",
+      "front": "Clone System Administrator for a site?",
+      "back": "No. Least-privilege guest or external profiles only."
+    },
+    {
+      "id": "F10",
+      "category": "owd",
+      "front": "External OWD vs internal OWD?",
+      "back": "External baseline for external users; do not copy internal Public Read/Write by habit."
+    },
+    {
+      "id": "F11",
+      "category": "api",
+      "front": "Guest API Enabled?",
+      "back": "Review control exists to remove API Enabled from unauthenticated guest profiles; leave it off unless a documented public API exists."
+    },
+    {
+      "id": "F12",
+      "category": "license",
+      "front": "Experience Cloud license object lists?",
+      "back": "Needs verification in the org; do not invent SKU matrices."
+    },
+    {
+      "id": "F13",
+      "category": "warning",
+      "front": "Why are guest sharing rules high risk?",
+      "back": "They grant record access without login credentials."
+    },
+    {
+      "id": "F14",
+      "category": "internal",
+      "front": "Are Experience Cloud members internal users?",
+      "back": "No. They are external authenticated users with different licenses and sharing."
+    },
+    {
+      "id": "F15",
+      "category": "handoff",
+      "front": "After guest vs member, which stack still applies?",
+      "back": "Object permissions, FLS, and record access (SEC-003/004), plus login controls (SEC-007) for members."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How does Experience Cloud guest access work?",
+      "answer_30_seconds": "Unauthenticated visitors share one guest user per site. The guest profile sets CRUD/FLS. Records are granted only through guest user sharing rules, Read Only. Manual sharing is not allowed. Test incognito.",
+      "answer_2_minutes": "I start with identity. Creating a site creates the guest profile and guest user. Secure guest user record access cannot be disabled. I keep the guest profile empty of CRM objects unless a public row type exists. I use criteria-based guest sharing rules and the access report. Creates go to a default owner. Authenticated customers are a different user. I do not clone System Administrator.",
+      "example": "LAB_Support_Site public FAQs via guest rule; Cases never on the guest.",
+      "tradeoffs": [
+        "Public SEO content vs CRM exposure",
+        "Guest convenience vs credential-less grants"
+      ],
+      "follow_ups": [
+        "Who owns guest-created records?",
+        "Can you turn the secure setting off?"
+      ],
+      "weak_answer_warnings": [
+        "Manual share to guest"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Guest versus authenticated external user versus internal user?",
+      "answer_30_seconds": "Internal: employee Salesforce license. External member: logged-in customer/partner license. Guest: shared unauthenticated site identity. Three sharing models; do not mix them.",
+      "answer_2_minutes": "I draw three columns. Internal uses SEC-002–004. Members use external OWD and Experience Cloud licenses I will verify in the org rather than reciting SKUs. Guests use guest profile plus guest sharing rules. MFA and login hours apply to people who log in, not to the guest. Interviewers ding people who say 'community user' as if it were one thing.",
+      "example": "LAB_Admin, LAB_Customer, and incognito guest on LAB_Support_Site.",
+      "tradeoffs": [
+        "One site with mixed audiences vs separate sites",
+        "License cost vs public content"
+      ],
+      "follow_ups": [
+        "What is a sharing set? (Needs verification)",
+        "Partner vs customer licenses?"
+      ],
+      "weak_answer_warnings": [
+        "One profile for all three"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Public FAQ plus private customer Cases on one site. Design the access?",
+      "answer_30_seconds": "Guest: FAQ object Read and a guest sharing rule on public FAQs only. No Case on the guest. LAB_Customer: authenticated external access to their Cases. Test both identities.",
+      "answer_2_minutes": "Situation: mixed public/private. Task: no Case leakage. Action: guest profile without Case Read, guest rule on LAB_Public FAQ rows, external OWD Private for Case, member sharing for own Cases. Incognito test plus customer test. Result: brochure rack has FAQs; room keys have Cases. I refuse a guest rule on Case 'for convenience.'",
+      "example": "LAB_FAQ public flag true versus LAB_Customer Case.",
+      "tradeoffs": [
+        "One object with a public flag vs a dedicated public object",
+        "SEO vs least privilege"
+      ],
+      "follow_ups": [
+        "Knowledge vs custom FAQ object?",
+        "How do you prove no Case in guest report?"
+      ],
+      "weak_answer_warnings": [
+        "Guest Case Read"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A web form creates records as the guest. What do you configure besides the form?",
+      "answer_30_seconds": "Default owner for guest-created records, that owner's internal sharing, guest profile create permission only on that object if required, and no extra guest Read on unrelated CRM objects.",
+      "answer_2_minutes": "Help moved ownership off the guest. If the default owner is a poorly shared user, internal teams will not see the work. If the owner is too privileged, you concentrate risk. I pick LAB_Web_Owner with a narrow role/share path. I test a synthetic submit incognito. I still do not manual-share to guest. API Enabled stays off unless a documented public API exists.",
+      "example": "LAB_Web_Owner owns LAB_Web_Case; support group gets it via an internal sharing rule.",
+      "tradeoffs": [
+        "Dedicated owner user vs a queue (verify)",
+        "Guest Create vs fully authenticated intake"
+      ],
+      "follow_ups": [
+        "Spam risk?",
+        "Required fields and validation?"
+      ],
+      "weak_answer_warnings": [
+        "Guest remains owner"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "The public site shows too many Accounts. How do you investigate?",
+      "answer_30_seconds": "Guest profile Account permissions, guest sharing rules, Guest User Sharing Rule Access Report, and an incognito test. I assume credential-less grants until proven otherwise.",
+      "answer_2_minutes": "Situation: data leak. Task: find the guest grant. Action: I do not log in as admin to 'see what guests see.' I read the access report, inspect criteria (maybe LAB_Public__c is null-true), and check object Read. I remove or tighten the guest rule under change control. Result: incognito no longer lists internal Accounts. I tell leadership guest rules are public by nature.",
+      "example": "A guest rule with empty or overly broad criteria on Account.",
+      "tradeoffs": [
+        "Taking the site private vs tightening criteria",
+        "Speed vs audit trail"
+      ],
+      "follow_ups": [
+        "Field-level exposure of Phone?",
+        "Search engine cache?"
+      ],
+      "weak_answer_warnings": [
+        "Adding a manual share to 'fix' it"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "design",
+      "question": "Where do sharing sets fit, and what do you not invent?",
+      "answer_30_seconds": "Sharing sets are a neighboring Experience Cloud mechanism for authenticated external users. I will not recite unofficial object matrices. I will say guests still cannot use them as a substitute for guest sharing rules.",
+      "answer_2_minutes": "Honesty is the interview. I know guest versus member. I know internal versus external OWD. Sharing sets, super users, and license SKUs change and are edition-sensitive, so I mark Needs verification and open current Help. I will still refuse System Administrator clones and guest Case Read. That combination beats a fake license table.",
+      "example": "LAB_Customer login path: 'I would confirm sharing sets in Help if the requirement is access via Account relationship.'",
+      "tradeoffs": [
+        "Fluency vs accuracy",
+        "Standard sharing vs Experience-specific tools"
+      ],
+      "follow_ups": [
+        "What Help article would you open?",
+        "What is super user access?"
+      ],
+      "weak_answer_warnings": [
+        "Invented license object lists"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Public FAQ is blank for anonymous users but visible to you. First checks?",
+      "answer_30_seconds": "You are probably not the guest. Check guest object Read, FLS, guest sharing rule match, and whether public access is enabled. Test incognito.",
+      "answer_2_minutes": "I reproduce logged out. If I see the FAQ while logged in as admin, that proves nothing. I check the guest profile, the rule criteria against LAB_Public__c, and site public access. I check the Lightning page is exposed to guests. I do not grant the guest extra objects to 'make it show.' Result: incognito shows only matching FAQs.",
+      "example": "Admin session versus Chrome incognito on LAB_Support_Site.",
+      "tradeoffs": [
+        "Builder preview vs true guest",
+        "More guest permissions vs fixing the rule"
+      ],
+      "follow_ups": [
+        "Experience Builder guest preview vs real guest?",
+        "Caching?"
+      ],
+      "weak_answer_warnings": [
+        "Widening guest CRUD immediately"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach guest access with the hotel analogy, then break it.",
+      "answer_30_seconds": "Brochure rack is the shared guest identity; rack policy is guest sharing rules; room keys are logged-in members; staff are internal. It breaks on license SKUs, sharing sets, and guest API site preferences.",
+      "answer_2_minutes": "I walk someone into the lobby without a key. I show they cannot get a front-desk one-off Case key. I check them in as LAB_Customer. I then break the hotel: Salesforce creates metadata (guest profile) not a paper rack; default owners file lobby forms; Review Guest User Access has API and visibility toggles. Close: credential-less grants are a go-live event.",
+      "example": "Incognito FAQ versus LAB_Customer Case on the same hostname.",
+      "tradeoffs": [
+        "Simple story vs Experience Cloud complexity",
+        "Public content vs CRM"
+      ],
+      "follow_ups": [
+        "Where does MFA apply?",
+        "Where does SEC-004 external OWD apply?"
+      ],
+      "weak_answer_warnings": [
+        "A generic teaching metaphor",
+        "Manual share to guest"
+      ]
+    }
+  ]
+}

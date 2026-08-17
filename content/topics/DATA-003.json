@@ -1,0 +1,1061 @@
+{
+  "topic_id": "DATA-003",
+  "slug": "lookup-vs-master-detail-relationships",
+  "title": "Lookup vs Master-Detail Relationships",
+  "track": "Data model and configuration",
+  "level": "Intermediate",
+  "type": "Decision",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "FOUND-002",
+    "DATA-001",
+    "DATA-002"
+  ],
+  "objectives": [
+    "Define lookup and master-detail as relationship field types that associate objects, with different deletion, ownership, and security behavior.",
+    "Choose lookup when the child must remain independent; choose master-detail when the child is owned by the parent and should inherit sharing.",
+    "Explain that a master-detail field is required on the detail page layout and that detail records lose an independent Owner field.",
+    "Recognize objects that cannot sit on the detail side of a master-detail with a custom object, and treat hierarchical/external relationships as neighboring types."
+  ],
+  "diagnostic_question": "LAB_Inspection__c must point at LAB_Property__c. If the property is deleted, should inspections vanish? Do inspections need their own owner and sharing rules? Before reading, would you pick lookup or master-detail, and what evidence would flip the choice?",
+  "definition": "A relationship field associates one object with another. Lookup links two objects without controlling deletion or security, and is not automatically required. Master-detail is a parent-child relationship where the master controls deletion, ownership, and sharing of detail records; the relationship field is required on the detail page layout. ([Relationships Among Standard Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm); [Object Relationships Overview](https://help.salesforce.com/s/articleView?id=platform.overview_of_custom_object_relationships.htm))",
+  "why_it_matters": "Picking master-detail for an independent child deletes data you meant to keep and removes Owner, queues, and sharing rules. Picking lookup when you needed cascade delete and inherited sharing leaves orphan rows and blocks native roll-up summary fields. Interviewers listen for deletion, ownership, and security—not just 'parent and child.'",
+  "sixty_second_explanation": "Think of a hospital chart. A lookup is a consulting-specialist note: optional, the patient's file stays if the specialist leaves, and the file has its own owner. Master-detail is an inpatient admission: the stay chart is required, owned by the admission, inherits hospital access, and is shredded when the admission is deleted. Reparenting a master-detail child is off by default unless an admin allows it on custom objects.",
+  "deeper_explanation": [
+    "The Object Reference states that relationship types differ in data deletion, record ownership, security, and required fields on page layouts. Lookup has no effect on deletion or security and is not automatically required. Master-detail deletes detail records when the master is deleted, hides Owner on the detail (set to the master's owner), inherits sharing and security from the master, and requires the relationship field on the detail page layout. ([Relationships Among Standard Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm))",
+    "By default, master-detail children cannot be reparented. Administrators can allow reparenting on custom objects by selecting Allow reparenting on the relationship definition. You can define master-detail between custom objects or between a custom object and a standard object, but the standard object cannot be the detail side of a relationship with a custom object. ([Relationships Among Standard Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm))",
+    "The Object Reference lists standard objects that cannot be the primary/master object of a master-detail you create in that way, including Lead, User, Product2, PriceBook2, Idea, BusinessHours, OrderItem, and QuoteLineItem. The Custom Fields table also shows Event, Lead, and Task do not support master-detail or lookup in that sample, while User supports lookup but not master-detail. Confirm the current object before designing. ([Custom Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/custom_fields.htm))",
+    "Custom objects on the detail side cannot have sharing rules, manual sharing, or queues because those require the Owner field. Help repeats that OwnerId is removed when the object becomes a master-detail detail. ([Custom Object Standard Fields](https://help.salesforce.com/s/articleView?id=platform.dev_objectfields.htm); [Relationships Among Standard Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm))",
+    "External objects support only lookup, external lookup, and indirect lookup—not master-detail. Hierarchical relationships (User to User) and junction many-to-many modeling are neighboring topics (DATA-004). Roll-up summary fields require the master side of a master-detail (DATA-007)."
+  ],
+  "mental_model": {
+    "analogy": "A hospital chart: lookup is a consulting-specialist note (optional, independent owner, survives if the specialist record is removed depending on lookup delete settings); master-detail is an inpatient admission chart (required, owned by the stay, shredded with the admission).",
+    "useful_mapping": [
+      "lookup field → consulting-specialist pointer; not automatically required",
+      "master-detail field → admission wristband; required on the detail layout",
+      "cascade delete → shredding stay notes when the admission is deleted",
+      "inherited sharing → the ward badge opens every note in that admission",
+      "Owner on detail → no independent chart owner; the admission owns it",
+      "Allow reparenting → moving a stay note to another admission (custom objects, opt-in)",
+      "related list → notes appearing on the parent chart"
+    ],
+    "where_it_breaks": [
+      "Lookup delete behavior (clear value vs prevent delete vs cascade-like options) is configured on the lookup and is not the same as master-detail cascade; confirm the current lookup delete options in Help for the target org.",
+      "Standard objects cannot be the detail of a custom master; the hospital analogy does not encode that platform rule.",
+      "Roll-up summaries and junction objects need extra rules this analogy does not show.",
+      "Sharing inheritance is not the same as field-level security on the relationship field."
+    ]
+  },
+  "teach_back_prompt": "Explain lookup versus master-detail to a Java developer using deletion, Owner, and sharing—then name one standard object that cannot be a custom object's detail.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, write three master-detail behaviors that lookup does not have."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given independent inspections vs property-owned units, pick lookup or master-detail and name the rejected type."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "List why a detail object cannot use queues or sharing rules."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk a 'Owner field vanished' ticket without notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: convert lookup to master-detail only after checking existing orphans and ownership."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-OBJREF-REL",
+      "title": "Relationships Among Standard Objects and Fields",
+      "type": "Official Salesforce Object Reference",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm",
+      "supports": "Lookup vs master-detail deletion, ownership, sharing, required layout field, reparenting option, standard-as-detail restriction, objects that cannot be primary, many-to-many intro, external-object relationship limits.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-OBJREF-CUSTFIELDS",
+      "title": "Custom Fields",
+      "type": "Official Salesforce Object Reference",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/custom_fields.htm",
+      "supports": "Which sample standard objects support master-detail, lookup, and custom fields.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-RELOVERVIEW",
+      "title": "Object Relationships Overview",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.overview_of_custom_object_relationships.htm",
+      "supports": "Help overview of custom object relationship types used with the Object Reference.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-CUSTOMOBJFIELDS",
+      "title": "Custom Object Standard Fields",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.dev_objectfields.htm",
+      "supports": "OwnerId removed when a custom object becomes a master-detail detail; no sharing rules, manual sharing, or queues on that detail.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Lookup independence",
+        "Master-detail control",
+        "Delete / Owner / sharing",
+        "Required on detail layout",
+        "Who cannot be detail",
+        "LAB_ choice"
+      ],
+      "accessible_description": "Decision map comparing lookup and master-detail on deletion, ownership, sharing, requiredness, and object eligibility."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-OBJREF-REL",
+        "SF-OBJREF-CUSTFIELDS",
+        "SF-HELP-RELOVERVIEW",
+        "SF-HELP-CUSTOMOBJFIELDS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Child independence → lookup; parent-owned life cycle → master-detail"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Rel[Relationship field on child] --> L[Lookup]\n  Rel --> MD[Master-Detail]\n  L --> L1[No auto delete or sharing control]\n  L --> L2[Not automatically required]\n  L --> L3[Child keeps Owner]\n  MD --> M1[Delete master deletes details]\n  MD --> M2[Detail inherits sharing]\n  MD --> M3[No Owner on detail]\n  MD --> M4[Required on detail layout]",
+      "decision": "flowchart TD\n  Need[Need a parent link] --> Q1{Must the child live and die with the parent?}\n  Q1 -->|Yes and inherit sharing| MD[Master-detail]\n  Q1 -->|No independent life| L[Lookup]\n  MD --> Q2{Is the parent a custom object and child a standard object?}\n  Q2 -->|Standard cannot be detail of custom| Block[Use lookup or rethink objects]\n  Q2 -->|Custom detail or allowed pair| MD2[Create MD field on the detail]\n  L --> Q3{Need native roll-up summary?}\n  Q3 -->|Yes| ConsiderMD[Master-detail or alternative DATA-007]\n  Q3 -->|No| KeepL[Keep lookup]",
+      "sequence": "sequenceDiagram\n  participant User\n  participant Master\n  participant Detail\n  User->>Master: Delete master record\n  Master->>Detail: Master-detail: details deleted\n  Note over User,Detail: Lookup: details remain unless lookup delete options say otherwise"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Lookup relationships link two objects but have no effect on deletion or security, and lookup fields are not automatically required.",
+      "source_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ],
+      "scope": "Lookup behavior",
+      "validation": "Object Reference relationship types plus Help overview.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "In a master-detail relationship, deleting the master deletes details; the detail has no Owner field and inherits sharing; the relationship field is required on the detail page layout.",
+      "source_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-CUSTOMOBJFIELDS"
+      ],
+      "scope": "Master-detail behavior",
+      "validation": "Object Reference plus Custom Object Standard Fields OwnerId note.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A standard object cannot be the detail side of a master-detail relationship with a custom object. Reparenting master-detail children is off by default and can be allowed on custom objects.",
+      "source_ids": [
+        "SF-OBJREF-REL",
+        "SF-OBJREF-CUSTFIELDS"
+      ],
+      "scope": "Eligibility and reparenting",
+      "validation": "Relationships Among Objects and Custom Fields support table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Custom objects on the detail side cannot have sharing rules, manual sharing, or queues because those require the Owner field.",
+      "source_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-CUSTOMOBJFIELDS"
+      ],
+      "scope": "Sharing consequences",
+      "validation": "Same two official sources on Owner and sharing.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Relationship eligibility and lookup delete options are release-sensitive. Reverify Object Relationships Overview and the Object Reference for Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact lookup delete-constraint labels and whether cascade-delete-like lookup options exist for a given object are Needs verification in the target org Help.",
+    "Conversion from lookup to master-detail requires existing child rows to have parents populated; UI steps are org-sensitive."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Lookup relationship",
+      "telugu": "Optional parent link that does not auto-control delete or sharing."
+    },
+    {
+      "english": "Master-detail relationship",
+      "telugu": "Parent-controlled child: delete, owner, and sharing follow the master."
+    },
+    {
+      "english": "Reparenting",
+      "telugu": "Moving a detail record to a different master."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Lookup is an optional pointer that does not control delete or sharing. Master-detail makes the child live under the parent: cascade delete, inherited sharing, no Owner on the detail, required on the layout. Standard objects cannot be the detail of a custom master.",
+    "two_minutes": "I decide from life cycle. If LAB_Inspection__c must survive if the property is deleted and needs its own owner or queue, I use lookup. If LAB_Unit__c is meaningless without the property and should inherit sharing, I use master-detail on the unit. I mention roll-ups need master-detail. I refuse master-detail when the child is a standard object and the parent is custom. I do not treat related lists as proof of cascade delete."
+  },
+  "terminology": [
+    {
+      "term": "relationship field",
+      "plain": "A field that points a record at another record.",
+      "precise": "A custom field type that associates objects. Types differ in deletion, ownership, security, and layout requiredness.",
+      "example": "LAB_Property__c lookup on LAB_Inspection__c.",
+      "non_example": "A Text field storing an 18-character Id is not a relationship field.",
+      "confusable_neighbor": "Formula spanning field: reads a related value; it is not the relationship itself.",
+      "boundary": "External, hierarchical, and junction patterns are neighboring."
+    },
+    {
+      "term": "lookup relationship",
+      "plain": "A loose link between two objects.",
+      "precise": "A 1:n link with no effect on deletion or security; not automatically required. Related lists can still appear on the parent.",
+      "example": "Optional LAB_Vendor__c lookup on LAB_Inspection__c.",
+      "non_example": "Master-detail to LAB_Property__c.",
+      "confusable_neighbor": "External lookup: external-object relationship type, not ordinary lookup.",
+      "boundary": "Lookup delete options are configured separately; confirm in org Help."
+    },
+    {
+      "term": "master-detail relationship",
+      "plain": "A tight parent-child link the parent controls.",
+      "precise": "Parent-child where master delete deletes details, detail inherits sharing, Owner is unavailable on detail, and the field is required on the detail layout.",
+      "example": "LAB_Unit__c master-detail to LAB_Property__c.",
+      "non_example": "A lookup that a validation rule makes required.",
+      "confusable_neighbor": "Junction object: a custom object with two master-detail fields (DATA-004).",
+      "boundary": "Standard object cannot be detail of a custom master."
+    },
+    {
+      "term": "detail record",
+      "plain": "The child in a master-detail pair.",
+      "precise": "The object you place the master-detail field on. Its data can appear as a related list on the master.",
+      "example": "A LAB_Unit__c row under a property.",
+      "non_example": "A lookup child that still has its own Owner.",
+      "confusable_neighbor": "Related list item: presentation of the child, not the relationship type.",
+      "boundary": "Detail objects cannot use queues or sharing rules."
+    },
+    {
+      "term": "cascade delete",
+      "plain": "Deleting the parent also deletes the children.",
+      "precise": "Documented master-detail behavior: when a master record is deleted, related detail records are also deleted.",
+      "example": "Delete LAB_Property__c and its LAB_Unit__c rows disappear.",
+      "non_example": "Deleting a lookup parent while children remain (default lookup).",
+      "confusable_neighbor": "Recycle Bin undelete: related restore behavior is neighboring and org-sensitive.",
+      "boundary": "Do not assume lookup cascade unless the lookup is configured that way."
+    },
+    {
+      "term": "inherited sharing",
+      "plain": "The child uses the parent's sharing.",
+      "precise": "Detail records inherit the sharing and security settings of the master record.",
+      "example": "A user who can see the property can see its master-detail units per inherited sharing.",
+      "non_example": "Field-level security on the unit's custom fields.",
+      "confusable_neighbor": "OWD on the child: less relevant when Controlled by Parent / inherited MD sharing applies.",
+      "boundary": "SEC topics own the full sharing model."
+    },
+    {
+      "term": "reparenting",
+      "plain": "Moving a child to a different parent.",
+      "precise": "Off by default for master-detail. Admins can allow child records on custom objects to be reparented.",
+      "example": "Allow reparenting so a LAB_Unit__c can move to another property.",
+      "non_example": "Changing a lookup parent, which is normally allowed.",
+      "confusable_neighbor": "Record transfer of Owner: different from changing the master.",
+      "boundary": "Needs verification of UI label in the target org."
+    },
+    {
+      "term": "related list",
+      "plain": "The list of children on the parent page.",
+      "precise": "When you define lookup or master-detail, data from one object can appear as a custom related list on the other object's page layouts.",
+      "example": "Units related list on LAB_Property__c.",
+      "non_example": "A report of units is not the related list metadata.",
+      "confusable_neighbor": "Compact layout: which fields show in highlights, not the relationship.",
+      "boundary": "Related list presence does not tell you lookup vs master-detail."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name parent, child, and life cycle",
+      "actor": "Admin + BA",
+      "trigger": "Need to relate two objects",
+      "before": "Unclear independence",
+      "after": "Written: survive parent delete? own Owner? inherit sharing?",
+      "observe": "Decision note choosing lookup or master-detail",
+      "failure": "Picking master-detail because 'it feels stronger'"
+    },
+    {
+      "step": 2,
+      "transition": "Check object eligibility",
+      "actor": "Admin",
+      "trigger": "Type chosen",
+      "before": "Unknown if standard can be detail",
+      "after": "Confirm custom detail or allowed pair",
+      "observe": "Object Reference / Custom Fields table check",
+      "failure": "Master-detail from custom parent to Lead as detail"
+    },
+    {
+      "step": 3,
+      "transition": "Create the relationship field on the child",
+      "actor": "Admin",
+      "trigger": "Eligible pair",
+      "before": "No relationship field",
+      "after": "Field on the detail/lookup child; related list on parent",
+      "observe": "Field required on MD layout; lookup optional unless set",
+      "failure": "Creating the field on the parent instead of the child"
+    },
+    {
+      "step": 4,
+      "transition": "Prove delete and ownership",
+      "actor": "Admin",
+      "trigger": "LAB_ records exist",
+      "before": "Unverified cascade",
+      "after": "Delete a LAB_ parent in sandbox and observe children and Owner",
+      "observe": "Children gone (MD) or remain (lookup)",
+      "failure": "Testing only in production"
+    }
+  ],
+  "when_to_use": [
+    "When two objects need a parent-child relationship and you must choose lookup versus master-detail from deletion, Owner, and sharing.",
+    "When a child record is meaningless without its parent and should inherit the parent's sharing.",
+    "When the child must keep its own owner, queue, or sharing rules—so you refuse master-detail.",
+    "When you need a native roll-up summary later and must know that it requires a master-detail relationship (DATA-007).",
+    "When converting or designing schema so a standard object is not placed as the detail of a custom object."
+  ],
+  "when_not_to_use": [
+    "Do not use master-detail as a way to make a lookup 'required' when the child must survive parent delete.",
+    "Do not use a relationship field when the need is only a text code or External ID (DATA-002).",
+    "Do not use a single lookup or master-detail when the real grain is many-to-many (DATA-004 junction object).",
+    "Do not use this relationship lesson as a substitute for page layouts, record types, or validation rules.",
+    "Do not create master-detail on external objects; only lookup-style external relationships are supported."
+  ],
+  "configuration_or_code_location": [
+    "Object Manager → child object → Fields & Relationships → New → Lookup Relationship or Master-Detail Relationship.",
+    "Master-detail: Sharing Setting on the relationship; optional Allow reparenting on custom objects.",
+    "Lookup: delete constraint options on the lookup field (verify labels in org).",
+    "Related lists on the parent page layout."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox facilities model has LAB_Property__c. LAB_Unit__c is a physical unit that cannot exist without the property and should inherit property sharing. LAB_Inspection__c is an independent audit that must keep its own owner and remain if a property is merged or deleted later. Synthetic LAB_ data only.",
+    "inputs": [
+      "Two child objects",
+      "Different life cycles",
+      "Need related lists on the property",
+      "No production data"
+    ],
+    "decisions": [
+      {
+        "decision": "LAB_Unit__c master-detail to LAB_Property__c.",
+        "because": "Child should cascade delete, inherit sharing, and be required.",
+        "rejected": "Lookup plus a validation rule to mimic requiredness"
+      },
+      {
+        "decision": "LAB_Inspection__c lookup to LAB_Property__c.",
+        "because": "Inspections need Owner and must not vanish with the property.",
+        "rejected": "Master-detail so we can roll up inspection count later without discussing alternatives"
+      },
+      {
+        "decision": "Place both relationship fields on the child objects.",
+        "because": "The Object Reference defines the custom object you are working on as the detail/lookup side.",
+        "rejected": "A relationship field on the property pointing at a single unit"
+      }
+    ],
+    "configuration_or_code": [
+      "Create MD field Property on LAB_Unit__c; confirm OwnerId disappears.",
+      "Create lookup Property on LAB_Inspection__c; confirm Owner remains.",
+      "Create LAB_ parent and children; delete the parent in sandbox and compare remaining rows."
+    ],
+    "output": "Units vanish with the property; inspections remain with their own owner.",
+    "verification": [
+      "Unit page layout requires the property field.",
+      "Inspection lookup can be left blank unless you later require it.",
+      "Sharing rules option is absent on LAB_Unit__c and present conceptually on inspections."
+    ],
+    "self_explanation": "I split the schema by life cycle, not by 'which feels like a parent.'"
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ objects only.",
+    "starting_state_checks": [
+      "You can create custom objects and relationship fields.",
+      "No production data."
+    ],
+    "steps": [
+      "Create LAB_Property__c, LAB_Unit__c, LAB_Inspection__c.",
+      "Add master-detail from unit to property and lookup from inspection to property.",
+      "Create one property, one unit, one inspection.",
+      "Delete the property and record what remains."
+    ],
+    "guided_completion": [
+      "If the unit still exists, the relationship is not master-detail.",
+      "If inspection vanished, you used master-detail by mistake."
+    ],
+    "independent_challenge": "Try to add a queue to LAB_Unit__c and explain the failure using Owner.",
+    "evidence": [
+      "Before/after record lists with LAB_ names.",
+      "Screenshot of missing Owner on the unit."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete remaining LAB_ records and objects.",
+      "Do not deploy."
+    ],
+    "limitations": "Does not prove lookup delete-constraint combinations or MD conversion from lookup with existing orphans."
+  },
+  "decision_table": [
+    {
+      "signal": "Child is meaningless without the parent and should inherit the parent's sharing.",
+      "choose": "Master-detail relationship on the child.",
+      "not": "Lookup plus hoping sharing rules copy the parent.",
+      "why": "MD deletes details with the master, hides Owner, and inherits sharing."
+    },
+    {
+      "signal": "Child must keep its own owner, queue, or sharing rules, or must survive parent delete.",
+      "choose": "Lookup relationship.",
+      "not": "Master-detail 'because we want a related list'.",
+      "why": "Lookup does not control deletion or security; related lists exist for both types."
+    },
+    {
+      "signal": "Parent is a custom object and the proposed child is a standard object such as Lead.",
+      "choose": "Do not create master-detail; use lookup or change the model.",
+      "not": "Master-detail with Lead as detail.",
+      "why": "A standard object cannot be the detail side of a relationship with a custom object."
+    },
+    {
+      "signal": "You need a native roll-up summary count on the parent.",
+      "choose": "Master-detail (or a later alternative in DATA-007) after life-cycle fit.",
+      "not": "Lookup plus a formula field that 'counts children'.",
+      "why": "Roll-up summary fields are defined on the master side of a master-detail."
+    },
+    {
+      "signal": "Users must sometimes move a custom-object child to another parent.",
+      "choose": "Master-detail with Allow reparenting, or a lookup if independence is the real need.",
+      "not": "Assume master-detail children can always change parents.",
+      "why": "Reparenting is off by default for master-detail."
+    }
+  ],
+  "limitations": [
+    "Does not fully specify lookup delete-constraint UI options.",
+    "Does not teach junction many-to-many (DATA-004) or roll-up field types (DATA-007).",
+    "Does not replace the org-wide default and sharing-rule curriculum (SEC).",
+    "Object eligibility tables are samples; confirm the object in current docs."
+  ],
+  "security_notes": [
+    "Master-detail inherited sharing is not field-level security.",
+    "Detail objects cannot use sharing rules, manual sharing, or queues.",
+    "Do not use a dummy master record to park thousands of children (DATA-005 skew)."
+  ],
+  "common_mistakes": [
+    "Choosing master-detail only to get a related list.",
+    "Expecting Owner and queues on a detail object.",
+    "Putting a standard object on the detail side of a custom master.",
+    "Storing a parent Id in a Text field instead of a relationship.",
+    "Assuming lookup cascade-deletes like master-detail."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Cannot create master-detail to a standard child.",
+      "check": [
+        "The child is a standard object and the parent is custom.",
+        "The Custom Fields table for that object."
+      ],
+      "do_not_assume": "You lack the Customize Application permission only."
+    },
+    {
+      "symptom": "Owner field missing after adding a relationship.",
+      "check": [
+        "A master-detail field exists on the object.",
+        "Sharing rules and queues are also unavailable."
+      ],
+      "do_not_assume": "A custom Owner field was deleted."
+    },
+    {
+      "symptom": "Cannot leave the parent blank on a child.",
+      "check": [
+        "The field is master-detail (required on the layout).",
+        "Or a lookup was marked required."
+      ],
+      "do_not_assume": "A validation rule is the only cause."
+    }
+  ],
+  "production_notes": [
+    "Convert lookup to master-detail only after every child has a parent; test in sandbox.",
+    "Cascade delete is irreversible for business data; use LAB_ records in rehearsal.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which statement matches the Object Reference description of a lookup relationship?",
+      "options": {
+        "A": "It links two objects but has no effect on deletion or security, and is not automatically required",
+        "B": "It always cascade-deletes children and hides Owner",
+        "C": "It can only be created on standard objects",
+        "D": "It is required on every page layout by default"
+      },
+      "answer": "A",
+      "rationale": "Lookup has no effect on deletion or security and is not automatically required.",
+      "distractor_explanations": {
+        "B": "That describes master-detail.",
+        "C": "Lookups exist on many custom and standard objects.",
+        "D": "Lookups are not automatically required."
+      },
+      "concept": "Lookup definition",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When a master record is deleted, what happens to master-detail children?",
+      "options": {
+        "A": "Related detail records are also deleted",
+        "B": "Children remain with a cleared parent",
+        "C": "Children are converted to lookups",
+        "D": "Only the related list is hidden"
+      },
+      "answer": "A",
+      "rationale": "Deleting the master deletes its related detail records.",
+      "distractor_explanations": {
+        "B": "That is typical lookup behavior, not MD.",
+        "C": "Delete does not convert the field type.",
+        "D": "The records themselves are deleted."
+      },
+      "concept": "Cascade delete",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-CUSTOMOBJFIELDS"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why can't a master-detail detail object use sharing rules or queues?",
+      "options": {
+        "A": "The Owner field is not available; those features require Owner",
+        "B": "Detail objects cannot have custom fields",
+        "C": "Queues exist only on User",
+        "D": "Sharing rules require a formula field"
+      },
+      "answer": "A",
+      "rationale": "Detail objects lose Owner; sharing rules, manual sharing, and queues require Owner.",
+      "distractor_explanations": {
+        "B": "Details can have custom fields.",
+        "C": "Queues are used on many objects that have Owner.",
+        "D": "Sharing rules are not formula fields."
+      },
+      "concept": "Owner and sharing",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-CUSTOMOBJFIELDS"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A custom object Property must parent the standard Lead object as a tight child. What does the platform rule say?",
+      "options": {
+        "A": "A standard object cannot be the detail side of a master-detail with a custom object",
+        "B": "Lead is the preferred master-detail detail",
+        "C": "You must use two master-detail fields on Lead",
+        "D": "OwnerId on Lead is removed automatically if you try"
+      },
+      "answer": "A",
+      "rationale": "The standard object cannot be the detail of a custom master.",
+      "distractor_explanations": {
+        "B": "Lead is listed among objects that cannot be used that way as primary/detail in the cited restrictions.",
+        "C": "Junction fields go on a junction object, not on Lead for this case.",
+        "D": "You should not reach a Lead-as-detail MD design."
+      },
+      "concept": "Standard as detail",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-OBJREF-CUSTFIELDS"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Is a master-detail field required on the detail page layout?",
+      "options": {
+        "A": "Yes",
+        "B": "No, never",
+        "C": "Only if the child is a standard object",
+        "D": "Only in Classic"
+      },
+      "answer": "A",
+      "rationale": "The master-detail relationship field is required on the page layout of the detail record.",
+      "distractor_explanations": {
+        "B": "It is required.",
+        "C": "The rule is about MD, not only standard children.",
+        "D": "The Object Reference does not limit this to Classic."
+      },
+      "concept": "Required on layout",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Default reparenting behavior for master-detail?",
+      "options": {
+        "A": "Records cannot be reparented unless Allow reparenting is selected on custom objects",
+        "B": "Children can always change parents",
+        "C": "Reparenting deletes the master",
+        "D": "Reparenting is only for lookups"
+      },
+      "answer": "A",
+      "rationale": "By default records cannot be reparented; admins can allow it on custom objects.",
+      "distractor_explanations": {
+        "B": "Default is no reparenting.",
+        "C": "Reparenting changes the parent, it does not delete the master.",
+        "D": "The option is described for master-detail on custom objects."
+      },
+      "concept": "Reparenting",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Inspections must remain if a property is deleted and must be owned by an inspector queue. Which relationship?",
+      "options": {
+        "A": "Lookup from inspection to property",
+        "B": "Master-detail from inspection to property",
+        "C": "Hierarchical relationship on Property",
+        "D": "Junction object with two lookups only"
+      },
+      "answer": "A",
+      "rationale": "Lookup preserves independent Owner and does not cascade-delete by default.",
+      "distractor_explanations": {
+        "B": "MD would remove Owner and delete inspections with the property.",
+        "C": "Hierarchical is a User-to-User pattern, not this model.",
+        "D": "Many-to-many is a different grain."
+      },
+      "concept": "Independent child",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-CUSTOMOBJFIELDS"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which relationship types are available for external objects?",
+      "options": {
+        "A": "Only lookup, external lookup, and indirect lookup",
+        "B": "Master-detail and hierarchical",
+        "C": "JunctionIdList only",
+        "D": "Any relationship type including master-detail"
+      },
+      "answer": "A",
+      "rationale": "The Object Reference note: only lookup, external lookup, and indirect lookup for external objects.",
+      "distractor_explanations": {
+        "B": "Master-detail is not supported for external objects.",
+        "C": "JunctionIdList is a different API feature on Task/Event.",
+        "D": "Not any type."
+      },
+      "concept": "External object relationships",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Where do you create the master-detail field?",
+      "options": {
+        "A": "On the object that will be the detail side",
+        "B": "Only on the master object",
+        "C": "Only on the User object",
+        "D": "In a validation rule"
+      },
+      "answer": "A",
+      "rationale": "When you define a master-detail relationship, the custom object you are working on is the detail side.",
+      "distractor_explanations": {
+        "B": "The field lives on the detail.",
+        "C": "User cannot be used as described for this MD primary list.",
+        "D": "Validation rules do not create relationships."
+      },
+      "concept": "Field placement",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which sample object supports custom fields but not master-detail or lookup per the Custom Fields table?",
+      "options": {
+        "A": "Lead (No / No / Yes for MD / Lookup / Custom Fields)",
+        "B": "Account",
+        "C": "Opportunity",
+        "D": "Case"
+      },
+      "answer": "A",
+      "rationale": "The table lists Lead as No master-detail, No lookup, Yes custom fields.",
+      "distractor_explanations": {
+        "B": "Account supports MD, lookup, and custom fields.",
+        "C": "Opportunity supports all three in that table.",
+        "D": "Case supports all three in that table."
+      },
+      "concept": "Object support table",
+      "citation_ids": [
+        "SF-OBJREF-CUSTFIELDS",
+        "SF-OBJREF-REL"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "A related list of children appears on the parent. What does that prove?",
+      "options": {
+        "A": "A relationship field exists; it does not by itself prove lookup vs master-detail",
+        "B": "The relationship must be master-detail",
+        "C": "The child has no Owner",
+        "D": "Cascade delete is enabled"
+      },
+      "answer": "A",
+      "rationale": "Both lookup and master-detail can show related lists.",
+      "distractor_explanations": {
+        "B": "Lookups also have related lists.",
+        "C": "Owner depends on MD, not the related list.",
+        "D": "Related lists do not prove cascade delete."
+      },
+      "concept": "Related list vs type",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You want native roll-up summary later on the property counting units. What relationship do units need?",
+      "options": {
+        "A": "Master-detail from unit to property",
+        "B": "Lookup from unit to property is enough for native roll-up",
+        "C": "A formula field on property that queries children",
+        "D": "A hierarchical relationship on unit"
+      },
+      "answer": "A",
+      "rationale": "Roll-up summary fields are created on the master side of a master-detail relationship.",
+      "distractor_explanations": {
+        "B": "Native roll-up is not defined on lookup in the roll-up Help.",
+        "C": "Formula fields do not query child sets that way.",
+        "D": "Hierarchical is not this parent-child model."
+      },
+      "concept": "Roll-up prerequisite",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "lookup",
+      "front": "Lookup effect on delete and security?",
+      "back": "None automatically. Lookup is not automatically required."
+    },
+    {
+      "id": "F2",
+      "category": "master-detail",
+      "front": "What happens when the master is deleted?",
+      "back": "Related detail records are also deleted."
+    },
+    {
+      "id": "F3",
+      "category": "master-detail",
+      "front": "Owner on a detail object?",
+      "back": "Not available; set to the master owner. No sharing rules, manual sharing, or queues."
+    },
+    {
+      "id": "F4",
+      "category": "master-detail",
+      "front": "Is the MD field required on the detail layout?",
+      "back": "Yes. The relationship field is required on the detail page layout."
+    },
+    {
+      "id": "F5",
+      "category": "eligibility",
+      "front": "Can a standard object be detail of a custom master?",
+      "back": "No. The standard object cannot be the detail side of that relationship."
+    },
+    {
+      "id": "F6",
+      "category": "reparenting",
+      "front": "Default master-detail reparenting?",
+      "back": "Off. Admins can allow reparenting on custom objects."
+    },
+    {
+      "id": "F7",
+      "category": "external",
+      "front": "External object relationship types?",
+      "back": "Lookup, external lookup, and indirect lookup only."
+    },
+    {
+      "id": "F8",
+      "category": "placement",
+      "front": "Which object gets the MD field?",
+      "back": "The detail-side object you are defining the field on."
+    },
+    {
+      "id": "F9",
+      "category": "sharing",
+      "front": "Where do detail records get sharing from?",
+      "back": "They inherit sharing and security settings of the master."
+    },
+    {
+      "id": "F10",
+      "category": "scenario",
+      "front": "Independent owned inspections of a property?",
+      "back": "Lookup from inspection to property."
+    },
+    {
+      "id": "F11",
+      "category": "scenario",
+      "front": "Units that cannot exist without a property?",
+      "back": "Master-detail from unit to property."
+    },
+    {
+      "id": "F12",
+      "category": "related list",
+      "front": "Does a related list prove master-detail?",
+      "back": "No. Lookups can also show related lists."
+    },
+    {
+      "id": "F13",
+      "category": "lead",
+      "front": "Lead as MD/lookup child per Custom Fields table?",
+      "back": "Lead shows No master-detail and No lookup in that sample table."
+    },
+    {
+      "id": "F14",
+      "category": "conversion",
+      "front": "Why not MD just to require a parent?",
+      "back": "MD also cascade-deletes and removes Owner. Use lookup plus required/validation if independence is needed."
+    },
+    {
+      "id": "F15",
+      "category": "roll-up",
+      "front": "Native roll-up needs which relationship?",
+      "back": "Master-detail; the roll-up lives on the master object."
+    },
+    {
+      "id": "F16",
+      "category": "security",
+      "front": "Is inherited MD sharing the same as FLS?",
+      "back": "No. Sharing is record access; FLS is field visibility."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Compare lookup and master-detail relationships.",
+      "answer_30_seconds": "Lookup links objects without controlling delete or security and is not automatically required. Master-detail cascade-deletes details, inherits sharing, removes Owner on the detail, and is required on the detail layout.",
+      "answer_2_minutes": "I always answer with deletion, ownership, and sharing. I mention related lists exist for both, so a related list is not the differentiator. I note standard objects cannot be the detail of a custom master, and reparenting is opt-in on custom MD. I point roll-ups at DATA-007 but I know they need MD.",
+      "example": "LAB_Unit__c MD to property vs LAB_Inspection__c lookup to property.",
+      "tradeoffs": [
+        "Independence vs inherited control",
+        "Required lookup vs true MD"
+      ],
+      "follow_ups": [
+        "What is Allow reparenting?",
+        "What happens to queues on details?"
+      ],
+      "weak_answer_warnings": [
+        "Only saying parent and child",
+        "Using related list as the definition"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "Should LAB_Inspection__c be master-detail to LAB_Property__c?",
+      "answer_30_seconds": "Only if inspections must vanish with the property, inherit property sharing, and must not have their own Owner or queue. Independent audits should be lookup.",
+      "answer_2_minutes": "I ask three questions: delete behavior, ownership, sharing. Facilities audits usually need an inspector owner and must survive property merge/delete, so lookup. If they picked MD only to roll up a count, I discuss DATA-007 alternatives rather than breaking the life cycle. I would not store PropertyId in a text field.",
+      "example": "Sandbox test: delete a LAB_ property and show inspections remaining with their owner.",
+      "tradeoffs": [
+        "Roll-up convenience vs correct grain",
+        "Queue-owned work vs inherited sharing"
+      ],
+      "follow_ups": [
+        "How would you count inspections without MD?",
+        "What lookup delete option would you pick?"
+      ],
+      "weak_answer_warnings": [
+        "Always choosing master-detail"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "You cannot create a master-detail from a custom Property to Lead. Why?",
+      "answer_30_seconds": "A standard object cannot be the detail side of a master-detail relationship with a custom object. Lead is also listed as not supporting MD/lookup in the Custom Fields sample table.",
+      "answer_2_minutes": "I separate two facts: the general rule (standard cannot be detail of custom) and the object table (Lead shows No/No for MD/lookup). I would model a custom LAB_Prospect__c if we truly need MD, or use a lookup if the platform allows it on that object—Needs verification against the current Lead relationship list. I do not fight the UI for an hour assuming a permission issue only.",
+      "example": "Rejected custom-master / Lead-detail; proposed lookup or a custom child object.",
+      "tradeoffs": [
+        "Custom child vs standard child",
+        "Lookup vs new object"
+      ],
+      "follow_ups": [
+        "Which other standard objects are blocked as primary?",
+        "What about Account as master of a custom object?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the browser",
+        "Saying Lead cannot have custom fields"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "troubleshooting",
+      "question": "After adding a relationship, users ask where the Owner field went.",
+      "answer_30_seconds": "The object is now a master-detail detail. OwnerId is removed and ownership follows the master. Sharing rules and queues will also be unavailable.",
+      "answer_2_minutes": "I open Fields & Relationships and look for a master-detail field. I explain inherited sharing. If they still need queues, the relationship must be lookup and we may need to reload or convert carefully. I do not create LAB_OwnerName__c as a fake Owner.",
+      "example": "LAB_Unit__c lost Owner after MD to LAB_Property__c.",
+      "tradeoffs": [
+        "Convert to lookup vs keep MD",
+        "Fake owner text vs real Owner"
+      ],
+      "follow_ups": [
+        "Can you convert MD back to lookup?",
+        "What happens to existing sharing rows?"
+      ],
+      "weak_answer_warnings": [
+        "Telling them to add Owner as a custom field"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When is Allow reparenting the right master-detail option?",
+      "answer_30_seconds": "When the child is truly a detail record but sometimes moves to another parent, and the objects are custom so the option exists. If moves are the normal life cycle, consider lookup.",
+      "answer_2_minutes": "Default MD locks the parent. Facilities might move a unit to another building after a remodel. I enable Allow reparenting only after confirming custom objects and that cascade delete still matches the business. I do not enable it 'just in case' without a test of sharing after the move.",
+      "example": "LAB_Unit__c Allow reparenting so a unit can move from Building A to Building B properties.",
+      "tradeoffs": [
+        "MD plus reparent vs lookup",
+        "Locking parent for audit vs operational moves"
+      ],
+      "follow_ups": [
+        "Does reparenting change Owner?",
+        "Is the option on standard-to-custom MD?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming all MD children can change parents"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "How do relationship fields differ from other custom field data types?",
+      "answer_30_seconds": "A relationship field stores a link to another record and creates related-list behavior. Text, Number, and Checkbox do not associate objects or control delete/sharing.",
+      "answer_2_minutes": "DATA-002 taught types. Here the type is Lookup or Master-Detail. I refuse to store an 18-character Id in Text because you lose referential integrity, related lists, and security behavior. External objects only get lookup-style types. Junction many-to-many is two MD fields on a third object.",
+      "example": "Replacing a Text PropertyId__c with a real lookup on LAB_Inspection__c.",
+      "tradeoffs": [
+        "Text Id vs relationship",
+        "Lookup vs MD type"
+      ],
+      "follow_ups": [
+        "What is an indirect lookup?",
+        "Why not formula instead of relationship?"
+      ],
+      "weak_answer_warnings": [
+        "Calling any reference a master-detail"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "You need a related list of children but independent sharing. What do you choose?",
+      "answer_30_seconds": "Lookup. Both relationship types can show related lists. Master-detail would inherit sharing and remove Owner.",
+      "answer_2_minutes": "Interviewers bait with 'we need a related list.' I treat that as insufficient. I ask about delete and Owner. Independent sharing means lookup, then SEC tools (OWD, sharing rules) on the child. I mention related-list labels are just presentation metadata.",
+      "example": "LAB_Inspection__c lookup with a related list on the property page layout.",
+      "tradeoffs": [
+        "Presentation vs security",
+        "Related list vs report"
+      ],
+      "follow_ups": [
+        "How do you secure the lookup child?",
+        "Can you hide the related list by profile?"
+      ],
+      "weak_answer_warnings": [
+        "Choosing MD for the related list only"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "scenario",
+      "question": "External object to Account: which relationship family?",
+      "answer_30_seconds": "Only lookup, external lookup, or indirect lookup. Master-detail is not supported for external objects.",
+      "answer_2_minutes": "I cite the Object Reference note. I do not promise cascade delete or inherited sharing across an external object. I keep the external row's life cycle in the external system. If someone wants roll-ups from external children, that is not native MD roll-up—Needs verification of current external-object capabilities.",
+      "example": "LAB_Badge__x external lookup to Contact rather than master-detail.",
+      "tradeoffs": [
+        "Internal MD vs external lookup",
+        "Where the record data lives"
+      ],
+      "follow_ups": [
+        "What is indirect lookup?",
+        "Can you roll up external children?"
+      ],
+      "weak_answer_warnings": [
+        "Using master-detail on an external object"
+      ]
+    }
+  ]
+}

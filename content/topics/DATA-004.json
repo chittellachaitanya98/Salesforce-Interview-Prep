@@ -1,0 +1,1057 @@
+{
+  "topic_id": "DATA-004",
+  "slug": "junction-objects-and-many-to-many-modeling",
+  "title": "Junction objects and many-to-many modeling",
+  "track": "Data model and configuration",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-003"
+  ],
+  "objectives": [
+    "Explain a many-to-many model as two objects linked through a custom junction object that has two master-detail relationship fields.",
+    "Place attributes that belong to the pairing (role, dates, status) on the junction object, not on either master.",
+    "Describe cascade delete and sharing as following both masters, and treat JunctionIdList as a separate API convenience on some standard objects.",
+    "Refuse a single lookup when either side can have many of the other, and refuse two lookups when the business needs true master-detail junction behavior."
+  ],
+  "diagnostic_question": "A property can have many vendors, and a vendor can serve many properties, with a unique contract start date per pairing. Is that a lookup, a master-detail, or a junction object—and where does the start date live?",
+  "definition": "A many-to-many relationship lets each record of one object link to multiple records of another and vice versa. You model it by creating a custom junction object with two master-detail relationship fields, each pointing at one of the objects you want to relate. Custom objects with two master-detail relationships are supported in API version 11.0 and later. ([Relationships Among Standard Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm); [Create a Many-to-Many Object Relationship](https://help.salesforce.com/s/articleView?id=platform.relationships_manytomany.htm))",
+  "why_it_matters": "A single lookup or master-detail forces a one-to-many lie: either a property can have only one vendor, or a vendor only one property. Putting the contract date on Property or Vendor then overwrites the other pairings. Interviewers listen for a junction object with two master-detail fields and for pairing attributes living on the junction.",
+  "sixty_second_explanation": "Think of a concert ticket stub. The stub is useless unless it names both the attendee and the show. One attendee can hold many stubs; one show can have many stubs. The seat number and purchase time belong on the stub, not on the person or the show. In Salesforce the stub is a junction object with two required master-detail relationships. Tear up the attendee or the show and the stubs that bind them go with that master.",
+  "deeper_explanation": [
+    "The Object Reference example: a custom Issue object related to Case so an issue can relate to multiple cases and a case to multiple issues. The implementation is a custom junction object with two master-detail fields. Help's many-to-many article is the administrator procedure for that pattern. ([Relationships Among Standard Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm); [Create a Many-to-Many Object Relationship](https://help.salesforce.com/s/articleView?id=platform.relationships_manytomany.htm))",
+    "Because each link is master-detail, each junction row is a detail of both parents: it inherits sharing from the masters, has no independent Owner in the usual MD sense, and is deleted if either master is deleted. First versus second master (primary master) affects which master controls more of the sharing/ownership story—Needs verification of the current primary-master rules in Help before quoting extra detail.",
+    "Pairing attributes—role, status, start date, quantity—are fields on the junction object (DATA-002 types). Do not copy those values onto both masters. Related lists on each master show the junction rows (often displayed as the other master via the second relationship).",
+    "Starting in API 34.0, JunctionIdList lets some entities manipulate many-to-many links without touching junction rows directly. It is implemented on Task and Event, appears as an unbounded ID array in the WSDL, and is read-only in Apex. That is not a substitute for a custom junction object on LAB_ objects. ([Relationships Among Standard Objects and Fields](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm))"
+  ],
+  "mental_model": {
+    "analogy": "A concert ticket stub that must name both the attendee and the show; seat and purchase time live on the stub, and tearing up either master invalidates the stub.",
+    "useful_mapping": [
+      "junction object → the stub",
+      "first master-detail → attendee named on the stub",
+      "second master-detail → show named on the stub",
+      "pairing field → seat number or purchase time",
+      "related lists → stubs listed on the attendee and on the show",
+      "cascade from either master → cancel the person or the show and those stubs are deleted",
+      "JunctionIdList → a special backstage pass list on Task/Event, not your custom stub object"
+    ],
+    "where_it_breaks": [
+      "Two lookups can also model many-to-many without MD cascade; that is a different, looser design.",
+      "Primary versus secondary master sharing is more specific than a paper stub.",
+      "JunctionIdList on Task/Event is not how you build LAB_PropertyVendor__c.",
+      "A stub does not encode roll-up limits or data skew from one popular vendor."
+    ]
+  },
+  "teach_back_prompt": "Explain why a property-to-vendor many-to-many needs a junction object, where the contract date lives, and what happens if you only put a lookup on Property.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Define junction object in one sentence using two master-detail fields."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Place role, start date, and notes on the correct object in a pairing."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Contrast custom junction vs JunctionIdList on Task/Event."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose a model that put Vendor lookup on Property and lost history."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: many-to-many grain plus cascade-delete risk."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-OBJREF-REL",
+      "title": "Relationships Among Standard Objects and Fields",
+      "type": "Official Salesforce Object Reference",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/relationships_among_objects.htm",
+      "supports": "Many-to-many via junction object with two master-detail fields; API 11.0+; JunctionIdList on Task/Event from API 34.0, read-only in Apex.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-M2M",
+      "title": "Create a Many-to-Many Object Relationship",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.relationships_manytomany.htm",
+      "supports": "Administrator Help for creating a many-to-many relationship using a junction object.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-RELOVERVIEW",
+      "title": "Object Relationships Overview",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.overview_of_custom_object_relationships.htm",
+      "supports": "Relationship type overview that frames lookup, master-detail, and many-to-many.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-OBJREF-CUSTFIELDS",
+      "title": "Custom Fields",
+      "type": "Official Salesforce Object Reference",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/custom_fields.htm",
+      "supports": "Master-detail eligibility constraints that still apply to each side of a junction.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Two masters",
+        "Junction object",
+        "Two MD fields",
+        "Pairing attributes",
+        "Cascade from either side",
+        "Not JunctionIdList"
+      ],
+      "accessible_description": "A junction object sits between two parents with two master-detail fields; pairing fields live on the junction."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-OBJREF-REL",
+        "SF-HELP-M2M",
+        "SF-HELP-RELOVERVIEW",
+        "SF-OBJREF-CUSTFIELDS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Object A + Object B → junction row with two master-detail fields"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  A[Object A e.g. Property] --> J[Junction object]\n  B[Object B e.g. Vendor] --> J\n  J --> MD1[Master-detail to A]\n  J --> MD2[Master-detail to B]\n  J --> Attr[Pairing fields: role date status]\n  A --> RL1[Related list of junction rows]\n  B --> RL2[Related list of junction rows]",
+      "decision": "flowchart TD\n  Need[Need to relate A and B] --> Q1{Can one A have many B and one B many A?}\n  Q1 -->|No one-to-many| Rel[Single lookup or MD DATA-003]\n  Q1 -->|Yes many-to-many| Q2{Is the link itself a record with fields?}\n  Q2 -->|Yes| Junc[Custom junction object two MD fields]\n  Q2 -->|Task/Event standard many-to-many| JIL[JunctionIdList API not a custom object]\n  Junc --> Q3{Must links die with either parent?}\n  Q3 -->|Yes typical junction| MD[Two master-detail fields]\n  Q3 -->|Links must survive a parent| Loose[Two lookups: looser many-to-many Needs verification of sharing]",
+      "sequence": "sequenceDiagram\n  participant Property\n  participant Junction\n  participant Vendor\n  Property->>Junction: Create pairing row MD1\n  Vendor->>Junction: Same row MD2\n  Property->>Junction: Delete property deletes pairings\n  Vendor->>Junction: Delete vendor deletes pairings"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "A many-to-many relationship is created with a custom junction object that has two master-detail relationship fields linking the two objects.",
+      "source_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-M2M"
+      ],
+      "scope": "Junction pattern",
+      "validation": "Object Reference plus Create a Many-to-Many Object Relationship Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Custom objects with two master-detail relationships are supported in API version 11.0 and later.",
+      "source_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ],
+      "scope": "API support",
+      "validation": "Object Reference many-to-many note.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "JunctionIdList (API 34.0+) lets some standard entities manipulate many-to-many links as an ID array; it is implemented on Task and Event and is read-only in Apex.",
+      "source_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-M2M"
+      ],
+      "scope": "JunctionIdList boundary",
+      "validation": "Object Reference JunctionIdList paragraph.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Each master-detail on the junction still follows master-detail rules: detail-side placement, cascade delete, and standard-object-as-detail restrictions.",
+      "source_ids": [
+        "SF-OBJREF-REL",
+        "SF-OBJREF-CUSTFIELDS"
+      ],
+      "scope": "MD rules still apply",
+      "validation": "Relationships plus Custom Fields eligibility.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Junction related-list UI and primary-master sharing details are release-sensitive. Reverify the many-to-many Help article for Summer '26.",
+  "unresolved_uncertainty": [
+    "Which master is primary and exactly how sharing rolls up from two masters is Needs verification in current Help before an architecture interview deep-dive.",
+    "Whether two lookups are officially recommended as an alternative many-to-many is a design heuristic, not a quoted mandate."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Junction object",
+      "telugu": "Custom object with two master-detail fields that stores each pairing."
+    },
+    {
+      "english": "Many-to-many",
+      "telugu": "Each side can have many of the other through junction rows."
+    },
+    {
+      "english": "Pairing attribute",
+      "telugu": "A field that describes only this link, not either parent."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Many-to-many uses a junction object with two master-detail fields. Pairing fields live on the junction. Deleting either master deletes the pairings. JunctionIdList is a Task/Event API feature, not your custom junction.",
+    "two_minutes": "I name both parents and the pairing noun. Property-vendor-assignment is LAB_PropertyVendor__c with MD to Property and MD to Vendor. Contract start date goes on the junction. A Vendor lookup on Property would allow only one vendor. I mention cascade delete risk and data skew if one vendor is linked to tens of thousands of properties. I do not call a single lookup a junction."
+  },
+  "terminology": [
+    {
+      "term": "many-to-many relationship",
+      "plain": "Each side can link to many of the other.",
+      "precise": "A model where each record of one object links to multiple records of another and vice versa, implemented with a junction object.",
+      "example": "A property served by many vendors; a vendor serving many properties.",
+      "non_example": "One property with many units (one-to-many).",
+      "confusable_neighbor": "One-to-many lookup/MD: only one parent per child.",
+      "boundary": "JunctionIdList is a special-case API, not the general model."
+    },
+    {
+      "term": "junction object",
+      "plain": "The object that stores each pairing.",
+      "precise": "A custom object with two master-detail relationship fields, each linking to one of the objects being related.",
+      "example": "LAB_PropertyVendor__c with Property__c and Vendor__c MD fields.",
+      "non_example": "A report joining two objects without a stored pairing row.",
+      "confusable_neighbor": "Intersection table in generic SQL: similar idea, Salesforce MD rules still apply.",
+      "boundary": "API 11.0+ for two MD fields on a custom object."
+    },
+    {
+      "term": "pairing attribute",
+      "plain": "A field that describes this link, not either parent alone.",
+      "precise": "A custom field on the junction object such as role, status, or start date.",
+      "example": "LAB_ContractStart__c on LAB_PropertyVendor__c.",
+      "non_example": "Vendor.Phone copied onto every property.",
+      "confusable_neighbor": "Roll-up on a master: aggregates children, does not store the pairing.",
+      "boundary": "Types still follow DATA-002."
+    },
+    {
+      "term": "primary master",
+      "plain": "The first master-detail you create on the junction.",
+      "precise": "The Object Reference notes ownership/sharing of a two-MD custom object is controlled by the master, or by the primary master when there are two. Exact UI order is Needs verification.",
+      "example": "First MD to LAB_Property__c as primary master.",
+      "non_example": "The related-list label.",
+      "confusable_neighbor": "Secondary master: the other MD field.",
+      "boundary": "Do not invent extra sharing percentages."
+    },
+    {
+      "term": "JunctionIdList",
+      "plain": "An API field that edits some standard many-to-many links as a list of IDs.",
+      "precise": "API 34.0+ field type on Task and Event; queries/updates act on underlying junction records; read-only in Apex.",
+      "example": "Updating Event Who/related ID lists via JunctionIdList in the API.",
+      "non_example": "Creating LAB_PropertyVendor__c rows in the UI.",
+      "confusable_neighbor": "Related list: UI, not the JunctionIdList type.",
+      "boundary": "Do not use JunctionIdList as the design for custom objects."
+    },
+    {
+      "term": "related list (junction)",
+      "plain": "How each parent shows its pairings.",
+      "precise": "Junction rows appear as related lists on both masters, often showing the other parent.",
+      "example": "Vendors related list on a property via the junction.",
+      "non_example": "A single lookup related list of properties on Vendor only.",
+      "confusable_neighbor": "Page layout: you still add the related list (DATA-009).",
+      "boundary": "Labels are presentation, not the schema."
+    },
+    {
+      "term": "two-master cascade",
+      "plain": "Deleting either parent deletes the junction rows.",
+      "precise": "Each MD field cascade-deletes details when that master is deleted.",
+      "example": "Delete a vendor and its property-vendor stubs disappear.",
+      "non_example": "Lookup children remaining after parent delete.",
+      "confusable_neighbor": "Recycle Bin restore of both masters: neighboring, org-sensitive.",
+      "boundary": "Warn stakeholders before deleting a widely used vendor."
+    },
+    {
+      "term": "loose many-to-many",
+      "plain": "Two lookups on a custom object instead of two master-details.",
+      "precise": "A handbook heuristic when pairings must survive a parent delete or need their own Owner. Not the official Help procedure, which uses two MD fields.",
+      "example": "LAB_PropertyVendor__c with two lookups if pairings must outlive a vendor merge.",
+      "non_example": "Calling two lookups a master-detail junction.",
+      "confusable_neighbor": "Official junction: two MD fields.",
+      "boundary": "Mark as design alternative; confirm sharing yourself."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Prove many-to-many grain",
+      "actor": "Admin + BA",
+      "trigger": "Two objects seem related",
+      "before": "Unclear cardinality",
+      "after": "One A many B and one B many A",
+      "observe": "Two example pairings in opposite directions",
+      "failure": "Putting a single lookup on A"
+    },
+    {
+      "step": 2,
+      "transition": "Create the junction object",
+      "actor": "Admin",
+      "trigger": "Grain confirmed",
+      "before": "No pairing object",
+      "after": "Custom object with two MD fields (API 11.0+)",
+      "observe": "Both relationship fields on the junction",
+      "failure": "Creating MD fields on the parents instead"
+    },
+    {
+      "step": 3,
+      "transition": "Place pairing fields",
+      "actor": "Admin",
+      "trigger": "Junction exists",
+      "before": "Dates/roles on a parent",
+      "after": "Typed fields on the junction",
+      "observe": "Contract date unique per pairing",
+      "failure": "Overwriting Vendor.StartDate for every property"
+    },
+    {
+      "step": 4,
+      "transition": "Prove both related lists and delete",
+      "actor": "Admin",
+      "trigger": "LAB_ pairings created",
+      "before": "Unverified cascade",
+      "after": "Related lists on both parents; delete one parent",
+      "observe": "Junction rows gone with that master",
+      "failure": "Testing only one direction"
+    }
+  ],
+  "when_to_use": [
+    "When each record of object A can relate to many of object B and each B to many A—a many-to-many relationship.",
+    "When the link itself has fields (role, dates, status) that belong on a junction object, not on either parent.",
+    "When you need related lists of the other object on both parents through a custom junction object.",
+    "When explaining cascade delete: deleting either master deletes the junction pairings.",
+    "When an interviewer asks how Salesforce models many-to-many versus a single lookup or master-detail."
+  ],
+  "when_not_to_use": [
+    "Do not use a junction object for a true one-to-many (units of a property)—that is a single relationship (DATA-003).",
+    "Do not put pairing attributes on the parent objects or in a text field of IDs (DATA-002).",
+    "Do not use JunctionIdList as the design for a custom property-vendor object; it is a Task/Event API type.",
+    "Do not treat a junction as a page-layout or record-type problem (DATA-008/009).",
+    "Do not park tens of thousands of junction rows under one dummy parent (DATA-005 skew)."
+  ],
+  "configuration_or_code_location": [
+    "Create custom junction object, then two Master-Detail fields on that object.",
+    "Add related lists on both parent page layouts.",
+    "Optional: unique rule or matching on the pair of relationship fields—Needs verification of current duplicate tools.",
+    "API: custom junction rows, not JunctionIdList, for LAB_ objects."
+  ],
+  "worked_example": {
+    "scenario": "Facilities vendors serve many LAB_ properties and each property can have many vendors. Each pairing has a contract start date and a role (plumber, electrician). Sandbox only.",
+    "inputs": [
+      "LAB_Property__c and LAB_Vendor__c exist",
+      "Many-to-many grain",
+      "Pairing date and role",
+      "Synthetic names"
+    ],
+    "decisions": [
+      {
+        "decision": "Create LAB_PropertyVendor__c junction object.",
+        "because": "Official many-to-many pattern is a custom object with two MD fields.",
+        "rejected": "Vendor lookup on Property"
+      },
+      {
+        "decision": "MD to Property and MD to Vendor on the junction.",
+        "because": "Object Reference specifies two master-detail relationship fields.",
+        "rejected": "A single MD plus a text vendor name"
+      },
+      {
+        "decision": "LAB_Role__c picklist and LAB_ContractStart__c Date on the junction.",
+        "because": "Those attributes describe the pairing.",
+        "rejected": "LAB_ContractStart__c on Vendor"
+      }
+    ],
+    "configuration_or_code": [
+      "Create junction object; add two MD fields; add pairing fields.",
+      "Create two properties, two vendors, three junction rows including a vendor on both properties.",
+      "Delete one vendor and confirm that vendor's pairings disappear."
+    ],
+    "output": "Three pairing rows; related lists on both parents; cascade from vendor delete.",
+    "verification": [
+      "One vendor appears on two properties.",
+      "Contract dates differ per pairing.",
+      "Junction API names end in __c; both relationship fields are master-detail."
+    ],
+    "self_explanation": "I modeled the stub, not a fake one-to-many, and I put dates on the stub."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ objects.",
+    "starting_state_checks": [
+      "You can create custom objects and two MD fields.",
+      "API version of the org supports two MD fields (11.0+)."
+    ],
+    "steps": [
+      "Create LAB_Property__c, LAB_Vendor__c, LAB_PropertyVendor__c.",
+      "Add two master-detail fields on the junction.",
+      "Add LAB_ContractStart__c Date and LAB_Role__c picklist on the junction.",
+      "Create pairings and delete one parent to observe cascade."
+    ],
+    "guided_completion": [
+      "If you cannot create the second MD, check API version and existing data.",
+      "If the date is on Vendor, move it to the junction."
+    ],
+    "independent_challenge": "Add a related list to both parents and explain which master you created first.",
+    "evidence": [
+      "Schema screenshot of two MD fields.",
+      "Record lists before/after a parent delete."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ pairings then objects.",
+      "Do not deploy."
+    ],
+    "limitations": "Does not prove primary-master sharing math or JunctionIdList."
+  },
+  "decision_table": [
+    {
+      "signal": "One property has many units; a unit has one property.",
+      "choose": "Single master-detail or lookup (DATA-003), not a junction.",
+      "not": "A junction object between property and unit.",
+      "why": "That grain is one-to-many, not many-to-many."
+    },
+    {
+      "signal": "A property has many vendors and a vendor has many properties; the link has a start date.",
+      "choose": "Custom junction object with two master-detail fields; date on the junction.",
+      "not": "Vendor lookup on Property or start date on Vendor.",
+      "why": "Official many-to-many pattern plus pairing attributes on the junction."
+    },
+    {
+      "signal": "You need to manipulate Task/Event many-to-many IDs in the API, not a custom object.",
+      "choose": "JunctionIdList on Task/Event (read-only in Apex).",
+      "not": "A custom junction object named JunctionIdList__c.",
+      "why": "JunctionIdList is a field type on those standard objects from API 34.0."
+    },
+    {
+      "signal": "Pairings must survive if a vendor record is deleted or merged.",
+      "choose": "Do not use two MD fields without a data-retention plan; consider a looser two-lookup design and mark sharing Needs verification.",
+      "not": "Standard two-MD junction while promising pairings will remain.",
+      "why": "MD cascade deletes junction rows when a master is deleted."
+    },
+    {
+      "signal": "Someone stored comma-separated vendor IDs in a Text field on Property.",
+      "choose": "Replace with a junction object and relationship fields.",
+      "not": "Keep parsing the text in Flow.",
+      "why": "Text IDs are not relationship fields and cannot show proper related lists or cascade rules."
+    }
+  ],
+  "limitations": [
+    "Primary-master sharing details are not fully specified here.",
+    "Does not teach roll-up of junction rows (DATA-007) or skew (DATA-005).",
+    "JunctionIdList coverage is limited to the Object Reference note.",
+    "Two-lookup alternative is a heuristic, not a Help mandate."
+  ],
+  "security_notes": [
+    "Junction rows inherit master-detail sharing from their masters.",
+    "Deleting a widely shared vendor deletes pairings—treat as a data-loss event.",
+    "Do not hide a many-to-many in a text field of IDs that bypasses sharing."
+  ],
+  "common_mistakes": [
+    "Putting a single lookup on one parent and calling it many-to-many.",
+    "Storing pairing dates on a master object.",
+    "Creating only one master-detail field on the junction.",
+    "Confusing JunctionIdList with a custom junction object.",
+    "Using a junction for a one-to-many unit model."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Cannot add a second master-detail field.",
+      "check": [
+        "Object API version / org support for two MD fields.",
+        "Existing records and conversion rules."
+      ],
+      "do_not_assume": "Salesforce never allows two MD fields."
+    },
+    {
+      "symptom": "Vendor related list missing on Property.",
+      "check": [
+        "Related list for the junction is on the page layout.",
+        "The second MD field exists."
+      ],
+      "do_not_assume": "The junction object was not created."
+    },
+    {
+      "symptom": "Deleting a vendor removed property history of that vendor.",
+      "check": [
+        "Junction used master-detail cascade.",
+        "Whether a two-lookup model was required."
+      ],
+      "do_not_assume": "A bug deleted the property records themselves."
+    }
+  ],
+  "production_notes": [
+    "Create the junction in sandbox; load pairings as data after metadata deploy.",
+    "Communicate cascade delete before deleting masters with many junction rows.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How does the Object Reference say you create a many-to-many relationship?",
+      "options": {
+        "A": "A custom junction object with two master-detail relationship fields",
+        "B": "Two lookup fields on each parent pointing at each other",
+        "C": "A formula field listing child IDs",
+        "D": "A JunctionIdList field on every custom object"
+      },
+      "answer": "A",
+      "rationale": "Create a custom junction object with two master-detail fields.",
+      "distractor_explanations": {
+        "B": "Mutual lookups are not the documented pattern.",
+        "C": "Formulas do not create relationships.",
+        "D": "JunctionIdList is not available on every custom object."
+      },
+      "concept": "Junction definition",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-M2M"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "From which API version are custom objects with two master-detail relationships supported?",
+      "options": {
+        "A": "11.0 and later",
+        "B": "1.0 only",
+        "C": "34.0 only",
+        "D": "67.0 only"
+      },
+      "answer": "A",
+      "rationale": "Custom objects with two MD relationships are supported in API 11.0 and later.",
+      "distractor_explanations": {
+        "B": "The cited version is 11.0+.",
+        "C": "34.0 is JunctionIdList.",
+        "D": "67.0 is the current handbook API, not the introduction version."
+      },
+      "concept": "API 11.0",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where should a contract start date that is unique per property-vendor pair live?",
+      "options": {
+        "A": "On the junction object",
+        "B": "Only on Vendor",
+        "C": "Only on Property",
+        "D": "In a validation rule with no field"
+      },
+      "answer": "A",
+      "rationale": "Pairing attributes belong on the junction object.",
+      "distractor_explanations": {
+        "B": "One date on Vendor overwrites other properties.",
+        "C": "One date on Property overwrites other vendors.",
+        "D": "A validation rule does not store the date."
+      },
+      "concept": "Pairing attributes",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-M2M"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "JunctionIdList is implemented on which objects in the Object Reference note?",
+      "options": {
+        "A": "Task and Event",
+        "B": "Account and Contact only",
+        "C": "All custom objects",
+        "D": "User and Lead"
+      },
+      "answer": "A",
+      "rationale": "JunctionIdList is implemented in the Task and Event objects.",
+      "distractor_explanations": {
+        "B": "Not the cited implementation.",
+        "C": "Not all custom objects.",
+        "D": "Not User/Lead in that note."
+      },
+      "concept": "JunctionIdList objects",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-M2M"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Can Apex set a new value on an existing JunctionIdList field?",
+      "options": {
+        "A": "No. All JunctionIdLists are read-only in Apex",
+        "B": "Yes, always",
+        "C": "Only on custom objects",
+        "D": "Only in validation rules"
+      },
+      "answer": "A",
+      "rationale": "All JunctionIdLists are read-only in Apex; setting a new value throws an exception.",
+      "distractor_explanations": {
+        "B": "They are read-only in Apex.",
+        "C": "The feature is on Task/Event, not custom objects.",
+        "D": "Validation rules are not how you set JunctionIdList."
+      },
+      "concept": "JunctionIdList Apex",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A property lookup on Vendor is the only link. What grain did you actually model?",
+      "options": {
+        "A": "Many vendors per... no: one property per vendor (many-to-one), not many-to-many",
+        "B": "A true many-to-many junction",
+        "C": "A master-detail cascade both ways",
+        "D": "A JunctionIdList"
+      },
+      "answer": "A",
+      "rationale": "A single lookup gives each vendor one property, not many properties per vendor and many vendors per property.",
+      "distractor_explanations": {
+        "B": "A junction needs two relationship fields on a third object.",
+        "C": "One lookup is not two-way MD.",
+        "D": "Not JunctionIdList."
+      },
+      "concept": "False many-to-many",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-M2M"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "What happens to junction rows if either master is deleted?",
+      "options": {
+        "A": "Those detail/junction rows are deleted with that master",
+        "B": "They remain as orphans",
+        "C": "They convert to lookups",
+        "D": "They move to the Recycle Bin of the other master only"
+      },
+      "answer": "A",
+      "rationale": "Master-detail cascade deletes details when that master is deleted.",
+      "distractor_explanations": {
+        "B": "MD does not leave orphans.",
+        "C": "Delete does not convert types.",
+        "D": "Do not invent Recycle Bin ownership here."
+      },
+      "concept": "Cascade",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Units of a property: one property, many units, each unit one property. Junction?",
+      "options": {
+        "A": "No. That is one-to-many; use a single relationship on Unit",
+        "B": "Yes, always use a junction for any parent-child",
+        "C": "Yes, with JunctionIdList on Property",
+        "D": "Yes, with two lookups on Property"
+      },
+      "answer": "A",
+      "rationale": "One-to-many is DATA-003, not a junction.",
+      "distractor_explanations": {
+        "B": "Junctions are for many-to-many.",
+        "C": "JunctionIdList is not for this custom model.",
+        "D": "Two lookups on Property cannot express unit grain cleanly."
+      },
+      "concept": "Not a junction",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-OBJREF-CUSTFIELDS"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "In the Object Reference Issue/Case example, what allows a case to have many issues and an issue many cases?",
+      "options": {
+        "A": "A custom junction object with two master-detail fields",
+        "B": "A checkbox on Case",
+        "C": "A formula on Issue",
+        "D": "Changing Case to a custom object"
+      },
+      "answer": "A",
+      "rationale": "The documented example uses a junction object with two MD fields.",
+      "distractor_explanations": {
+        "B": "A checkbox is not a relationship.",
+        "C": "A formula does not create pairings.",
+        "D": "Case remaining standard is fine; the junction is custom."
+      },
+      "concept": "Issue/Case example",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-M2M"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Who gets the two master-detail fields?",
+      "options": {
+        "A": "The junction object",
+        "B": "Each parent object gets one MD to the other parent",
+        "C": "The User object",
+        "D": "The report type only"
+      },
+      "answer": "A",
+      "rationale": "Both MD fields are created on the junction object.",
+      "distractor_explanations": {
+        "B": "Parents do not MD to each other directly in this pattern.",
+        "C": "User is not the junction.",
+        "D": "Report types consume the model; they do not create it."
+      },
+      "concept": "Field placement",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-M2M"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why is JunctionIdList the wrong answer for LAB_PropertyVendor__c?",
+      "options": {
+        "A": "JunctionIdList is a Task/Event API field type, not a custom junction object",
+        "B": "JunctionIdList cannot be mentioned in interviews",
+        "C": "Custom objects cannot have fields",
+        "D": "JunctionIdList replaces all master-detail fields"
+      },
+      "answer": "A",
+      "rationale": "The Object Reference limits JunctionIdList to Task/Event and describes it as an ID-array field type.",
+      "distractor_explanations": {
+        "B": "You may mention it as a boundary.",
+        "C": "Custom objects can have fields.",
+        "D": "It does not replace custom MD junctions."
+      },
+      "concept": "JunctionIdList boundary",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-HELP-RELOVERVIEW"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A standard object cannot be the detail of a custom master. How does that affect a junction?",
+      "options": {
+        "A": "Each MD on the junction must still obey that eligibility rule",
+        "B": "Junctions ignore all MD eligibility",
+        "C": "You should MD from Lead to a custom junction as Lead-detail",
+        "D": "Only JunctionIdList can relate standard objects"
+      },
+      "answer": "A",
+      "rationale": "Each master-detail field still has eligibility constraints.",
+      "distractor_explanations": {
+        "B": "Eligibility still applies.",
+        "C": "Lead-as-detail of custom is the blocked pattern.",
+        "D": "Standard-to-standard many-to-many is not only JunctionIdList."
+      },
+      "concept": "Eligibility on junctions",
+      "citation_ids": [
+        "SF-OBJREF-REL",
+        "SF-OBJREF-CUSTFIELDS"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is a junction object?",
+      "back": "A custom object with two master-detail fields that models many-to-many."
+    },
+    {
+      "id": "F2",
+      "category": "api",
+      "front": "Two MD fields on a custom object since which API?",
+      "back": "API version 11.0 and later."
+    },
+    {
+      "id": "F3",
+      "category": "attributes",
+      "front": "Where do pairing dates and roles live?",
+      "back": "On the junction object, not on either master."
+    },
+    {
+      "id": "F4",
+      "category": "delete",
+      "front": "Delete either master—what happens to pairings?",
+      "back": "Those junction detail rows are deleted with that master."
+    },
+    {
+      "id": "F5",
+      "category": "grain",
+      "front": "One property, many units, one property per unit?",
+      "back": "One-to-many. Do not use a junction."
+    },
+    {
+      "id": "F6",
+      "category": "false",
+      "front": "Vendor lookup on Property only?",
+      "back": "Many-to-one, not many-to-many."
+    },
+    {
+      "id": "F7",
+      "category": "JunctionIdList",
+      "front": "Which objects have JunctionIdList?",
+      "back": "Task and Event, from API 34.0."
+    },
+    {
+      "id": "F8",
+      "category": "JunctionIdList",
+      "front": "JunctionIdList in Apex?",
+      "back": "Read-only. Setting a new value throws an exception."
+    },
+    {
+      "id": "F9",
+      "category": "placement",
+      "front": "Where are the two MD fields created?",
+      "back": "On the junction object."
+    },
+    {
+      "id": "F10",
+      "category": "lists",
+      "front": "How do parents show the other side?",
+      "back": "Related lists of junction rows on both masters."
+    },
+    {
+      "id": "F11",
+      "category": "example",
+      "front": "Issue and Case many-to-many?",
+      "back": "Custom junction object with two master-detail fields."
+    },
+    {
+      "id": "F12",
+      "category": "sharing",
+      "front": "Does a junction row have a normal independent Owner?",
+      "back": "As an MD detail it follows master-detail ownership/sharing, not a typical standalone Owner."
+    },
+    {
+      "id": "F13",
+      "category": "heuristic",
+      "front": "When might two lookups be considered?",
+      "back": "If pairings must survive a parent delete—mark sharing Needs verification; Help's procedure uses two MD fields."
+    },
+    {
+      "id": "F14",
+      "category": "text",
+      "front": "Comma-separated IDs on Property?",
+      "back": "Not a relationship model. Replace with a junction object."
+    },
+    {
+      "id": "F15",
+      "category": "skew",
+      "front": "One vendor linked to huge numbers of properties?",
+      "back": "Watch parent-child / junction volume (DATA-005); do not use a dummy parent."
+    },
+    {
+      "id": "F16",
+      "category": "help",
+      "front": "Which Help article walks the admin procedure?",
+      "back": "Create a Many-to-Many Object Relationship."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you model many-to-many in Salesforce?",
+      "answer_30_seconds": "Create a custom junction object with two master-detail relationship fields, each pointing at one parent. Pairing fields go on the junction. Supported on custom objects in API 11.0+.",
+      "answer_2_minutes": "I name both parents and the pairing noun. I refuse a single lookup. I mention cascade delete from either master and related lists on both sides. I distinguish JunctionIdList on Task/Event from this custom-object pattern. I do not invent unofficial junction limits.",
+      "example": "LAB_PropertyVendor__c with MD to Property and MD to Vendor.",
+      "tradeoffs": [
+        "Two MD vs two lookups",
+        "Junction vs one-to-many"
+      ],
+      "follow_ups": [
+        "What is primary master?",
+        "Where does the contract date go?"
+      ],
+      "weak_answer_warnings": [
+        "Calling a lookup a junction",
+        "Putting two MD fields on the parents"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "Property has many vendors and vendor has many properties. A teammate adds Vendor lookup on Property. What do you say?",
+      "answer_30_seconds": "That model allows only one vendor per property. We need a junction object so both sides can have many, and so the contract date can live on the pairing.",
+      "answer_2_minutes": "I draw two example rows: vendor Acme on Property 1 and 2; Property 1 also has vendor Beta. A lookup cannot store both. I create LAB_PropertyVendor__c with two MD fields. I migrate any existing single-vendor data as a first pairing row. I warn that deleting a vendor deletes pairings.",
+      "example": "Rejected Property.Vendor__c lookup; created three junction rows in sandbox.",
+      "tradeoffs": [
+        "Migrate one lookup vs start over",
+        "MD junction vs two lookups"
+      ],
+      "follow_ups": [
+        "How do you stop duplicate pairings?",
+        "How do reports list vendors per property?"
+      ],
+      "weak_answer_warnings": [
+        "Accepting the lookup as good enough"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "design",
+      "question": "Where do you put the role and start date for each pairing?",
+      "answer_30_seconds": "On the junction object as typed custom fields. Putting them on Vendor or Property overwrites other pairings.",
+      "answer_2_minutes": "This is a DATA-002 type choice on a DATA-004 object. Date for start, picklist for role. I do not create formula copies on both parents unless there is a later denormalization reason (DATA-005/006). Related lists show the pairing fields if the layout includes them.",
+      "example": "LAB_ContractStart__c and LAB_Role__c on LAB_PropertyVendor__c.",
+      "tradeoffs": [
+        "Normalize onto junction vs stamp onto parent",
+        "Picklist vs text role"
+      ],
+      "follow_ups": [
+        "Can you roll up the latest start date?",
+        "Should role be a record type?"
+      ],
+      "weak_answer_warnings": [
+        "Storing the date on both parents"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "foundational",
+      "question": "What is JunctionIdList and when is it the wrong answer?",
+      "answer_30_seconds": "An API 34.0+ field type on Task and Event that exposes many-to-many IDs as an array. It is read-only in Apex. It is the wrong design for a custom junction object.",
+      "answer_2_minutes": "I only mention it so I do not confuse interviewers who saw it in the Object Reference. Custom many-to-many still uses a junction object and junction records. I would not tell an admin to 'add a JunctionIdList field' on LAB_PropertyVendor__c.",
+      "example": "Event relations via JunctionIdList versus LAB_PropertyVendor__c rows in Object Manager.",
+      "tradeoffs": [
+        "API convenience vs data model",
+        "Apex read-only vs UI junction"
+      ],
+      "follow_ups": [
+        "Which objects implement it?",
+        "Can you query it like a field?"
+      ],
+      "weak_answer_warnings": [
+        "Using JunctionIdList as the definition of junction object"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "scenario",
+      "question": "Deleting a vendor wiped property-vendor history. Was that a bug?",
+      "answer_30_seconds": "Not if the junction used master-detail. Deleting a master deletes detail/junction rows. That is documented cascade behavior.",
+      "answer_2_minutes": "I confirm both fields are MD. I explain the ticket-stub analogy: cancel the performer and those stubs are void. If history must survive vendor delete, the model should not have been two MD fields, or the vendor should have been deactivated rather than deleted. I do not restore production data from this lesson.",
+      "example": "Sandbox: delete LAB_Vendor__c Acme and watch LAB_PropertyVendor__c rows for Acme disappear.",
+      "tradeoffs": [
+        "Deactivate vs delete a master",
+        "Two MD vs two lookups for history"
+      ],
+      "follow_ups": [
+        "How do you recover junction rows?",
+        "Does deleting Property also delete pairings?"
+      ],
+      "weak_answer_warnings": [
+        "Calling cascade delete a platform bug"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "design",
+      "question": "When is a junction the wrong model?",
+      "answer_30_seconds": "When the grain is one-to-many, when you only need a single parent pointer, or when you are trying to use JunctionIdList on a custom object.",
+      "answer_2_minutes": "Units of a property are one-to-many. A single optional vendor is a lookup. Task/Event ID arrays are JunctionIdList, not LAB_PropertyVendor__c. I also refuse a junction that exists only to work around a page-layout or record-type problem. If pairings must outlive a parent, I flag two-MD cascade as a risk.",
+      "example": "Rejected a junction between LAB_Property__c and LAB_Unit__c; used master-detail on the unit instead.",
+      "tradeoffs": [
+        "One-to-many vs many-to-many",
+        "Junction vs lookup"
+      ],
+      "follow_ups": [
+        "Could two lookups replace two MD fields?",
+        "When do you add a third relationship on a junction?"
+      ],
+      "weak_answer_warnings": [
+        "Using a junction for every relationship"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "The Vendors related list is missing on Property. How do you debug the junction?",
+      "answer_30_seconds": "Check that the junction object has both master-detail fields and that the junction related list was added to the property page layout. A missing list is often presentation, not a missing object.",
+      "answer_2_minutes": "I open Object Manager on LAB_PropertyVendor__c and confirm two MD fields. I open the Property page layout and add the related list. I create a LAB_ pairing and refresh. If the second MD was never created, I am still in a one-to-many. I do not rebuild the junction until those two checks fail.",
+      "example": "Added the Property Vendors related list to the LAB_Property__c layout after confirming two MD fields.",
+      "tradeoffs": [
+        "Schema missing vs layout missing",
+        "Related list vs report"
+      ],
+      "follow_ups": [
+        "Can Lightning App Builder hide the list?",
+        "Does Dynamic Forms change related lists?"
+      ],
+      "weak_answer_warnings": [
+        "Recreating the junction object first"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "foundational",
+      "question": "How do master-detail eligibility rules still apply to a junction?",
+      "answer_30_seconds": "Each master-detail field on the junction must still obey deletion, Owner, and standard-object-as-detail rules. A junction does not waive those constraints.",
+      "answer_2_minutes": "If one parent is a custom object, a standard object still cannot sit as that MD detail in the blocked pattern. I create both MD fields on the junction, not on the parents. I mention API 11.0+ for two MD fields. I keep JunctionIdList out of the custom-object design.",
+      "example": "Junction LAB_CaseIssue__c with MD to Case and MD to LAB_Issue__c only after confirming each side is an allowed pair.",
+      "tradeoffs": [
+        "Custom junction vs standard-as-detail",
+        "Two MD vs JunctionIdList"
+      ],
+      "follow_ups": [
+        "Can Case be a master of a custom junction?",
+        "What if one side must be lookup?"
+      ],
+      "weak_answer_warnings": [
+        "Saying junctions ignore relationship rules"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1056 @@
+{
+  "topic_id": "DATA-010",
+  "slug": "validation-rules-and-error-message-design",
+  "title": "Validation rules and error-message design",
+  "track": "Data model and configuration",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-009"
+  ],
+  "objectives": [
+    "Define a validation rule as a formula that is true when the record is invalid and must not save.",
+    "Write an error message that tells the user what to fix, and choose top-of-page versus field location.",
+    "Use validation for cross-field and conditional requiredness that layouts and field Required cannot express.",
+    "Refuse validation when the need is a calculated display, a roll-up, a page-layout hide, or a long-running process."
+  ],
+  "diagnostic_question": "Commercial properties must have a region, city must match region, and inspectors want a friendly message on the city field. Which parts are a validation rule, which are a dependent picklist, and where do you put the error message?",
+  "definition": "A validation rule is a formula evaluated on save. When the formula is true, Salesforce blocks the save and shows an error message you write. Formula fields, rules, and other formula contexts share operators and functions, with some functions limited by context—VLOOKUP is available in validation rules, not as a general formula-field child lookup. Validation formulas may span related records through lookup or master-detail. ([Formula Operators and Functions](https://developer.salesforce.com/docs/atlas.en-us.usefulFormulaFields.meta/usefulFormulaFields/customize_functions.htm); [VLOOKUP](https://help.salesforce.com/s/articleView?id=platform.customize_functions_vlookup.htm); [Formula Field Limits and Restrictions](https://help.salesforce.com/s/articleView?id=sf.formula_field_limits.htm); [Tips for Building Cross-Object Formulas](https://help.salesforce.com/s/articleView?id=platform.fields_creating_cross_object_notes.htm))",
+  "why_it_matters": "The interview trap is inverting the formula (true means valid) or using a formula field as a gate. Another trap is a cryptic error message. Layout required and field Required cannot express 'required if Commercial.' Dependent picklists prevent bad combinations; validation is the backstop for conditions they cannot express, including API loads.",
+  "sixty_second_explanation": "Think of an airport security gate. The validation formula is the alarm: it is true when the suitcase must not pass. The error message is the sign the traveler can actually act on—'Put Region on Commercial properties' beats 'Invalid data.' You can hang the sign on the whole counter (top of page) or on one bin (a field). A reprint screen (formula field) does not lock the gate. A furniture arrangement (page layout) does not stop a cargo API.",
+  "deeper_explanation": [
+    "Validation rules use the same formula language as formula fields, with context differences. The rule formula describes the error condition (true = invalid). That polarity is the opposite of how learners first guess. ([Formula Operators and Functions](https://developer.salesforce.com/docs/atlas.en-us.usefulFormulaFields.meta/usefulFormulaFields/customize_functions.htm))",
+    "VLOOKUP looks up a value on a custom object and is only available in validation rules. Constraints include matching the Record Name field on a custom object and returning certain field types. ([VLOOKUP](https://help.salesforce.com/s/articleView?id=platform.customize_functions_vlookup.htm))",
+    "Formula Field Limits: formula fields and formulas for approvals or rules can reference related records through lookup or master-detail. Record-type default-value formulas cannot span the same way. Campaign statistic fields cannot be referenced in validation rules (but can in custom formula fields). ([Formula Field Limits and Restrictions](https://help.salesforce.com/s/articleView?id=sf.formula_field_limits.htm))",
+    "Error-message design is handbook quality on top of the official message field: say what is wrong and what to do, in the user's language, without internal API names. Location: field versus top of page. Exact character limits are Needs verification in current Help—do not invent them.",
+    "Validation is not a formula field, not a roll-up, not Dynamic Forms visibility, not a Flow that should run after a successful save, and not FLS. It does fire for many API and UI saves—confirm bypasses (such as some user permissions) in current Help before promising it always fires."
+  ],
+  "mental_model": {
+    "analogy": "An airport security gate: the formula is the alarm that is true when the bag must not pass, and the error message is the sign the traveler can act on.",
+    "useful_mapping": [
+      "validation formula → alarm condition (true = stop)",
+      "error message → actionable sign",
+      "field location → sign taped to one bin",
+      "top of page → sign on the whole counter",
+      "layout required → a polite furniture note the cargo API can walk around",
+      "formula field → a reprint screen that does not lock the gate",
+      "dependent picklist → the bin that never offers the wrong city"
+    ],
+    "where_it_breaks": [
+      "Some permissions or tools may bypass validation—Needs verification; do not promise universal enforcement.",
+      "VLOOKUP rules are specific; the gate analogy does not encode Record Name matching.",
+      "Order of execution with Flow and Apex is a later topic; this lesson is the rule itself.",
+      "Character limits for messages are not quoted here."
+    ]
+  },
+  "teach_back_prompt": "Explain why a validation formula is true when the record is invalid, then write one good error message and say when you would use a dependent picklist instead.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "True means invalid. Write one rule in that polarity."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Required if Commercial: validation vs layout vs field Required."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "VLOOKUP context and one restriction."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Rewrite a bad 'Invalid data' message."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: validation vs formula vs Flow."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-VALDEF",
+      "title": "Formula Operators and Functions by Context",
+      "type": "Official Salesforce Developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.usefulFormulaFields.meta/usefulFormulaFields/customize_functions.htm",
+      "supports": "Shared formula language across formula fields, validation rules, and other contexts; some functions are context-specific.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-VLOOKUP",
+      "title": "VLOOKUP",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.customize_functions_vlookup.htm",
+      "supports": "VLOOKUP is only available in validation rules; custom-object Record Name match; allowed return types; first match wins.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-FLIMITS",
+      "title": "Formula Field Limits and Restrictions",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.formula_field_limits.htm",
+      "supports": "Rules can span lookup/master-detail; campaign statistic fields cannot be referenced in validation rules; defaults vs spanning.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-XOBJ",
+      "title": "Tips for Building Cross-Object Formulas",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.fields_creating_cross_object_notes.htm",
+      "supports": "Unique-relationship cap includes rules; spanning guidance that validation formulas share.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "True = invalid",
+        "Error message design",
+        "Field vs page",
+        "Vs layout required",
+        "Vs formula field",
+        "VLOOKUP only in validation"
+      ],
+      "accessible_description": "Validation rules fire when the formula is true, show an actionable message, and are not formula fields or layout requiredness."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-VALDEF",
+        "SF-HELP-VLOOKUP",
+        "SF-HELP-FLIMITS",
+        "SF-HELP-XOBJ"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Save → evaluate rule formulas → block + message if true"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Save[User or API save] --> VR[Validation rule formulas]\n  VR -->|All false| Ok[Save continues]\n  VR -->|Any true| Stop[Block save]\n  Stop --> Msg[Error message field or page]",
+      "decision": "flowchart TD\n  Need[Need better data] --> Q1{Must the save fail?}\n  Q1 -->|No display only| FF[Formula field DATA-006]\n  Q1 -->|Yes| Q2{Can a picklist or dependency prevent the combo?}\n  Q2 -->|Yes| Dep[Dependent picklist DATA-008]\n  Q2 -->|No cross-field or API backstop| VR[Validation rule]\n  VR --> Q3{Required everywhere?}\n  Q3 -->|Yes simple| Req[Field Required DATA-002]\n  Q3 -->|Required if Commercial| VR2[Validation rule not layout-only]",
+      "sequence": "sequenceDiagram\n  participant User\n  participant VR\n  User->>VR: Save Commercial with blank Region\n  VR-->>User: True: show error on Region field"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Validation rules use the shared formula language. The formula is written so that a true result is the error condition that blocks the save.",
+      "source_ids": [
+        "SF-HELP-VALDEF",
+        "SF-HELP-FLIMITS"
+      ],
+      "scope": "Polarity and language",
+      "validation": "Formula functions guide plus rules-as-formula-context in limits.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "VLOOKUP is only available in validation rules. It matches lookup_value to the Record Name field on a custom object and returns a typed field; the first match wins.",
+      "source_ids": [
+        "SF-HELP-VLOOKUP",
+        "SF-HELP-VALDEF"
+      ],
+      "scope": "VLOOKUP context",
+      "validation": "VLOOKUP Help plus functions-by-context.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Validation-rule formulas may reference related records through lookup or master-detail. They share the 10 unique-relationship cap with formula fields and lookup filters. Campaign statistic fields cannot be referenced in validation rules.",
+      "source_ids": [
+        "SF-HELP-FLIMITS",
+        "SF-HELP-XOBJ"
+      ],
+      "scope": "Spanning and exclusions",
+      "validation": "Formula Field Limits plus cross-object tips.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Error messages and field-versus-page location are part of the rule definition. Layout requiredness and formula fields do not replace a validation rule for conditional requiredness or API backstop.",
+      "source_ids": [
+        "SF-HELP-VALDEF",
+        "SF-HELP-FLIMITS"
+      ],
+      "scope": "Message vs other tools",
+      "validation": "Formula contexts plus the layout/formula contrast taught from neighboring Help.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Validation UI, bypass permissions, and function availability are release-sensitive. Reverify validation-rule Help and VLOOKUP for Summer '26.",
+  "unresolved_uncertainty": [
+    "Which user permissions or tools bypass validation rules is Needs verification in current Help—do not promise they always fire.",
+    "Error-message character limits are Needs verification; do not invent a number."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Validation rule",
+      "telugu": "A formula that is true when the save must be blocked."
+    },
+    {
+      "english": "Error message",
+      "telugu": "The actionable sign shown when the rule is true."
+    },
+    {
+      "english": "VLOOKUP",
+      "telugu": "A validation-only function that matches a custom object's Record Name."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "A validation rule formula is true when the record is invalid. Salesforce blocks the save and shows your error message on a field or the page. Use it for conditional requiredness and API backstop. Do not invert the formula. Do not use a formula field as a gate.",
+    "two_minutes": "I write AND/OR so true means stop. Commercial AND ISBLANK(Region) is the rule. The message says to enter Region for Commercial properties and sits on Region. I use dependent picklists for city/region combos when I can. I mention VLOOKUP only in validation. I mention spanning and the 10-relationship cap. I do not quote unofficial bypass lists."
+  },
+  "terminology": [
+    {
+      "term": "validation rule",
+      "plain": "A save gate written as a formula.",
+      "precise": "A formula evaluated on save; true means invalid and the save is blocked.",
+      "example": "AND(ISPICKVAL(RecordType.Name,'Commercial'), ISBLANK(TEXT(Region__c))).",
+      "non_example": "A formula field checkbox that only displays.",
+      "confusable_neighbor": "Duplicate rule: a different quality feature (DQM).",
+      "boundary": "Not a page-layout required checkbox."
+    },
+    {
+      "term": "error condition polarity",
+      "plain": "True means stop.",
+      "precise": "You write the bad case, not the good case. Beginners invert this.",
+      "example": "ISBLANK(City__c) to require city.",
+      "non_example": "NOT(ISBLANK(City__c)) when you meant to require city.",
+      "confusable_neighbor": "Formula field returning true for 'is valid' display.",
+      "boundary": "Test both the failing and passing LAB_ record."
+    },
+    {
+      "term": "error message",
+      "plain": "What the user reads when the rule is true.",
+      "precise": "Text you author. Make it actionable. Avoid raw API names. Location is field or top of page.",
+      "example": "Enter a Region for Commercial properties.",
+      "non_example": "Invalid data.",
+      "confusable_neighbor": "Debug log: not user-facing.",
+      "boundary": "Character limits Needs verification."
+    },
+    {
+      "term": "error location",
+      "plain": "Field versus top of page.",
+      "precise": "Field location points at the bin to fix; top of page is for multi-field or record-level problems.",
+      "example": "Message on Region__c.",
+      "non_example": "A Chatter post.",
+      "confusable_neighbor": "Toast from a Lightning component: different surface.",
+      "boundary": "If the field is not on the layout, field location may be less helpful—verify UX."
+    },
+    {
+      "term": "conditional requiredness",
+      "plain": "Required only in some cases.",
+      "precise": "Validation expresses 'required if Commercial' that field Required (always) and a single layout cannot enforce for every channel.",
+      "example": "Region required when record type is Commercial.",
+      "non_example": "Field Required on Region for all types.",
+      "confusable_neighbor": "Layout required: UI only for that layout.",
+      "boundary": "Still combine with picklists when possible."
+    },
+    {
+      "term": "VLOOKUP",
+      "plain": "Validation-only lookup of a custom object's name.",
+      "precise": "VLOOKUP(field_to_return, field_on_lookup_object, lookup_value) available only in validation rules; field_on_lookup_object must be the Record Name on a custom object; first match wins.",
+      "example": "Block a code not found on LAB_AllowedZip__c.Name.",
+      "non_example": "A formula field VLOOKUP on Account.",
+      "confusable_neighbor": "Relationship field: a real lookup, preferred when you can model it.",
+      "boundary": "Many type and deletion constraints in Help."
+    },
+    {
+      "term": "spanning validation",
+      "plain": "A rule that reads a parent field.",
+      "precise": "Rules may reference related records through lookup or master-detail and consume unique relationships.",
+      "example": "Block inspection save if Property.Status is Closed.",
+      "non_example": "A formula field that only displays that status.",
+      "confusable_neighbor": "Roll-up: child aggregate, not a save gate.",
+      "boundary": "Counts toward the 10 unique-relationship cap."
+    },
+    {
+      "term": "validation bypass uncertainty",
+      "plain": "Times a save might not run your rule.",
+      "precise": "Do not invent a permission list. Mark which tools skip validation as Needs verification in current Help.",
+      "example": "A stated uncertainty in the design review.",
+      "non_example": "A promise that every API always hits every rule.",
+      "confusable_neighbor": "before-save Flow: neighboring order-of-execution.",
+      "boundary": "Test the actual integration user in sandbox."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Write the bad case as true",
+      "actor": "Admin",
+      "trigger": "A save must fail sometimes",
+      "before": "Inverted formula",
+      "after": "Formula true only for invalid rows",
+      "observe": "Failing LAB_ record blocked; good record saves",
+      "failure": "NOT() wrapping the whole intended error"
+    },
+    {
+      "step": 2,
+      "transition": "Choose location and write the message",
+      "actor": "Admin",
+      "trigger": "Rule compiles",
+      "before": "Invalid data",
+      "after": "Actionable message on the field or page",
+      "observe": "User can fix without Setup",
+      "failure": "API name in the message"
+    },
+    {
+      "step": 3,
+      "transition": "Prefer picklists/layouts when they already prevent the combo",
+      "actor": "Admin",
+      "trigger": "Bad combination of values",
+      "before": "Validation as first tool",
+      "after": "Dependent picklist or record type first; validation as backstop",
+      "observe": "UI cannot pick the bad city; API still blocked if needed",
+      "failure": "Validation duplicating a dependency matrix with no API story"
+    },
+    {
+      "step": 4,
+      "transition": "Test UI and a data channel",
+      "actor": "Admin",
+      "trigger": "Rule active",
+      "before": "Only tested in the UI",
+      "after": "Data Loader or API user in sandbox",
+      "observe": "Same error or a documented bypass",
+      "failure": "Assuming layout required stopped the API"
+    }
+  ],
+  "when_to_use": [
+    "When a save must fail because a formula condition is true (invalid record).",
+    "When requiredness depends on record type, picklist, or a parent field—not a simple field Required.",
+    "When you need an actionable error message on a field or at the top of the page.",
+    "When a dependent picklist is not enough and API users could still send a bad combination.",
+    "When VLOOKUP against a custom object's Record Name is the documented validation-only lookup."
+  ],
+  "when_not_to_use": [
+    "Do not use a validation rule to calculate a display value (formula field) or to aggregate children (roll-up).",
+    "Do not use a validation rule as the first tool when a dependent picklist or record type already prevents the value.",
+    "Do not use a validation rule to hide fields (page layout or Dynamic Forms) or as FLS.",
+    "Do not invert the formula so true means valid.",
+    "Do not write 'Invalid data' as the only error message."
+  ],
+  "configuration_or_code_location": [
+    "Object Manager → Validation Rules → formula, error message, error location.",
+    "Active checkbox; test in sandbox with LAB_ records.",
+    "Formula operators Help and VLOOKUP Help when functions fail compile.",
+    "Neighboring: before-save Flow if the need is to fix data rather than block."
+  ],
+  "worked_example": {
+    "scenario": "LAB_Property__c Commercial records must have Region. City should usually be a dependent picklist. If someone clears Region on an existing Commercial record, the save must fail with a message on Region. Sandbox only.",
+    "inputs": [
+      "Commercial record type",
+      "Region and City picklists",
+      "UI and a Data Loader update"
+    ],
+    "decisions": [
+      {
+        "decision": "Dependent picklist Region→City for the happy path.",
+        "because": "Prevent bad combos in the UI first (DATA-008).",
+        "rejected": "Validation as the only city control"
+      },
+      {
+        "decision": "Validation: Commercial AND ISBLANK(Region) is true → stop.",
+        "because": "True means invalid; layout required would not catch every channel.",
+        "rejected": "A formula field IsMissingRegion__c as the gate"
+      },
+      {
+        "decision": "Error message on the Region field: Enter a Region for Commercial properties.",
+        "because": "Actionable and located on the field to fix.",
+        "rejected": "Invalid data at top of page"
+      }
+    ],
+    "configuration_or_code": [
+      "Create the rule; activate; fail a LAB_ Commercial save with blank Region.",
+      "Save a Residential record with blank Region to prove polarity.",
+      "Update via Data Loader and record whether the rule fired."
+    ],
+    "output": "UI and data channel blocked with a clear field message; Residential still optional.",
+    "verification": [
+      "Commercial blank Region cannot save.",
+      "Residential blank Region can save.",
+      "Message text contains Region and Commercial, not the API name only."
+    ],
+    "self_explanation": "I wrote the alarm as the bad case and I put a useful sign on the bin."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_Property__c.",
+    "starting_state_checks": [
+      "You can create validation rules.",
+      "A record type or Status you can test."
+    ],
+    "steps": [
+      "Write a rule that is true when a chosen condition is invalid.",
+      "Set an actionable field-level error message.",
+      "Prove a bad LAB_ record fails and a good one saves.",
+      "Rewrite a teammate's 'Invalid data' message."
+    ],
+    "guided_completion": [
+      "If both records fail, the polarity is inverted.",
+      "If only the UI fails, you used layout required instead of a rule."
+    ],
+    "independent_challenge": "Add a spanning condition that reads a parent field, and count unique relationships used.",
+    "evidence": [
+      "Screenshot of the blocked save and the message.",
+      "The formula text."
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate or delete LAB_ rules.",
+      "Do not deploy."
+    ],
+    "limitations": "Does not map full order of execution with Flow and Apex."
+  },
+  "decision_table": [
+    {
+      "signal": "Save must fail when Commercial and Region are blank.",
+      "choose": "Validation rule whose formula is true for that bad case; message on Region.",
+      "not": "A formula field checkbox, or layout required on all types.",
+      "why": "True means invalid; layouts and formula fields do not gate every save the same way."
+    },
+    {
+      "signal": "Users should never even pick an illegal city for a region.",
+      "choose": "Dependent picklist first; validation only as API backstop if needed.",
+      "not": "A validation rule as the only UI control.",
+      "why": "Picklists prevent the combo; validation is a gate, not a picker."
+    },
+    {
+      "signal": "Need to display parent city, not block save.",
+      "choose": "Cross-object formula field.",
+      "not": "A validation rule that always errors.",
+      "why": "Formulas display; validation blocks."
+    },
+    {
+      "signal": "Need to look up whether a code exists on a custom object's Name.",
+      "choose": "VLOOKUP in a validation rule, with Help's type and Name constraints.",
+      "not": "VLOOKUP in a formula field.",
+      "why": "VLOOKUP is only available in validation rules."
+    },
+    {
+      "signal": "Need a number that counts children.",
+      "choose": "Roll-up or alternative, not a validation rule.",
+      "not": "A validation rule that 'counts' children.",
+      "why": "Validation does not aggregate children onto the parent."
+    }
+  ],
+  "limitations": [
+    "Order of execution with Flow/Apex is neighboring.",
+    "Bypass list is not invented here.",
+    "Error-message length limits are unverified.",
+    "VLOOKUP constraints are summarized, not fully restated."
+  ],
+  "security_notes": [
+    "Do not put secrets in error messages.",
+    "Validation is not authorization; users who can edit the object still see messages.",
+    "Test the integration user; do not assume they are blocked."
+  ],
+  "common_mistakes": [
+    "Inverting polarity (true means valid).",
+    "Using a formula field as a save gate.",
+    "Error message 'Invalid data'.",
+    "Relying on layout required for API quality.",
+    "Putting VLOOKUP in a formula field."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Good records cannot save.",
+      "check": [
+        "The formula is true for valid rows (inverted).",
+        "A field reference is blank in unexpected ways."
+      ],
+      "do_not_assume": "The object is broken."
+    },
+    {
+      "symptom": "UI blocks but Data Loader succeeds.",
+      "check": [
+        "You used layout required, not a validation rule.",
+        "Whether this tool bypasses validation—Needs verification."
+      ],
+      "do_not_assume": "The rule is active if you only tested the layout."
+    },
+    {
+      "symptom": "VLOOKUP does not compile on a formula field.",
+      "check": [
+        "VLOOKUP is validation-only.",
+        "Record Name and type constraints in Help."
+      ],
+      "do_not_assume": "The custom object is missing entirely."
+    }
+  ],
+  "production_notes": [
+    "Activate rules in sandbox with LAB_ data; unexpected true formulas block integrations.",
+    "Deploy metadata; existing bad rows fail on next edit, not retroactively—plan cleanup.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When does a validation rule block a save?",
+      "options": {
+        "A": "When its formula evaluates to true (the record is invalid)",
+        "B": "When its formula evaluates to false",
+        "C": "When a formula field is blank",
+        "D": "When a compact layout is missing"
+      },
+      "answer": "A",
+      "rationale": "The formula describes the error condition.",
+      "distractor_explanations": {
+        "B": "False means the rule does not fire.",
+        "C": "Formula fields do not block saves.",
+        "D": "Unrelated."
+      },
+      "concept": "Polarity",
+      "citation_ids": [
+        "SF-HELP-VALDEF",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "VLOOKUP is available where?",
+      "options": {
+        "A": "Only in validation rules",
+        "B": "In every formula field",
+        "C": "Only in roll-up summaries",
+        "D": "Only in compact layouts"
+      },
+      "answer": "A",
+      "rationale": "VLOOKUP Help: only available in validation rules.",
+      "distractor_explanations": {
+        "B": "Not in general formula fields.",
+        "C": "Roll-ups do not use VLOOKUP.",
+        "D": "Unrelated."
+      },
+      "concept": "VLOOKUP context",
+      "citation_ids": [
+        "SF-HELP-VLOOKUP",
+        "SF-HELP-VALDEF"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "What must field_on_lookup_object be for VLOOKUP?",
+      "options": {
+        "A": "The Record Name field on a custom object",
+        "B": "Any field on Account",
+        "C": "A roll-up summary",
+        "D": "A Lightning page name"
+      },
+      "answer": "A",
+      "rationale": "Help: field_on_lookup_object must be the Record Name field on a custom object.",
+      "distractor_explanations": {
+        "B": "Not any Account field.",
+        "C": "Not a roll-up.",
+        "D": "Unrelated."
+      },
+      "concept": "VLOOKUP Name",
+      "citation_ids": [
+        "SF-HELP-VLOOKUP",
+        "SF-HELP-VALDEF"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Commercial requires Region. Best gate that also covers API?",
+      "options": {
+        "A": "A validation rule true when Commercial and Region are blank",
+        "B": "Layout required on the Facilities layout only",
+        "C": "A formula field checkbox",
+        "D": "A compact layout"
+      },
+      "answer": "A",
+      "rationale": "Conditional requiredness that channels share is a validation rule.",
+      "distractor_explanations": {
+        "B": "Layout required is presentation.",
+        "C": "Formula fields do not block.",
+        "D": "Header only."
+      },
+      "concept": "Conditional required",
+      "citation_ids": [
+        "SF-HELP-VALDEF",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Best error message?",
+      "options": {
+        "A": "Enter a Region for Commercial properties.",
+        "B": "Invalid data",
+        "C": "Error 500",
+        "D": "See lesson terminology table"
+      },
+      "answer": "A",
+      "rationale": "Actionable and specific.",
+      "distractor_explanations": {
+        "B": "Not actionable.",
+        "C": "Not user language.",
+        "D": "Placeholder banned."
+      },
+      "concept": "Message design",
+      "citation_ids": [
+        "SF-HELP-VALDEF",
+        "SF-HELP-VLOOKUP"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "City/region illegal combo. First UI tool?",
+      "options": {
+        "A": "Dependent picklist; validation as backstop if APIs can still send the combo",
+        "B": "Validation only, hide the picklists",
+        "C": "A roll-up",
+        "D": "A dummy account"
+      },
+      "answer": "A",
+      "rationale": "Picklists prevent; validation gates leftovers.",
+      "distractor_explanations": {
+        "B": "Users should not pick illegal values.",
+        "C": "Wrong tool.",
+        "D": "Skew anti-pattern."
+      },
+      "concept": "Picklist first",
+      "citation_ids": [
+        "SF-HELP-VALDEF",
+        "SF-HELP-XOBJ"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Can validation formulas span parent fields?",
+      "options": {
+        "A": "Yes, through lookup or master-detail, counting toward unique relationships",
+        "B": "Never",
+        "C": "Only on compact layouts",
+        "D": "Only via JunctionIdList"
+      },
+      "answer": "A",
+      "rationale": "Limits Help: rules can reference related records; cross-object tips include rules in the cap.",
+      "distractor_explanations": {
+        "B": "They can span.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Spanning rules",
+      "citation_ids": [
+        "SF-HELP-FLIMITS",
+        "SF-HELP-XOBJ"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Campaign statistic fields in a validation rule?",
+      "options": {
+        "A": "Cannot be referenced in validation rules (they can be referenced in custom formula fields)",
+        "B": "Required in every validation rule",
+        "C": "Only on User",
+        "D": "They replace VLOOKUP"
+      },
+      "answer": "A",
+      "rationale": "Formula Field Limits exclusion.",
+      "distractor_explanations": {
+        "B": "They are excluded.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Campaign stats",
+      "citation_ids": [
+        "SF-HELP-FLIMITS",
+        "SF-HELP-VALDEF"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "A checkbox formula shows Region is missing. Does that block save?",
+      "options": {
+        "A": "No. Use a validation rule to block save",
+        "B": "Yes, always",
+        "C": "Yes if on the compact layout",
+        "D": "Yes if the return type is Text"
+      },
+      "answer": "A",
+      "rationale": "Formula fields display; validation rules block.",
+      "distractor_explanations": {
+        "B": "They do not block.",
+        "C": "Layout does not convert a formula into a rule.",
+        "D": "Return type does not block DML."
+      },
+      "concept": "Formula vs rule",
+      "citation_ids": [
+        "SF-HELP-VALDEF",
+        "SF-HELP-FLIMITS"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "VLOOKUP in a formula field on Property?",
+      "options": {
+        "A": "Not supported as a general formula-field function; it is validation-only",
+        "B": "The official child COUNT",
+        "C": "A compact layout feature",
+        "D": "A Dynamic Forms visibility function"
+      },
+      "answer": "A",
+      "rationale": "VLOOKUP Help limits the context.",
+      "distractor_explanations": {
+        "B": "Roll-ups count children.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "No VLOOKUP in FF",
+      "citation_ids": [
+        "SF-HELP-VLOOKUP",
+        "SF-HELP-VALDEF"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "If VLOOKUP finds more than one match?",
+      "options": {
+        "A": "The value from the first record is returned",
+        "B": "The save always succeeds",
+        "C": "All matches are concatenated",
+        "D": "The rule is deleted"
+      },
+      "answer": "A",
+      "rationale": "Help: if more than one record matches, the first record's value is returned.",
+      "distractor_explanations": {
+        "B": "Not stated.",
+        "C": "Not stated.",
+        "D": "Not stated."
+      },
+      "concept": "First match",
+      "citation_ids": [
+        "SF-HELP-VLOOKUP",
+        "SF-HELP-VALDEF"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Need a count of units on Property. Validation rule?",
+      "options": {
+        "A": "No. Use a roll-up summary or alternative",
+        "B": "Yes. Validation rules aggregate children",
+        "C": "Yes. VLOOKUP counts MD children",
+        "D": "Yes. Error messages store numbers"
+      },
+      "answer": "A",
+      "rationale": "Validation blocks saves; it does not maintain aggregates.",
+      "distractor_explanations": {
+        "B": "They do not aggregate.",
+        "C": "VLOOKUP matches Name on a custom object.",
+        "D": "Messages are text."
+      },
+      "concept": "Not a roll-up",
+      "citation_ids": [
+        "SF-HELP-FLIMITS",
+        "SF-HELP-VLOOKUP"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "polarity",
+      "front": "When does a validation rule fire?",
+      "back": "When its formula is true, meaning the record is invalid and the save must stop."
+    },
+    {
+      "id": "F2",
+      "category": "msg",
+      "front": "What makes a good error message?",
+      "back": "It says what is wrong and what to do, in user language, not just Invalid data."
+    },
+    {
+      "id": "F3",
+      "category": "loc",
+      "front": "Field vs top of page?",
+      "back": "Field points at the value to fix; top of page is for record-level or multi-field problems."
+    },
+    {
+      "id": "F4",
+      "category": "vlookup",
+      "front": "Where can you use VLOOKUP?",
+      "back": "Only in validation rules, not in ordinary formula fields."
+    },
+    {
+      "id": "F5",
+      "category": "vlookup2",
+      "front": "What does VLOOKUP match on?",
+      "back": "The Record Name field on a custom object."
+    },
+    {
+      "id": "F6",
+      "category": "span",
+      "front": "Can rules read parent fields?",
+      "back": "Yes, through lookup or master-detail, counting toward unique relationships."
+    },
+    {
+      "id": "F7",
+      "category": "ff",
+      "front": "Does a formula field block save?",
+      "back": "No. Use a validation rule for a save gate."
+    },
+    {
+      "id": "F8",
+      "category": "lay",
+      "front": "Is layout required enough for APIs?",
+      "back": "No. Layout required is presentation; use a validation rule for a shared gate."
+    },
+    {
+      "id": "F9",
+      "category": "dep",
+      "front": "Picklist vs validation for illegal city?",
+      "back": "Prefer a dependent picklist in the UI; validation backstops other channels."
+    },
+    {
+      "id": "F10",
+      "category": "camp",
+      "front": "Campaign statistic fields in validation?",
+      "back": "They cannot be referenced in validation rules."
+    },
+    {
+      "id": "F11",
+      "category": "first",
+      "front": "Multiple VLOOKUP matches?",
+      "back": "The value from the first matching record is returned."
+    },
+    {
+      "id": "F12",
+      "category": "invert",
+      "front": "Good records failing?",
+      "back": "The formula is probably inverted so true matches valid rows."
+    },
+    {
+      "id": "F13",
+      "category": "cond",
+      "front": "Required if Commercial?",
+      "back": "A validation rule, not field Required on every type."
+    },
+    {
+      "id": "F14",
+      "category": "bypass",
+      "front": "Do rules always fire for every tool?",
+      "back": "Needs verification. Test the integration user; do not invent a bypass list."
+    },
+    {
+      "id": "F15",
+      "category": "rollup",
+      "front": "Validation to count children?",
+      "back": "No. Use a roll-up summary or an alternative."
+    },
+    {
+      "id": "F16",
+      "category": "unique",
+      "front": "Do validation rules consume unique relationships?",
+      "back": "Yes. The 10 unique-relationship cap includes rules."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How does a validation rule work, and how do you write the formula?",
+      "answer_30_seconds": "The formula is the error condition. When it is true, Salesforce blocks the save and shows your error message. Write the bad case, not the good case.",
+      "answer_2_minutes": "I say true means invalid. I contrast formula fields, layout required, and dependent picklists. I mention spanning and the unique-relationship cap. I mention VLOOKUP as validation-only. I do not invent bypasses or message length limits.",
+      "example": "AND(ISPICKVAL(RecordType.Name,'Commercial'), ISBLANK(TEXT(Region__c))).",
+      "tradeoffs": [
+        "True=invalid vs true=valid",
+        "Rule vs formula field"
+      ],
+      "follow_ups": [
+        "Where do you put the message?",
+        "Can rules span Account?"
+      ],
+      "weak_answer_warnings": [
+        "Saying the formula must return false to error"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "Commercial properties must have Region in UI and Data Loader.",
+      "answer_30_seconds": "A validation rule true when Commercial and Region are blank, with an actionable message on Region. Layout required on one layout is not enough.",
+      "answer_2_minutes": "I still subset picklists and layouts. I test a Residential row so polarity is right. I run a LAB_ Data Loader update. If it succeeds, I did not actually have a rule. I do not use a formula checkbox as the gate.",
+      "example": "Commercial blank Region fails UI and loader; Residential blank Region saves.",
+      "tradeoffs": [
+        "Rule vs layout required",
+        "Field Required vs conditional"
+      ],
+      "follow_ups": [
+        "What if RecordType.Name is translated?",
+        "Should you use RecordTypeId?"
+      ],
+      "weak_answer_warnings": [
+        "Trusting the layout asterisk"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "design",
+      "question": "Write a better error message than Invalid data.",
+      "answer_30_seconds": "Say the business condition and the fix: Enter a Region for Commercial properties. Put it on the Region field when that is the fix.",
+      "answer_2_minutes": "I avoid API names unless admins are the only audience. I use the object's words (property, region, commercial). I use top of page if two fields conflict. I mark character limits Needs verification instead of guessing.",
+      "example": "Message on Region__c, not a stack trace.",
+      "tradeoffs": [
+        "Field vs page location",
+        "User language vs API name"
+      ],
+      "follow_ups": [
+        "What if the field is not on the layout?",
+        "Should messages be custom labels (DATA-012)?"
+      ],
+      "weak_answer_warnings": [
+        "Leaving Invalid data"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "foundational",
+      "question": "When is VLOOKUP the answer?",
+      "answer_30_seconds": "When a validation rule must compare a value to a custom object's Record Name and return another typed field. It is not a formula-field function and not a child COUNT.",
+      "answer_2_minutes": "I recite Help constraints: custom object, Record Name match, allowed return types, first match wins. I prefer a real relationship or a dependent picklist if the model can hold the link. I do not put VLOOKUP on a formula field.",
+      "example": "Block LAB_Zip__c values not found as LAB_AllowedZip__c.Name.",
+      "tradeoffs": [
+        "VLOOKUP vs relationship",
+        "First match vs unique Name"
+      ],
+      "follow_ups": [
+        "What types can it return?",
+        "What if the custom object is deleted?"
+      ],
+      "weak_answer_warnings": [
+        "Using VLOOKUP in a formula field"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "scenario",
+      "question": "City must match region. Is validation the first tool?",
+      "answer_30_seconds": "No. Build a dependent picklist so users cannot pick the illegal city. Add validation only if APIs or integrations can still send the combo.",
+      "answer_2_minutes": "I keep DATA-008 in front. Validation is a gate, not a picker. If I add a rule, the message says which cities are valid for that region or tells them to pick city again after region. I do not replace the matrix with a giant OR formula if the picklist can do it.",
+      "example": "Region→City matrix plus an optional API backstop rule.",
+      "tradeoffs": [
+        "Picker vs gate",
+        "OR formula vs matrix"
+      ],
+      "follow_ups": [
+        "How do you test the API path?",
+        "Does the rule consume a unique relationship?"
+      ],
+      "weak_answer_warnings": [
+        "Validation-only city control in the UI"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Every save fails after you activate a rule.",
+      "answer_30_seconds": "The formula is probably true for valid rows. Invert or tighten the condition. Test a known-good LAB_ record.",
+      "answer_2_minutes": "I look for a missing NOT, a blank compare that is always true, or a spanning field that is blank on every row. I deactivate in sandbox, fix, retest good and bad. I do not delete the object. I do not add another rule on top.",
+      "example": "Rule was NOT(ISBLANK(Name)) which is true whenever Name is filled.",
+      "tradeoffs": [
+        "Deactivate vs fix polarity",
+        "Spanning blank vs same-object blank"
+      ],
+      "follow_ups": [
+        "How do you debug the formula result?",
+        "Could record type be null on create?"
+      ],
+      "weak_answer_warnings": [
+        "Turning off all validation in the org"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Validation rule versus before-save Flow versus formula field?",
+      "answer_30_seconds": "Formula field displays. Validation blocks a bad save. Before-save Flow can fix or enrich data when blocking is the wrong product. AUTO-001 owns the deeper tool choice.",
+      "answer_2_minutes": "I use validation when the business wants a hard stop and a message. I use Flow when we should default Region rather than error. I do not hide fields with validation. I mention order of execution only at a high level and mark details neighboring.",
+      "example": "Block blank Region on Commercial; Flow defaults Status to New instead of erroring.",
+      "tradeoffs": [
+        "Block vs default",
+        "Display vs gate"
+      ],
+      "follow_ups": [
+        "Who sees the Flow fault path?",
+        "Does Flow run if validation fails?"
+      ],
+      "weak_answer_warnings": [
+        "Using Flow for every required field"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "foundational",
+      "question": "How do validation rules share limits with formula fields?",
+      "answer_30_seconds": "They share the formula language and the 10 unique-relationship cap across formula fields, rules, and lookup filters. Some functions and merge fields are context-specific, such as VLOOKUP and campaign statistic fields.",
+      "answer_2_minutes": "I audit existing walks before a spanning rule. I do not quote compile size without current Help. I mention record-type default formulas are narrower than rules. I keep roll-ups out of the story except as the wrong tool for aggregates.",
+      "example": "A new spanning validation on Opportunity is rejected until an unused unique relationship is freed.",
+      "tradeoffs": [
+        "Reuse a walk vs new parent",
+        "Context-specific functions"
+      ],
+      "follow_ups": [
+        "Do approval rules count in the same cap?",
+        "What is the current compile size?"
+      ],
+      "weak_answer_warnings": [
+        "Saying validation has no relationship budget"
+      ]
+    }
+  ]
+}

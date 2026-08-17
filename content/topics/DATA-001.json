@@ -1,0 +1,2067 @@
+{
+  "topic_id": "DATA-001",
+  "slug": "standard-and-custom-objects",
+  "title": "Standard and custom objects",
+  "track": "Data model and configuration",
+  "level": "Foundation",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-13",
+  "prerequisites": [
+    "FOUND-002"
+  ],
+  "objectives": [
+    "Map object, field, and record to the shared shape, typed attribute, and saved occurrence they represent.",
+    "Distinguish Salesforce-created standard objects from organization-created custom objects without treating either as a default design choice.",
+    "Separate metadata that defines or presents a model from business data stored in records and field values.",
+    "Keep a user-facing label, machine-facing API name, and optional custom tab as different boundaries.",
+    "Diagnose object existence, actor access, and visible navigation as separate gates with observable evidence.",
+    "Choose and defend a synthetic LAB_ object model, then transfer the decision to a changed business context."
+  ],
+  "diagnostic_question": "A facilities team asks to track properties in Salesforce. Before reading the lesson, decide whether the need is an object, record, field, metadata, business data, or navigation; what evidence would make you choose standard versus custom; and what would you check if a user cannot see the result?",
+  "definition": "An object is the shared definition for a kind of Salesforce data; fields describe attributes and records are saved occurrences. Salesforce's Object Reference uses table, column, and row as a structural analogy, while standard versus custom describes who created the object—not whether it is accessible or visible. ([Object Reference](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm); [Trailhead](https://trailhead.salesforce.com/content/learn/modules/data_modeling/objects_intro))",
+  "why_it_matters": "A wrong boundary creates downstream rework: a record may be mistaken for a definition, a tab may be mistaken for an object, or a custom object may be created before the standard model is understood. Separating shape, data, access, and presentation gives an administrator a smaller diagnostic search space and a safer release conversation.",
+  "sixty_second_explanation": "Think in four gates: define the shared object shape, choose standard or custom by semantic fit, create a record as business data, then verify access and navigation separately. Explicit boundaries: object ≠ tab; object definition ≠ record instance; metadata ≠ business data; label ≠ API name; object existence ≠ user access ≠ visible navigation.",
+  "deeper_explanation": [
+    "The Object Reference and Trailhead map object to table, field to column, and record to row as a starting analogy. The analogy explains structure, not the complete behavior of authorization, automation, transactions, or presentation. ([Object Reference](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm); [Trailhead](https://trailhead.salesforce.com/content/learn/modules/data_modeling/objects_intro))",
+    "Salesforce-created objects are standard objects; objects created by an organization through supported configuration or metadata mechanisms are custom objects. Reuse a standard meaning when it fits; treat the choice to create a custom object as a semantic-fit decision for the requirement, not as a universal platform mandate. ([Object Reference](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm); [Trailhead](https://trailhead.salesforce.com/content/learn/modules/data_modeling/objects_intro))",
+    "Metadata describes the model and configuration, including schema, process, presentation, authorization, and other customization concerns; business data is the record information that the organization operates on. The Metadata API guide distinguishes customization metadata from ordinary record CRUD, so a definition change and a saved occurrence need different evidence. ([Understanding Metadata API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_intro.htm); [Object Reference](https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm))",
+    "For a custom object, the Metadata API reference describes a fully specified CustomObject fullName and the automatic __c suffix. Trailhead separately shows custom-object creation and a Custom Tab Wizard; that separation is why an API name or tab should never be used as proof that a record exists or that a user has access. ([CustomObject](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/customobject.htm); [Trailhead](https://trailhead.salesforce.com/content/learn/modules/data_modeling/objects_intro); [Understanding Metadata API](https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_intro.htm))",
+    "The handbook decision table is a heuristic, not a Salesforce mandate: first name the business noun and its grain, then test standard semantic fit, then consider a custom model, and finally prove the result with a target-user and synthetic-record check. Security, automation dependencies, relationship grain, scale/operability, reporting or integration contracts, and rollback deserve explicit architecture checks; detailed mechanics and numeric limits remain out of scope. Availability and UI steps remain release-, edition-, license-, package-, configuration-, and permission-sensitive."
+  ],
+  "mental_model": {
+    "analogy": "Blueprint plus filing cabinet: metadata is the shared blueprint, an object is a drawer type, a field is a typed slot, and a record is one filed occurrence. Access controls are keys; a tab is a sign pointing to a drawer.",
+    "useful_mapping": [
+      "object → shared definition for a kind of data",
+      "field → named, typed attribute on that definition",
+      "record → one saved occurrence with values",
+      "metadata → model, process, presentation, or authorization configuration",
+      "business data → saved records and values",
+      "label/API name/tab → human wording, machine identifier, optional navigation surface"
+    ],
+    "where_it_breaks": [
+      "The table analogy stops at authorization: an object's existence does not tell us which actor may open it.",
+      "It stops at automation and transactions: a save can be validated, automated, committed, or rolled back.",
+      "It stops at presentation: a tab or app navigation entry is not the object definition.",
+      "Standard versus custom describes origin and model ownership, not quality, security, or universal availability.",
+      "An external object is a distinct boundary: its record data is stored outside the Salesforce org, so do not infer custom-object storage or CRUD behavior from the shared word 'object'.",
+      "External, big, and event object mechanics are neighboring topics; detailed field types belong to DATA-002 and relationship mechanics to DATA-003."
+    ]
+  },
+  "teach_back_prompt": "Without saying only 'table,' explain how object, field, record, metadata, business data, access, and custom tab relate. Then give one place where the analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, draw object → field → record and write one sentence separating metadata from business data; record confidence before checking the lesson."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify six signals as object, record, field, metadata, business data, or tab, then explain one standard-versus-custom decision."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Reconstruct the LAB_Property__c decision and name the rejected alternative plus the evidence that would reverse the choice."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose an object that exists but is not visible to a user; separate existence, access, navigation, and record evidence before reading feedback."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Transfer the model to an internal grant request or inspection case and give a two-minute interview answer with one limit and one security check."
+    }
+  ],
+  "retrieval_practice": {
+    "before_reveal": "Attempt the diagnostic, decision table, MCQs, and interview prompts from memory before opening the explanation or rationale.",
+    "confidence": "Record a confidence rating and the boundary you are least certain about; after feedback, correct the specific misconception rather than rereading passively.",
+    "feedback": "For each miss, name the failed boundary (model, origin, metadata/data, identity, access, navigation, or observation) and write the evidence that would change the decision.",
+    "transfer": "Use the 1/3/7/14/30-day schedule to retrieve the property case, then solve the changed-context grant-request or inspection case without copying the original answer."
+  },
+  "sources": [
+    {
+      "source_id": "SF-OBJREF-DATA-001",
+      "title": "Overview of Salesforce Objects and Fields",
+      "type": "Official Salesforce Object Reference",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.object_reference.meta/object_reference/sforce_api_objects_concepts.htm",
+      "supports": "Object, field, and record structural analogy; Salesforce-created standard objects; organization-created custom objects; external objects as a distinct kind whose record data is stored outside the org; and separate org, user, sharing, and object-specific access considerations.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-13",
+      "limits": "The overview is not a numeric limits catalog; edition, license, package, configuration, and permission behavior must be checked in the target org."
+    },
+    {
+      "source_id": "SF-TRAIL-DATA-001",
+      "title": "Optimize Customer Data with Standard and Custom Objects",
+      "type": "Official Salesforce Trailhead",
+      "url": "https://trailhead.salesforce.com/content/learn/modules/data_modeling/objects_intro",
+      "supports": "Standard/custom object orientation, object/field/record mapping, Object Manager custom-object creation, label/Object Name setup, and the separate Custom Tab Wizard presentation step.",
+      "release_or_version": "Live Trailhead / UI and release-sensitive",
+      "last_verified": "2026-08-13",
+      "limits": "Trailhead navigation and labels can change; reverify the path and feature availability in the target org."
+    },
+    {
+      "source_id": "SF-META-DATA-001",
+      "title": "Understanding Metadata API",
+      "type": "Official Salesforce Metadata API Guide",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_intro.htm",
+      "supports": "Metadata as schema, process, presentation, authorization, and configuration information; business data as records; CustomTab as presentation metadata; and customization metadata versus ordinary record CRUD.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-13",
+      "limits": "The guide explains the metadata boundary, not every edition, package, permission, deployment, or data-operation constraint."
+    },
+    {
+      "source_id": "SF-CUSTOMOBJ-DATA-001",
+      "title": "CustomObject",
+      "type": "Official Salesforce Metadata API Reference",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/customobject.htm",
+      "supports": "CustomObject identity and fully specified fullName values; the automatic __c suffix for custom-object names; and the __x suffix for external-object names.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-13",
+      "limits": "API syntax and availability are release-, namespace/package-, edition-, configuration-, and permission-sensitive; verify the target org before relying on a path or feature."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video found",
+      "channel": "Salesforce official channels searched",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "Not assessed because no exact-topic transcript or captions were verified.",
+      "gaps": "No claim-level video verification; this row is not an endorsement.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-13"
+    },
+    {
+      "status": "not_verified",
+      "title": "No verified Telugu video found for this topic",
+      "channel": "Candidate channels not endorsed without transcript review",
+      "url": "",
+      "language": "Telugu",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "Glossary support is provided in the lesson; no video claim is made.",
+      "gaps": "No verified Telugu transcript or captions for claim-level technical review.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-13"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Object → field → record",
+        "Standard fit before custom",
+        "Metadata vs business data",
+        "Labels, API names, tabs",
+        "Existence, access, navigation",
+        "LAB_ model → evidence"
+      ],
+      "accessible_description": "A portrait sequence separates shared object shape, typed fields, and saved records; compares standard and custom origin; separates metadata from business data; keeps label, API name, and tab distinct; then ends with a synthetic LAB_ evidence check.",
+      "alt_text": "Six-zone map of Salesforce object modeling: shape, standard-versus-custom fit, metadata versus records, identifiers and tabs, access diagnostics, and synthetic LAB_ verification."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001",
+        "SF-META-DATA-001",
+        "SF-CUSTOMOBJ-DATA-001"
+      ],
+      "accessible_description": "A printable revision surface with the object/field/record mapping, standard/custom decision cues, metadata/data boundary, identifier and tab traps, diagnostic gates, and LAB_ cleanup checklist."
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Business noun → object definition → access → record evidence",
+      "accessible_description": "Five transitions show an administrator framing a business noun, selecting standard or custom fit, defining metadata, checking actor access and navigation, and observing a synthetic record; each transition names a failure to investigate.",
+      "legend": "The sequence is diagnostic, not a claim that every org uses the same UI path; verify each gate in the target org."
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Noun[Business noun] --> Fit{Standard object fits?}\n  Fit -->|Yes| Std[Reuse standard object]\n  Fit -->|No| Custom[Custom object __c]\n  Std --> Meta[Metadata: fields layouts]\n  Custom --> Meta\n  Meta --> Access[Who can see it]\n  Access --> Rec[Record: one saved row]\n  Rec --> Proof[Verify with LAB_ test record]",
+      "decision": "flowchart TD\n  Need[Need to store something] --> Q1{Is it a kind of thing or one occurrence?}\n  Q1 -->|Kind of thing| Obj[Object / custom object]\n  Q1 -->|One occurrence| Rec[Record]\n  Q1 -->|Typed attribute| Field[Field]\n  Q1 -->|Navigation only| Tab[Tab is not the object]\n  Obj --> Q2{Does a standard object already mean this?}\n  Q2 -->|Yes| Reuse[Reuse Account Contact Opportunity]\n  Q2 -->|No| Custom2[Custom object after semantic-fit check]"
+    }
+  },
+  "visual_model": {
+    "steps": [
+      "Object is shared shape; field is a typed attribute; record is one saved occurrence.",
+      "Reuse a standard meaning when it fits; consider custom only for an org-defined concept needing its own model.",
+      "Define or change schema/configuration as metadata; create or edit an occurrence as business data.",
+      "Keep user label, machine API name, and optional tab/presentation metadata separate.",
+      "Test object existence, actor access, and visible navigation as separate gates.",
+      "Prove the choice with a synthetic LAB_ record, a target-user check, and cleanup evidence."
+    ]
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "The object/field/record distinction is taught with Salesforce's table/column/row structural analogy, while preserving the boundary between a definition and an occurrence.",
+      "source_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ],
+      "scope": "Foundation data-model vocabulary; analogy is structural and not a complete platform behavior model.",
+      "validation": "Matched to the rendered Object Reference and Trailhead explanations reviewed on 2026-08-13.",
+      "last_verified": "2026-08-13"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Standard objects are Salesforce-created and custom objects are organization-created; the lesson's semantic-fit choice is explicitly labeled as a handbook heuristic rather than an official always-standard or always-custom rule.",
+      "source_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ],
+      "scope": "Standard/custom origin and introductory modeling decisions; detailed fields and relationships are out of scope.",
+      "validation": "Source wording supports origin and object-model orientation; heuristic language is kept separate from source fact.",
+      "last_verified": "2026-08-13"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Metadata describes model and configuration concerns, while business data consists of records; metadata customization and ordinary record operations are separate evidence paths.",
+      "source_ids": [
+        "SF-META-DATA-001",
+        "SF-OBJREF-DATA-001"
+      ],
+      "scope": "Metadata versus business-data boundary for configuration, deployment reasoning, and diagnostics.",
+      "validation": "Matched to the Metadata API distinction between customization metadata and business data, cross-checked with the Object Reference overview.",
+      "last_verified": "2026-08-13"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "A label is user-facing wording, an API name is machine-facing object identity, a custom object's name receives __c, and a custom tab is a separate presentation/navigation concern.",
+      "source_ids": [
+        "SF-CUSTOMOBJ-DATA-001",
+        "SF-META-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ],
+      "scope": "Introductory identifiers and presentation boundary; exact UI/API availability remains target-org sensitive.",
+      "validation": "CustomObject and Metadata API references support identity/suffix and presentation metadata; Trailhead supports the label/Object Name and Custom Tab Wizard boundary.",
+      "last_verified": "2026-08-13"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Object existence, actor access, visible navigation, and observable record evidence must be checked separately rather than inferred from one another.",
+      "source_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-META-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ],
+      "scope": "Diagnostic and security reasoning; specific permissions, layouts, sharing, packages, and edition behavior require target-org verification.",
+      "validation": "Object Reference separates access considerations; Metadata API and Trailhead support the presentation/configuration distinction used by the diagnostic heuristic.",
+      "last_verified": "2026-08-13"
+    },
+    {
+      "claim_id": "C-006",
+      "claim": "External objects are a distinct boundary: their record data is stored outside the Salesforce organization; the CustomObject reference uses __x for external-object names, whereas custom-object names use __c.",
+      "source_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-CUSTOMOBJ-DATA-001"
+      ],
+      "scope": "Introductory object-kind and storage distinction only; connector, callout, license, security, performance, and availability behavior require target-org verification.",
+      "validation": "Matched the rendered Object Reference external-object passage and CustomObject suffix examples reviewed on 2026-08-13.",
+      "last_verified": "2026-08-13"
+    },
+    {
+      "claim_id": "C-007",
+      "claim": "A machine-facing custom-object identity must be treated as fully specified in its target org or package context; this lesson does not strip or invent namespace prefixes.",
+      "source_ids": [
+        "SF-CUSTOMOBJ-DATA-001"
+      ],
+      "scope": "Bounded API identity guidance; namespace/package availability and exact prefix syntax are not generalized here.",
+      "validation": "CustomObject states that fullName must be fully specified; the lesson preserves that source boundary and marks namespace/package behavior target-sensitive, reviewed on 2026-08-13.",
+      "last_verified": "2026-08-13"
+    }
+  ],
+  "changed_in_release": "Rendered official pages were re-opened on 2026-08-13 under Summer '26 / API 67.0: Object Reference title 'Overview of Salesforce Objects and Fields'; Trailhead heading 'Optimize Customer Data with Standard and Custom Objects'; Metadata API heading 'Understanding Metadata API'; and CustomObject heading 'CustomObject'. Trailhead and UI paths remain release-sensitive. Reverify edition, license, package, target-org configuration, user permissions, API behavior, and navigation before applying any hands-on step. No numeric object or field limits are asserted here.",
+  "unresolved_uncertainty": [
+    "Exact object availability, creation options, UI labels, package behavior, and limits vary by release, edition, license, namespace/package, target-org configuration, and user permission.",
+    "A successful definition change does not prove that a target persona can navigate to, access, or observe a record; test each gate in the target org.",
+    "External objects are a distinct kind whose record data is stored outside the org; connector/callout behavior, __x naming use, scale, security, and availability are intentionally out of scope and require new sources.",
+    "Namespace/package resolution is context-sensitive; use a fully specified target-org/package identity rather than inferring a universal prefix or availability rule.",
+    "The 1/3/7/14/30-day review intervals are handbook study policy, not a Salesforce product behavior claim."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Object",
+      "telugu": "Salesforceలో ఒక రకమైన డేటాను నిర్వచించే కంటైనర్."
+    },
+    {
+      "english": "Record",
+      "telugu": "ఆబ్జెక్ట్‌లో సేవ్ చేసిన ఒక వ్యాపార ఉదాహరణ లేదా సంఘటన."
+    },
+    {
+      "english": "Metadata",
+      "telugu": "నిర్వచనం, స్కీమా లేదా కాన్ఫిగరేషన్ సమాచారం."
+    },
+    {
+      "english": "Custom object",
+      "telugu": "సంస్థ అవసరానికి సంస్థ నిర్వచించిన ఆబ్జెక్ట్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "An object is shared shape, a field is a typed attribute, and a record is one saved occurrence. Standard means Salesforce-created and custom means organization-created; I choose by semantic fit, not by habit. I keep metadata, business data, access, and optional tab navigation separate.",
+    "two_minutes": "I begin with the business noun, grain, lifecycle, and actors. I check whether a standard object already expresses that meaning, then consider a custom object only if the organization-defined concept needs its own model. I distinguish the metadata definition and identifiers from the records and values that users operate on. For a visibility problem, I verify existence, actor permissions and sharing, navigation/presentation, and a known synthetic record independently. I scope every UI, API, edition, package, and limit statement to the target org and test the design in a disposable environment."
+  },
+  "terminology": [
+    {
+      "term": "object",
+      "plain": "The shared definition for one kind of Salesforce data.",
+      "precise": "An object is the model boundary that gives a kind of data a name and shared structure; the table analogy is useful for structure but does not make an object a screen or a record.",
+      "example": "Account is a standard object; LAB_Property__c is a synthetic custom-object example for a property model.",
+      "non_example": "A Custom Tab or an individual LAB_Property__c row is not the object definition.",
+      "confusable_neighbor": "Record: one saved occurrence of the object, not the shared definition.",
+      "boundary": "This lesson establishes object grain and standard/custom boundaries; detailed fields, types, IDs, and relationships continue in DATA-002 and DATA-003."
+    },
+    {
+      "term": "record",
+      "plain": "One saved occurrence of an object, with values for its fields.",
+      "precise": "A record is an instance of an object that represents one occurrence of the modeled thing; it is business data, not the metadata that defines the object.",
+      "example": "A synthetic record LAB-PROP-001 represents one test property with LAB_ values.",
+      "non_example": "Saving the LAB_Property__c definition or a Custom Tab does not create a business record.",
+      "confusable_neighbor": "Field: a named attribute within the model; a record contains field values.",
+      "boundary": "Record IDs, detailed data types, and record-operation mechanics are introduced here only enough to separate an occurrence from its definition; see DATA-002."
+    },
+    {
+      "term": "field",
+      "plain": "A named slot for one typed attribute of a record.",
+      "precise": "A field is part of an object's shared structure and supplies an attribute whose value can differ from record to record.",
+      "example": "Status__c can hold the synthetic lifecycle value Draft on LAB-PROP-001.",
+      "non_example": "The value Draft is not the field definition, and a tab is not a field.",
+      "confusable_neighbor": "Label: display wording for people; a field is a model attribute with values.",
+      "boundary": "This lesson uses fields to explain object grain only; field types, requiredness, and validation belong to DATA-002."
+    },
+    {
+      "term": "standard object",
+      "plain": "An object Salesforce created as part of the platform model.",
+      "precise": "Standard identifies the object's Salesforce-created origin; it does not promise universal access, a particular tab, or a perfect fit for every requirement.",
+      "example": "Account is a familiar standard object whose meaning should be checked before modeling a customer-related need elsewhere.",
+      "non_example": "Renaming the Account label to Property does not create a custom object or change the underlying standard object's origin.",
+      "confusable_neighbor": "Custom object: organization-created data model definition, not a synonym for a lower-quality object.",
+      "boundary": "Standard/custom origin is the scope here; availability, licensing, packages, relationships, and object-specific behavior require current target-org checks."
+    },
+    {
+      "term": "custom object",
+      "plain": "An object an organization creates for an organization-specific data model.",
+      "precise": "A custom object is organization-created metadata for a distinct kind of data; the Metadata API reference describes a fully specified name and the automatic __c suffix.",
+      "example": "LAB_Property__c is a synthetic custom-object candidate when the property concept needs its own model after standard-fit discovery.",
+      "non_example": "Creating a Custom Tab or renaming a label does not create a custom object.",
+      "confusable_neighbor": "Custom tab: presentation/navigation metadata that may point to an object but is not the object's data definition.",
+      "boundary": "Custom means organization-created, not automatically correct; verify standard fit, scope, access, package behavior, and target-org availability first."
+    },
+    {
+      "term": "metadata",
+      "plain": "Shared definitions and configuration that describe how the platform is shaped or behaves.",
+      "precise": "The Metadata API guide groups metadata concerns such as schema, processes, presentation, authorization, and configuration; metadata is distinct from ordinary business records.",
+      "example": "Defining LAB_Property__c, its label/API name, and an optional CustomTab is metadata work.",
+      "non_example": "A saved LAB-PROP-001 record with Status__c = Draft is business data, not the object definition.",
+      "confusable_neighbor": "Business data: records and values that represent the organization's operating state.",
+      "boundary": "Metadata customization and ordinary record CRUD use different evidence paths; do not infer that a metadata deployment inserted records."
+    },
+    {
+      "term": "business data",
+      "plain": "The saved records and values that describe the organization's modeled work.",
+      "precise": "Business data is the operational information held in records and field values; it is separate from the metadata that defines the container and its presentation.",
+      "example": "LAB-PROP-001 with a synthetic address label and Draft status is business data in the lab.",
+      "non_example": "The API name LAB_Property__c or a CustomTab definition is not a business-data record.",
+      "confusable_neighbor": "Metadata: the shared model/configuration that makes the record shape possible.",
+      "boundary": "Use a separate record/data-operation check for business data; do not claim that a successful customization change proves data presence."
+    },
+    {
+      "term": "label",
+      "plain": "The human-facing name users read for an object or feature.",
+      "precise": "A label is display wording chosen for people; it is different from the machine-facing API name used to identify a model in tools and integrations.",
+      "example": "LAB Property is the readable label for the synthetic LAB_Property__c object.",
+      "non_example": "LAB_Property__c is an API name, not the user-facing label; a tab icon is not a label.",
+      "confusable_neighbor": "API name: machine identifier; changing or reading one does not establish the other's role.",
+      "boundary": "Trailhead's creation flow treats label and Object Name as distinct inputs; reverify exact labels and UI behavior in the target release/org."
+    },
+    {
+      "term": "API name",
+      "plain": "The machine-facing identifier used to refer to a model in tools and integrations.",
+      "precise": "An API name is the identifier that distinguishes a model for programmatic or metadata operations; custom-object names conventionally receive the __c suffix described by the CustomObject reference.",
+      "example": "LAB_Property__c is the synthetic custom-object API name paired with the label LAB Property.",
+      "non_example": "LAB Property is readable label text, not the API name; a user's permission is not an API name.",
+      "confusable_neighbor": "Label: human wording that should not be substituted for machine identity.",
+      "boundary": "API syntax, namespaces, package behavior, and availability are release- and target-org-sensitive; the __c suffix does not grant access or create navigation."
+    },
+    {
+      "term": "custom tab",
+      "plain": "An optional presentation and navigation surface for users.",
+      "precise": "A CustomTab is presentation metadata that can help expose an object in navigation; it is not the object definition, a record, or an access grant.",
+      "example": "A LAB Property custom tab may be added after the object model and target-user access are verified.",
+      "non_example": "Creating a tab alone does not create LAB_Property__c or a LAB-PROP-001 record.",
+      "confusable_neighbor": "Object: the shared data definition that a tab may help users reach.",
+      "boundary": "Navigation is one observation gate; check object access, field/record visibility, app assignment, and known-record evidence separately."
+    },
+    {
+      "term": "external object",
+      "plain": "An object-shaped Salesforce surface whose records remain in an outside system.",
+      "precise": "An external object maps to data stored outside the Salesforce organization; it is a distinct object kind from an org-stored custom object, even though both can be discussed as objects.",
+      "example": "A target-org-approved external object that reads synthetic ERP test data without copying the source records into Salesforce.",
+      "non_example": "LAB_Property__c is an org-defined custom-object candidate; pointing an integration at it does not make its records external.",
+      "confusable_neighbor": "Custom object: an organization-created model whose records are stored in the Salesforce data model.",
+      "boundary": "The source documents the storage boundary and __x naming convention; connector, callout, license, security, performance, and availability details require separate target-org verification."
+    },
+    {
+      "term": "namespace/package context",
+      "plain": "The org or package context used to resolve a machine-facing metadata identity.",
+      "precise": "CustomObject metadata requires a fully specified fullName; in a namespaced or packaged context, read the target metadata identity as delivered rather than stripping or inventing a prefix.",
+      "example": "Before writing a query or deployment manifest, compare the target org's fully specified object name with the package or local model context.",
+      "non_example": "Assuming every object ending in __c has the same unqualified identity in every org or package.",
+      "confusable_neighbor": "Custom-object suffix: __c identifies the custom-object naming convention; namespace/package context is a separate identity boundary.",
+      "boundary": "This lesson does not assert package installation, namespace availability, or a universal prefix syntax; verify the target org, package, and API version."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Frame the noun",
+      "actor": "Business analyst + admin",
+      "trigger": "New data request",
+      "before": "Screen-shaped request",
+      "after": "Noun, grain, lifecycle, actors",
+      "observe": "Written acceptance criteria",
+      "failure": "Modeling a tab or label instead of the business concept"
+    },
+    {
+      "step": 2,
+      "transition": "Choose the fit",
+      "actor": "Admin + architect",
+      "trigger": "Stable concept identified",
+      "before": "Standard/custom options open",
+      "after": "Standard reuse or custom candidate",
+      "observe": "Semantic-fit decision record",
+      "failure": "Creating custom by habit or forcing a poor standard fit"
+    },
+    {
+      "step": 3,
+      "transition": "Define metadata",
+      "actor": "Admin",
+      "trigger": "Model decision approved",
+      "before": "No shared definition",
+      "after": "Object identity and structure defined",
+      "observe": "Object Manager/API metadata evidence",
+      "failure": "Treating the definition as if it were a record"
+    },
+    {
+      "step": 4,
+      "transition": "Gate access",
+      "actor": "Admin + security owner",
+      "trigger": "Definition is available",
+      "before": "Actor path unverified",
+      "after": "Access and navigation tested",
+      "observe": "Target-persona checks and app/tab evidence",
+      "failure": "Object exists but the actor cannot reach or use it"
+    },
+    {
+      "step": 5,
+      "transition": "Observe the record",
+      "actor": "Tester + target user",
+      "trigger": "Synthetic record operation",
+      "before": "No business-state evidence",
+      "after": "Record, values, and visibility observed",
+      "observe": "Known record, list/API/report, save result",
+      "failure": "Filter, access, validation, or rollback hides the expected result"
+    }
+  ],
+  "when_to_use": [
+    "Before deciding whether a business noun deserves an object or belongs on an existing model.",
+    "When explaining standard/custom origin, metadata/data boundaries, identifiers, and tabs to a teammate.",
+    "When a deployment, setup change, or user report requires separate existence, access, navigation, and record checks.",
+    "Before a synthetic lab or architecture conversation that will continue into DATA-002 fields or DATA-003 relationships."
+  ],
+  "when_not_to_use": [
+    "As a substitute for target-org security, edition, license, package, release, or architecture review.",
+    "As a claim that every property-like requirement needs a custom object or that every standard object is the right fit.",
+    "As a detailed guide to field types, relationship mechanics, external/big/event objects, or numeric platform limits.",
+    "For production experimentation, real customer data, credentials, or unapproved Salesforce-org mutation."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Object Manager: inspect object definitions; reverify the navigation path in the target release.",
+    "Object Manager → Create → Custom Object: use only in a disposable non-production lab when the custom decision is justified.",
+    "Custom Tab Wizard: optional presentation/navigation metadata, separate from object creation and access checks.",
+    "Metadata API or an approved source/deployment workflow: customization metadata; use an approved data operation for ordinary synthetic record CRUD."
+  ],
+  "worked_example": {
+    "scenario": "A synthetic facilities team wants to track properties with an independent lifecycle and owner. The requirement is deliberately hypothetical: it does not imply that every property use case needs a custom object.",
+    "inputs": [
+      "Business noun: property; grain: one property occurrence; lifecycle: Draft → Reviewed → Retired",
+      "Standard-object semantic-fit check and reason a separate model is needed",
+      "Target actor, access boundary, optional navigation need, and non-production test window",
+      "Cleanup manifest using only LAB_ names and synthetic values"
+    ],
+    "decisions": [
+      {
+        "decision": "Treat property as an object candidate rather than a single label or screen.",
+        "because": "The requirement names repeated occurrences with their own lifecycle and evidence; the model needs a shared definition before records can exist.",
+        "rejected": "Create a tab first"
+      },
+      {
+        "decision": "After checking standard semantics, use LAB_Property__c as a custom-object candidate.",
+        "because": "The hypothetical organization-defined concept needs its own model; custom is selected only after the standard-fit check, not by default.",
+        "rejected": "Always create a custom object for a new noun"
+      },
+      {
+        "decision": "Keep the label, API name, and optional tab distinct.",
+        "because": "People need LAB Property, tools need LAB_Property__c, and navigation is a separate presentation concern.",
+        "rejected": "Treat the tab name as proof of object identity"
+      },
+      {
+        "decision": "Prove definition, access, navigation, and record evidence separately.",
+        "because": "A saved definition does not prove that a target persona can reach it or that a synthetic record was saved and observed.",
+        "rejected": "Assume object existence means user readiness"
+      }
+    ],
+    "configuration_or_code": [
+      "In a disposable non-production org, use Object Manager → Create → Custom Object only after recording the semantic-fit decision.",
+      "Enter label LAB Property and the object name LAB_Property; verify the resulting custom-object API name LAB_Property__c against the current target-org behavior and preserve the target org/package's fully specified identity.",
+      "Add an optional LAB Property custom tab only if the tested actor needs a navigation surface; record it as presentation metadata.",
+      "Create one synthetic record LAB-PROP-001 with LAB_ values, then test the record as the intended persona rather than as an all-powerful administrator."
+    ],
+    "output": "Expected evidence is a documented object definition, a separate optional tab decision, one synthetic LAB_ record with values, and a target-persona result that distinguishes access or navigation failure from missing metadata or missing data.",
+    "verification": [
+      "Object Manager or approved metadata inspection shows the intended label and API name.",
+      "The optional tab, if used, is recorded separately from object existence and permissions.",
+      "The known synthetic record is saved and observable through an approved list, record, API, or report check.",
+      "The target persona's access and navigation result is captured; no real data, credentials, or production state is used.",
+      "Cleanup manifest identifies the LAB_ record and any temporary metadata to remove or restore."
+    ],
+    "self_explanation": "I first modeled the noun and tested standard fit, then defined custom metadata only for the hypothetical organization-specific concept. I kept label/API/tab separate, created business data as a distinct step, and treated user evidence as a separate access and navigation gate.",
+    "fading_stages": [
+      {
+        "stage": "fully_worked",
+        "support": "The lesson supplies the noun, grain, standard-fit check, LAB_Property__c identity, tab boundary, synthetic record, target persona, and evidence checklist."
+      },
+      {
+        "stage": "partially_faded",
+        "support": "Given an inspection requirement, supply the noun and actor yourself; decide standard versus custom, label/API name, and which evidence gates to test before comparing with the model."
+      },
+      {
+        "stage": "independent_transfer",
+        "support": "For an internal grant-request requirement, decide whether the model is a standard extension, custom object, record, field, or navigation concern; defend the choice and name one reversal signal."
+      }
+    ]
+  },
+  "hands_on_lab": {
+    "environment": "Disposable non-production Trailhead Playground, Developer Edition, or sandbox only; use synthetic LAB_ names and values, least privilege, and no production/customer data or credentials.",
+    "starting_state_checks": [
+      "Confirm the org is disposable non-production and record its recovery/cleanup owner.",
+      "Confirm the target user or delegated tester has only the permissions needed for the exercise; do not use a shared credential.",
+      "Confirm the requested custom-object feature and current Object Manager path are available for this edition, license, package, release, and target-org configuration.",
+      "Prepare a cleanup manifest before creating LAB_ metadata or records; do not import real customer data."
+    ],
+    "steps": [
+      "Write the synthetic requirement: track properties with an independent lifecycle and one or more test occurrences. List the standard-object semantic-fit check before selecting custom.",
+      "In the non-production org, inspect Object Manager. If the decision remains custom, use Create → Custom Object and enter the label LAB Property and object name LAB_Property; verify the resulting API identity without assuming UI labels are permanent.",
+      "Record the metadata evidence separately: label, fully specified API/fullName, __c or __x object-kind suffix where applicable, standard/custom/external decision, and any package or permission scope. Do not call this a business record yet.",
+      "If navigation is needed, add an optional LAB Property custom tab as a separate presentation step. Note that the tab does not create the object or grant access.",
+      "Create one synthetic record LAB-PROP-001 with non-sensitive LAB_ values. Observe it as the target persona through an approved record/list/API/report check and record both success and failure evidence.",
+      "Compare the result across definition, object access, record visibility, and navigation. Stop rather than broadening permissions or mutating production when a gate fails."
+    ],
+    "guided_completion": [
+      "State whether the requirement is an object, record, field, metadata change, business-data operation, or tab concern at each lab step.",
+      "Explain why the custom decision is conditional and name the standard semantic-fit check that preceded it.",
+      "Pair LAB Property with LAB_Property__c and explain why the optional tab is a separate boundary.",
+      "List the evidence needed to distinguish missing definition, denied access, hidden navigation, and absent/filtered record data."
+    ],
+    "independent_challenge": "Change the context to an internal grant request or inspection case. Without copying the property answer, decide whether the need is a standard fit, custom object candidate, record, field, metadata, business data, or tab; give the target actor, one reversal signal, and four evidence checks.",
+    "evidence": [
+      "Written semantic-fit decision naming the standard object considered and why the final boundary was chosen.",
+      "Synthetic metadata record: label, API name, optional tab, target edition/license/package/configuration/permission assumptions.",
+      "Synthetic record identifier LAB-PROP-001 and non-sensitive values, plus a target-persona visibility/access result.",
+      "Accessible notes or a redacted synthetic-only screenshot describing what was observed; never capture customer data, credentials, or production identifiers.",
+      "Cleanup manifest and stop/recovery result."
+    ],
+    "stop_recovery_cleanup": [
+      "Stop immediately if the org is not disposable, a permission request would broaden access unexpectedly, a package or release boundary is unclear, or any real data/credential could enter the lab.",
+      "If a metadata or record step fails, preserve the error text without retrying in production; return to the last known non-production state and consult the current target-org documentation.",
+      "Delete the synthetic LAB-PROP-001 record and remove temporary LAB_ metadata or restore the documented baseline only after capturing the evidence needed for review.",
+      "Confirm the cleanup manifest is complete, clear local notes of any sensitive values, and leave no credentials or customer/student data in exports."
+    ],
+    "limitations": "This is a synthetic, non-production learning exercise. UI paths, object availability, permissions, package behavior, and release/API details are mutable; the lesson asserts no numeric object or field limits and does not authorize Salesforce-org mutation outside an explicitly disposable lab."
+  },
+  "decision_table": [
+    {
+      "signal": "A stable business noun has repeated occurrences and its own lifecycle.",
+      "choose": "Evaluate it as an object candidate after defining grain and actors.",
+      "not": "Start with a tab or one free-text field.",
+      "why": "Object is the shared shape; record is each occurrence; navigation is a separate presentation concern."
+    },
+    {
+      "signal": "An existing standard object's meaning matches the requirement.",
+      "choose": "Reuse or extend the standard model, subject to target-org design review.",
+      "not": "Duplicate the concept as custom by habit.",
+      "why": "Standard/custom is a semantic-fit decision, not an always-custom rule."
+    },
+    {
+      "signal": "No standard meaning fits and an organization-defined noun needs its own model.",
+      "choose": "Consider a custom object such as LAB_Property__c.",
+      "not": "Claim that every new noun requires custom.",
+      "why": "Custom objects represent organization-created data models; the decision remains scoped and reversible in non-production."
+    },
+    {
+      "signal": "The system of record remains outside Salesforce and the requirement needs a Salesforce object-shaped access surface.",
+      "choose": "Evaluate an external-object boundary only after verifying the connector, API, license, security, and target-org configuration.",
+      "not": "Create an org-stored custom object and call it external because an integration exists.",
+      "why": "The Object Reference distinguishes external objects by where record data is stored; external behavior is not interchangeable with custom-object behavior."
+    },
+    {
+      "signal": "The need is to define or change shared shape, identity, or presentation.",
+      "choose": "Inspect metadata and configuration evidence.",
+      "not": "Edit one record and call the definition changed.",
+      "why": "Metadata describes customization; business data is separate record information."
+    },
+    {
+      "signal": "The need is one business occurrence with field values.",
+      "choose": "Use a record/business-data operation after the model and access are ready.",
+      "not": "Deploy metadata and assume records appeared.",
+      "why": "A definition and a saved occurrence have different state and observation paths."
+    },
+    {
+      "signal": "The object exists but a target user cannot see or use it.",
+      "choose": "Check object/actor access, record visibility, and tab/app navigation separately.",
+      "not": "Recreate the object or assume a platform bug.",
+      "why": "Existence, authorization, presentation, and observable evidence are distinct gates."
+    },
+    {
+      "signal": "Security, automation, relationship grain, scale, reporting, or integration constraints could change the design.",
+      "choose": "Record each as an architecture gate and route detailed analysis to the relevant topic before committing shared metadata.",
+      "not": "Use standard/custom origin or a visible tab as proof that the design is production-ready.",
+      "why": "Origin is one modeling dimension; quality attributes and runtime dependencies need their own evidence and scope."
+    }
+  ],
+  "limitations": [
+    "Do not infer numeric limits or universal feature availability from this foundation lesson; verify current release/API, edition, license, package, target-org configuration, and user permissions.",
+    "The Object Reference table analogy covers structural vocabulary only; it does not model authorization, automation, transactions, or presentation completely.",
+    "A custom object's __c suffix identifies a naming convention, not access, navigation, data presence, quality, or an unqualified identity across package/namespace contexts.",
+    "An external object's __x convention and outside-org record storage mark a different object boundary; connector, callout, performance, scale, license, and security behavior are not taught here.",
+    "Trailhead and Object Manager labels are UI/release-sensitive; reverify the path in the target org.",
+    "Detailed automation, relationship, scale, field design, and big/event object mechanics are neighboring topics rather than hidden promises of this lesson."
+  ],
+  "security_notes": [
+    "Use least privilege in the lab and test as the intended actor; do not treat an administrator view as proof of ordinary-user readiness.",
+    "Separate object existence from actor access, record visibility, and navigation; review the target org's permission, sharing, and object-specific settings before changing them.",
+    "Use only synthetic LAB_ values, disposable non-production environments, and an explicit cleanup manifest; never place credentials, customer data, or student PII in the exercise.",
+    "Capture only the minimum evidence needed for review, redact identifiers, and stop when an access or package boundary is unclear."
+  ],
+  "common_mistakes": [
+    "Treating the table analogy as a full explanation of authorization, automation, transactions, or UI presentation.",
+    "Confusing object definition with record instance, or metadata deployment with record creation.",
+    "Choosing custom before checking whether a standard object's meaning fits.",
+    "Using a label where an API name is required, treating __c as an access grant, or stripping a package/namespace context from a fully specified identity.",
+    "Treating a relabeled standard object as a custom object because the display wording changed.",
+    "Treating an external object as an ordinary custom object or assuming an integration moves its records into Salesforce.",
+    "Assuming a custom tab creates an object, creates data, or grants permission.",
+    "Diagnosing invisible users by recreating metadata instead of checking access, navigation, filters, and known-record evidence.",
+    "Testing in production or using real data because the synthetic path feels slower."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Object Manager or metadata inspection cannot find the expected object.",
+      "check": [
+        "Confirm the exact label and API name, including the custom-object suffix where applicable.",
+        "Confirm the target release, edition, license, namespace/package, and configuration scope.",
+        "Separate definition existence from the user's navigation path and app/tab assignment."
+      ],
+      "do_not_assume": "A missing navigation entry proves that the object definition is absent."
+    },
+    {
+      "symptom": "The object exists for an administrator but a target user cannot use it.",
+      "check": [
+        "Test the intended actor rather than an administrator session.",
+        "Review object access, user permissions, sharing, and object-specific configuration in the target org.",
+        "Check app/tab navigation and the record or field context the user is expected to observe."
+      ],
+      "do_not_assume": "Object existence is the same as authorization or visible navigation."
+    },
+    {
+      "symptom": "A metadata change is present but the expected list or record is empty.",
+      "check": [
+        "Verify that a separate synthetic record/data operation actually created the occurrence.",
+        "Open a known record and inspect filters, list/report scope, access, and validation results.",
+        "Check whether a save failed, rolled back, or is being observed through the wrong surface."
+      ],
+      "do_not_assume": "Successful customization metadata means business data was inserted."
+    },
+    {
+      "symptom": "A custom tab is visible but the data model or record behavior is unexpected.",
+      "check": [
+        "Trace the tab to its referenced object and verify the object's definition independently.",
+        "Check API name/label pairing and target-user access.",
+        "Use a known LAB_ record and an approved observation surface to separate navigation from data evidence."
+      ],
+      "do_not_assume": "A tab is the object, a record, or a permission grant."
+    },
+    {
+      "symptom": "A machine-facing object name works in one org or package context but not another.",
+      "check": [
+        "Read the target metadata's fully specified fullName and preserve its namespace/package context rather than guessing a prefix.",
+        "Confirm whether the component is a custom object (__c) or an external object (__x) and verify the API/release scope.",
+        "Compare the deployment/query manifest with the target org and stop if package or permission scope is unverified."
+      ],
+      "do_not_assume": "A familiar local API name is globally interchangeable across orgs, packages, or object kinds."
+    },
+    {
+      "symptom": "A requirement says the source of truth is external, but the proposed design is an ordinary custom object.",
+      "check": [
+        "Confirm where record data must remain and whether an external-object capability is actually available and configured in the target org.",
+        "Separate connector/callout and security evidence from custom-object metadata and do not import real source data into the lab.",
+        "Escalate scale, latency, relationship, automation, license, and integration decisions to the relevant architecture topic."
+      ],
+      "do_not_assume": "An integration endpoint alone changes an org-stored custom object's kind or storage boundary."
+    }
+  ],
+  "production_notes": [
+    "Record the noun, grain, standard-fit decision, owner, target actors, and reversal signal before changing shared metadata.",
+    "Use source/deployment review for customization metadata and a separate data plan for record migration or creation; do not combine the evidence casually.",
+    "Validate access, navigation, automation dependencies, relationship grain, scale/volume assumptions, and known-record observations in a disposable environment before a controlled release.",
+    "Treat fully specified API identities and external-object storage boundaries as target-org/package facts; do not copy a local LAB_ name into a different package or connector context without verification.",
+    "Recheck mutable release/API, edition, license, package, configuration, and permission assumptions before production work; no production mutation is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "prompt": "Which mapping matches the structural analogy used in the Object Reference and Trailhead material?",
+      "options": {
+        "A": "Object = table, field = column, record = row",
+        "B": "Object = record, field = tab, record = label",
+        "C": "Object = API name, field = permission, record = metadata",
+        "D": "Object = screen, field = tab, record = workflow"
+      },
+      "answer": "A",
+      "rationale": "The analogy is object/table, field/column, and record/row. It is a structural starting point, not a claim that Salesforce behaves like a plain database in every respect.",
+      "distractor_explanations": {
+        "B": "A record is an occurrence of an object, and a tab is presentation metadata; neither replaces the structural mapping.",
+        "C": "API names, permissions, and metadata are different boundaries from object, field, and record grain.",
+        "D": "Screens, tabs, and workflows are presentation or process concerns, not the object/field/record mapping."
+      },
+      "concept": "Object, field, and record grain",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "prompt": "What makes an object standard rather than custom in the source definitions?",
+      "options": {
+        "A": "It has a tab and is visible to every user",
+        "B": "Salesforce created it rather than the organization creating it",
+        "C": "It has no security or sharing behavior",
+        "D": "Its label is more stable than its API name"
+      },
+      "answer": "B",
+      "rationale": "Standard versus custom describes origin: Salesforce-created objects are standard, while organization-created objects are custom. Origin does not guarantee access or fit.",
+      "distractor_explanations": {
+        "A": "Tabs are presentation/navigation metadata and visibility is an access question, not the origin definition.",
+        "C": "Standard objects still have access and sharing considerations; no object category is defined by having no security.",
+        "D": "Label/API stability is an identifier boundary, not the source of an object's creation."
+      },
+      "concept": "Standard versus custom origin",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "prompt": "Which action is primarily a metadata change rather than a business-data operation?",
+      "options": {
+        "A": "Saving LAB-PROP-001 with Status__c = Draft",
+        "B": "Updating a synthetic record's address value",
+        "C": "Defining LAB_Property__c in Object Manager or metadata",
+        "D": "Importing three synthetic records into the object"
+      },
+      "answer": "C",
+      "rationale": "Defining the object changes shared customization metadata. The other options create or edit record data.",
+      "distractor_explanations": {
+        "A": "A saved record and its values are business data, even when every value is synthetic.",
+        "B": "Changing an address value changes a record occurrence, not the shared object definition.",
+        "D": "Importing records is a business-data operation; it does not by itself define the object."
+      },
+      "concept": "Metadata versus business data",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-DATA-001",
+        "SF-OBJREF-DATA-001"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "prompt": "A requirement names a repeated, organization-specific property concept with its own lifecycle, and discovery finds no suitable standard meaning. What is the best next decision?",
+      "options": {
+        "A": "Evaluate a custom-object candidate such as LAB_Property__c, then verify target-org scope and access",
+        "B": "Create a custom tab only; a tab is the data model",
+        "C": "Insert one Account record and treat it as the shared definition",
+        "D": "Rename a standard object until its label matches Property"
+      },
+      "answer": "A",
+      "rationale": "The source distinction supports considering an organization-created custom model when the semantic-fit check leaves no suitable standard meaning. The lesson does not claim that every property requirement must be custom.",
+      "distractor_explanations": {
+        "B": "A tab is a presentation/navigation surface; it does not define the object or replace the semantic-fit decision.",
+        "C": "One record is an occurrence and cannot substitute for a shared object definition.",
+        "D": "Changing wording does not change object origin or make a standard model semantically correct."
+      },
+      "concept": "Conditional standard/custom modeling",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001",
+        "SF-CUSTOMOBJ-DATA-001"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "prompt": "Which pairing preserves the label/API-name boundary for a synthetic custom object?",
+      "options": {
+        "A": "Label = LAB Property; API name = LAB_Property__c",
+        "B": "Label = LAB_Property__c; API name = LAB Property",
+        "C": "Label = CustomTab; API name = user permission",
+        "D": "Label = record value; API name = field visibility"
+      },
+      "answer": "A",
+      "rationale": "The readable label and machine-facing API name have different jobs. The CustomObject reference supports the custom-object naming convention and __c suffix.",
+      "distractor_explanations": {
+        "B": "It reverses the human-facing and machine-facing roles.",
+        "C": "A CustomTab and a permission are separate presentation and authorization concerns, not a label/API pair.",
+        "D": "A record value and field visibility are data and access evidence, not object identifiers."
+      },
+      "concept": "Label, API name, and custom-object suffix",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-TRAIL-DATA-001",
+        "SF-CUSTOMOBJ-DATA-001"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "prompt": "An admin saves a new object definition and says the business data now exists. What is the most accurate response?",
+      "options": {
+        "A": "The metadata definition exists; create and verify a separate synthetic record/data operation",
+        "B": "Deploy the definition again because metadata always creates one record",
+        "C": "Create a tab; navigation will insert the first record",
+        "D": "Change the label; display wording is the business data"
+      },
+      "answer": "A",
+      "rationale": "Metadata customization and business data are separate evidence paths. A definition can exist before any record exists.",
+      "distractor_explanations": {
+        "B": "Repeating a customization step does not turn it into an ordinary record operation.",
+        "C": "A CustomTab is presentation metadata and does not create a business occurrence.",
+        "D": "A label is display metadata, not a saved record or field value."
+      },
+      "concept": "Definition versus record instance",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "prompt": "The object model is approved, and the team only needs an optional navigation icon for users. Which boundary should the admin preserve?",
+      "options": {
+        "A": "Use a Custom Tab as a separate presentation step after checking the object and access model",
+        "B": "Create another custom object because navigation is the data model",
+        "C": "Create a record because a tab is business data",
+        "D": "Change the API name because presentation metadata is machine identity"
+      },
+      "answer": "A",
+      "rationale": "Trailhead presents the Custom Tab Wizard separately, and the Metadata API guide treats CustomTab as presentation metadata. A tab may expose navigation but is not the object or an access grant.",
+      "distractor_explanations": {
+        "B": "A second object would broaden the data model instead of solving a presentation need.",
+        "C": "A record is a saved occurrence; a tab is a navigation surface.",
+        "D": "API identity and presentation metadata are different boundaries with different evidence."
+      },
+      "concept": "Custom tab as presentation metadata",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-TRAIL-DATA-001",
+        "SF-META-DATA-001"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "prompt": "LAB_Property__c exists for an administrator, but a target persona cannot use it. What should be checked first?",
+      "options": {
+        "A": "Object/actor access, record visibility, and app/tab navigation as separate gates",
+        "B": "Delete and recreate the object until the user sees it",
+        "C": "Assume the API name is wrong because every visibility problem is naming",
+        "D": "Insert more records without checking the actor's access"
+      },
+      "answer": "A",
+      "rationale": "The Object Reference calls out separate access considerations, while presentation/navigation is a different concern. Test the intended actor and record evidence instead of treating existence as readiness.",
+      "distractor_explanations": {
+        "B": "Recreating metadata can add risk and does not diagnose permissions or navigation.",
+        "C": "Naming is one possible check, not a universal explanation for access or presentation failure.",
+        "D": "More data cannot repair an authorization or navigation gate and may pollute the lab."
+      },
+      "concept": "Existence, access, and navigation diagnostics",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001",
+        "SF-META-DATA-001"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "prompt": "An admin chooses a custom object for every new noun before checking standard semantics. What misconception should be repaired?",
+      "options": {
+        "A": "Compare the noun with standard meanings first; custom is conditional on the remaining model need",
+        "B": "Standard objects can never be extended or used for new requirements",
+        "C": "A custom tab is always safer than a standard object",
+        "D": "The first record determines whether an object is standard or custom"
+      },
+      "answer": "A",
+      "rationale": "Standard/custom origin is factual, but the choice is a semantic-fit heuristic. A disciplined design checks whether an existing standard meaning fits before adding a custom model.",
+      "distractor_explanations": {
+        "B": "The lesson does not make an absolute claim that standard models are unusable for new requirements.",
+        "C": "A tab is presentation metadata and does not decide model fit or safety.",
+        "D": "Object origin and definition are established before record instances are created."
+      },
+      "concept": "Misconception repair: always custom",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "prompt": "A customization deployment succeeds, but a list view is empty. What conclusion is safest?",
+      "options": {
+        "A": "Only customization evidence is established; verify record creation, access, filters, and target observation separately",
+        "B": "The object definition definitely failed to deploy",
+        "C": "The deployment must have inserted records but the UI is broken",
+        "D": "A visible tab proves that at least one record exists"
+      },
+      "answer": "A",
+      "rationale": "Metadata API guidance separates customization metadata from business data. An empty view needs a record/data check plus access, filter, and observation checks.",
+      "distractor_explanations": {
+        "B": "An empty view is not proof that a definition is absent; it may be a data, access, or filter issue.",
+        "C": "A deployment result does not prove that ordinary records were inserted.",
+        "D": "Navigation evidence proves neither record existence nor record visibility."
+      },
+      "concept": "Failure diagnosis by state and evidence",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-DATA-001",
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "prompt": "Which statement best contrasts an object with a custom tab?",
+      "options": {
+        "A": "An object defines a data model; a custom tab is presentation/navigation metadata",
+        "B": "Both are records, so either one can store business values",
+        "C": "A custom tab grants object and record access automatically",
+        "D": "An object is only a label, while a tab is the API name"
+      },
+      "answer": "A",
+      "rationale": "The source material separates the object model from the Custom Tab Wizard and identifies CustomTab as presentation metadata. Navigation is not the same as definition or authorization.",
+      "distractor_explanations": {
+        "B": "Neither boundary is a record; records are saved occurrences of an object.",
+        "C": "A tab may help users navigate but does not replace access or sharing checks.",
+        "D": "The statement swaps and collapses label, API name, object, and tab boundaries."
+      },
+      "concept": "Object versus custom tab",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "prompt": "Which pair correctly contrasts metadata customization with business-data work?",
+      "options": {
+        "A": "Define LAB_Property__c and its tab = metadata; save LAB-PROP-001 values = business data",
+        "B": "Define LAB_Property__c = business data; save LAB-PROP-001 = metadata",
+        "C": "A label is business data; a record is presentation metadata",
+        "D": "An API name is a record; a tab is a field value"
+      },
+      "answer": "A",
+      "rationale": "Object identity, schema, and presentation are customization metadata; a saved record and its values are business data. Keeping the paths separate prevents false success claims.",
+      "distractor_explanations": {
+        "B": "It reverses the definition/configuration and record/value boundaries.",
+        "C": "A label is presentation/configuration wording, while a record is an occurrence of business data.",
+        "D": "API name and tab are identity/presentation concerns, not records or field values."
+      },
+      "concept": "Metadata versus business-data comparison",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-DATA-001",
+        "SF-CUSTOMOBJ-DATA-001"
+      ]
+    },
+    {
+      "id": "Q13",
+      "category": "recall",
+      "prompt": "Which statement best describes an object in this lesson?",
+      "options": {
+        "A": "One saved occurrence with values",
+        "B": "A shared definition for a kind of data",
+        "C": "An icon in an app menu",
+        "D": "A user's permission set"
+      },
+      "answer": "B",
+      "rationale": "An object is the reusable model boundary; a record is one saved occurrence, while navigation and access are separate concerns.",
+      "distractor_explanations": {
+        "A": "That describes a record rather than the shared object definition.",
+        "C": "An icon or tab is a presentation/navigation surface, not the model.",
+        "D": "Permissions are authorization metadata and do not define the data kind."
+      },
+      "concept": "Object definition versus record instance",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q14",
+      "category": "recall",
+      "prompt": "What does the standard/custom distinction primarily identify?",
+      "options": {
+        "A": "Whether every user can access the object",
+        "B": "Whether the object has a navigation tab",
+        "C": "Who created the object model",
+        "D": "Whether the object contains business data"
+      },
+      "answer": "C",
+      "rationale": "Standard identifies Salesforce-created objects; custom identifies organization-created objects. Neither term alone proves access, visibility, or fit.",
+      "distractor_explanations": {
+        "A": "Access depends on the actor and permissions, not only on origin.",
+        "B": "A tab is optional presentation metadata and is not the origin definition.",
+        "D": "Both standard and custom objects can hold records and values when used in an org."
+      },
+      "concept": "Standard versus custom origin",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q15",
+      "category": "recall",
+      "prompt": "In the lesson's API-name example, what is LAB_Property__c?",
+      "options": {
+        "A": "A synthetic custom-object API name",
+        "B": "A saved property record",
+        "C": "A user-facing tab label only",
+        "D": "A record-sharing rule"
+      },
+      "answer": "A",
+      "rationale": "LAB_Property__c is the machine-facing identity used for the synthetic custom-object example; it is not a record or permission.",
+      "distractor_explanations": {
+        "B": "A record would be a saved occurrence such as LAB-PROP-001, not the model name.",
+        "C": "LAB Property is the readable label; the suffixed name is the API identity.",
+        "D": "Sharing rules are authorization configuration, not object identity."
+      },
+      "concept": "Custom-object API identity",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-CUSTOMOBJ-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q16",
+      "category": "recall",
+      "prompt": "What role does a custom tab play in the model described here?",
+      "options": {
+        "A": "It stores the object's business records",
+        "B": "It changes a standard object into a custom object",
+        "C": "It grants record access to every user",
+        "D": "It provides an optional presentation or navigation surface"
+      },
+      "answer": "D",
+      "rationale": "The Custom Tab Wizard and Metadata API framing keep navigation/presentation separate from object definition, data, and authorization.",
+      "distractor_explanations": {
+        "A": "Records are saved occurrences of an object; a tab does not store them.",
+        "B": "Object origin is not changed by adding a presentation surface.",
+        "C": "A tab may expose navigation but does not replace permission or sharing checks."
+      },
+      "concept": "Custom tab boundary",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q17",
+      "category": "application",
+      "prompt": "A team names a repeated business noun with its own lifecycle and several occurrences. What should the admin frame first?",
+      "options": {
+        "A": "An object candidate with a defined grain and actors",
+        "B": "A tab that will become the data model",
+        "C": "A single record used as the shared definition",
+        "D": "A label change on an unrelated standard object"
+      },
+      "answer": "A",
+      "rationale": "Repeated occurrences and an independent lifecycle call for modeling the noun and grain before choosing metadata or navigation.",
+      "distractor_explanations": {
+        "B": "Navigation is a later presentation decision and cannot replace the model.",
+        "C": "One record is an instance and cannot define the shared shape.",
+        "D": "A label change does not establish semantic fit or the correct object boundary."
+      },
+      "concept": "Framing an object candidate",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q18",
+      "category": "application",
+      "prompt": "Discovery finds that an existing standard object's meaning matches the new requirement. What is the disciplined next direction?",
+      "options": {
+        "A": "Create a custom object immediately for consistency",
+        "B": "Evaluate reuse or extension of the standard model before duplicating it",
+        "C": "Create a tab and postpone the semantic decision",
+        "D": "Load a record and infer the model from its values"
+      },
+      "answer": "B",
+      "rationale": "The lesson treats standard versus custom as a semantic-fit decision; a matching standard meaning should be evaluated before adding a duplicate model.",
+      "distractor_explanations": {
+        "A": "Custom by habit can duplicate concepts and create avoidable release and access work.",
+        "C": "A tab cannot decide whether the underlying model is appropriate.",
+        "D": "Record values do not establish the correct shared definition or origin."
+      },
+      "concept": "Standard-fit discovery",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q19",
+      "category": "application",
+      "prompt": "Which pairing keeps human wording and machine identity distinct for the worked example?",
+      "options": {
+        "A": "Label = LAB_Property__c; API name = LAB Property",
+        "B": "Label = LAB-PROP-001; API name = Draft",
+        "C": "Label = LAB Property; API name = LAB_Property__c",
+        "D": "Label = Custom Tab; API name = object permission"
+      },
+      "answer": "C",
+      "rationale": "LAB Property is readable wording, while LAB_Property__c is the machine-facing custom-object identity described by the lesson.",
+      "distractor_explanations": {
+        "A": "It reverses the human-facing label and machine-facing API name.",
+        "B": "Those are a synthetic record identifier and a field value, not the object identity pair.",
+        "D": "A tab and a permission are presentation and authorization concerns, not an identifier pair."
+      },
+      "concept": "Label versus API name",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-CUSTOMOBJ-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q20",
+      "category": "application",
+      "prompt": "Which pair correctly separates customization metadata from a business-data operation?",
+      "options": {
+        "A": "Saving LAB-PROP-001 = metadata; defining its object = business data",
+        "B": "Adding a tab = record creation; editing a record = schema definition",
+        "C": "Changing a record value = presentation; changing a label = sharing",
+        "D": "Defining fields = metadata; saving a record with field values = business data"
+      },
+      "answer": "D",
+      "rationale": "The shared definition and configuration are metadata; a saved occurrence and its values are business data with a separate operation and evidence path.",
+      "distractor_explanations": {
+        "A": "It reverses the definition/configuration and saved-occurrence boundaries.",
+        "B": "A tab is presentation metadata, while a record edit changes business data rather than schema.",
+        "C": "Record values are data and labels are presentation/configuration wording, not those reversed categories."
+      },
+      "concept": "Metadata and business-data operation",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-DATA-001",
+        "SF-OBJREF-DATA-001"
+      ]
+    },
+    {
+      "id": "Q21",
+      "category": "application",
+      "prompt": "Which test gives the strongest evidence about whether a proposed model works for its real user?",
+      "options": {
+        "A": "Test a known synthetic record as the intended target persona",
+        "B": "Ask an administrator to confirm that the tab looks correct",
+        "C": "Read the API name without checking access",
+        "D": "Deploy the metadata twice and assume data followed"
+      },
+      "answer": "A",
+      "rationale": "A target-persona check with known synthetic data separates definition, access, navigation, and record-visibility evidence instead of relying on admin assumptions.",
+      "distractor_explanations": {
+        "B": "An administrator view can overestimate ordinary-user access and record visibility.",
+        "C": "An API name proves identity, not authorization or observed data.",
+        "D": "Repeated customization does not prove that a business record was created or visible."
+      },
+      "concept": "Persona-based evidence",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-META-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q22",
+      "category": "scenario",
+      "prompt": "An administrator can inspect LAB_Property__c, but a target user cannot use it. What is the best first response?",
+      "options": {
+        "A": "Delete the object and recreate it with a different label",
+        "B": "Insert more records until the user can navigate",
+        "C": "Check object access, record visibility, and app/tab navigation separately as that user",
+        "D": "Treat the administrator's view as proof of readiness"
+      },
+      "answer": "C",
+      "rationale": "Existence, authorization, record visibility, and presentation are distinct gates; testing the intended actor reveals which state is actually failing.",
+      "distractor_explanations": {
+        "A": "Recreation changes metadata without diagnosing the actor's access or navigation path.",
+        "B": "Additional data cannot repair a permission or presentation failure and may pollute the lab.",
+        "D": "Administrator access is not evidence that the target persona can use the model."
+      },
+      "concept": "Visibility troubleshooting",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-META-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q23",
+      "category": "scenario",
+      "prompt": "A custom tab is visible, but the list is empty after setup. Which conclusion is safest?",
+      "options": {
+        "A": "The tab proves that LAB-PROP-001 exists",
+        "B": "Verify record creation, save results, access, filters, and the observation surface separately",
+        "C": "The object definition definitely failed",
+        "D": "Give every user broad access before investigating"
+      },
+      "answer": "B",
+      "rationale": "Navigation evidence does not prove data presence or visibility; a known-record check must be separated from metadata and access checks.",
+      "distractor_explanations": {
+        "A": "A tab is a navigation surface and cannot establish that a record was saved.",
+        "C": "An empty list may result from missing data, filters, rollback, or access rather than missing metadata.",
+        "D": "Broad access is an unsafe workaround that can hide the actual failed gate."
+      },
+      "concept": "Empty-list diagnosis",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q24",
+      "category": "scenario",
+      "prompt": "A customization deployment succeeds, but no synthetic records appear. What did the result establish?",
+      "options": {
+        "A": "Every target user can access the object",
+        "B": "The business-data import definitely succeeded",
+        "C": "The optional tab is the source of the records",
+        "D": "Some customization metadata evidence exists; a separate data operation still needs verification"
+      },
+      "answer": "D",
+      "rationale": "Metadata customization and ordinary record operations are separate evidence paths. Deployment success alone cannot establish record creation or visibility.",
+      "distractor_explanations": {
+        "A": "Access depends on the actor and permission model, not only on deployment status.",
+        "B": "A metadata result is not a record-load result.",
+        "C": "A tab provides presentation/navigation and does not insert business data."
+      },
+      "concept": "Deployment evidence boundary",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-DATA-001",
+        "SF-OBJREF-DATA-001"
+      ]
+    },
+    {
+      "id": "Q25",
+      "category": "scenario",
+      "prompt": "A team creates a custom object for every new noun without checking standard meanings. Which repair is most useful?",
+      "options": {
+        "A": "Record the noun, grain, lifecycle, and standard semantic-fit check before choosing custom",
+        "B": "Ban custom objects regardless of the requirement",
+        "C": "Let the first record decide the object's origin",
+        "D": "Use the tab label as the architecture decision"
+      },
+      "answer": "A",
+      "rationale": "The origin definitions are factual, but the design choice is conditional. A semantic-fit record makes the custom decision explainable and reversible.",
+      "distractor_explanations": {
+        "B": "An absolute standard-only rule ignores organization-defined concepts that need independent models.",
+        "C": "Origin and model definition precede the creation of record instances.",
+        "D": "A tab is presentation metadata and cannot establish model grain or semantic fit."
+      },
+      "concept": "Misconception repair: always custom",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q26",
+      "category": "scenario",
+      "prompt": "A learner has only a production org containing real customer data for the proposed lab. What should happen?",
+      "options": {
+        "A": "Proceed quickly because the object is only a foundation topic",
+        "B": "Import synthetic and real data together to compare behavior",
+        "C": "Stop and obtain a disposable non-production environment before creating LAB_ artifacts",
+        "D": "Use an administrator session and skip cleanup evidence"
+      },
+      "answer": "C",
+      "rationale": "The exercise is explicitly synthetic and non-production. A production-only path creates unnecessary mutation and privacy risk and should not be treated as a lab.",
+      "distractor_explanations": {
+        "A": "Topic simplicity does not authorize production experimentation or customer-data exposure.",
+        "B": "Mixing real data into a learning exercise violates the synthetic-data boundary.",
+        "D": "Administrator access and missing cleanup evidence increase risk rather than remove it."
+      },
+      "concept": "Lab safety and synthetic data",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-TRAIL-DATA-001",
+        "SF-META-DATA-001"
+      ]
+    },
+    {
+      "id": "Q27",
+      "category": "compare",
+      "prompt": "Which contrast is accurate without adding an access claim?",
+      "options": {
+        "A": "Standard means secure; custom means insecure",
+        "B": "Standard/custom describe creation origin, while access and visibility require separate checks",
+        "C": "Standard means tab-based; custom means record-based",
+        "D": "Standard is business data; custom is metadata"
+      },
+      "answer": "B",
+      "rationale": "Origin is the standard/custom distinction; access, record visibility, quality, and navigation are independent dimensions.",
+      "distractor_explanations": {
+        "A": "Neither origin category guarantees or denies security.",
+        "C": "Tabs and records are different boundaries from object origin.",
+        "D": "Both standard and custom objects have definitions and can hold business records."
+      },
+      "concept": "Origin versus access",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q28",
+      "category": "compare",
+      "prompt": "Which comparison best preserves the metadata/data boundary?",
+      "options": {
+        "A": "Object and field definitions shape records; record values describe business occurrences",
+        "B": "Object definitions are records; values are presentation metadata",
+        "C": "A tab is business data; a record is an access rule",
+        "D": "Metadata and business data are interchangeable after deployment"
+      },
+      "answer": "A",
+      "rationale": "Definitions and configuration describe the model, while records and values are the operating business data that must be created and observed separately.",
+      "distractor_explanations": {
+        "B": "It reverses both the definition and value boundaries.",
+        "C": "A tab is presentation metadata and a record is a saved occurrence, not an access rule.",
+        "D": "Separate tools, state transitions, and evidence are needed for customization and record operations."
+      },
+      "concept": "Metadata versus business data",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-META-DATA-001",
+        "SF-OBJREF-DATA-001"
+      ]
+    },
+    {
+      "id": "Q29",
+      "category": "compare",
+      "prompt": "Which statement keeps label, API name, and tab as different boundaries?",
+      "options": {
+        "A": "The label stores records, the API name grants access, and the tab defines fields",
+        "B": "The tab is the human wording, the label is machine identity, and the API name is navigation",
+        "C": "All three are interchangeable names for one record",
+        "D": "The label is user wording, the API name is machine identity, and the tab is optional navigation"
+      },
+      "answer": "D",
+      "rationale": "Human-readable wording, programmatic identity, and presentation/navigation each serve a different role in the object model.",
+      "distractor_explanations": {
+        "A": "It assigns data, authorization, and schema roles to the wrong boundaries.",
+        "B": "It swaps the roles of label, API name, and tab.",
+        "C": "None of the three is a saved record instance."
+      },
+      "concept": "Identifiers and presentation",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-CUSTOMOBJ-DATA-001",
+        "SF-META-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q30",
+      "category": "compare",
+      "prompt": "Which evidence sequence most clearly separates the four gates in the lesson?",
+      "options": {
+        "A": "See a tab, then assume the object, user access, and record all exist",
+        "B": "Create a record, then infer the model and permissions from its presence",
+        "C": "Verify definition, test actor access, inspect navigation, and observe a known synthetic record",
+        "D": "Deploy metadata, skip persona testing, and use an administrator screenshot"
+      },
+      "answer": "C",
+      "rationale": "The diagnostic method treats definition, authorization, presentation, and business-data observation as separate evidence gates.",
+      "distractor_explanations": {
+        "A": "Navigation evidence cannot prove model existence, authorization, or record visibility.",
+        "B": "A record does not by itself establish the correct definition or access path.",
+        "D": "Admin-only evidence and skipped persona testing leave the real actor and record gates unverified."
+      },
+      "concept": "Four-gate diagnostic sequence",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-META-DATA-001",
+        "SF-TRAIL-DATA-001"
+      ]
+    },
+    {
+      "id": "Q31",
+      "category": "compare",
+      "prompt": "Which statement preserves the external-object boundary?",
+      "options": {
+        "A": "External objects are custom objects with a different tab icon, but their records are still stored in Salesforce",
+        "B": "External objects map to record data stored outside Salesforce; verify the connector and target-org scope before using them",
+        "C": "Any custom object referenced by an integration automatically becomes external",
+        "D": "An external object is a record created by a standard object"
+      },
+      "answer": "B",
+      "rationale": "The Object Reference defines external objects by their outside-org record storage. The shared object-shaped surface does not erase the storage, connector, security, or availability boundary.",
+      "distractor_explanations": {
+        "A": "External and custom objects are distinct kinds; a tab and storage location are not interchangeable.",
+        "C": "An integration endpoint does not by itself change an org-stored custom object's kind.",
+        "D": "External is an object kind, not a record instance created by a standard object."
+      },
+      "concept": "External versus custom object boundary",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-OBJREF-DATA-001",
+        "SF-CUSTOMOBJ-DATA-001"
+      ]
+    },
+    {
+      "id": "Q32",
+      "category": "application",
+      "prompt": "A custom-object API name is valid in one package context but not another. What is the safest next step?",
+      "options": {
+        "A": "Strip any prefix and keep only the final __c suffix",
+        "B": "Rename the user-facing label until the query works",
+        "C": "Read the target metadata's fully specified fullName and verify namespace/package and API context",
+        "D": "Add a tab because navigation determines API identity"
+      },
+      "answer": "C",
+      "rationale": "The CustomObject reference requires a fully specified fullName. Namespace/package context is target-sensitive, so the identity must be read and verified rather than guessed or normalized away.",
+      "distractor_explanations": {
+        "A": "Removing context can address the wrong component and is not supported by this bounded lesson.",
+        "B": "A label is human-facing wording and does not establish the machine identity.",
+        "D": "A tab is presentation metadata and cannot resolve a metadata fullName."
+      },
+      "concept": "Fully specified API identity",
+      "difficulty": "Foundation",
+      "citation_ids": [
+        "SF-CUSTOMOBJ-DATA-001"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "Object versus record: what is the boundary?",
+      "back": "An object is the shared definition for a kind of data; a record is one saved occurrence with field values. A tab is neither one."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "What makes an object standard or custom?",
+      "back": "Standard means Salesforce-created; custom means organization-created. The origin label does not guarantee access, quality, or fit."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "Metadata versus business data?",
+      "back": "Metadata defines or configures the model, process, presentation, or authorization; business data is saved records and values."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "Label, API name, and custom tab in one sentence?",
+      "back": "A label is user wording, an API name is machine identity such as LAB_Property__c, and a custom tab is optional presentation/navigation metadata."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "What does the __c suffix prove?",
+      "back": "It is the custom-object naming convention described by the reference; it does not prove access, navigation, or that any record exists."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "When should a new noun be evaluated as an object candidate?",
+      "back": "When it has a stable grain, repeated occurrences, lifecycle, actors, and evidence needs. First check whether a standard meaning fits."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "When is a custom object a defensible candidate?",
+      "back": "After standard-fit discovery leaves an organization-defined concept that needs its own model. Never use 'new noun' alone as proof."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Definition change or record operation?",
+      "back": "Define/change object identity or structure as metadata; create/edit a single occurrence and values as business data. Validate both paths separately."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "A user cannot see an object. What diagnostic order helps?",
+      "back": "Check definition existence, actor/object access, record visibility, and app/tab navigation separately as the intended user."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "When is a custom tab appropriate?",
+      "back": "When the already-chosen model needs a navigation/presentation surface. It does not create the object, create data, or grant access."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "Which mutable scope must be reverified before a lab step?",
+      "back": "Release/API, edition, license, package/namespace, target-org configuration, and user permissions; UI labels and paths can change."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "What does least privilege change in this lesson?",
+      "back": "Test with the intended actor, not only an administrator. Object existence, access, record visibility, and navigation are separate evidence gates."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "Where does the table analogy stop?",
+      "back": "It helps with structure, then breaks at authorization, automation, transactions, and presentation. Use it as a map, not a complete runtime model."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "LAB_Property__c exists but LAB-PROP-001 is absent from a list. What do you test?",
+      "back": "Separate record creation/save result, target-user access, filters/report scope, and observation surface; do not recreate metadata first."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Transfer the property model to an internal grant request.",
+      "back": "Start over with noun, grain, lifecycle, standard semantic fit, actors, and evidence. The property answer is a worked example, not a template mandate."
+    },
+    {
+      "id": "F16",
+      "category": "terminology",
+      "front": "How is a field different from a field value?",
+      "back": "A field is a named, typed attribute in the shared object structure; a field value is the data held by that attribute on one record."
+    },
+    {
+      "id": "F17",
+      "category": "terminology",
+      "front": "What is the object-record relationship?",
+      "back": "The object is the reusable definition and grain; each record is one saved occurrence of that definition with values for its fields."
+    },
+    {
+      "id": "F18",
+      "category": "terminology",
+      "front": "What evidence belongs to metadata work?",
+      "back": "Definition, schema, identity, process, presentation, or authorization configuration evidence belongs to metadata; saved record values need a separate data-operation check."
+    },
+    {
+      "id": "F19",
+      "category": "terminology",
+      "front": "Does custom mean lower quality?",
+      "back": "No. Custom identifies an organization-created object. Quality, semantic fit, security, availability, and lifecycle cost require separate design and target-org evaluation."
+    },
+    {
+      "id": "F20",
+      "category": "terminology",
+      "front": "Is a custom tab an object?",
+      "back": "No. A custom tab is optional presentation/navigation metadata that may point users toward an object; it is not the definition, a record, or an access grant."
+    },
+    {
+      "id": "F21",
+      "category": "decision",
+      "front": "When is a business noun an object candidate?",
+      "back": "When it has a stable grain, repeated occurrences, a lifecycle, actors, and evidence needs; frame that model before choosing a tab or free-text workaround."
+    },
+    {
+      "id": "F22",
+      "category": "decision",
+      "front": "What comes before choosing custom?",
+      "back": "Write the noun, grain, lifecycle, actors, and standard semantic-fit check. Custom is conditional on an organization-defined concept needing its own model."
+    },
+    {
+      "id": "F23",
+      "category": "decision",
+      "front": "What is a defensible custom-object signal?",
+      "back": "No suitable standard meaning fits and the organization-defined concept needs an independent model, lifecycle, access boundary, or evidence path."
+    },
+    {
+      "id": "F24",
+      "category": "decision",
+      "front": "Which path defines the shared shape?",
+      "back": "Use a metadata/configuration path for object identity and structure; use a separate business-data path for creating or editing a record occurrence."
+    },
+    {
+      "id": "F25",
+      "category": "decision",
+      "front": "What is a strong visibility test?",
+      "back": "Use a known synthetic record and test definition, access, navigation, and observation as the intended target persona rather than only as an administrator."
+    },
+    {
+      "id": "F26",
+      "category": "limitation_security",
+      "front": "Does a custom object automatically improve security?",
+      "back": "No. Standard/custom origin is not an authorization decision. Review least privilege, object access, sharing, record visibility, and target-user evidence separately."
+    },
+    {
+      "id": "F27",
+      "category": "limitation_security",
+      "front": "Which mutable assumptions need rechecking?",
+      "back": "Reverify release/API, edition, license, package or namespace, target-org configuration, permissions, feature availability, and UI labels before a lab or release."
+    },
+    {
+      "id": "F28",
+      "category": "limitation_security",
+      "front": "Where does the table analogy break?",
+      "back": "It helps with structure, but it does not fully explain authorization, automation, transactions, rollback, or presentation/navigation behavior."
+    },
+    {
+      "id": "F29",
+      "category": "limitation_security",
+      "front": "What environment is allowed for the lab?",
+      "back": "Use a disposable non-production org with synthetic LAB_ values, least privilege, a cleanup manifest, and no customer data, credentials, or unapproved production mutation."
+    },
+    {
+      "id": "F30",
+      "category": "limitation_security",
+      "front": "What does the __c suffix not prove?",
+      "back": "It signals the custom-object naming convention; it does not prove that a record exists, a tab is present, a user has access, or the model is a good fit."
+    },
+    {
+      "id": "F31",
+      "category": "scenario",
+      "front": "The object exists for an admin but not a target user. First diagnostic split?",
+      "back": "Separate definition existence, target-actor/object access, record visibility, and app or tab navigation; do not recreate metadata before identifying the failed gate."
+    },
+    {
+      "id": "F32",
+      "category": "scenario",
+      "front": "A visible tab opens to an empty list. What might be wrong?",
+      "back": "The record may not have been saved, may be filtered or rolled back, or may be hidden from the actor. A tab alone proves none of those states."
+    },
+    {
+      "id": "F33",
+      "category": "scenario",
+      "front": "How do you transfer the method to an inspection case?",
+      "back": "Restart with the new noun, grain, lifecycle, actors, standard fit, reversal signal, and evidence gates; do not copy LAB_Property__c by analogy."
+    },
+    {
+      "id": "F34",
+      "category": "scenario",
+      "front": "What proves a business record exists?",
+      "back": "A separate record-operation result plus approved observation of a known synthetic identifier and values; an object definition, API name, or tab is not enough."
+    },
+    {
+      "id": "F35",
+      "category": "scenario",
+      "front": "What should cleanup evidence name?",
+      "back": "The synthetic LAB_ record, temporary metadata or tab, baseline or restoration action, and confirmation that no real data, credentials, or production state remains in the exercise."
+    },
+    {
+      "id": "F36",
+      "category": "limitation_security",
+      "front": "How is an external object different from an org-stored custom object?",
+      "back": "An external object's record data remains outside Salesforce and uses a distinct __x naming convention in the cited reference; connector, security, scale, and availability need separate verification."
+    },
+    {
+      "id": "F37",
+      "category": "limitation_security",
+      "front": "What should you do with a custom-object identity in a package or namespace context?",
+      "back": "Read the target metadata's fully specified fullName and preserve its context; do not strip or invent a prefix or treat __c as a global access rule."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain object, field, and record without relying on the word 'table.'",
+      "answer_30_seconds": "An object is the shared definition for a kind of data, a field is a typed attribute in that definition, and a record is one saved occurrence with values. The table/column/row analogy helps with structure but does not cover access or presentation.",
+      "answer_2_minutes": "I would start with a business noun and its grain. The object is the reusable model boundary; a field is a named attribute whose value can differ per occurrence; a record is one saved instance. Then I would name the boundary: a record is business data, while the object and its fields are metadata. Finally, I would explain that a tab is navigation, not the object, and that authorization, automation, transactions, and UI evidence require separate checks.",
+      "example": "For the synthetic property model, LAB_Property__c is the object, Status__c is a field, and LAB-PROP-001 is one record with a Draft value.",
+      "tradeoffs": [
+        "A short table analogy improves recall but can hide security and transaction behavior.",
+        "More precise vocabulary takes longer initially but reduces later diagnostic ambiguity."
+      ],
+      "follow_ups": [
+        "Which details belong in DATA-002 and DATA-003 rather than this foundation?",
+        "What evidence would prove a record exists rather than only a definition?"
+      ],
+      "weak_answer_warnings": [
+        "Calling a record the object or treating a tab as the object.",
+        "Explaining structure while ignoring the authorization and observation boundary."
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "compare",
+      "question": "How do you choose between a standard object and a custom object?",
+      "answer_30_seconds": "Standard means Salesforce-created and custom means organization-created. I first test whether an existing standard meaning fits the noun, grain, lifecycle, and actors; only then do I consider a custom object for an organization-defined concept that needs its own model.",
+      "answer_2_minutes": "I would document the business noun, grain, lifecycle, owners, access, and evidence needs. I would compare those semantics with the standard model rather than choosing by preference. If a standard object fits, I would use that model subject to architecture and target-org review. If no suitable meaning fits and the concept needs an independent model, a custom object becomes a candidate. I would record the reversal signal, scope the decision to release/edition/license/package/configuration, and validate in a disposable org.",
+      "example": "The property example becomes LAB_Property__c only after the exercise records why an existing standard meaning does not capture the independent property lifecycle.",
+      "tradeoffs": [
+        "Reuse can reduce model duplication, while custom modeling can preserve a distinct business grain.",
+        "Speed of creation must be weighed against semantic fit, access, package, and lifecycle cost."
+      ],
+      "follow_ups": [
+        "What would make you reverse the custom-object decision?",
+        "Does custom automatically mean more secure or more flexible?"
+      ],
+      "weak_answer_warnings": [
+        "'Always use standard' or 'always create custom' with no semantic test.",
+        "Using a tab or label as the deciding data-model evidence."
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "design",
+      "question": "Design the LAB_Property__c worked example and defend its boundaries.",
+      "answer_30_seconds": "I define the noun and lifecycle, record why standard fit was insufficient, use LAB Property as the label and LAB_Property__c as the API name, optionally add a separate tab, then create one synthetic record and test the target persona.",
+      "answer_2_minutes": "I would begin with grain, lifecycle, actors, and cleanup. The custom decision is conditional, so I would capture the standard-fit check before defining metadata. In a disposable org I would create the object only if justified, verify label and API identity, and treat a Custom Tab as optional presentation metadata. I would create LAB-PROP-001 separately as business data, inspect it through an approved surface, test access as the intended persona, and retain evidence for definition, access, navigation, record visibility, and cleanup.",
+      "example": "LAB-PROP-001 has only synthetic LAB_ values and a Draft state; no customer address, credential, or production identifier enters the exercise.",
+      "tradeoffs": [
+        "A separate object may preserve independent lifecycle and access but adds metadata and release surface.",
+        "An optional tab improves navigation but adds a presentation dependency without changing the model."
+      ],
+      "follow_ups": [
+        "What if the target user sees the tab but not the record?",
+        "What artifacts must be removed at cleanup?"
+      ],
+      "weak_answer_warnings": [
+        "Treating the lab as permission to mutate production.",
+        "Skipping the standard-fit decision or mixing metadata and record evidence."
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "architecture",
+      "question": "Why must metadata deployment and business-data operations be planned separately?",
+      "answer_30_seconds": "Metadata defines or configures the model; business data is stored in records and values. A successful metadata operation does not prove that records were created, visible, or accessible.",
+      "answer_2_minutes": "The Metadata API guide distinguishes customization metadata from ordinary record CRUD. I would therefore define the desired object, fields, identifiers, and presentation as one evidence path, then plan record creation/migration and verify it as another. Afterward I would test actor access, filters, and observation surfaces because a definition can exist with no records, and records can exist without being visible to a given actor.",
+      "example": "Defining LAB_Property__c and an optional CustomTab is metadata; saving LAB-PROP-001 with synthetic values is business data.",
+      "tradeoffs": [
+        "Combining steps may feel faster but makes rollback and failure diagnosis ambiguous.",
+        "Separate evidence takes more documentation but makes release and recovery safer."
+      ],
+      "follow_ups": [
+        "Which result would prove only metadata succeeded?",
+        "How would you avoid importing real data into a learning org?"
+      ],
+      "weak_answer_warnings": [
+        "Saying a deployment automatically inserts records.",
+        "Treating an empty list as proof that metadata is missing."
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "An object exists for an administrator but is invisible to a target user. How do you diagnose it?",
+      "answer_30_seconds": "I test as the target actor and separate object definition, object/user access, record visibility, and app/tab navigation. I do not recreate metadata until those evidence gates are checked.",
+      "answer_2_minutes": "First I confirm the exact object identity and that the definition exists in the target scope. Next I evaluate the intended actor's object permissions, sharing and object-specific settings, and whether a known synthetic record is in scope. Then I check app and tab navigation as presentation evidence. I document which gate failed and avoid broadening permissions or mutating production just to make the symptom disappear.",
+      "example": "If an administrator can inspect LAB_Property__c but a tester cannot navigate to it, the first hypothesis is an access or presentation gate, not automatically a missing object.",
+      "tradeoffs": [
+        "Admin testing is quick but overestimates readiness.",
+        "Persona-based testing takes longer but produces evidence about the real actor."
+      ],
+      "follow_ups": [
+        "What known record would you use for the check?",
+        "How do you handle a package or edition boundary you cannot verify?"
+      ],
+      "weak_answer_warnings": [
+        "Equating an administrator view with ordinary-user access.",
+        "Changing permissions before identifying the failed gate."
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A custom tab is visible but a list is empty after a successful setup change. What do you investigate?",
+      "answer_30_seconds": "The tab proves only a navigation surface is present. I verify the referenced object, a separate record save, access, filters/report scope, and the observation surface using a known synthetic record.",
+      "answer_2_minutes": "I would trace the tab to the object and confirm the label/API-name pairing. Then I would verify whether a record operation actually created LAB-PROP-001 and whether the save passed validation or rolled back. As the intended user, I would check object and record visibility, list/report filters, and app context. The conclusion should identify a failed state transition rather than blaming the tab or recreating the model.",
+      "example": "A visible LAB Property tab with no LAB-PROP-001 could be a data-operation, access, filter, rollback, or wrong-surface problem; it is not proof of any one cause.",
+      "tradeoffs": [
+        "Adding navigation can improve discoverability but also creates another surface to test.",
+        "A known-record check is more diagnostic than scanning an unfiltered list."
+      ],
+      "follow_ups": [
+        "What evidence separates a missing record from a hidden record?",
+        "Which part of the source supports the tab/presentation boundary?"
+      ],
+      "weak_answer_warnings": [
+        "Treating a tab as proof of data presence.",
+        "Adding more records before checking filters and access."
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "security",
+      "question": "What security and scope limits belong in a standard/custom object design answer?",
+      "answer_30_seconds": "I use least privilege, test as the intended actor, and distinguish object existence from access, record visibility, and navigation. I reverify release/API, edition, license, package, configuration, permission, and UI assumptions instead of inventing numeric limits.",
+      "answer_2_minutes": "Security is not solved by choosing standard or custom. I identify actors and the minimum access needed, use synthetic non-production data, and test a known record as the target persona. I record which evidence comes from object definition, authorization, sharing or object-specific settings, presentation, and business data. I scope mutable behavior to the current target org and source date, avoid numeric limits not established by the source packet, and stop when package, license, or edition behavior is unclear.",
+      "example": "A LAB_Property__c lab uses LAB_ values and an explicit cleanup manifest; it never uses customer data, credentials, or a production permission change.",
+      "tradeoffs": [
+        "Broader access may make a demo appear to work but increases exposure and hides the real gate.",
+        "Narrow access and more evidence collection are slower but safer and more transferable."
+      ],
+      "follow_ups": [
+        "Which assumptions must be reverified before a release?",
+        "What should happen if the only available org is production?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming custom objects are automatically secure.",
+        "Using a production org or real customer data for convenience."
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "transfer",
+      "question": "Transfer the method to an internal grant-request or inspection requirement without copying the property answer.",
+      "answer_30_seconds": "I restart with noun, grain, lifecycle, actors, and standard semantic fit. I choose object, record, field, metadata, business data, or tab based on that evidence, then name a reversal signal and test definition, access, navigation, and known-record observation.",
+      "answer_2_minutes": "The property model is a worked example, not a template mandate. For a grant request or inspection I would define the independent business concept, decide whether it belongs in a standard model, and only then consider a custom object. I would pair any human label with a machine API name, keep a tab optional, and separate metadata from record creation. I would write the changed-context decision, one reason it could be reversed, one least-privilege actor check, and a synthetic evidence/cleanup plan. If the object family or availability is outside this lesson, I would stop and request new source verification rather than extrapolate.",
+      "example": "An inspection may fit an existing service or asset meaning where property did not; that changed signal should alter the decision instead of preserving LAB_Property__c by analogy.",
+      "tradeoffs": [
+        "Transfer requires redoing discovery, but prevents cargo-cult reuse of a worked example.",
+        "A broad model may seem reusable while a narrower model may better preserve grain and access boundaries."
+      ],
+      "follow_ups": [
+        "What evidence would cause you to switch from standard to custom or back?",
+        "Which neighboring topics must be researched before handling relationships or external object behavior?"
+      ],
+      "weak_answer_warnings": [
+        "Repeating LAB_Property__c without analyzing the new noun and actor.",
+        "Ignoring out-of-scope object families, release limits, or access evidence."
+      ]
+    },
+    {
+      "id": "I9",
+      "category": "foundational",
+      "question": "How do object, field, record, metadata, and business data fit together?",
+      "answer_30_seconds": "An object is a shared definition, a field is a typed attribute in that definition, and a record is one saved occurrence with values. Object and field structure are metadata; the saved occurrence and its values are business data.",
+      "answer_2_minutes": "I would begin with the business noun and its grain. The object gives repeated occurrences a shared model boundary, and each field names a typed attribute whose value may differ by record. Defining or changing that shared shape is metadata work. Creating or editing one occurrence is business-data work. I would then separate both from presentation: a label helps people read the model, an API name identifies it to tools, and a tab is optional navigation. Finally, I would verify the definition and record through different evidence paths.",
+      "example": "LAB_Property__c is the synthetic object, Status__c is a field, and LAB-PROP-001 with Draft is one business-data record.",
+      "tradeoffs": [
+        "A concise structural analogy improves recall but can hide authorization and transaction boundaries.",
+        "Precise vocabulary takes longer at first but makes failures easier to isolate."
+      ],
+      "follow_ups": [
+        "What evidence would prove the record was saved?",
+        "Which details belong in the next field-design topic?"
+      ],
+      "weak_answer_warnings": [
+        "Calling the record the object or calling the tab a field.",
+        "Treating a metadata deployment as proof that business data exists."
+      ]
+    },
+    {
+      "id": "I10",
+      "category": "compare",
+      "question": "When would you favor a standard object over a custom object?",
+      "answer_30_seconds": "I favor evaluating the standard model when its meaning matches the requirement's noun, grain, lifecycle, actors, and evidence needs. Custom is not a default or a quality label; it is a candidate when an organization-defined concept needs its own model.",
+      "answer_2_minutes": "I would document the requirement before choosing an origin: business noun, grain, lifecycle, ownership, actors, access, and reporting or integration evidence. Then I would compare those semantics with the available standard meaning. A close fit should be reused or extended subject to architecture and target-org review rather than duplicated by habit. If no standard meaning fits and the concept has an independent lifecycle or access boundary, I would record a reversible custom-object decision. Release, edition, license, package, and permission assumptions remain scope-sensitive.",
+      "example": "The property exercise only considers LAB_Property__c after documenting why the hypothetical property's independent lifecycle is not represented by a suitable standard meaning.",
+      "tradeoffs": [
+        "Reuse can reduce duplicate concepts and release surface.",
+        "A custom model can preserve an independent grain but adds metadata, access, and lifecycle responsibility."
+      ],
+      "follow_ups": [
+        "What evidence would reverse the decision?",
+        "Does standard automatically mean accessible to every user?"
+      ],
+      "weak_answer_warnings": [
+        "Always use standard or always create custom without a semantic test.",
+        "Using a label or tab as the primary data-model evidence."
+      ]
+    },
+    {
+      "id": "I11",
+      "category": "design",
+      "question": "What should an administrator prove before creating a custom object?",
+      "answer_30_seconds": "The admin should prove the noun and grain, record the standard semantic-fit check, identify actors and lifecycle, and confirm a disposable non-production scope. Only then should custom metadata, identity, access, navigation, and cleanup be planned.",
+      "answer_2_minutes": "I would first turn the screen-shaped request into a business noun with repeated occurrences, lifecycle, owners, and evidence needs. I would compare it with standard semantics and write the reason a separate organization-defined model is needed. Before creation, I would verify the target release, edition, license, package, configuration, and permissions, then prepare a cleanup manifest. In the lab I would keep label, API name, and optional tab distinct, create metadata separately from a synthetic record, and test the target persona without broadening access.",
+      "example": "For LAB_Property__c, the evidence packet names the independent property lifecycle, the LAB_ identity, the optional tab decision, LAB-PROP-001, target-user checks, and cleanup.",
+      "tradeoffs": [
+        "More discovery delays creation but prevents a poor grain from becoming shared metadata.",
+        "An optional tab can aid navigation but creates another presentation surface to test."
+      ],
+      "follow_ups": [
+        "What if a standard object becomes a better fit later?",
+        "What evidence distinguishes the object from its first record?"
+      ],
+      "weak_answer_warnings": [
+        "Creating the object because the stakeholder asked for a screen.",
+        "Skipping scope, access, or cleanup checks because the values are synthetic."
+      ]
+    },
+    {
+      "id": "I12",
+      "category": "troubleshooting",
+      "question": "A metadata deployment succeeds but the expected record list is empty. How do you investigate?",
+      "answer_30_seconds": "I treat the result as metadata evidence only. I verify a separate record save, validation or rollback result, target-user access, list or report filters, and the observation surface with a known synthetic identifier.",
+      "answer_2_minutes": "I would not immediately recreate the object. First I would confirm the intended object identity and inspect the metadata result. Next I would find the separate business-data operation and verify whether LAB-PROP-001 was actually saved, rejected, or rolled back. Then I would test as the target persona, checking object and record visibility, filters, report scope, app context, and the chosen list, record, API, or report surface. The final diagnosis should name the failed state transition and preserve only synthetic evidence.",
+      "example": "A successful definition plus an empty list can mean no record operation ran, the save failed, the record is filtered, or the target actor cannot observe it.",
+      "tradeoffs": [
+        "Recreating metadata may feel quick but obscures the data or access failure.",
+        "A known-record and target-persona check takes longer but narrows the diagnosis safely."
+      ],
+      "follow_ups": [
+        "What result proves only metadata succeeded?",
+        "What would you record before cleanup?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming a tab or deployment inserted a record.",
+        "Granting broad access before checking the failed gate."
+      ]
+    },
+    {
+      "id": "I13",
+      "category": "security",
+      "question": "How should least privilege change a standard/custom object lab?",
+      "answer_30_seconds": "It means I use a disposable org, synthetic LAB_ values, and the minimum target-user access needed. I separately test definition existence, actor authorization, record visibility, and navigation rather than relying on administrator access.",
+      "answer_2_minutes": "Least privilege changes the evidence plan, not just the permission setting. I identify the intended actor and minimum object, field, and record access, then test a known synthetic record as that actor. I keep the object definition, API identity, optional tab, and record values as separate artifacts. If a package, edition, license, release, or configuration boundary is unclear, I stop rather than broaden access or extrapolate. The cleanup manifest removes LAB_ records and temporary metadata without touching production or real customer data.",
+      "example": "An administrator may inspect LAB_Property__c while a target tester cannot navigate or read LAB-PROP-001; that is evidence to isolate, not permission to grant everything.",
+      "tradeoffs": [
+        "Administrator testing is faster but overstates readiness.",
+        "Persona testing and narrow permissions take longer but expose the real security boundary."
+      ],
+      "follow_ups": [
+        "What should happen if production is the only available org?",
+        "Which assumptions are mutable and need revalidation?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming custom objects are secure by category.",
+        "Using real customer data or production permission changes for convenience."
+      ]
+    },
+    {
+      "id": "I14",
+      "category": "transfer",
+      "question": "How would you apply this method to an internal grant-request requirement?",
+      "answer_30_seconds": "I would restart discovery with the new noun, grain, lifecycle, actors, and standard semantic fit. I would choose an object, record, field, metadata, business-data, or tab boundary from that evidence and name a reversal signal.",
+      "answer_2_minutes": "I would not copy LAB_Property__c merely because both requirements use a noun. For a grant request, I would ask whether the request has repeated occurrences, its own lifecycle, owners, approvals, and access boundary. I would compare those semantics with standard models, then consider a custom object only if the independent concept warrants it. I would keep human label, API identity, optional navigation, metadata, and record values distinct, test the intended actor with synthetic data, and stop for new source research if the object family is out of scope.",
+      "example": "A grant request may fit an existing approval or service meaning that a property model does not, so the changed context can reverse the modeling choice.",
+      "tradeoffs": [
+        "Repeating discovery costs time but avoids cargo-cult reuse of a worked example.",
+        "A narrower model may preserve grain and access better than a broad reusable object."
+      ],
+      "follow_ups": [
+        "What would make you switch from custom to standard?",
+        "Which neighboring topic must be researched before modeling relationships?"
+      ],
+      "weak_answer_warnings": [
+        "Repeating LAB_Property__c without analyzing the new business noun.",
+        "Ignoring actor, lifecycle, release, or out-of-scope object behavior."
+      ]
+    },
+    {
+      "id": "I15",
+      "category": "challenge",
+      "question": "Explain the four evidence gates to a stakeholder who says, 'The tab is there, so we are done.'",
+      "answer_30_seconds": "The tab proves only a navigation surface. We still need evidence that the object definition exists, the intended actor has access, and a known synthetic record was saved and is observable. Those are different gates, so one visible tab cannot close all four.",
+      "answer_2_minutes": "I would acknowledge that the tab is useful discoverability evidence, then separate the states. First confirm the exact object definition and label/API identity. Second test the intended actor's object and record permissions rather than an administrator's view. Third confirm the tab or app navigation points to the intended model. Fourth create or locate a known LAB_ record and verify its save result, values, filters, and visibility. This sequence prevents a presentation success from being mistaken for metadata, authorization, or business-data success.",
+      "example": "A visible LAB Property tab may coexist with a missing LAB-PROP-001 record or a target user who lacks access; the next check depends on which gate lacks evidence.",
+      "tradeoffs": [
+        "A single demo is quicker but collapses multiple failure modes.",
+        "Separate evidence is slightly slower and produces a more defensible release decision."
+      ],
+      "follow_ups": [
+        "Which artifact would prove the record was saved?",
+        "Why is an administrator screenshot insufficient?"
+      ],
+      "weak_answer_warnings": [
+        "Treating navigation as authorization or data presence.",
+        "Skipping the target persona and known-record checks."
+      ]
+    },
+    {
+      "id": "I16",
+      "category": "compare",
+      "question": "When is an external object not interchangeable with a custom object?",
+      "answer_30_seconds": "When the record source of truth remains outside Salesforce. An external object has a distinct storage boundary and naming convention; I would verify connector, security, scale, license, and target-org availability before choosing it.",
+      "answer_2_minutes": "I would start by locating the authoritative record store and deciding whether data should remain outside the org or be copied into Salesforce. The Object Reference distinguishes external objects by outside-org record storage, and the CustomObject reference uses __x for their names versus __c for custom objects. I would treat connector/callout behavior, permissions, latency, relationships, automation, and license as separate architecture checks. An integration endpoint alone would not justify calling an org-stored custom object external, and I would use only synthetic data in a disposable lab.",
+      "example": "A hypothetical ERP read-through surface could be an external-object candidate only if the target org has the required configured capability; LAB_Property__c remains an org-stored custom-object example.",
+      "tradeoffs": [
+        "Keeping the source outside Salesforce can avoid duplication but adds connector, availability, and observability dependencies.",
+        "Copying data into a custom object may simplify local operations but changes storage, freshness, security, and migration responsibilities."
+      ],
+      "follow_ups": [
+        "Which evidence proves the record remains outside the org?",
+        "Which scale and security assumptions require a separate source before release?"
+      ],
+      "weak_answer_warnings": [
+        "Calling any integrated custom object external.",
+        "Ignoring outside-system failures, permissions, or the __x versus __c identity boundary."
+      ]
+    },
+    {
+      "id": "I17",
+      "category": "architecture",
+      "question": "How do you defend a custom-object API name across namespace or package contexts?",
+      "answer_30_seconds": "I treat __c as the custom-object suffix, not as a complete global identity. I read the target metadata's fully specified fullName and preserve its org/package context instead of stripping or inventing a prefix.",
+      "answer_2_minutes": "The CustomObject reference says fullName must be fully specified. I would identify the target org, package or namespace context, and API version, then inspect the exact metadata identity used by the query or deployment manifest. I would keep the human label, machine API name, object kind, and optional tab separate. If the package boundary or availability is not verified, I would stop and request source or target-org confirmation rather than normalize a name until it appears to work. That protects integrations and keeps the decision reversible.",
+      "example": "LAB_Property__c is a local synthetic example only; a packaged or namespaced object must be resolved from the target metadata rather than copied from this lesson.",
+      "tradeoffs": [
+        "A fully specified identity may look less portable, but it prevents addressing the wrong metadata component.",
+        "Rechecking target context takes time and avoids brittle deployment or query assumptions."
+      ],
+      "follow_ups": [
+        "What source or target-org evidence would establish the exact fullName?",
+        "What does the __c suffix fail to prove about access, navigation, or records?"
+      ],
+      "weak_answer_warnings": [
+        "Claiming a universal namespace prefix or stripping all context.",
+        "Treating a label, tab, or suffix as proof of permissions or data presence."
+      ]
+    }
+  ]
+}

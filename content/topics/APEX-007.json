@@ -1,0 +1,943 @@
+{
+  "topic_id": "APEX-007",
+  "slug": "apex-governor-limits-and-bulkification",
+  "title": "Apex Governor Limits and Bulkification",
+  "track": "Apex and database programming",
+  "level": "Intermediate",
+  "type": "Code",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "PROG-004",
+    "APEX-003",
+    "APEX-005"
+  ],
+  "objectives": [
+    "Explain governors as per-transaction ceilings that throw an unhandleable LimitException.",
+    "Cite synchronous versus asynchronous headline numbers only from the official Execution Governors page.",
+    "Bulkify SOQL and DML with maps and lists instead of per-row operations in loops.",
+    "State that triggers, Flow, and related DML in one save share one limit pool."
+  ],
+  "diagnostic_question": "A before-update trigger queries related Contacts inside a for-loop over Trigger.new, then updates each Contact one at a time. What fails at 200 records, which official limits are involved, and how would you redesign?",
+  "definition": "Because Apex runs in a multitenant environment, the runtime enforces governor limits so one execution cannot monopolize shared resources. Exceeding a limit issues a runtime exception that cannot be handled. Bulkification means writing triggers and classes that stay inside those ceilings for many records—typically by aggregating SOQL and DML outside loops. ([Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+  "why_it_matters": "Production defects appear under bulk API, data loads, and cascade updates. Interviewers expect you to name the shared transaction, cite official sync/async ceilings, and redesign with maps—not catch LimitException (APEX-006).",
+  "sixty_second_explanation": "Picture an apartment visit: every faucet you open—trigger, Flow, roll-up—shares one water and electric meter for that visit. Official synchronous ceilings include 100 SOQL queries, 150 DML statements, 10,000 ms CPU, and 6 MB heap; asynchronous Apex raises several of those (200 SOQL, 60,000 ms CPU, 12 MB heap) per the Execution Governors table. SOQL or DML inside a loop over Trigger.new fails at bulk volume. Prefer maps, list DML, and a new async transaction when you need a fresh meter. Reverify the table for the release under discussion.",
+  "deeper_explanation": [
+    "Limits count per Apex transaction. Batch Apex resets them per execute chunk. Scheduled Apex is asynchronous in product terms but uses synchronous limit numbers. Bulk API uses the higher of sync and async for several rows. ([Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+    "Cited per-transaction figures from that table (Summer '26 / API 67.0 page as fetched 2026-08-16): SOQL queries 100 sync / 200 async; SOQL rows 50,000; DML statements 150; DML rows 10,000; heap 6 MB / 12 MB; CPU 10,000 ms / 60,000 ms; SOSL queries 20; callouts 100; recursive trigger stack depth 16. Static table: Apex trigger batch size 200. Do not invent other numbers.",
+    "Bulkification: collect Ids, one SOQL into a Map, one list DML. Trigger.size is the current 200-record batch, not the whole API job. Multiple triggers on one event still share the pool (APEX-008).",
+    "LimitException cannot be caught (APEX-006). Async (APEX-011) is a new transaction with a often-higher pool, not a way to hide a non-bulk design. Org-level 24-hour async caps exist on the same page—quote them only if you re-read the current row."
+  ],
+  "mental_model": {
+    "analogy": "An apartment visit sharing one water and electric meter with every appliance that runs during that visit.",
+    "useful_mapping": [
+      "Apex transaction → one visit / one meter reading",
+      "Trigger + Flow + roll-up → appliances on the same meter",
+      "SOQL/DML in a loop → opening a new faucet per guest",
+      "Map + list DML → one pipe serving the whole party",
+      "Async job → a later visit with its own meter (often higher caps)",
+      "LimitException → the building shutoff you cannot bargain with"
+    ],
+    "where_it_breaks": [
+      "Scheduled Apex is 'async' but uses synchronous numbers—do not assume every async feature gets the async column.",
+      "Batch execute resets the meter per chunk, not per whole job.",
+      "Callout time waiting is not CPU; the table footnotes matter.",
+      "The analogy does not encode order of execution station order (APEX-009)."
+    ]
+  },
+  "teach_back_prompt": "Explain shared governors and bulkification using the apartment-meter idea, then name one place that analogy breaks (scheduled Apex or Batch execute).",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Recite official sync SOQL, DML statement, CPU, and heap ceilings and the source page."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Rewrite a query-in-loop trigger into a map plus list DML."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "When does async raise which ceilings, and what still uses sync numbers?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose a CPU timeout versus a SOQL 101 using a debug log."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: shared transaction plus bulkification."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-GOV",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "Why governors exist; unhandleable exception; sync vs async table; Batch reset; scheduled Apex uses sync numbers; trigger batch size 200.",
+      "release_or_version": "Apex Developer Guide / API 67.0 / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Numeric rows are release-sensitive; reverify before an interview."
+    },
+    {
+      "source_id": "SF-APEX-GOV-QREF",
+      "title": "Apex Governor Limits (Limits Quick Reference)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_apexgov.htm",
+      "supports": "Same per-transaction table mirrored in the allocations quick reference.",
+      "release_or_version": "Salesforce Developer Limits and Allocations Quick Reference",
+      "last_verified": "2026-08-16",
+      "limits": "Cross-check against the Developer Guide table if they ever diverge."
+    },
+    {
+      "source_id": "SF-APEX-LIMITS-INTRO",
+      "title": "Apex Transactions and Governor Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_limits_intro.htm",
+      "supports": "Transaction as the unit that shares a governor pool.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Intro page; numbers live on the governors table."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Shared transaction",
+        "Sync vs async table",
+        "SOQL/DML in loop",
+        "Maps and list DML",
+        "Unhandleable LimitException",
+        "Trigger batch 200"
+      ],
+      "accessible_description": "Portrait map: one Apex transaction shares governors; official sync/async ceilings; bulkify with maps; LimitException cannot be caught; triggers process 200-record batches."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-GOV",
+        "SF-APEX-GOV-QREF",
+        "SF-APEX-LIMITS-INTRO"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "One transaction, one governor pool"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Tx[Apex transaction] --> Trig[Triggers]\n  Tx --> Flow[Flow and workflow]\n  Tx --> DML[Related DML]\n  Tx --> Pool[Shared governor pool]\n  Pool --> SOQL[SOQL queries 100 sync 200 async]\n  Pool --> DMLS[DML statements 150]\n  Pool --> CPU[CPU 10s sync 60s async]\n  Pool --> Heap[Heap 6MB sync 12MB async]",
+      "decision": "flowchart TD\n  Fail[Limit symptom] --> Q1{SOQL 101 or DML 151?}\n  Q1 -->|Query in loop| Map[Collect Ids one SOQL Map]\n  Q1 -->|DML in loop| List[Build list one DML]\n  Fail --> Q2{Need higher ceilings or isolation?}\n  Q2 -->|Yes after commit| Async[Queueable Batch APEX-011]\n  Q2 -->|No still sync| Bulk[Bulkify in this transaction]\n  Fail --> Q3{Catch it?}\n  Q3 -->|LimitException| No[Cannot catch redesign]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "If Apex exceeds a governor, the runtime issues an exception that cannot be handled. Limits count per transaction; Batch Apex resets per execute; scheduled Apex uses synchronous limit numbers.",
+      "source_ids": ["SF-APEX-GOV", "SF-APEX-LIMITS-INTRO"],
+      "scope": "Governor enforcement",
+      "validation": "Execution Governors and Limits opening and notes.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Cited per-transaction ceilings from the official table: SOQL 100/200, DML statements 150, DML rows 10,000, heap 6 MB/12 MB, CPU 10,000 ms/60,000 ms, trigger batch size 200.",
+      "source_ids": ["SF-APEX-GOV", "SF-APEX-GOV-QREF"],
+      "scope": "Numeric ceilings — release-sensitive",
+      "validation": "Execution Governors table and Limits Quick Reference, verified 2026-08-16.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Governor numbers are release-sensitive. Reverify Execution Governors and Limits for the API version under discussion.",
+  "unresolved_uncertainty": [
+    "Daily async execution org caps should be re-read from the current Salesforce Platform Apex Limits table before quoting 250,000-or-licenses math in an interview."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Governor limit",
+      "telugu": "Per-transaction ceiling you cannot catch."
+    },
+    {
+      "english": "Bulkification",
+      "telugu": "One SOQL/DML for the whole Trigger.new list."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Governors cap SOQL, DML, CPU, and heap per transaction and throw an unhandleable exception. I bulkify with maps and list DML. Official sync numbers include 100 SOQL, 150 DML statements, 10s CPU, 6 MB heap; async raises several. I reverify the table.",
+    "two_minutes": "I start from the shared save: triggers, Flow, and related DML share one pool. I cite the Execution Governors table and admit scheduled Apex uses sync numbers. I rewrite query-in-loop to Id IN :Trigger.new and one update. I never catch LimitException. Async is a new meter after commit, not a disguise for non-bulk code. Trigger batches are 200 records."
+  },
+  "terminology": [
+    {
+      "term": "governor limit",
+      "plain": "A hard ceiling on a shared resource for one Apex transaction.",
+      "precise": "A runtime-enforced maximum. Exceeding it raises an unhandleable exception and rolls back the transaction.",
+      "example": "100 SOQL queries in one synchronous transaction (official table).",
+      "non_example": "A style guideline such as 'keep queries under 20.'",
+      "confusable_neighbor": "24-hour org async caps—different table section.",
+      "boundary": "Quote numbers only from the current official table."
+    },
+    {
+      "term": "Apex transaction",
+      "plain": "The unit of work that shares one governor pool.",
+      "precise": "The boundary that either commits or rolls back together—commonly a trigger invocation plus the automations it causes until completion.",
+      "example": "A record save that runs before/after triggers and Flow in one pool.",
+      "non_example": "A Queueable started after commit—new transaction.",
+      "confusable_neighbor": "Savepoint: a rewind mark inside the same pool (APEX-010).",
+      "boundary": "Batch execute is a fresh pool per chunk."
+    },
+    {
+      "term": "bulkification",
+      "plain": "Writing Apex so many records share one query and one DML.",
+      "precise": "Collect identifiers, query once into maps, perform list DML instead of SOQL/DML inside loops.",
+      "example": "Map<Id, Account> byId = new Map<Id, Account>([SELECT Id FROM Account WHERE Id IN :ids]); update toUpdate;",
+      "non_example": "for (Account a : Trigger.new) { Contact c = [SELECT Id FROM Contact WHERE AccountId = :a.Id]; update c; }",
+      "confusable_neighbor": "Batch Apex: chunks work; each chunk still needs bulkification.",
+      "boundary": "Required even when the UI saves one row—cascades share the pool."
+    },
+    {
+      "term": "synchronous Apex",
+      "plain": "Apex that runs while the caller waits.",
+      "precise": "Interactive or inline Apex such as most triggers, subject to the lower synchronous column on the governors table.",
+      "example": "A before-insert trigger on Account.",
+      "non_example": "Batch Apex execute on a chunk.",
+      "confusable_neighbor": "Scheduled Apex: async feature, sync numbers.",
+      "boundary": "Choose async when delay is acceptable and you need isolation or higher ceilings."
+    },
+    {
+      "term": "asynchronous Apex",
+      "plain": "Apex that continues after the caller stops waiting.",
+      "precise": "Future, Queueable, Batch, and related jobs that start a new transaction; several governors use the async column.",
+      "example": "Queueable after commit for a callout.",
+      "non_example": "An after trigger still in the original save.",
+      "confusable_neighbor": "Scheduled Apex (sync column).",
+      "boundary": "Job choice is APEX-011; this lesson is the limit pool."
+    },
+    {
+      "term": "trigger batch size",
+      "plain": "How many records one trigger invocation receives.",
+      "precise": "Static Apex limit: Apex trigger batch size 200. Trigger.size is this batch, not the whole Bulk API job. Governors reset between those 200-record invocations for the same HTTP request in current API versions (see Triggers topic).",
+      "example": "A 1,000-row load can invoke the trigger five times.",
+      "non_example": "Assuming Trigger.size is the entire Data Loader file.",
+      "confusable_neighbor": "SOQL for-loop batching (queryMore).",
+      "boundary": "Each invocation still shares automations that run in that invocation's transaction."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Identify the transaction boundary",
+      "actor": "Developer",
+      "trigger": "A limit error or a design review",
+      "before": "Unknown who shares the pool",
+      "after": "Triggers, Flow, and related DML listed",
+      "observe": "Debug log LIMIT_USAGE_FOR_NS",
+      "failure": "Blaming only 'the trigger' when Flow also queried"
+    },
+    {
+      "step": 2,
+      "transition": "Find SOQL/DML in loops",
+      "actor": "Developer",
+      "trigger": "Query or DML statement count near the official cap",
+      "before": "Per-row operations",
+      "after": "Id set, one query, map, list DML",
+      "observe": "One SOQL and one DML in the handler for 200 rows",
+      "failure": "LIMIT 1 inside the loop as a 'fix'"
+    },
+    {
+      "step": 3,
+      "transition": "Decide same transaction versus async",
+      "actor": "Developer",
+      "trigger": "Callouts or heavy work",
+      "before": "Everything in the trigger",
+      "after": "Stay sync if bulk and no callout-with-pending-DML issue; else APEX-011",
+      "observe": "Written reason for a new transaction",
+      "failure": "Async to hide a query-in-loop"
+    },
+    {
+      "step": 4,
+      "transition": "Reverify numbers",
+      "actor": "Developer",
+      "trigger": "Interview or runbook",
+      "before": "Memorized unofficial blog numbers",
+      "after": "Cited Execution Governors table for this release",
+      "observe": "Link and last_verified date",
+      "failure": "Inventing a 200 DML statement cap"
+    }
+  ],
+  "when_to_use": [
+    "When an Apex trigger or class must be designed so bulk SOQL and DML stay inside official governor limits.",
+    "When a LimitException or LIMIT_USAGE debug line needs a bulkification redesign, not a catch block.",
+    "When you must cite synchronous versus asynchronous ceilings from Execution Governors and Limits.",
+    "When deciding whether work stays in this transaction or moves to a new async pool (APEX-011)."
+  ],
+  "when_not_to_use": [
+    "Do not use this governor-limits lesson as a place to invent unofficial numbers that are not on the cited table.",
+    "Do not treat bulkification as a substitute for SOQL clause skill (APEX-003) or Database partial success (APEX-005).",
+    "Do not catch LimitException; that belongs to the uncatchable-exception rule (APEX-006).",
+    "Do not use governors as a trigger-event or order-of-execution map (APEX-008/009)."
+  ],
+  "configuration_or_code_location": [
+    "Apex trigger/class in a disposable sandbox.",
+    "Debug log LIMIT_USAGE_FOR_NS and CUMULATIVE_LIMIT_USAGE.",
+    "Limits.getQueries() / getDmlStatements() during investigation.",
+    "Official Execution Governors page for the number you are about to quote."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox before-update Account trigger queries Contacts per Account in a loop and updates Description one Contact at a time. A 200-row Data Loader update fails. Redesign with maps. No production data.",
+    "inputs": [
+      "Trigger.new size 200",
+      "Each account has 1–2 contacts",
+      "Official DML statement cap 150, SOQL cap 100 sync"
+    ],
+    "decisions": [
+      {
+        "decision": "One SOQL: Contacts WHERE AccountId IN :Trigger.new.",
+        "because": "200 queries would exceed 100 SOQL.",
+        "rejected": "SOQL inside for (Account a : Trigger.new)"
+      },
+      {
+        "decision": "Build a List<Contact> and one update.",
+        "because": "200 update statements would exceed 150 DML statements.",
+        "rejected": "update contact; inside the loop"
+      },
+      {
+        "decision": "Do not catch the LimitException.",
+        "because": "It cannot be handled; the redesign is the fix.",
+        "rejected": "try/catch around the loop"
+      }
+    ],
+    "configuration_or_code": [
+      "Map<Id, List<Contact>> byAcct = new Map<Id, List<Contact>>();",
+      "for (Contact c : [SELECT Id, AccountId FROM Contact WHERE AccountId IN :Trigger.new]) { /* bucket */ }",
+      "update toUpdate; // one DML statement, many rows"
+    ],
+    "output": "One SOQL and one DML for 200 accounts; both under official ceilings.",
+    "verification": [
+      "Debug log shows one SOQL and one DML in the handler.",
+      "200-row test passes; the looped version fails with LimitException.",
+      "Limits.getQueries() after the handler is far below 100."
+    ],
+    "self_explanation": "The official 100 SOQL and 150 DML statement caps made the loop illegal; maps made it one of each."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; synthetic LAB_ Accounts/Contacts.",
+    "starting_state_checks": [
+      "You can create a trigger and test data.",
+      "You will not deploy this trigger."
+    ],
+    "steps": [
+      "Write a throwaway trigger that queries inside a loop (do not keep it).",
+      "Run a 200-row update in a test and capture the LimitException message.",
+      "Rewrite with Id IN :Trigger.new and list DML.",
+      "Re-run the 200-row test and screenshot LIMIT_USAGE."
+    ],
+    "guided_completion": [
+      "If the bad version does not fail, increase to a full 200-row batch.",
+      "If you caught LimitException, remove the catch."
+    ],
+    "independent_challenge": "Log Limits.getDmlRows() versus getDmlStatements() after one list update of 200 contacts.",
+    "evidence": [
+      "Failing log with LimitException.",
+      "Passing log with one SOQL and one DML."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete the throwaway trigger and LAB_ data.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not prove 24-hour async org caps or Bulk API 2.0 CPU footnotes."
+  },
+  "decision_table": [
+    {
+      "signal": "SOQL or DML sits inside for (sObject row : Trigger.new).",
+      "choose": "Collect Ids, one query into a Map, one list DML.",
+      "not": "try/catch LimitException or LIMIT 1 in the loop.",
+      "why": "Official sync caps are 100 SOQL and 150 DML statements; loops blow them at 200 rows."
+    },
+    {
+      "signal": "Work can wait until after commit and needs a higher SOQL/CPU ceiling.",
+      "choose": "A new async transaction (APEX-011) after a bulk sync design.",
+      "not": "Async as a disguise for the same query-in-loop.",
+      "why": "Async raises several official ceilings and resets the pool; it does not fix non-bulk code by magic."
+    },
+    {
+      "signal": "You are about to quote a governor number in an interview.",
+      "choose": "Cite Execution Governors and Limits and the sync/async column.",
+      "not": "A memorized unofficial blog number.",
+      "why": "The table is release-sensitive; this lesson only uses cited rows."
+    },
+    {
+      "signal": "Scheduled Apex job is failing like a trigger.",
+      "choose": "Apply synchronous limit numbers; scheduled Apex uses the sync column.",
+      "not": "Assume every async feature gets 200 SOQL and 60s CPU.",
+      "why": "The governors page states scheduled Apex uses synchronous limits."
+    }
+  ],
+  "limitations": [
+    "Daily org async caps are not fully tabulated here; reverify before quoting.",
+    "Does not choose Queueable versus Batch (APEX-011).",
+    "Does not map order of execution (APEX-009).",
+    "CPU footnotes (DML time, callout wait, Bulk API) need the current table notes."
+  ],
+  "security_notes": [
+    "Do not log Limits output with customer record payloads.",
+    "LAB_ data only.",
+    "Governors are not a security control."
+  ],
+  "common_mistakes": [
+    "SOQL/DML in a loop.",
+    "Catching LimitException.",
+    "Assuming scheduled Apex gets async ceilings.",
+    "Treating Trigger.size as the whole load.",
+    "Inventing unofficial numbers."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "System.LimitException: Too many SOQL queries: 101.",
+      "check": [
+        "SOQL inside a loop.",
+        "Multiple automations sharing the transaction."
+      ],
+      "do_not_assume": "The cap is 200 in a trigger; sync is 100."
+    },
+    {
+      "symptom": "Too many DML statements: 151.",
+      "check": [
+        "update/insert inside a loop.",
+        "Statement count versus row count."
+      ],
+      "do_not_assume": "200 row updates require 200 statements."
+    },
+    {
+      "symptom": "CPU timeout around 10 seconds in a trigger.",
+      "check": [
+        "Official sync CPU is 10,000 ms.",
+        "Nested loops over Trigger.new and related lists."
+      ],
+      "do_not_assume": "You can catch it and continue."
+    }
+  ],
+  "production_notes": [
+    "Test with 200-row batches, not one-record UI clicks.",
+    "Reverify the governors table when the API version changes.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What happens if Apex exceeds a governor?",
+      "options": {
+        "A": "An unhandleable runtime exception is issued",
+        "B": "catch (Exception e) recovers automatically",
+        "C": "The limit is only a warning",
+        "D": "SOSL starts instead"
+      },
+      "answer": "A",
+      "rationale": "The governors page states the associated governor issues a runtime exception that cannot be handled.",
+      "distractor_explanations": {
+        "B": "LimitException cannot be caught (APEX-006).",
+        "C": "They are hard ceilings.",
+        "D": "SOSL has its own counts; it does not replace the failure."
+      },
+      "concept": "governor limit",
+      "citation_ids": ["SF-APEX-GOV"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Official synchronous SOQL query ceiling per transaction?",
+      "options": {
+        "A": "100",
+        "B": "20",
+        "C": "150",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "Execution Governors table: Total number of SOQL queries issued, synchronous 100.",
+      "distractor_explanations": {
+        "B": "20 is SOSL queries.",
+        "C": "150 is DML statements.",
+        "D": "There is a documented cap."
+      },
+      "concept": "SOQL governor",
+      "citation_ids": ["SF-APEX-GOV"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Official DML statement ceiling (sync and async columns)?",
+      "options": {
+        "A": "150",
+        "B": "100",
+        "C": "10,000 statements",
+        "D": "200 statements"
+      },
+      "answer": "A",
+      "rationale": "Total number of DML statements issued is 150 in both columns on the fetched table.",
+      "distractor_explanations": {
+        "B": "100 is sync SOQL.",
+        "C": "10,000 is DML rows, not statements.",
+        "D": "200 is async SOQL or trigger batch size, not DML statements."
+      },
+      "concept": "DML governor",
+      "citation_ids": ["SF-APEX-GOV"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Scheduled Apex uses which limit column?",
+      "options": {
+        "A": "Synchronous limits, even though it is an async feature",
+        "B": "Always the async column",
+        "C": "No governors",
+        "D": "Only SOSL limits"
+      },
+      "answer": "A",
+      "rationale": "The governors page states scheduled Apex jobs use synchronous limits.",
+      "distractor_explanations": {
+        "B": "That is the common interview trap.",
+        "C": "Governors still apply.",
+        "D": "All columns apply as documented."
+      },
+      "concept": "scheduled Apex",
+      "citation_ids": ["SF-APEX-GOV"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Apex trigger batch size on the static limits table?",
+      "options": {
+        "A": "200",
+        "B": "100 only",
+        "C": "50,000",
+        "D": "16"
+      },
+      "answer": "A",
+      "rationale": "Static Apex Limits: Apex trigger batch size 200.",
+      "distractor_explanations": {
+        "B": "Older Bulk API split behavior is versioned; the static size is 200.",
+        "C": "50,000 is SOQL rows.",
+        "D": "16 is recursive trigger stack depth."
+      },
+      "concept": "trigger batch size",
+      "citation_ids": ["SF-APEX-GOV"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Best bulkification for Contacts of Trigger.new Accounts?",
+      "options": {
+        "A": "One SOQL WHERE AccountId IN :Trigger.new, then one list DML",
+        "B": "Query and update inside the Account loop",
+        "C": "catch (LimitException e)",
+        "D": "SOSL FIND each Account Id"
+      },
+      "answer": "A",
+      "rationale": "Collect once, query once, DML once.",
+      "distractor_explanations": {
+        "B": "Hits 100 SOQL and 150 DML.",
+        "C": "Uncatchable.",
+        "D": "Wrong engine (APEX-004)."
+      },
+      "concept": "bulkification",
+      "citation_ids": ["SF-APEX-GOV"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Synchronous heap and CPU from the official table?",
+      "options": {
+        "A": "6 MB heap and 10,000 ms CPU",
+        "B": "12 MB heap and 60,000 ms CPU",
+        "C": "Unlimited heap and 1 ms CPU",
+        "D": "150 MB heap and 150 ms CPU"
+      },
+      "answer": "A",
+      "rationale": "Sync column: heap 6 MB, CPU 10,000 milliseconds. Async is 12 MB and 60,000 ms.",
+      "distractor_explanations": {
+        "B": "Those are async.",
+        "C": "Invented.",
+        "D": "Confuses DML 150 with heap/CPU."
+      },
+      "concept": "CPU and heap",
+      "citation_ids": ["SF-APEX-GOV"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Batch Apex execute versus a trigger: governors?",
+      "options": {
+        "A": "Reset for each execute chunk; a trigger invocation shares one pool with its automations",
+        "B": "Batch has no governors",
+        "C": "Triggers reset every row",
+        "D": "Both use only SOSL limits"
+      },
+      "answer": "A",
+      "rationale": "The page says Batch limits reset for each execution of a batch of records in execute.",
+      "distractor_explanations": {
+        "B": "Batch still has governors.",
+        "C": "Triggers do not reset per row.",
+        "D": "False."
+      },
+      "concept": "Batch reset",
+      "citation_ids": ["SF-APEX-GOV"]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "One update on a list of 200 contacts counts as?",
+      "options": {
+        "A": "One DML statement and 200 DML rows",
+        "B": "200 DML statements",
+        "C": "Zero governors",
+        "D": "200 SOQL queries"
+      },
+      "answer": "A",
+      "rationale": "Statement count versus row count are separate governors (150 vs 10,000).",
+      "distractor_explanations": {
+        "B": "That is the loop anti-pattern.",
+        "C": "Rows still count.",
+        "D": "update is DML, not SOQL."
+      },
+      "concept": "statement vs rows",
+      "citation_ids": ["SF-APEX-GOV"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Recursive trigger stack depth on the official table?",
+      "options": {
+        "A": "16",
+        "B": "100",
+        "C": "150",
+        "D": "2,000"
+      },
+      "answer": "A",
+      "rationale": "Total stack depth for Apex that recursively fires triggers due to insert/update/delete is 16.",
+      "distractor_explanations": {
+        "B": "SOQL sync.",
+        "C": "DML statements.",
+        "D": "Not this row."
+      },
+      "concept": "recursion",
+      "citation_ids": ["SF-APEX-GOV"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates a bulkified Apex class from business data?",
+      "options": {
+        "A": "Deploying the class does not load 200 Accounts; a test must insert LAB_ rows to prove bulkification",
+        "B": "Governor numbers are records you deploy",
+        "C": "Maps are metadata objects in Setup",
+        "D": "Limits.getQueries inserts data"
+      },
+      "answer": "A",
+      "rationale": "The class is metadata. Bulk tests need data.",
+      "distractor_explanations": {
+        "B": "Numbers are documentation.",
+        "C": "Map is an Apex type.",
+        "D": "Limits reads counters."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-APEX-LIMITS-INTRO"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Async SOQL query ceiling on the official table?",
+      "options": {
+        "A": "200",
+        "B": "100",
+        "C": "150",
+        "D": "20"
+      },
+      "answer": "A",
+      "rationale": "Asynchronous column for total SOQL queries issued is 200.",
+      "distractor_explanations": {
+        "B": "Synchronous SOQL.",
+        "C": "DML statements.",
+        "D": "SOSL queries."
+      },
+      "concept": "async SOQL",
+      "citation_ids": ["SF-APEX-GOV"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is a governor limit?",
+      "back": "A per-transaction ceiling. Exceeding it throws an unhandleable exception."
+    },
+    {
+      "id": "F2",
+      "category": "numbers",
+      "front": "Sync SOQL and DML statement caps (official table)?",
+      "back": "100 SOQL queries; 150 DML statements."
+    },
+    {
+      "id": "F3",
+      "category": "numbers",
+      "front": "Sync heap and CPU (official table)?",
+      "back": "6 MB heap; 10,000 ms CPU."
+    },
+    {
+      "id": "F4",
+      "category": "numbers",
+      "front": "Async SOQL, heap, CPU (official table)?",
+      "back": "200 SOQL; 12 MB heap; 60,000 ms CPU."
+    },
+    {
+      "id": "F5",
+      "category": "bulk",
+      "front": "What is bulkification?",
+      "back": "One SOQL and one DML for the whole set: Ids, Map, list DML."
+    },
+    {
+      "id": "F6",
+      "category": "uncatchable",
+      "front": "Can you catch LimitException?",
+      "back": "No. Redesign. See APEX-006."
+    },
+    {
+      "id": "F7",
+      "category": "scheduled",
+      "front": "Scheduled Apex limit column?",
+      "back": "Synchronous numbers, even though the feature is async."
+    },
+    {
+      "id": "F8",
+      "category": "batch",
+      "front": "When do Batch governors reset?",
+      "back": "Each execute chunk, not once for the whole job."
+    },
+    {
+      "id": "F9",
+      "category": "trigger",
+      "front": "Trigger batch size?",
+      "back": "200 records per invocation (static limits table)."
+    },
+    {
+      "id": "F10",
+      "category": "rows",
+      "front": "DML rows versus statements?",
+      "back": "10,000 rows; 150 statements. List update is one statement."
+    },
+    {
+      "id": "F11",
+      "category": "recursion",
+      "front": "Recursive trigger stack depth?",
+      "back": "16 on the official table."
+    },
+    {
+      "id": "F12",
+      "category": "share",
+      "front": "Who shares the pool on a save?",
+      "back": "Triggers, Flow, roll-ups, and related DML in that transaction."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "SOQL 101 in a trigger?",
+      "back": "Query-in-loop or too many automations. Map rewrite."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Need a fresh pool after commit?",
+      "back": "Async job (APEX-011), still bulkified."
+    },
+    {
+      "id": "F15",
+      "category": "cite",
+      "front": "Where do you cite numbers from?",
+      "back": "Execution Governors and Limits (and the allocations quick reference)."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What are Apex governor limits, and why do they exist?",
+      "answer_30_seconds": "Per-transaction ceilings so one execution cannot monopolize a multitenant org. Exceeding one throws an unhandleable exception. I cite the official table, not a blog.",
+      "answer_2_minutes": "I explain the shared save: triggers and Flow share one pool. I quote sync 100 SOQL, 150 DML statements, 10s CPU, 6 MB heap from Execution Governors and Limits, and I say the table is release-sensitive. I mention Batch resets per execute and scheduled Apex uses sync numbers so they hear the footnotes.",
+      "example": "A 200-row load plus two Account triggers plus a record-triggered Flow share one 100-SOQL budget.",
+      "tradeoffs": [
+        "Stay sync vs new async pool",
+        "Memorize headlines vs look up the table"
+      ],
+      "follow_ups": [
+        "What is the async SOQL number?",
+        "What is heap async?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing unofficial numbers"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What does bulkification mean in a trigger?",
+      "answer_30_seconds": "No SOQL or DML inside a loop over Trigger.new. Collect Ids, query once into a Map, list DML once.",
+      "answer_2_minutes": "I walk the 200-row math: a looped query hits 100 SOQL; a looped update hits 150 DML statements. Trigger.size is the current 200-record batch. I still bulkify inside Batch execute. I do not catch LimitException.",
+      "example": "Contacts WHERE AccountId IN :Trigger.new; update contactList;",
+      "tradeoffs": [
+        "Nested subquery vs separate query plus Map",
+        "Sync bulk vs Batch"
+      ],
+      "follow_ups": [
+        "How do you handle related records not in Trigger.new?",
+        "What about aggregate queries?"
+      ],
+      "weak_answer_warnings": [
+        "LIMIT 1 in the loop"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Too many SOQL queries: 101 in a before-update trigger. Walk the diagnosis.",
+      "answer_30_seconds": "Look for SOQL in a loop and other automations in the same transaction. Rewrite to one query. Do not catch the exception.",
+      "answer_2_minutes": "I open the debug log LIMIT_USAGE and SOQL_EXECUTE lines. I count handlers and Flows. I rewrite to Id IN :Trigger.new. If we are already at 90 queries from packages, I reduce work or move non-critical reads async after commit. I cite 100 as the sync cap.",
+      "example": "for (Account a : Trigger.new) { List<Contact> c = [SELECT Id FROM Contact WHERE AccountId = :a.Id]; }",
+      "tradeoffs": [
+        "Cut Flow queries vs cut Apex queries",
+        "Async offload vs must-be-sync data"
+      ],
+      "follow_ups": [
+        "How do you see package versus local usage?",
+        "What is Limits.getQueries?"
+      ],
+      "weak_answer_warnings": [
+        "catch (Exception e)"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A scheduled job hits 101 SOQL. The author says it should get 200 because it is async. Response?",
+      "answer_30_seconds": "Scheduled Apex uses synchronous limits. 100 SOQL is the correct column. Bulkify or move work to Batch/Queueable if appropriate.",
+      "answer_2_minutes": "I quote the governors footnote. I do not promise 200 SOQL or 60s CPU for scheduled Apex. I still bulkify. If they need async-column SOQL, I discuss Batch execute or Queueable—APEX-011—and I reverify the current table.",
+      "example": "Schedulable execute querying inside a loop of 150 records.",
+      "tradeoffs": [
+        "Scheduled vs Batch",
+        "Stay nightly vs chunk"
+      ],
+      "follow_ups": [
+        "What about Queueable enqueue limits?",
+        "Bulk API higher-of-sync-or-async note?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing that scheduled gets async ceilings"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When do you move work out of the trigger transaction for limits?",
+      "answer_30_seconds": "When you need a fresh pool, a callout that cannot sit with pending DML, or more CPU/SOQL than sync allows—after the trigger itself is bulkified.",
+      "answer_2_minutes": "I refuse async as a first fix for query-in-loop. I enqueue after the save when the user can wait. I mention callout-with-uncommitted-work as a neighbor. I keep recursion guards so the async job does not bounce back into the same object unsafely (APEX-008/010).",
+      "example": "After-insert trigger builds a list, enqueues one Queueable for HTTP pricing.",
+      "tradeoffs": [
+        "User waits vs eventual consistency",
+        "One Queueable vs Batch"
+      ],
+      "follow_ups": [
+        "How many enqueueJob in sync vs async?",
+        "What is pending DML with callouts?"
+      ],
+      "weak_answer_warnings": [
+        "@future from a loop of 200"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "DML statements versus DML rows—why do interviewers care?",
+      "answer_30_seconds": "150 statements versus 10,000 rows on the official table. One list update is one statement and N rows.",
+      "answer_2_minutes": "I draw update contacts; with 200 elements. I contrast 200 update contact; calls. I mention SOQL has the same idea: query count versus 50,000 rows. I do not invent a 200-statement cap.",
+      "example": "update twoHundredContacts; → 1 statement, 200 rows.",
+      "tradeoffs": [
+        "List DML vs chunking for row cap",
+        "Multiple object updates vs one statement each"
+      ],
+      "follow_ups": [
+        "What counts as a DML row besides insert/update/delete?",
+        "emptyRecycleBin?"
+      ],
+      "weak_answer_warnings": [
+        "Collapsing statements and rows into one number"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "CPU 10,000 ms exceeded but SOQL count is 3. What do you look for?",
+      "answer_30_seconds": "Nested loops, expensive string/JSON work, or many automations burning application CPU. Official sync CPU is 10,000 ms. You cannot catch it.",
+      "answer_2_minutes": "I read the CPU footnote: DML/SOQL database time is not CPU; callout wait is not CPU. So three fat queries are not the usual CPU story—nested Apex over Trigger.new times related lists is. I consider maps instead of list scans, or async if the work can wait. I reverify the footnote for the release.",
+      "example": "for (Account a : Trigger.new) for (Contact c : allContacts) if (c.AccountId == a.Id).",
+      "tradeoffs": [
+        "Map lookup vs nested loop",
+        "Sync CPU vs async 60s"
+      ],
+      "follow_ups": [
+        "Does workflow count toward CPU?",
+        "Bulk API CPU footnote?"
+      ],
+      "weak_answer_warnings": [
+        "Adding more SOQL to 'save CPU'"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "How do you talk about numbers you are not sure of?",
+      "answer_30_seconds": "I say I will cite Execution Governors and Limits and not invent a figure. I know the headlines I verified on 2026-08-16 and I mark the rest needs verification.",
+      "answer_2_minutes": "This is the handbook rule. I will happily quote 100/150/10s/6 MB because I verified them. I will not guess daily async math or edition gates. Interviewers trust people who know the source more than people who recite twenty unofficial numbers.",
+      "example": "If asked for maximum enqueueJob in async context, I say the table lists 1 in the async column and 50 sync—and I would reopen the page if the interview is high-stakes.",
+      "tradeoffs": [
+        "Memorized headlines vs live lookup",
+        "Confidence vs accuracy"
+      ],
+      "follow_ups": [
+        "Where is the allocations quick reference?",
+        "What is Limits.getLimitQueries?"
+      ],
+      "weak_answer_warnings": [
+        "Fabricating a number to sound sure"
+      ]
+    }
+  ]
+}

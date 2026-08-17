@@ -1,0 +1,211 @@
+{
+  "topic_id": "DEVOPS-010",
+  "slug": "monitoring-deployments-post-deployment-checks-release-n",
+  "title": "Monitoring deployments, post-deployment checks, release notes, and incident response",
+  "track": "Development lifecycle and DevOps",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": ["DEVOPS-009"],
+  "objectives": [
+    "Monitor a metadata deployment with CLI report/resume and Setup Deployment Status until it succeeds, fails, or can no longer be canceled.",
+    "Run post-deployment checks that prove metadata and smoke behavior, separate from data-load checks.",
+    "Write release notes that name metadata components, toggles, and known gaps—not marketing fluff.",
+    "Respond to a production incident by classifying metadata versus data failure and choosing monitor, hotfix deploy, or rollback—not ignore-errors."
+  ],
+  "diagnostic_question": "A production deploy of LAB_ Apex is In Progress for an hour. Users report a Flow. What do you monitor first, what post-check would have caught it, and when is cancel no longer possible?",
+  "definition": "Monitoring deployments means watching Metadata API/CLI job state until the org is consistent. Post-deployment checks are the smoke tests after success: components present, tests still green, critical Flows behaving, permission sets assigned. Release notes record what metadata shipped, what stayed dark, and how to respond. Incident response is the playbook when users or monitors say the release is wrong. ([project deploy start](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html); [project deploy validate](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_validate.html); [Take a Deep Dive into Metadata API Deployments](https://developer.salesforce.com/blogs/2025/09/take-a-deep-dive-into-metadata-api-deployments))",
+  "why_it_matters": "A green CLI exit while the job is still queued is a false done. Interviewers want report/resume, cancel limits, post-checks that are not 'refresh the page,' and incidents split into metadata versus data.",
+  "sixty_second_explanation": "Think of an air-traffic incident desk. Monitoring is the radar of the deploy job (Pending, In Progress, Succeeded, Failed, plus newer finalizing states). Post-deployment checks are the landing confirmation: gear down, Flow path works, permission set assigned. Release notes are the NOTAM for the next shift. Incident response is the emergency checklist: is it metadata or data, can we still cancel, do we hotfix or roll forward. Dynamite (ignore-errors) is not on the checklist.",
+  "deeper_explanation": [
+    "Deployments are asynchronous. CLI can return a job ID (--async) for project deploy resume and project deploy report. Setup → Deployment Status shows the same family of jobs. Only one deploy processes per org at a time; others queue. ([project deploy start](https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html); [Metadata API deployments blog](https://developer.salesforce.com/blogs/2025/09/take-a-deep-dive-into-metadata-api-deployments))",
+    "The Salesforce Developers Blog (Sep 2025) describes deploy as a transaction: queue, component CRUD, Apex tests, then commit. You may cancel until finalizing/commit; after that cancel is not allowed because it would leave inconsistent metadata. Winter '26 / API 65 introduced Finalizing Deploy and Finalizing Failed states—reverify in your org's API version. rollbackOnError (default in many tools) rolls back a failed job; a successful job that is wrong needs hotfix or prior version (DEVOPS-007/009).",
+    "Post-deployment checks: retrieve or Setup confirms components; run a smoke Apex test or the critical Flow as the target user; confirm permission set assignment (DEVOPS-008); confirm feature toggles; confirm no unexpected destructive leftovers. Data-load row counts are a different checklist (DEVOPS-001).",
+    "Release notes should list metadata types, destructive items, toggle defaults, test level used, validate job ID if any, and incident contacts. Incident response: classify (metadata missing, test-only, data, permission, integration). Do not ignore-errors. Do not 'fix in production Setup' as the unrecorded path if you claim source-driven development."
+  ],
+  "mental_model": {
+    "analogy": "Air-traffic incident desk: radar = deploy job status, landing checks = post-deployment smokes, NOTAM = release notes, emergency checklist = incident response. Ignore-errors is dynamite, not a checklist item.",
+    "useful_mapping": [
+      "Pending → waiting in the single-org deploy queue",
+      "In Progress → components and/or tests running",
+      "Succeeded / Failed → terminal for older APIs",
+      "Finalizing states (Winter '26) → commit phase; cancel may be too late",
+      "project deploy report → radar query",
+      "post-check → landing confirmation",
+      "release notes → NOTAM for the next shift",
+      "incident → metadata vs data vs permission vs integration"
+    ],
+    "where_it_breaks": [
+      "Airplanes do not have Apex test stages inside the landing.",
+      "Finalizing state names are versioned; confirm API 65+ in the target org.",
+      "A successful deploy can still be a user incident.",
+      "Notes do not replace Git history."
+    ]
+  },
+  "teach_back_prompt": "Walk a production deploy from job ID to post-checks, then say what you put in release notes and when you would not cancel.",
+  "review_schedule": [
+    {"interval": "1 day", "prompt": "CLI commands to report and resume a deploy job."},
+    {"interval": "3 days", "prompt": "When can you no longer cancel a deploy?"},
+    {"interval": "7 days", "prompt": "Five post-deployment checks for a LAB_ Apex+Flow release."},
+    {"interval": "14 days", "prompt": "Draft release notes for a destructive plus toggle release."},
+    {"interval": "30 days", "prompt": "Two-minute incident: metadata vs data."}
+  ],
+  "sources": [
+    {"source_id": "SF-CLI-DEPLOY", "title": "project deploy start", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_start.html", "supports": "Async job ID; resume; report; never ignore-errors on production; dry-run.", "release_or_version": "Salesforce CLI Command Reference", "last_verified": "2026-08-16", "limits": "UI path for Deployment Status is Help-sensitive."},
+    {"source_id": "SF-CLI-VALIDATE", "title": "project deploy validate", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/platform/salesforce-cli-reference/guide/cli_reference_project_deploy_validate.html", "supports": "Validation job IDs, report/resume while waiting, 10-day quick deploy.", "release_or_version": "Salesforce CLI Command Reference", "last_verified": "2026-08-16", "limits": "Not a monitoring UI for user incidents."},
+    {"source_id": "SF-BLOG-DEPLOY", "title": "Take a Deep Dive into Metadata API Deployments", "type": "Official Salesforce Developers Blog", "url": "https://developer.salesforce.com/blogs/2025/09/take-a-deep-dive-into-metadata-api-deployments", "supports": "Queue then In Progress; one deploy processed per org; cancel until commit/finalizing; Winter '26 Finalizing Deploy/Failed states; checkDeployStatus / CLI report.", "release_or_version": "Salesforce Developers Blog / Sep 2025 (Winter '26 / API 65 notes)", "last_verified": "2026-08-16", "limits": "Blog, not the Metadata API reference table. Reverify state names against the org API version."},
+    {"source_id": "SF-DX-INTRO", "title": "How Salesforce Developer Experience (DX) Tooling Changes the Way You Work", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm", "supports": "CLI for delivery; VCS remains source of truth during incidents so production clicks must be retrieved.", "release_or_version": "Salesforce DX Developer Guide / Summer '26", "last_verified": "2026-08-16", "limits": "Does not define incident-severity matrices."}
+  ],
+  "videos": [{"status": "not_verified", "title": "No verified official exact-topic video claimed in this pack", "channel": "Prefer CLI deploy report and the Metadata API deployments blog", "url": "", "language": "English", "duration": "", "level": "Advanced", "teaches_well": "", "gaps": "Needs verification before recommending a specific recording.", "free_or_paid": "Unknown", "last_verified": "2026-08-16"}],
+  "visuals": {
+    "infographic": {"format": "4:5 SVG", "size": "1600x2000", "zones": ["Job radar", "Cancel window", "Post-checks", "Release notes", "Incident split", "No ignore-errors"], "accessible_description": "Portrait of monitoring a metadata deploy, then post-checks, notes, and incident response."},
+    "cheat_sheet": {"format": "A4 HTML", "source_footer": ["SF-CLI-DEPLOY", "SF-CLI-VALIDATE", "SF-BLOG-DEPLOY", "SF-DX-INTRO"]},
+    "system_map": {"format": "zoomable SVG", "title": "From job ID to incident close"},
+    "mermaid": {
+      "structure": "flowchart TD\n  Start[project deploy start / validate] --> ID[Job ID]\n  ID --> Mon[project deploy report / Setup Deployment Status]\n  Mon --> Q{State}\n  Q -->|Pending or In Progress| Wait[Wait or cancel if still allowed]\n  Q -->|Finalizing| NoCancel[Cancel may no longer be safe/possible]\n  Q -->|Succeeded| Post[Post-deployment checks]\n  Q -->|Failed| RB[Rolled back job; fix payload]\n  Post --> Notes[Release notes]\n  Post -->|user impact| IR[Incident: metadata vs data vs perms]",
+      "decision": "flowchart TD\n  Alert[Something is wrong] --> Q1{Deploy still running?}\n  Q1 -->|Yes| Mon[Report status; cancel only if not finalizing]\n  Q1 -->|Job succeeded| Q2{Metadata missing or wrong?}\n  Q2 -->|Yes| Hot[Hotfix deploy or planned rollback]\n  Q2 -->|Rows wrong| Data[Data incident: not Metadata API]\n  Q2 -->|User cannot see| Perm[Assignment / permission set check]\n  Q1 -->|Job failed| Fix[Read component and test errors; do not ignore-errors]"
+    }
+  },
+  "claims": [
+    {"claim_id": "C-001", "claim": "project deploy start can run asynchronously, returning a job ID. Use project deploy resume and project deploy report to watch it. Never --ignore-errors on production.", "source_ids": ["SF-CLI-DEPLOY"], "scope": "CLI monitoring", "validation": "project deploy start async/resume/report flags.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-002", "claim": "Validate also returns a job ID you can report/resume; successful validation can quick-deploy within 10 days.", "source_ids": ["SF-CLI-VALIDATE"], "scope": "Validate monitoring", "validation": "project deploy validate reference.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-003", "claim": "Metadata API deploys queue (one processed per org), then run component operations and tests as a transaction. Cancel is possible until the commit/finalizing phase; Winter '26 added Finalizing Deploy and Finalizing Failed states.", "source_ids": ["SF-BLOG-DEPLOY"], "scope": "Job lifecycle", "validation": "Salesforce Developers Blog on Metadata API deployments, Sep 2025. Reverify against org API version.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-004", "claim": "During incidents, version control remains the source of truth; unretrieved production Setup clicks drift from Git.", "source_ids": ["SF-DX-INTRO"], "scope": "Source-driven incidents", "validation": "Salesforce DX tooling introduction.", "last_verified": "2026-08-16"}
+  ],
+  "changed_in_release": "Finalizing Deploy / Finalizing Failed called out for Winter '26 / API 65.0 in the Sep 2025 blog. Reverify in Summer '26 orgs before quoting state names as universal.",
+  "unresolved_uncertainty": ["Exact Setup navigation label for Deployment Status per Lightning version.", "Precise cancel cutoff UI copy versus API state names."],
+  "telugu_glossary": [{"english": "Deployment Status", "telugu": "మెటాడేటా డిప్లాయ్ జాబ్ రాడార్."}, {"english": "Release notes", "telugu": "ఏ మెటాడేటా వచ్చిందో తర్వాత షిఫ్ట్‌కు నోట్."}],
+  "interview_explanation": {
+    "thirty_seconds": "I watch the job with report/resume or Deployment Status. I do not declare done at CLI return if it is async. After success I smoke-check metadata, Flow, and assignments. Notes list components and toggles. Incidents split metadata versus data. I never ignore-errors.",
+    "two_minutes": "I mention the single-org queue so a long Pending is not always a hang. I mention cancel is unsafe/impossible once finalizing/commit starts—Needs verification of the org's API states. I retrieve any emergency Setup fix so Git stays truth. I page the data team if rows are wrong. I keep destructive incidents on the DEVOPS-009 playbook."
+  },
+  "terminology": [
+    {"term": "deployment job", "plain": "The asynchronous Metadata API deploy you must watch.", "precise": "Identified by a job ID from project deploy start --async or validate. Inspect with project deploy report / resume.", "example": "sf project deploy report --job-id 0Af…", "non_example": "A GitHub Actions workflow ID that never called Salesforce.", "confusable_neighbor": "Apex Queueable job.", "boundary": "One deploy processed per org at a time per the blog."},
+    {"term": "Deployment Status", "plain": "The Setup radar for metadata deploys.", "precise": "Org UI showing deploy jobs. Complements CLI report. Navigation Needs verification.", "example": "Watching a change set or CLI deploy finish in Setup.", "non_example": "Debug logs for a single Apex request.", "confusable_neighbor": "Apex Test Execution page.", "boundary": "UI labels change; job ID is stable."},
+    {"term": "post-deployment check", "plain": "Proving the landing, not just a green job.", "precise": "Component presence, smoke Flow/Apex, permission assignment, toggle state, no unexpected deletes.", "example": "Target user runs LAB_ boarding Flow after deploy Succeeded.", "non_example": "Only reading 'Succeeded' and leaving.", "confusable_neighbor": "UAT from last week without this payload.", "boundary": "Data row counts are a separate checklist."},
+    {"term": "release notes", "plain": "The NOTAM for what metadata actually shipped.", "precise": "Lists components, destructive items, test level, validate job ID, toggle defaults, known gaps, rollback pointer.", "example": "Shipped LAB_GateService; LAB_UseNewBoarding false; deleted nothing.", "non_example": "We improved synergy this sprint.", "confusable_neighbor": "Marketing release notes.", "boundary": "Notes do not replace Git tags."},
+    {"term": "incident response", "plain": "The checklist when the release hurts users.", "precise": "Classify metadata vs data vs permission vs integration; monitor or cancel if allowed; hotfix deploy or rollback; retrieve any Setup hotfix.", "example": "Flow path broken: hotfix Flow XML from Git, not ignore-errors.", "non_example": "Silence until Monday.", "confusable_neighbor": "Apex exception email with no deploy context.", "boundary": "Severity matrices are org policy."},
+    {"term": "finalizing", "plain": "The commit phase when cancel may be too late.", "precise": "Blog: Finalizing Deploy / Finalizing Failed in Winter '26 / API 65. Cancel before commit to avoid inconsistent metadata. Reverify in org.", "example": "Job sits in Finalizing Deploy; do not assume cancel will work.", "non_example": "Pending in queue, where cancel is more likely still useful.", "confusable_neighbor": "In Progress tests.", "boundary": "Mark as Needs verification per API version."},
+    {"term": "hotfix", "plain": "A small metadata deploy to stop the bleeding.", "precise": "Still a source-driven deploy of a Git commit, with tests appropriate to risk. Then notes and a follow-up.", "example": "Revert one Flow XML and deploy with RunSpecifiedTests covering that Flow's Apex if any.", "non_example": "Unrecorded production Setup as the permanent fix.", "confusable_neighbor": "Data patch via Data Loader.", "boundary": "Hotfix still forbids ignore-errors."},
+    {"term": "false done", "plain": "CLI returned but the job is still queued or running.", "precise": "Async mode returns control with a job ID. You must report until a terminal state.", "example": "Pipeline marked green on submit; org still Pending.", "non_example": "Synchronous wait that printed Succeeded.", "confusable_neighbor": "Validate job ID waiting for quick deploy.", "boundary": "--wait can still expire and return a job ID."}
+  ],
+  "mechanics": [
+    {"step": 1, "transition": "Capture the job ID", "actor": "Release owner", "trigger": "Deploy or validate started", "before": "Unknown job", "after": "ID in the ticket and notes", "observe": "sf project deploy report works", "failure": "Closing the laptop at async return"},
+    {"step": 2, "transition": "Watch to a terminal state", "actor": "Release owner", "trigger": "Pending/In Progress", "before": "Guessing", "after": "Succeeded, Failed, Canceled, or Finalizing outcome", "observe": "Component and test errors if failed", "failure": "Cancel during finalizing hoping to undo a commit"},
+    {"step": 3, "transition": "Post-check", "actor": "Admin + developer", "trigger": "Succeeded", "before": "Unverified landing", "after": "Smoke evidence recorded", "observe": "Flow as target user; assignment; toggle", "failure": "Skipping because coverage was high last week"},
+    {"step": 4, "transition": "Notes and incident if needed", "actor": "Release owner", "trigger": "Checks done or users paging", "before": "Tribal knowledge", "after": "Release notes; hotfix or rollback path", "observe": "Git still matches or a retrieve of the hotfix is committed", "failure": "Permanent unrecorded production clicks"}
+  ],
+  "when_to_use": [
+    "When a metadata deploy is in flight and you must monitor job state instead of assuming CLI return means done.",
+    "When writing post-deployment checks for Apex, Flow, permission sets, and toggles.",
+    "When publishing release notes that name destructive changes and dark features.",
+    "When an incident might be metadata, data, or assignment and the response must not be ignore-errors.",
+    "When deciding whether cancel is still allowed before finalizing/commit."
+  ],
+  "when_not_to_use": [
+    "Do not use Deployment Status as a Data Loader monitoring tool for Account rows.",
+    "Do not treat this as the first lesson on retrieve/deploy flags (DEVOPS-002).",
+    "Do not use ignore-errors as incident response (DEVOPS-007).",
+    "Do not skip destructive rehearsal and dump the failure on monitoring (DEVOPS-009).",
+    "Do not let unretrieved production Setup remain the fix if you claim Git is truth."
+  ],
+  "configuration_or_code_location": [
+    "sf project deploy report --job-id … and sf project deploy resume.",
+    "Setup Deployment Status (UI path Needs verification).",
+    "Release ticket fields: job ID, test level, toggle defaults, smoke owner.",
+    "Incident channel plus Git hotfix branch."
+  ],
+  "worked_example": {
+    "scenario": "Production deploy of LAB_GateService plus a Flow is started async Friday. CLI returns a job ID. Thirty minutes later users cannot see the tab. Job still In Progress, then Succeeded.",
+    "inputs": ["Job ID", "Permission set in the payload", "No data load planned"],
+    "decisions": [
+      {"decision": "Monitor with report until Succeeded; do not cancel once tests finished if finalizing has started.", "because": "Cancel during commit can be disallowed to protect consistency.", "rejected": "Cancel spam during Finalizing"},
+      {"decision": "Post-check assignment: tab missing is likely permission set not assigned, not a failed object deploy.", "because": "Deploy ≠ assign (DEVOPS-008).", "rejected": "Redeploying the object in a loop"},
+      {"decision": "Release notes record the job ID, the assignment gap, and the hotfix (assign + optional XML).", "because": "The next shift needs a NOTAM.", "rejected": "Verbal 'it's fine' in chat only"}
+    ],
+    "configuration_or_code": [
+      "sf project deploy report --job-id 0Af… until terminal.",
+      "Assign LAB_Boarding_User; confirm tab.",
+      "Notes: metadata succeeded; assignment was the incident; no data load."
+    ],
+    "output": "Users see the tab. Git already had the permission set. Notes explain the miss.",
+    "verification": ["Terminal Succeeded in report.", "Target user opens LAB_ tab.", "Notes attached to the CAB ticket."],
+    "self_explanation": "I watched the job, classified a permission incident, and wrote notes instead of ignore-errors."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable org. LAB_ deploy only. No production.",
+    "starting_state_checks": ["You can start a deploy and get a job ID.", "You will not ignore-errors."],
+    "steps": [
+      "Start a small LAB_ deploy with a wait short enough to force a job ID, or use --async.",
+      "Run project deploy report until a terminal state.",
+      "Perform two post-checks (component exists; a user-facing smoke if possible).",
+      "Write five-line release notes including job ID and one incident hypothetical."
+    ],
+    "guided_completion": ["If the job is Pending, note the single-org queue explanation.", "If you have no second user, still write the assignment check you would run."],
+    "independent_challenge": "Add whether you would cancel in Finalizing and why (Needs verification of API states).",
+    "evidence": ["Report output snippet with LAB_ names.", "Release notes paragraph."],
+    "stop_recovery_cleanup": ["Delete LAB_ metadata if required.", "Do not cancel random jobs in a shared org."],
+    "limitations": "May not show Finalizing states on older API waits."
+  },
+  "decision_table": [
+    {"signal": "CLI returned a job ID and the pipeline marked success.", "choose": "Keep monitoring with report until a terminal deploy state.", "not": "Telling users it is live.", "why": "Async submit is not Succeeded."},
+    {"signal": "Job is Pending for a long time.", "choose": "Check for another deploy already In Progress in the org.", "not": "Immediately cancel and ignore-errors a retry.", "why": "One deploy is processed per org; others queue."},
+    {"signal": "Job shows Finalizing Deploy.", "choose": "Wait; do not rely on cancel.", "not": "Repeated cancel hoping to undo commit.", "why": "Blog: cancel after that phase is blocked to avoid inconsistent metadata."},
+    {"signal": "Job Succeeded but users cannot see a tab.", "choose": "Post-check permission set assignment and FLS before a hotfix of the object.", "not": "A second full production deploy of everything.", "why": "Deploy of metadata is not assignment."},
+    {"signal": "Users see wrong Account amounts after a metadata-only release.", "choose": "Treat as a data or automation incident, not a Metadata API row copy failure.", "not": "Re-running the metadata deploy to 'refresh data.'", "why": "Metadata API does not move business data."}
+  ],
+  "limitations": ["Finalizing state names are versioned.", "Does not replace a full ITIL process.", "Does not monitor MuleSoft.", "No production incident authorized as a lab."],
+  "security_notes": ["Job reports may contain component names that are PII.", "Do not paste access tokens from debug logs.", "Hotfixes still need least privilege."],
+  "common_mistakes": ["False done on async return.", "Cancel during finalizing.", "No post-checks.", "Marketing-only release notes.", "ignore-errors as incident response.", "Unrecorded production Setup forever."],
+  "troubleshooting": [
+    {"symptom": "Pending forever.", "check": ["Another deploy in the org.", "report output.", "Queue."], "do_not_assume": "Salesforce is down without checking status.salesforce.com too."},
+    {"symptom": "Succeeded but feature missing.", "check": ["Wrong org alias.", "Toggle off.", "Assignment.", "Wrong package version."], "do_not_assume": "The job lied."},
+    {"symptom": "Failed after tests.", "check": ["Test failures in the report.", "Coverage for specified tests.", "Compile-on-deploy."], "do_not_assume": "Need ignore-errors."}
+  ],
+  "production_notes": ["Store job IDs in the ticket.", "Post-checks have an owner.", "Retrieve hotfixes the same day.", "This lesson does not authorize a production deploy."],
+  "mcqs": [
+    {"id": "Q1", "category": "recall", "difficulty": "Foundation", "prompt": "How do you monitor an async CLI deploy?", "options": {"A": "sf project deploy report / resume with the job ID", "B": "Only git log", "C": "Data Loader success file", "D": "ignore-errors"}, "answer": "A", "rationale": "Deploy start documents async job ID plus resume and report.", "distractor_explanations": {"B": "Git is not job state.", "C": "Data.", "D": "Dangerous flag."}, "concept": "Report", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q2", "category": "recall", "difficulty": "Foundation", "prompt": "How many Metadata API deploys process in an org at once, per the 2025 blog?", "options": {"A": "One processed at a time; others queue", "B": "Unlimited parallel always", "C": "Exactly five", "D": "Zero in production"}, "answer": "A", "rationale": "Blog: only one can be processed per org at a time.", "distractor_explanations": {"B": "They queue.", "C": "Not stated.", "D": "Production does process deploys."}, "concept": "Queue", "citation_ids": ["SF-BLOG-DEPLOY"]},
+    {"id": "Q3", "category": "application", "difficulty": "Intermediate", "prompt": "When may cancel no longer be possible?", "options": {"A": "Once the deployment reaches the commit/finalizing phase", "B": "While still Pending, always impossible", "C": "Only if the payload has reports", "D": "After git commit"}, "answer": "A", "rationale": "Blog: cancel rolls back until commit; finalizing states exist so that phase is visible.", "distractor_explanations": {"B": "Pending is queued; cancel is more likely still meaningful.", "C": "Unrelated.", "D": "Git is not the org job."}, "concept": "Cancel window", "citation_ids": ["SF-BLOG-DEPLOY"]},
+    {"id": "Q4", "category": "application", "difficulty": "Intermediate", "prompt": "Winter '26 API 65 deploy states called out in the blog?", "options": {"A": "Finalizing Deploy and Finalizing Failed", "B": "Only Succeeded", "C": "Git Merged", "D": "Data Loaded"}, "answer": "A", "rationale": "Sep 2025 blog names those states for API v65 / Winter '26.", "distractor_explanations": {"B": "Older terminals still exist but are not the new pair.", "C": "VCS.", "D": "Data."}, "concept": "Finalizing", "citation_ids": ["SF-BLOG-DEPLOY"]},
+    {"id": "Q5", "category": "recall", "difficulty": "Foundation", "prompt": "Validate job monitoring?", "options": {"A": "Same family: report/resume on the validation job ID; then optional quick deploy within 10 days", "B": "Validate cannot be reported", "C": "Validate always deploys", "D": "Validate deletes data"}, "answer": "A", "rationale": "Validate reference: resume and report while waiting; 10-day quick deploy.", "distractor_explanations": {"B": "It can.", "C": "It does not execute the deploy.", "D": "Metadata."}, "concept": "Validate jobs", "citation_ids": ["SF-CLI-VALIDATE"]},
+    {"id": "Q6", "category": "scenario", "difficulty": "Intermediate", "prompt": "Async CLI returned. Is the org updated?", "options": {"A": "Not until the job reaches a successful terminal state", "B": "Yes, always immediately", "C": "Yes, because Git merged", "D": "Yes, if ignore-errors was set"}, "answer": "A", "rationale": "Async returns a job ID; you must report.", "distractor_explanations": {"B": "False done.", "C": "Merge is not deploy.", "D": "Forbidden pattern."}, "concept": "False done", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q7", "category": "application", "difficulty": "Intermediate", "prompt": "Post-deployment check that is not a data-load check?", "options": {"A": "Target user can run the Flow and has the permission set assigned", "B": "Opportunity amount totals match last night's warehouse", "C": "All production Contacts exported to Git", "D": "JWT key committed"}, "answer": "A", "rationale": "Smoke of metadata behavior and assignment.", "distractor_explanations": {"B": "Data checklist.", "C": "PII anti-pattern.", "D": "Secret leak."}, "concept": "Post-check", "citation_ids": ["SF-DX-INTRO"]},
+    {"id": "Q8", "category": "scenario", "difficulty": "Intermediate", "prompt": "Release notes should include?", "options": {"A": "Metadata components, destructive items, toggle defaults, job ID, known gaps", "B": "Only marketing adjectives", "C": "Production passwords", "D": "Unmanaged package 1GP migrate steps as if they worked"}, "answer": "A", "rationale": "Operational NOTAM for the next shift.", "distractor_explanations": {"B": "Not actionable.", "C": "Secret.", "D": "False capability."}, "concept": "Notes", "citation_ids": ["SF-DX-INTRO"]},
+    {"id": "Q9", "category": "application", "difficulty": "Intermediate", "prompt": "Users report wrong Account values after a metadata-only deploy. Classification?", "options": {"A": "Likely data or automation incident, not a Metadata API row copy miss", "B": "Always a failed CustomObject retrieve", "C": "Always ignore-errors", "D": "Always a Git conflict"}, "answer": "A", "rationale": "Metadata API does not move business data.", "distractor_explanations": {"B": "Object XML is not amounts.", "C": "Dangerous.", "D": "Unrelated."}, "concept": "Classify", "citation_ids": ["SF-DX-INTRO"]},
+    {"id": "Q10", "category": "recall", "difficulty": "Foundation", "prompt": "ignore-errors during an incident?", "options": {"A": "Still never on production", "B": "Required to finish incidents", "C": "Deletes the job ID", "D": "Assigns permission sets"}, "answer": "A", "rationale": "Same CLI rule under stress.", "distractor_explanations": {"B": "Makes inconsistency.", "C": "Nonsense.", "D": "Unrelated."}, "concept": "No ignore-errors", "citation_ids": ["SF-CLI-DEPLOY"]},
+    {"id": "Q11", "category": "scenario", "difficulty": "Intermediate", "prompt": "Emergency Setup click in production. Source-driven next step?", "options": {"A": "Retrieve the change into Git the same day so VCS stays truth", "B": "Leave it forever only in Setup", "C": "Commit the JWT key as documentation", "D": "Delete the DX project"}, "answer": "A", "rationale": "DX: VCS is source of truth.", "distractor_explanations": {"B": "Drift.", "C": "Secret.", "D": "Absurd."}, "concept": "Retrieve hotfix", "citation_ids": ["SF-DX-INTRO"]},
+    {"id": "Q12", "category": "scenario", "difficulty": "Intermediate", "prompt": "Job failed on Apex tests. First response?", "options": {"A": "Read the report, fix tests or payload, redeploy; do not ignore-errors", "B": "Quick deploy the failed ID anyway", "C": "Cancel finalizing of a different job at random", "D": "Export Contacts"}, "answer": "A", "rationale": "Failed jobs should not partially save on production; tests are a gate.", "distractor_explanations": {"B": "Quick deploy is for successful validation.", "C": "Dangerous.", "D": "Data."}, "concept": "Failed tests", "citation_ids": ["SF-CLI-DEPLOY", "SF-CLI-VALIDATE"]}
+  ],
+  "flashcards": [
+    {"id": "F1", "category": "cli", "front": "Commands to watch a deploy job?", "back": "sf project deploy report and sf project deploy resume with the job ID."},
+    {"id": "F2", "category": "async", "front": "Async return mean Succeeded?", "back": "No. It returned a job ID. Watch to a terminal state."},
+    {"id": "F3", "category": "queue", "front": "Parallel deploys in one org?", "back": "One processed at a time; others Pending in queue."},
+    {"id": "F4", "category": "cancel", "front": "Cancel during finalizing?", "back": "Do not rely on it. Commit phase is protected against inconsistent metadata."},
+    {"id": "F5", "category": "states", "front": "Winter '26 finalizing states (blog)?", "back": "Finalizing Deploy and Finalizing Failed (API 65). Reverify in the org."},
+    {"id": "F6", "category": "post", "front": "Name three post-deployment checks.", "back": "Component present, target-user smoke (Flow), permission set assigned / toggle state."},
+    {"id": "F7", "category": "notes", "front": "Release notes include?", "back": "Components, deletes, toggles, job ID, test level, known gaps, rollback pointer."},
+    {"id": "F8", "category": "incident", "front": "Wrong Account amounts after metadata deploy?", "back": "Data/automation incident, not a Metadata API copy of rows."},
+    {"id": "F9", "category": "hotfix", "front": "Source-driven hotfix?", "back": "Commit in Git, deploy, then notes. Retrieve if you clicked Setup."},
+    {"id": "F10", "category": "errors", "front": "ignore-errors in incidents?", "back": "Never on production."},
+    {"id": "F11", "category": "validate", "front": "Validate job useful for notes?", "back": "Yes. Store the job ID; quick deploy within 10 days if still valid."},
+    {"id": "F12", "category": "tab", "front": "Succeeded but tab missing?", "back": "Check assignment and tab visibility before redeploying the object."},
+    {"id": "F13", "category": "ui", "front": "Setup radar name?", "back": "Deployment Status (exact menu Needs verification)."},
+    {"id": "F14", "category": "failed", "front": "Failed job default outcome?", "back": "Rolled back if rollbackOnError/default failure; fix payload and retry."},
+    {"id": "F15", "category": "truth", "front": "Incident vs Git as truth?", "back": "Unretrieved production clicks drift. Retrieve the hotfix."}
+  ],
+  "interview_questions": [
+    {"id": "I1", "category": "foundational", "question": "How do you monitor a Salesforce metadata deploy?", "answer_30_seconds": "I keep the job ID. I use project deploy report or Setup Deployment Status until a terminal state. Async return is not success. One deploy processes at a time.", "answer_2_minutes": "I mention tests as a stage inside In Progress. I mention Winter '26 finalizing states with a reverify caveat. I do not watch Data Loader for metadata jobs. I paste errors from the report into the ticket.", "example": "sf project deploy report --job-id 0Af… every few minutes until Succeeded.", "tradeoffs": ["Synchronous --wait vs async + report", "CLI vs Setup UI"], "follow_ups": ["What is checkDeployStatus?", "How long can Pending last?"], "weak_answer_warnings": ["CLI return means live"]},
+    {"id": "I2", "category": "foundational", "question": "What belongs in Salesforce release notes for DevOps?", "answer_30_seconds": "Metadata components, destructive items, toggle defaults, test level, job ID, known gaps, rollback pointer—not slogans.", "answer_2_minutes": "I write them for the next on-call. I include assignment steps if we shipped a permission set. I link the Git tag. I note if validate/quick was used. I do not include secrets.", "example": "LAB_GateService 1.4; toggle false; no deletes; job 0Af…; assign LAB_Boarding_User.", "tradeoffs": ["Ticket vs Confluence vs GitHub release", "User-facing vs ops notes"], "follow_ups": ["Who reads them?", "How do you version them?"], "weak_answer_warnings": ["We delivered value"]},
+    {"id": "I3", "category": "scenario", "question": "Deploy has been Pending for 45 minutes. What do you do?", "answer_30_seconds": "Check Deployment Status for another In Progress job. Queue is normal. Do not ignore-errors a second deploy. Communicate the wait.", "answer_2_minutes": "I look at status.salesforce.com if the queue is stuck with no other job. I do not cancel a peer's production deploy. I keep the job ID. I update release notes with the delay.", "example": "UAT validate still running; production job queued behind it on the same org—wrong org alias.", "tradeoffs": ["Cancel the blocker vs wait", "Separate prod vs sandbox jobs"], "follow_ups": ["Can two sandboxes share a queue?", "What is enqueued deploy limit from Apex?"], "weak_answer_warnings": ["Start a second deploy with ignore-errors"]},
+    {"id": "I4", "category": "scenario", "question": "Can you cancel during Finalizing Deploy?", "answer_30_seconds": "I would not count on it. The blog says cancel is blocked in the commit/finalizing phase to avoid inconsistent metadata. I wait and then post-check.", "answer_2_minutes": "I mark the state names as versioned. If we are still In Progress tests, cancel may still roll back. I do not hammer cancel. If it succeeds after finalizing, I run smokes. If it Finalizing Failed, I read the report—Needs verification of recovery.", "example": "Job moved from In Progress to Finalizing Deploy; we stop cancel attempts and watch.", "tradeoffs": ["Cancel early vs let tests finish", "API 65 vs older states"], "follow_ups": ["What is Succeeded Partial?", "rollbackOnError false?"], "weak_answer_warnings": ["Cancel always works until Succeeded"]},
+    {"id": "I5", "category": "design", "question": "Design post-deployment checks for Apex plus Flow plus a permission set.", "answer_30_seconds": "Confirm classes in Setup, run a smoke test, run the Flow as the target user, confirm assignment and tab, confirm toggle, record the job ID in notes.", "answer_2_minutes": "I split metadata presence from behavior from access. I do not use last week's UAT as this payload's check. I include a data check only if we also loaded rows. I time-box smokes so we do not skip them.", "example": "Checklist: LAB_GateService exists; TestLAB_Gate smoke; Flow interview; user with LAB_Boarding_User sees tab.", "tradeoffs": ["Automated smokes vs human", "Specified tests vs a dedicated smoke class"], "follow_ups": ["Who is the target user?", "How soon after Succeeded?"], "weak_answer_warnings": ["Succeeded is enough"]},
+    {"id": "I6", "category": "foundational", "question": "Metadata incident versus data incident?", "answer_30_seconds": "Metadata: missing/wrong customization, failed deploy, bad Flow XML. Data: wrong rows or volumes. Monitoring Deployment Status will not fix Account amounts.", "answer_2_minutes": "A permission miss sits in the middle: metadata existed, assignment did not. Integration incidents are a fourth bucket. I pick hotfix deploy vs Data Loader vs assign permset. I keep Git truth for metadata hotfixes.", "example": "Wrong Opportunity amounts → data team; missing LAB_ field on layout → metadata hotfix.", "tradeoffs": ["One war room vs split owners", "Automation bugs that look like data"], "follow_ups": ["How do you tell Flow-updated data from a load?", "CDC lag?"], "weak_answer_warnings": ["Re-deploy metadata to refresh amounts"]},
+    {"id": "I7", "category": "troubleshooting", "question": "Succeeded deploy, feature off. Walk it.", "answer_30_seconds": "Check toggle, assignment, wrong org, cached UI, then Git vs org retrieve. Do not ignore-errors a retry of the same zip blindly.", "answer_2_minutes": "I compare the release notes' toggle default. I retrieve the Flow status. I check if a destructive item removed a needed piece. I check package version. I write the finding in notes so the next incident is faster.", "example": "LAB_UseNewBoarding false as designed; product thought it was on.", "tradeoffs": ["Flip toggle vs hotfix", "User communication"], "follow_ups": ["Who owns the CMDT flag?", "Was it org-dependent package?"], "weak_answer_warnings": ["The job succeeded so the feature must be on"]},
+    {"id": "I8", "category": "challenge", "question": "On-call for a failed Friday production deploy. First ten minutes.", "answer_30_seconds": "Open the report, classify failed versus still running, stop ignore-errors ideas, tell stakeholders the org should be rolled back if the job failed, then fix in Git.", "answer_2_minutes": "If still running, I decide cancel only if not finalizing. If failed, I paste component/test errors. If succeeded-but-bad, I go hotfix/rollback playbooks. I retrieve nothing from panic Setup without committing. I schedule the true fix and notes. I keep data loads paused.", "example": "Failed on LAB_GateTrigger coverage under specified tests; we switch to a test list that covers the trigger and redeploy after approval.", "tradeoffs": ["Fix-forward tonight vs wait for Monday", "Specified tests vs RunLocalTests in crisis"], "follow_ups": ["Who can approve a hotfix?", "Do we page the data team?"], "weak_answer_warnings": ["ignore-errors to go home"]}
+  ]
+}

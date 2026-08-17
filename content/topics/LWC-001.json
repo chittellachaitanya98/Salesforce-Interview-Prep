@@ -1,0 +1,966 @@
+{
+  "topic_id": "LWC-001",
+  "slug": "web-component-and-lwc-mental-model",
+  "title": "Web-component and LWC mental model",
+  "track": "Lightning Web Components",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "PROG-006"
+  ],
+  "objectives": [
+    "Define a Lightning web component as a custom HTML element built with HTML and JavaScript, not as an Aura synonym or a Visualforce page.",
+    "Separate the HTML template (what renders) from the JavaScript class (what owns state and handlers) without inventing compiler internals.",
+    "Explain that LWC and Aura can coexist on a page, and prefer LWC when you have a choice.",
+    "Treat the component bundle as metadata and the records it displays as business data."
+  ],
+  "diagnostic_question": "A product owner wants a custom panel on an Account record page. An older Aura component already exists nearby. Before you write markup, what is an LWC, how do the HTML template and JavaScript class split, and why would you still choose LWC instead of extending the Aura component?",
+  "definition": "Lightning web components are custom HTML elements built using HTML and JavaScript. The LWC framework uses core Web Components standards and adds only what Salesforce-supported browsers need. Most of the code you write is standard JavaScript and HTML. ([Get Started](https://developer.salesforce.com/docs/platform/lwc/guide/get-started-introduction.html); [HTML Templates](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-html.html))",
+  "why_it_matters": "Interviewers listen for whether you treat LWC as browser custom elements with a template plus class, not as 'Lightning but Aura.' Mixing those models, or rewriting DOM by hand when the template should own it, produces fragile UI. Choosing Aura for new work when LWC is available is a common design fail.",
+  "sixty_second_explanation": "Picture a prefabricated kitchen appliance that snaps onto a Lightning page counter. The nameplate is a custom HTML tag such as c-lab-account-panel. The faceplate is the HTML template; the motor is the JavaScript class that extends LightningElement. Aura is an older appliance line that can sit on the same counter. When you can pick, install the LWC appliance. Do not unscrew the faceplate and rewire the DOM by hand—let the template engine paint it.",
+  "deeper_explanation": [
+    "The LWC Developer Guide Get Started topic defines Lightning web components as custom HTML elements built using HTML and JavaScript. The framework is built on code that runs natively in supported browsers, so most of what you author is standard web code, not a proprietary markup language. ([Get Started](https://developer.salesforce.com/docs/platform/lwc/guide/get-started-introduction.html))",
+    "Every UI component's HTML file uses a <template> root. When the component renders, that template is replaced with the custom element name, such as <c-my-component>. Nested custom elements need separate closing tags; they are not self-closing. API module components that only share JavaScript do not require an HTML file. ([Component HTML File](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-html-file.html))",
+    "The templating system uses a virtual DOM to render efficiently. Official guidance is to let LWC manipulate the DOM instead of writing JavaScript that reaches in and rewrites nodes. Bind data, render conditionally, and render lists from the template. ([HTML Templates](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-html.html))",
+    "You can build Lightning components with two programming models: Lightning Web Components and Aura Components. They can coexist and interoperate on a page. To admins and end users they both appear as Lightning components. When you have a choice between LWC and Aura, choose LWC. Do not invent compiler or synthetic-shadow internals in this lesson. ([Get Started](https://developer.salesforce.com/docs/platform/lwc/guide/get-started-introduction.html))"
+  ],
+  "mental_model": {
+    "analogy": "A prefabricated kitchen appliance on a restaurant pass: the custom HTML tag is the appliance nameplate, the HTML template is the faceplate the diner sees, and the JavaScript class is the motor behind it. Aura is an older appliance line that still plugs into the same counter.",
+    "useful_mapping": [
+      "custom HTML element → named appliance such as c-lab-account-panel",
+      "HTML template → faceplate the user sees",
+      "JavaScript class extending LightningElement → motor and switches",
+      "Lightning page / host → kitchen counter that accepts both LWC and Aura appliances",
+      "Aura component → older appliance line that can sit beside the new one",
+      "component metadata (HTML/JS/CSS/meta.xml) → the appliance specification you deploy",
+      "records shown in the UI → ingredients, not the appliance itself"
+    ],
+    "where_it_breaks": [
+      "The analogy does not encode shadow DOM, Locker, or Lightning Web Security internals—do not invent those here.",
+      "Coexistence is not 'rewrite Aura tonight'; migration is a later topic (LWC-013).",
+      "An API module with no HTML is a spare motor with no faceplate, which the kitchen-appliance picture undersells.",
+      "Letting LWC own the DOM is a framework rule, not a restaurant hygiene metaphor."
+    ]
+  },
+  "teach_back_prompt": "Without saying 'LWC is just Lightning,' explain a Lightning web component as a custom HTML element with a template and a class, then say why Aura can still sit on the same page and why you would still prefer LWC for new UI.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: what is an LWC, and what lives in the HTML template versus the JavaScript class?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "A teammate wants to new-build in Aura because 'the page already has Aura.' Defend choosing LWC and coexistence."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Walk a UI component versus an API module (no HTML) and why you let the template own the DOM."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose a custom element that will not appear: missing template root, self-closing child tag, or Aura-only assumption."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: custom HTML elements, template vs class, LWC vs Aura coexistence, metadata vs records."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-GETSTARTED",
+      "title": "Get Started with Lightning Web Components",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/get-started-introduction.html",
+      "supports": "LWC as custom HTML elements built with HTML and JavaScript; standard JS/HTML; LWC and Aura coexistence; prefer LWC when you have a choice.",
+      "release_or_version": "Lightning Web Components Developer Guide / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not document compiler internals or a full Aura migration playbook."
+    },
+    {
+      "source_id": "SF-LWC-HTML-TEMPLATES",
+      "title": "HTML Templates",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-html.html",
+      "supports": "Templating system and virtual DOM; let LWC manipulate the DOM; bind data, conditional HTML, lists, multiple templates.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Directive syntax details belong to later HTML-directive topics."
+    },
+    {
+      "source_id": "SF-LWC-HTML-FILE",
+      "title": "Component HTML File",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-html-file.html",
+      "supports": "UI components require a <template> root HTML file; custom elements are not self-closing; API modules may omit HTML; HTML file size limit 128 KB.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Folder naming and js-meta.xml targets are LWC-002."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Custom HTML element",
+        "Template vs JavaScript class",
+        "Let LWC own the DOM",
+        "LWC and Aura on one page",
+        "Prefer LWC for new UI",
+        "Metadata vs records"
+      ],
+      "accessible_description": "Portrait map: an LWC is a custom HTML element; the HTML template is the faceplate and the JavaScript class is the motor; LWC and Aura can share a page; choose LWC for new work; the bundle is metadata and displayed rows are data."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-GETSTARTED",
+        "SF-LWC-HTML-TEMPLATES",
+        "SF-LWC-HTML-FILE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "LWC custom element: template plus class"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Page[Lightning page host] --> LWC[Custom HTML element c-lab-panel]\n  LWC --> Tpl[HTML template faceplate]\n  LWC --> Cls[JavaScript class extends LightningElement]\n  Page --> Aura[Aura component can coexist]\n  Tpl --> DOM[Framework renders DOM]\n  Cls --> State[Fields and event handlers]\n  LWC --> Meta[Bundle metadata]\n  LWC --> Rec[Records shown are business data]",
+      "decision": "flowchart TD\n  Need[Need custom UI?] --> Q1{Does a standard Lightning page or App Builder setting already do it?}\n  Q1 -->|Yes| Stay[Stay declarative: no new component]\n  Q1 -->|No| Q2{Is this new UI or a small Aura tweak?}\n  Q2 -->|New UI and you have a choice| LWC[Build a Lightning web component]\n  Q2 -->|Must stay inside existing Aura for now| AuraKeep[Keep Aura; plan LWC later]\n  Q2 -->|Share JS with no UI| Module[API module: JS only, no HTML template]\n  Q2 -->|Hand-edit DOM in JS| Nope[Do not: let the LWC template own the DOM]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Lightning web components are custom HTML elements built using HTML and JavaScript. Most of the code you write is standard JavaScript and HTML.",
+      "source_ids": ["SF-LWC-GETSTARTED"],
+      "scope": "LWC definition",
+      "validation": "Get Started with Lightning Web Components opening definition.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Lightning web components and Aura components can coexist and interoperate on a page. When you have a choice between LWC and Aura, choose LWC.",
+      "source_ids": ["SF-LWC-GETSTARTED"],
+      "scope": "Coexistence and preference",
+      "validation": "Get Started backwards-compatibility section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "UI components use an HTML file with a <template> root. Let LWC manipulate the DOM instead of writing JavaScript to rewrite it. API module components do not require an HTML file.",
+      "source_ids": ["SF-LWC-HTML-TEMPLATES", "SF-LWC-HTML-FILE"],
+      "scope": "Template vs class vs DOM",
+      "validation": "HTML Templates best practice and Component HTML File rules.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Handbook pack rewritten 2026-08-16 against the LWC Developer Guide Get Started and HTML template topics. Reverify coexistence and prefer-LWC wording on the current Get Started page.",
+  "unresolved_uncertainty": [
+    "Exact synthetic-shadow versus native shadow behavior is version-sensitive; do not invent compiler internals in interviews.",
+    "How to Choose Lightning Web Components or Aura is a separate guide page; this topic uses only the Get Started coexistence and prefer-LWC statements."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Lightning web component",
+      "telugu": "HTML మరియు JavaScript తో తయారైన కస్టమ్ HTML ఎలిమెంట్."
+    },
+    {
+      "english": "HTML template",
+      "telugu": "కాంపోనెంట్ ముఖం—ఏ HTML చూపించాలో చెప్పే ఫైల్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "An LWC is a custom HTML element built with HTML and JavaScript. The template is the UI; the class extending LightningElement is the logic. Aura can share the page. If I can choose, I build LWC.",
+    "two_minutes": "I start from the Guide: custom HTML elements, mostly standard web code. UI components have a <template> root that becomes <c-name> in the DOM. Nested custom elements need closing tags. I let the template own rendering instead of mutating the DOM in JavaScript. Aura and LWC can interoperate; I do not rewrite a working Aura widget in this lesson, but I do not start new UI in Aura when LWC is available. The bundle is metadata; Account rows on the panel are data."
+  },
+  "terminology": [
+    {
+      "term": "Lightning web component",
+      "plain": "A named custom HTML tag you build with HTML and JavaScript for Salesforce UI.",
+      "precise": "A custom HTML element in the LWC framework, which uses core Web Components standards and runs in browsers Salesforce supports.",
+      "example": "c-lab-account-panel on a sandbox Account record page.",
+      "non_example": "A Visualforce page, or an Apex class with no UI.",
+      "confusable_neighbor": "Aura component: the original Lightning programming model that can sit on the same page.",
+      "boundary": "This lesson is the mental model. Bundle files are LWC-002; events are LWC-005."
+    },
+    {
+      "term": "custom HTML element",
+      "plain": "A tag the browser treats as your component, such as c-lab-panel.",
+      "precise": "The rendered form of a UI LWC. The HTML spec requires a hyphen in the name; Salesforce supplies that via namespace-folder kebab-case. Custom elements must have separate closing tags.",
+      "example": "<c-lab-account-panel></c-lab-account-panel> nested inside a parent template.",
+      "non_example": "<c-lab-account-panel /> as a self-closing tag, which the HTML spec does not allow for custom elements.",
+      "confusable_neighbor": "A standard HTML tag such as <div>, which is not your LWC.",
+      "boundary": "Folder-to-kebab mapping is LWC-002."
+    },
+    {
+      "term": "HTML template",
+      "plain": "The faceplate file that declares what the component shows.",
+      "precise": "The componentName.html file with a <template> root. On render, <template> is replaced with the custom element name. Maximum HTML file size is 128 KB.",
+      "example": "labAccountPanel.html containing markup bound to class fields.",
+      "non_example": "A static Visualforce <apex:page> or an Aura .cmp file.",
+      "confusable_neighbor": "Nested <template> tags used later for directives and lists (LWC-003).",
+      "boundary": "Directive syntax is not this lesson."
+    },
+    {
+      "term": "JavaScript class",
+      "plain": "The motor: the ES module that extends LightningElement.",
+      "precise": "The componentName.js file that defines the HTML element for a UI component. Import LightningElement from lwc and export default a class that extends it.",
+      "example": "export default class LabAccountPanel extends LightningElement {}",
+      "non_example": "An Apex class, which runs on the server.",
+      "confusable_neighbor": "API module component: JS without an HTML file, used to share code.",
+      "boundary": "Public @api surface is LWC-004."
+    },
+    {
+      "term": "Aura coexistence",
+      "plain": "Old Aura and new LWC can live on the same Lightning page.",
+      "precise": "Lightning web components and Aura components can coexist and interoperate. To admins and end users they both appear as Lightning components. Prefer LWC when you have a choice.",
+      "example": "An App Builder page with an existing Aura utility and a new c-lab-panel.",
+      "non_example": "Assuming Aura is deleted the moment you add an LWC.",
+      "confusable_neighbor": "Aura-to-LWC migration playbooks (LWC-013).",
+      "boundary": "Interop event details are later; this lesson only needs coexistence and preference."
+    },
+    {
+      "term": "virtual DOM templating",
+      "plain": "The engine that paints the template efficiently so you do not hand-edit nodes.",
+      "precise": "The LWC templating system uses the virtual DOM to render components. Best practice: let LWC manipulate the DOM instead of writing JavaScript to do it.",
+      "example": "Binding {name} in the template rather than setting innerText in a loop.",
+      "non_example": "document.querySelector in connectedCallback to rebuild a list by innerHTML.",
+      "confusable_neighbor": "Direct DOM APIs that LWC still allows for limited cases—default is still template-first.",
+      "boundary": "Do not claim undocumented compiler steps."
+    },
+    {
+      "term": "API module component",
+      "plain": "A Lightning web component that shares JavaScript and has no UI file.",
+      "precise": "A component without a UI can be an API module (service) that exports functions. It does not require an HTML file.",
+      "example": "A labFormat.js module other LWCs import.",
+      "non_example": "A UI panel that users see on a record page.",
+      "confusable_neighbor": "Apex service class: server, not a browser ES module.",
+      "boundary": "Share-code folder rules deepen in LWC-002."
+    },
+    {
+      "term": "Lightning base components",
+      "plain": "Salesforce-provided building blocks such as lightning-button.",
+      "precise": "Salesforce provides Lightning base components built on Lightning Design System. They exist as LWC and as Aura. Use them for consistent UI.",
+      "example": "lightning-button inside c-lab-account-panel.",
+      "non_example": "A custom c-button you write before checking the base library.",
+      "confusable_neighbor": "SLDS CSS classes without a base component (later UX topic).",
+      "boundary": "Composition with base components is LWC-004."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide if you need a component at all",
+      "actor": "Developer + admin",
+      "trigger": "A record page or app needs custom UI",
+      "before": "App Builder, Dynamic Forms, or a base component might suffice",
+      "after": "LWC candidate or stay declarative",
+      "observe": "Written reason a standard page cannot meet the need",
+      "failure": "Building an LWC to hide a field that FLS or Dynamic Forms already hides"
+    },
+    {
+      "step": 2,
+      "transition": "Choose LWC over Aura for new UI",
+      "actor": "Developer",
+      "trigger": "Custom UI is justified",
+      "before": "Aura and LWC both exist in the org",
+      "after": "New work is an LWC custom HTML element unless Aura is an explicit constraint",
+      "observe": "New folder under lwc/, not aura/",
+      "failure": "Cloning an Aura component 'because the page already has Aura'"
+    },
+    {
+      "step": 3,
+      "transition": "Split template and class",
+      "actor": "Developer",
+      "trigger": "UI component scaffold created",
+      "before": "Empty bundle",
+      "after": "HTML <template> faceplate plus JS class extending LightningElement",
+      "observe": "HTML file has a template root; JS imports LightningElement from lwc",
+      "failure": "Putting markup only in JS or omitting the HTML file for a UI component"
+    },
+    {
+      "step": 4,
+      "transition": "Let the template own the DOM",
+      "actor": "Developer",
+      "trigger": "Need to show bound data",
+      "before": "Temptation to rewrite nodes in JavaScript",
+      "after": "Bindings and later directives live in the template",
+      "observe": "No innerHTML list builder in the class",
+      "failure": "Hand-manipulating the DOM as the default pattern"
+    }
+  ],
+  "when_to_use": [
+    "When you must explain the LWC mental model: a custom HTML element with an HTML template and a JavaScript class.",
+    "When a new Lightning page needs a custom UI component and you have a choice between LWC and Aura—choose the LWC component.",
+    "When a teammate wants to rewrite the DOM in JavaScript instead of binding data in the LWC template.",
+    "When you need to say an LWC bundle is metadata while the records the component shows are business data.",
+    "When an API-only share module has no template and should not be mistaken for a UI component."
+  ],
+  "when_not_to_use": [
+    "Do not use this LWC mental-model lesson as a substitute for bundle files, CSS, or js-meta.xml targets (LWC-002).",
+    "Do not treat this component overview as a reactivity, lwc:if, or for:each lesson (LWC-003).",
+    "Do not use the template-versus-class split to justify rewriting a working Aura component in production without a migration plan (LWC-013).",
+    "Do not invent LWC compiler, synthetic-shadow, or locker internals in this component lesson—stick to the official custom-element definition.",
+    "Do not use an LWC component example to edit production org metadata or real customer records."
+  ],
+  "configuration_or_code_location": [
+    "force-app/main/default/lwc/labAccountPanel/ in a disposable scratch org or sandbox.",
+    "labAccountPanel.html with a <template> root; labAccountPanel.js extending LightningElement.",
+    "Lightning App Builder on a LAB_ record page to place the custom HTML element.",
+    "Existing Aura component on the same page to demonstrate coexistence, not as the new-work default."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab needs a small Account highlight on the record page. An old Aura clock widget already sits in the utility bar. Stakeholders ask whether to extend that Aura widget or add a new LWC. No production data.",
+    "inputs": [
+      "Need a custom HTML element showing a synthetic LAB_ Account Name",
+      "Existing Aura component must keep working",
+      "UI must be template-driven, not innerHTML"
+    ],
+    "decisions": [
+      {
+        "decision": "Create a new LWC named labAccountPanel instead of cloning the Aura widget.",
+        "because": "Get Started says when you have a choice, choose LWC. Coexistence lets the Aura clock remain.",
+        "rejected": "New Aura component because 'the page already has Aura'"
+      },
+      {
+        "decision": "Put markup in labAccountPanel.html with a <template> root and a JS class that extends LightningElement.",
+        "because": "A UI component needs the HTML file; the class defines the custom HTML element.",
+        "rejected": "A JS-only API module for a visible panel"
+      },
+      {
+        "decision": "Bind the name in the template rather than setting innerHTML in connectedCallback.",
+        "because": "HTML Templates says let LWC manipulate the DOM.",
+        "rejected": "Hand-built DOM as the default"
+      }
+    ],
+    "configuration_or_code": [
+      "labAccountPanel.js: import { LightningElement } from 'lwc'; export default class LabAccountPanel extends LightningElement { name = 'LAB_ Demo Account'; }",
+      "labAccountPanel.html: <template><p>{name}</p></template>",
+      "Place <c-lab-account-panel></c-lab-account-panel> on the sandbox record page beside the existing Aura widget."
+    ],
+    "output": "The page shows the LWC custom element and the Aura widget together. The LWC markup comes from the template.",
+    "verification": [
+      "Browser inspector shows c-lab-account-panel, not a self-closing custom tag.",
+      "Aura widget still renders on the same Lightning page.",
+      "Name text comes from the template binding, not from innerHTML in the class."
+    ],
+    "self_explanation": "I treated LWC as a custom HTML element with a template plus class, kept Aura in place, and did not hand-edit the DOM."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable scratch org or Developer sandbox; synthetic LAB_ component names only.",
+    "starting_state_checks": [
+      "You can create Lightning web components in this org.",
+      "No production aliases in the folder name."
+    ],
+    "steps": [
+      "Create lwc/labHelloPanel with labHelloPanel.html using a <template> root and labHelloPanel.js that imports LightningElement and exports a default class extending it.",
+      "Bind a primitive field in the template, for example {greeting}, instead of writing innerHTML.",
+      "Deploy the LWC component to the scratch org and add the custom HTML element to a LAB_ app page.",
+      "If an Aura component is already on the page, leave it; confirm both render. Write one sentence: prefer LWC when you have a choice."
+    ],
+    "guided_completion": [
+      "If the HTML file is missing, the UI component is incomplete.",
+      "If you used a self-closing <c-lab-hello-panel />, fix it to a paired closing tag."
+    ],
+    "independent_challenge": "Convert the greeting to a getter in the JavaScript class and keep the HTML template binding; do not mutate the DOM in the class.",
+    "evidence": [
+      "Source of labHelloPanel.html showing <template> and labHelloPanel.js showing extends LightningElement.",
+      "Screenshot or inspector note of the c-lab-hello-panel custom element on the page."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete the LAB_ LWC folder from the project and org.",
+      "Do not deploy this component to production."
+    ],
+    "limitations": "This lab does not cover js-meta.xml targets, reactivity, or Aura migration."
+  },
+  "decision_table": [
+    {
+      "signal": "You need new custom UI on a Lightning page and both models are available.",
+      "choose": "Build a Lightning web component (custom HTML element with template plus class).",
+      "not": "Start a new Aura component because Aura already exists on the page.",
+      "why": "Get Started: LWC and Aura coexist; when you have a choice, choose LWC."
+    },
+    {
+      "signal": "The UI must show bound fields and lists.",
+      "choose": "Declare markup in the HTML template and let LWC render the DOM.",
+      "not": "Rebuild nodes with innerHTML or manual DOM APIs as the default.",
+      "why": "HTML Templates: let LWC manipulate the DOM instead of writing JavaScript to do it."
+    },
+    {
+      "signal": "You need to share JavaScript with no visible UI.",
+      "choose": "API module Lightning web component without an HTML template.",
+      "not": "A UI component with an empty template 'just in case'.",
+      "why": "Component HTML File: API module components do not require an HTML file."
+    },
+    {
+      "signal": "A working Aura widget already meets a narrow need and rewrite risk is high.",
+      "choose": "Leave the Aura component; add new LWC beside it if new UI is required.",
+      "not": "A same-sprint Aura rewrite with no migration plan.",
+      "why": "Coexistence is supported; migration is a later topic, not this mental model."
+    }
+  ],
+  "limitations": [
+    "Does not teach bundle naming, CSS shadow scoping, or js-meta.xml.",
+    "Does not teach reactivity, directives, or parent/child @api.",
+    "Does not document Locker versus Lightning Web Security internals.",
+    "Edition and Lightning Experience availability: Get Started lists Enterprise, Performance, Unlimited, and Developer Editions for Lightning Experience."
+  ],
+  "security_notes": [
+    "A custom HTML element is not a substitute for CRUD, FLS, or sharing on the records it displays.",
+    "Do not log session IDs or real customer data in component examples.",
+    "Prefer template bindings over innerHTML to reduce accidental markup injection patterns."
+  ],
+  "common_mistakes": [
+    "Calling LWC 'Aura with ES6' and skipping the custom HTML element definition.",
+    "Starting new UI in Aura because the page already has Aura.",
+    "Omitting the HTML template for a UI component, or using a self-closing custom element tag.",
+    "Hand-editing the DOM instead of using the template.",
+    "Calling the component bundle 'data' and the Account rows 'code'."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Custom element does not render.",
+      "check": [
+        "UI component has an HTML file with a <template> root.",
+        "JavaScript class extends LightningElement and is the default export.",
+        "Child LWC tags in the template have separate closing tags."
+      ],
+      "do_not_assume": "Aura coexistence blocked the LWC."
+    },
+    {
+      "symptom": "UI updates only when you poke the DOM in JavaScript.",
+      "check": [
+        "The value is bound in the HTML template.",
+        "You are not bypassing the template with innerHTML."
+      ],
+      "do_not_assume": "The LWC framework is broken."
+    }
+  ],
+  "production_notes": [
+    "New custom UI should default to LWC; keep existing Aura until a planned migration.",
+    "Treat the LWC bundle as metadata in source control; do not mix in real customer records.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "According to the LWC Developer Guide Get Started topic, what is a Lightning web component?",
+      "options": {
+        "A": "A custom HTML element built using HTML and JavaScript",
+        "B": "An Apex class that renders Visualforce",
+        "C": "A Flow screen that cannot contain HTML",
+        "D": "A SOAP endpoint in a managed package"
+      },
+      "answer": "A",
+      "rationale": "Get Started defines Lightning web components as custom HTML elements built using HTML and JavaScript.",
+      "distractor_explanations": {
+        "B": "Apex is server-side; LWC UI runs as a web component.",
+        "C": "Flow is not the LWC definition.",
+        "D": "SOAP is unrelated to the custom-element model."
+      },
+      "concept": "LWC definition",
+      "citation_ids": ["SF-LWC-GETSTARTED"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When you have a choice between Lightning Web Components and Aura for new UI, what does Get Started recommend?",
+      "options": {
+        "A": "Choose LWC",
+        "B": "Always choose Aura for record pages",
+        "C": "You cannot put both on one page",
+        "D": "Replace every Aura component the same day"
+      },
+      "answer": "A",
+      "rationale": "When you have a choice between LWC and Aura, choose LWC. They can still coexist.",
+      "distractor_explanations": {
+        "B": "Aura is not the default for new work.",
+        "C": "They can coexist and interoperate.",
+        "D": "Coexistence does not force a same-day rewrite."
+      },
+      "concept": "Prefer LWC",
+      "citation_ids": ["SF-LWC-GETSTARTED"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What root tag must a UI component HTML file use?",
+      "options": {
+        "A": "<template>",
+        "B": "<aura:component>",
+        "C": "<apex:page>",
+        "D": "<html>"
+      },
+      "answer": "A",
+      "rationale": "Every UI component must have an HTML file with the root tag <template>.",
+      "distractor_explanations": {
+        "B": "That is Aura markup.",
+        "C": "That is Visualforce.",
+        "D": "The component HTML file uses <template>, not a full HTML document root."
+      },
+      "concept": "HTML template root",
+      "citation_ids": ["SF-LWC-HTML-FILE"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why should you avoid rebuilding a list with innerHTML in the JavaScript class as the default pattern?",
+      "options": {
+        "A": "The HTML Templates guide says let LWC manipulate the DOM instead of writing JavaScript to do it",
+        "B": "innerHTML is required for every LWC list",
+        "C": "Templates cannot bind data",
+        "D": "Aura forbids HTML files"
+      },
+      "answer": "A",
+      "rationale": "Best practice is template-driven rendering via the LWC templating system.",
+      "distractor_explanations": {
+        "B": "Lists belong in the template with later directives, not innerHTML by default.",
+        "C": "Binding data in a template is a primary feature.",
+        "D": "Aura is a different model; LWC UI components have HTML files."
+      },
+      "concept": "Let LWC own the DOM",
+      "citation_ids": ["SF-LWC-HTML-TEMPLATES"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A teammate wants a JS-only module that other LWCs import, with no UI. What is the Guide-aligned shape?",
+      "options": {
+        "A": "An API module Lightning web component that does not require an HTML file",
+        "B": "A UI component that must include an empty <template>",
+        "C": "An Aura application",
+        "D": "A Visualforce controller"
+      },
+      "answer": "A",
+      "rationale": "API module components (libraries) do not require an HTML file.",
+      "distractor_explanations": {
+        "B": "Empty templates are not required for share-only modules.",
+        "C": "Aura is not the share-JS module model described here.",
+        "D": "Visualforce is a different stack."
+      },
+      "concept": "API module",
+      "citation_ids": ["SF-LWC-HTML-FILE"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How do Lightning web components and Aura components relate on a page?",
+      "options": {
+        "A": "They can coexist and interoperate; both appear as Lightning components to admins and users",
+        "B": "Putting one on a page deletes the other",
+        "C": "Only Classic can host both",
+        "D": "LWC can run only inside Visualforce"
+      },
+      "answer": "A",
+      "rationale": "Get Started backwards-compatibility section states coexistence and that both appear as Lightning components.",
+      "distractor_explanations": {
+        "B": "Coexistence is supported.",
+        "C": "The model is Lightning Experience.",
+        "D": "LWC is not limited to Visualforce hosting in this definition."
+      },
+      "concept": "Aura coexistence",
+      "citation_ids": ["SF-LWC-GETSTARTED"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Nested custom element c-lab-child inside a parent template. Which markup matches the HTML spec note in the Component HTML File topic?",
+      "options": {
+        "A": "<c-lab-child></c-lab-child> with a separate closing tag",
+        "B": "<c-lab-child /> self-closing",
+        "C": "<c:labChild></c:labChild> Aura-style colon",
+        "D": "<apex:labChild/>"
+      },
+      "answer": "A",
+      "rationale": "Custom element tags are not self-closing; they must include separate closing tags.",
+      "distractor_explanations": {
+        "B": "Self-closing custom elements violate the cited HTML spec rule.",
+        "C": "LWC uses hyphenated custom element names, not Aura colon notation.",
+        "D": "Visualforce tags are not LWC custom elements."
+      },
+      "concept": "Custom element closing tags",
+      "citation_ids": ["SF-LWC-HTML-FILE"]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the documented maximum size of a component HTML file?",
+      "options": {
+        "A": "128 KB (131,072 bytes)",
+        "B": "1 byte",
+        "C": "Unlimited",
+        "D": "32 parameters"
+      },
+      "answer": "A",
+      "rationale": "The Component HTML File topic states a maximum of 128 KB (131,072 bytes).",
+      "distractor_explanations": {
+        "B": "Not a documented HTML limit.",
+        "C": "A maximum is documented.",
+        "D": "32 parameters is an Apex method limit, not an LWC HTML file limit."
+      },
+      "concept": "HTML file size",
+      "citation_ids": ["SF-LWC-HTML-FILE"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A page already has an Aura clock. You need a new Account highlight. What is the best first design?",
+      "options": {
+        "A": "Add a new LWC custom HTML element and leave the Aura clock in place",
+        "B": "Rewrite the clock as Aura and add the highlight in the same Aura bundle",
+        "C": "Block the page until all Aura is deleted",
+        "D": "Put the highlight only in Apex without a template"
+      },
+      "answer": "A",
+      "rationale": "Coexistence is supported and new UI should prefer LWC.",
+      "distractor_explanations": {
+        "B": "New UI should not default to Aura.",
+        "C": "Get Started does not require deleting Aura first.",
+        "D": "A visible panel needs a UI component template."
+      },
+      "concept": "New UI vs existing Aura",
+      "citation_ids": ["SF-LWC-GETSTARTED"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "What is the template versus class split in a UI LWC?",
+      "options": {
+        "A": "The HTML template declares what renders; the JavaScript class extending LightningElement owns fields and handlers",
+        "B": "The class is only CSS; the template is Apex",
+        "C": "There is no JavaScript file for UI components",
+        "D": "The template must be Visualforce"
+      },
+      "answer": "A",
+      "rationale": "UI LWCs pair a <template> HTML file with a JS class that defines the HTML element.",
+      "distractor_explanations": {
+        "B": "CSS is a separate optional file; the class is JavaScript.",
+        "C": "Every component must have a JavaScript file.",
+        "D": "The template is LWC HTML, not Visualforce."
+      },
+      "concept": "Template vs class",
+      "citation_ids": ["SF-LWC-HTML-FILE", "SF-LWC-GETSTARTED"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How should you talk about the LWC bundle versus the Account rows it displays?",
+      "options": {
+        "A": "The component files are metadata; the Account rows are business data",
+        "B": "Deploying the component inserts Account rows",
+        "C": "Records are metadata and the HTML file is data",
+        "D": "There is no distinction in LWC"
+      },
+      "answer": "A",
+      "rationale": "Same metadata-versus-data split as the rest of the handbook: you deploy the component; records remain data.",
+      "distractor_explanations": {
+        "B": "Deploying metadata does not load business records.",
+        "C": "That reverses the split.",
+        "D": "Interviewers expect the distinction."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-LWC-GETSTARTED"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A developer says most LWC code is a proprietary Salesforce language, not HTML and JavaScript. How do you answer from Get Started?",
+      "options": {
+        "A": "Most of the code you write is standard JavaScript and HTML; LWC uses core Web Components standards",
+        "B": "LWC markup is only Aura XML",
+        "C": "LWC cannot use JavaScript",
+        "D": "LWC runs only as Apex"
+      },
+      "answer": "A",
+      "rationale": "Get Started emphasizes standard JavaScript and HTML and core Web Components standards.",
+      "distractor_explanations": {
+        "B": "Aura is a different programming model.",
+        "C": "UI logic is JavaScript.",
+        "D": "Apex is the server language, not the LWC UI runtime."
+      },
+      "concept": "Standard web code",
+      "citation_ids": ["SF-LWC-GETSTARTED"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "What is a Lightning web component?",
+      "back": "A custom HTML element built using HTML and JavaScript."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "Template versus JavaScript class?",
+      "back": "The HTML template is the faceplate that renders; the class extending LightningElement is the motor."
+    },
+    {
+      "id": "F3",
+      "category": "coexistence",
+      "front": "LWC and Aura on one page?",
+      "back": "They can coexist and interoperate. To admins and users both appear as Lightning components."
+    },
+    {
+      "id": "F4",
+      "category": "decision",
+      "front": "LWC or Aura when you have a choice?",
+      "back": "Choose Lightning Web Components for new UI."
+    },
+    {
+      "id": "F5",
+      "category": "html",
+      "front": "Root tag of a UI component HTML file?",
+      "back": "A <template> root. On render it becomes the custom element name."
+    },
+    {
+      "id": "F6",
+      "category": "html",
+      "front": "Self-closing custom element tags?",
+      "back": "Not allowed. Custom elements need separate closing tags."
+    },
+    {
+      "id": "F7",
+      "category": "dom",
+      "front": "Who should manipulate the DOM by default?",
+      "back": "Let LWC manipulate the DOM; do not default to hand-written DOM rewrites."
+    },
+    {
+      "id": "F8",
+      "category": "module",
+      "front": "Does an API module need an HTML file?",
+      "back": "No. A UI-less API module component does not require HTML."
+    },
+    {
+      "id": "F9",
+      "category": "html",
+      "front": "UI HTML file size limit?",
+      "back": "128 KB (131,072 bytes) for the component HTML file."
+    },
+    {
+      "id": "F10",
+      "category": "boundary",
+      "front": "Component bundle versus records?",
+      "back": "The LWC files are metadata. Rows the component shows are business data."
+    },
+    {
+      "id": "F11",
+      "category": "class",
+      "front": "What does a UI component JS file extend?",
+      "back": "LightningElement imported from lwc; export the class as default."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "Page has Aura; you need new UI?",
+      "back": "Add an LWC; leave the working Aura component until a planned migration."
+    },
+    {
+      "id": "F13",
+      "category": "base",
+      "front": "What are Lightning base components here?",
+      "back": "Salesforce-provided building blocks on SLDS, available as LWC and Aura."
+    },
+    {
+      "id": "F14",
+      "category": "web",
+      "front": "Is most LWC code proprietary markup?",
+      "back": "No. Get Started says most code is standard JavaScript and HTML."
+    },
+    {
+      "id": "F15",
+      "category": "limitation",
+      "front": "Should you explain compiler internals in this lesson?",
+      "back": "No. Stick to custom elements, template versus class, and Aura coexistence."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is a Lightning web component in one minute?",
+      "answer_30_seconds": "An LWC is a custom HTML element built with HTML and JavaScript. The template renders UI; the JavaScript class extending LightningElement holds fields and handlers.",
+      "answer_2_minutes": "I quote Get Started: custom HTML elements, mostly standard web code, built on Web Components standards. A UI component needs a <template> HTML file that becomes <c-name> in the DOM. Nested custom elements need closing tags. I contrast that with Aura and with Apex. I do not invent compiler internals.",
+      "example": "c-lab-account-panel with labAccountPanel.html and a class LabAccountPanel extends LightningElement.",
+      "tradeoffs": [
+        "LWC vs Aura for new UI",
+        "UI component vs API module"
+      ],
+      "follow_ups": [
+        "What if there is no HTML file?",
+        "Where does Aura still fit?"
+      ],
+      "weak_answer_warnings": [
+        "Calling LWC 'just Aura 2'",
+        "Saying LWC runs as Apex in the browser"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do the HTML template and the JavaScript class divide work?",
+      "answer_30_seconds": "The HTML template is the faceplate: markup, bindings, later directives. The class is the motor: fields, getters, handlers. Let the template own the DOM.",
+      "answer_2_minutes": "UI components must have HTML with a <template> root and JS that extends LightningElement. I bind {property} in the template rather than writing innerHTML. HTML Templates calls that a best practice because of the virtual DOM templating system. Share-only modules can omit HTML.",
+      "example": "<template><p>{greeting}</p></template> plus greeting = 'LAB_' in the class.",
+      "tradeoffs": [
+        "Template rendering vs manual DOM",
+        "UI component vs JS-only module"
+      ],
+      "follow_ups": [
+        "What is a nested template for?",
+        "What is the HTML file size limit?"
+      ],
+      "weak_answer_warnings": [
+        "Putting all markup in JS by default"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "The record page already has Aura. Should new UI be Aura or LWC?",
+      "answer_30_seconds": "Build the new UI as LWC. Aura and LWC can coexist on the page. Get Started says when you have a choice, choose LWC.",
+      "answer_2_minutes": "I do not rip out a working Aura widget in the same story unless there is a migration plan. I add the new custom HTML element beside it. Admins still see both as Lightning components. Cloning Aura 'for consistency' is the wrong default for new work.",
+      "example": "Aura clock in the utility bar plus new c-lab-account-panel on the same record page.",
+      "tradeoffs": [
+        "Coexistence vs rewrite cost",
+        "Team Aura skill vs LWC standard"
+      ],
+      "follow_ups": [
+        "When would you keep changing the Aura component?",
+        "What topic owns migration?"
+      ],
+      "weak_answer_warnings": [
+        "New Aura because Aura is already there"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A teammate wants to build a visible panel as a JS-only module with no HTML template. What do you say?",
+      "answer_30_seconds": "A visible UI component needs an HTML file with a <template> root. JS-only API modules are for sharing code, not for a faceplate users see.",
+      "answer_2_minutes": "The Component HTML File topic splits UI components from API modules. If there is a panel, I add the template and a class that extends LightningElement. If we only need shared formatters, I omit HTML on purpose. I still do not hand-build the panel DOM in the module.",
+      "example": "labFormat.js as an API module versus labAccountPanel.html for the visible panel.",
+      "tradeoffs": [
+        "Share-code module vs UI component",
+        "Empty template vs no template"
+      ],
+      "follow_ups": [
+        "Can other LWCs import the module?",
+        "What is the default export rule for UI classes?"
+      ],
+      "weak_answer_warnings": [
+        "Treating every LWC as UI-less"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A nested child LWC tag in the parent template does not compile or render as expected. What HTML rule do you check first?",
+      "answer_30_seconds": "Custom elements must have separate closing tags. Self-closing <c-lab-child /> is invalid per the Component HTML File guidance.",
+      "answer_2_minutes": "I inspect the parent template for self-closing custom elements, a missing <template> root, or Aura colon notation. I confirm the child's JS extends LightningElement. I do not blame Aura coexistence until those HTML rules are clean.",
+      "example": "Parent template uses <c-lab-child></c-lab-child> rather than <c-lab-child />.",
+      "tradeoffs": [
+        "HTML spec custom elements vs JSX habits",
+        "Fix markup vs rewrite in Aura"
+      ],
+      "follow_ups": [
+        "What does <template> become at runtime?",
+        "What is kebab-case mapping?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming Salesforce rewrote the HTML spec"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "The UI only updates when the developer pokes the DOM in connectedCallback. What is wrong with the mental model?",
+      "answer_30_seconds": "They are not letting the LWC template own rendering. Bind the field in HTML and let the framework manipulate the DOM.",
+      "answer_2_minutes": "HTML Templates says the power of LWC is the templating system and that you should let LWC manipulate the DOM. I move the list or text into {property} bindings. Later lessons add lwc:if and for:each. innerHTML loops are a smell in this mental model, not the default.",
+      "example": "Replace container.innerHTML = name with <p>{name}</p> in the template.",
+      "tradeoffs": [
+        "Template-first vs escape-hatch DOM APIs",
+        "Speed of a hack vs maintainability"
+      ],
+      "follow_ups": [
+        "When is querying the DOM still legitimate?",
+        "What is a getter for?"
+      ],
+      "weak_answer_warnings": [
+        "Defending innerHTML as the LWC way"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you not create an LWC at all?",
+      "answer_30_seconds": "When App Builder, Dynamic Forms, FLS, or a Lightning base component already meets the need. A custom HTML element is not the default for every UI request.",
+      "answer_2_minutes": "I separate this mental-model topic from later data and event topics, but interviewers still want judgment. Hiding a field is often layout or FLS. A standard related list may be enough. I reach for LWC when I need a custom element with template plus class. I still prefer LWC over new Aura when a component is justified.",
+      "example": "Do not build c-lab-hide-phone to hide Phone when FLS already hides it.",
+      "tradeoffs": [
+        "Declarative page vs custom component",
+        "Base component vs custom element"
+      ],
+      "follow_ups": [
+        "What is a Lightning base component?",
+        "Who owns App Builder placement?"
+      ],
+      "weak_answer_warnings": [
+        "An LWC for every label change"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the LWC mental model without jargon, then name where your analogy breaks.",
+      "answer_30_seconds": "It is a named appliance on the Lightning counter: faceplate is the HTML template, motor is the JavaScript class. Aura is an older appliance that can sit beside it. The analogy breaks on shadow DOM and security runtimes.",
+      "answer_2_minutes": "I map custom HTML element, template, class, coexistence, and prefer-LWC. I say the bundle is the specification you deploy and the records are ingredients. I explicitly refuse compiler-internal stories. I note API modules have a motor and no faceplate, which the appliance picture undersells.",
+      "example": "Kitchen-appliance analogy for c-lab-account-panel next to an Aura clock.",
+      "tradeoffs": [
+        "Simple analogy vs precise Guide wording",
+        "Teaching coexistence vs pushing a rewrite"
+      ],
+      "follow_ups": [
+        "What is metadata versus data here?",
+        "What must you not invent?"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphors",
+        "Invented compiler details"
+      ]
+    }
+  ]
+}

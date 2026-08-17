@@ -1,0 +1,969 @@
+{
+  "topic_id": "APEX-006",
+  "slug": "exceptions-custom-exceptions-defensive-programming-and-",
+  "title": "Exceptions, custom exceptions, defensive programming, and logging",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-005"
+  ],
+  "objectives": [
+    "Use throw, try, catch, and finally with the official rule that at least catch or finally must accompany try.",
+    "Create a custom exception class that extends Exception and ends with Exception.",
+    "Name exceptions that cannot be caught, including LimitException, and explain that finally is skipped too.",
+    "Use debug logs and System.debug as diagnostics, not as a substitute for catching governors or swallowing Exception."
+  ],
+  "diagnostic_question": "A service catches Exception around DML and SOQL, logs nothing, and returns null. A bulk load then hits a governor. What still rolls back, what cannot be caught, and how would you redesign the catch and logging?",
+  "definition": "Apex uses exceptions to signal errors that disrupt normal flow. throw raises them; try/catch/finally recover when the exception is catchable. Custom exception classes extend Exception and must be named *Exception. Some platform exceptions—including LimitException—cannot be caught, and finally does not run for those. Debug logs record the transaction. ([Exception Statements](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_statements.htm); [Exceptions in Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_definition.htm))",
+  "why_it_matters": "Swallowing Exception hides DmlException, QueryException, and still cannot save you from governors. Interviewers want custom types for caller contracts, finally for cleanup that is not a second transaction, and debug logs instead of System.debug in production loops.",
+  "sixty_second_explanation": "Think of a building fire panel. throw pulls an alarm. catch is the floor warden for a labeled alarm type. finally is the checklist that still runs after a normal alarm—unlock the stairwell, close the log. A custom exception is a labeled pull-station you install for your service. LimitException is a full-building evacuation: the local panel is skipped, including finally. The debug log is the alarm printout. Do not tape over the master alarm and return null.",
+  "deeper_explanation": [
+    "try identifies code that may throw. catch handles a unique type; Exception must be last. finally always runs for catchable exceptions. At least one catch or finally is required with try. ([Exception Statements](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_statements.htm))",
+    "LimitException (governor), assertion failures, and license exceptions cannot be caught; catch and finally do not execute. Unhandled exceptions roll back processed DML, write debug logs, email LastModifiedBy by default, and show a UI error. ([Exception Statements](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_statements.htm); [Exceptions in Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_definition.htm))",
+    "Custom exceptions extend Exception, must end with Exception, inherit getMessage/getCause/getLineNumber/getStackTraceString, and can wrap an inner exception. ([Create Custom Exceptions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_custom.htm))",
+    "Defensive programming here means catch specific types, rethrow or wrap with context, and log with trace flags—not catch (Exception e) { return null; }. Debug logs record database operations and errors; class/trigger trace flags override levels but do not by themselves start logging. ([Debug Log](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log.htm))"
+  ],
+  "mental_model": {
+    "analogy": "A building fire panel: labeled pull-stations, floor wardens, and a full-building evacuation that skips the local panel.",
+    "useful_mapping": [
+      "throw → pulling an alarm",
+      "catch (DmlException) → floor warden for that alarm type",
+      "catch (Exception) last → the lobby desk that only speaks after specialists",
+      "finally → stairwell checklist after a normal alarm",
+      "custom *Exception → a labeled pull-station your service installs",
+      "LimitException → building evacuation; local catch/finally skipped",
+      "debug log → the alarm printout"
+    ],
+    "where_it_breaks": [
+      "finally is not a new transaction and cannot DML its way out of a LimitException.",
+      "Unhandled-exception email is not a monitoring product.",
+      "System.debug is not a durable audit log.",
+      "The analogy does not encode governor numbers (APEX-007)."
+    ]
+  },
+  "teach_back_prompt": "Explain catchable versus uncatchable Apex exceptions using the fire-panel idea, then name one place that analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Write try/catch/finally rules and name two uncatchable exception kinds."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Design a custom exception wrap around DmlException."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why catch (Exception e) return null is an interview fail."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk unhandled-exception email and debug-log setup."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: LimitException versus DmlException."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-EX-STMT",
+      "title": "Exception Statements",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_statements.htm",
+      "supports": "throw, try/catch/finally syntax; Exception last; uncatchable LimitException and assertions; finally skipped.",
+      "release_or_version": "Apex Developer Guide / API 67.0 / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "API 41+ unreachable-code compile behavior is versioned."
+    },
+    {
+      "source_id": "SF-APEX-EX-DEF",
+      "title": "Exceptions in Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_definition.htm",
+      "supports": "What happens on exception: halt, DML rollback, debug log, unhandled email, UI message.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Event Monitoring unexpected-exception files are a neighboring observability topic."
+    },
+    {
+      "source_id": "SF-APEX-EX-CUSTOM",
+      "title": "Create Custom Exceptions",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_exception_custom.htm",
+      "supports": "Extend Exception; class name must end with Exception; wrap inner exceptions; common methods.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every built-in exception type."
+    },
+    {
+      "source_id": "SF-APEX-DEBUG-LOG",
+      "title": "Debug Log",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_debugging_debug_log.htm",
+      "supports": "What debug logs record; user vs class/trigger trace flags; class flags override levels but do not start logging alone.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Log retention and size caps are org/release-sensitive; do not invent them here."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "throw try catch finally",
+        "Custom exceptions",
+        "Uncatchable limits",
+        "DML rollback",
+        "Debug logs",
+        "Do not swallow Exception"
+      ],
+      "accessible_description": "Portrait map: catchable exceptions use try/catch/finally; custom types extend Exception; LimitException skips catch and finally; unhandled errors roll back DML and write logs."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-EX-STMT",
+        "SF-APEX-EX-DEF",
+        "SF-APEX-EX-CUSTOM",
+        "SF-APEX-DEBUG-LOG"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Catchable versus uncatchable Apex exceptions"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Throw[throw or platform error] --> Catchable{Catchable?}\n  Catchable -->|DmlException QueryException custom| Try[try catch finally]\n  Try --> Catch[Matching catch type]\n  Try --> Fin[finally cleanup]\n  Catchable -->|LimitException assert license| Abort[No catch no finally]\n  Abort --> Roll[DML rollback debug log email]",
+      "decision": "flowchart TD\n  Err[Error in Apex class] --> Q1{Governor or assert?}\n  Q1 -->|Yes| Stop[Cannot catch redesign bulk APEX-007]\n  Q1 -->|DmlException| Q2{Caller needs a domain type?}\n  Q2 -->|Yes| Custom[Wrap in LAB_ShipmentException]\n  Q2 -->|No| CatchDml[catch DmlException log rethrow or addError]\n  Err --> Q3{Need cleanup?}\n  Q3 -->|Yes catchable| Finally[finally]\n  Q3 -->|LimitException| NoFin[finally will not run]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "try requires at least one catch or finally. catch types must be unique; Exception must be last. LimitException and assertion failures cannot be caught, and finally does not run for them.",
+      "source_ids": ["SF-APEX-EX-STMT"],
+      "scope": "Exception statements",
+      "validation": "Exception Statements in the Apex Developer Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "When an exception occurs, execution halts, processed DML is rolled back, and the event is logged. Unhandled exceptions email the LastModifiedBy developer by default and show a UI error.",
+      "source_ids": ["SF-APEX-EX-DEF"],
+      "scope": "Unhandled exception behavior",
+      "validation": "Exceptions in Apex.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Custom exception classes extend Exception and must have names ending in Exception. They can wrap an inner exception as the cause.",
+      "source_ids": ["SF-APEX-EX-CUSTOM"],
+      "scope": "Custom exceptions",
+      "validation": "Create Custom Exceptions.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Debug logs record database operations, system processes, and errors. Class and trigger trace flags override levels but do not by themselves cause logs to be generated.",
+      "source_ids": ["SF-APEX-DEBUG-LOG"],
+      "scope": "Logging",
+      "validation": "Debug Log topic.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "API 41.0+ treats some unreachable statements after an unconditional throw as compile errors. Reverify the class API version.",
+  "unresolved_uncertainty": [
+    "Exact debug-log retention counts and file-size caps should be read from current Monitoring documentation before quoting numbers."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "LimitException",
+      "telugu": "Governor failure that cannot be caught."
+    },
+    {
+      "english": "Custom exception",
+      "telugu": "Your Exception subclass named *Exception."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Catch specific types, put Exception last, use finally for catchable cleanup. Custom types end with Exception. LimitException cannot be caught and skips finally. Unhandled errors roll back DML and write a debug log.",
+    "two_minutes": "I never catch Exception to return null. I catch DmlException or QueryException, wrap in LAB_ShipmentException when the caller needs a domain contract, and rethrow otherwise. I set a user trace flag when I need a log; class flags only override levels. I tell interviewers governors are redesigned, not caught. Logging is not a second database of customer PII."
+  },
+  "terminology": [
+    {
+      "term": "exception",
+      "plain": "An error object that stops normal Apex flow.",
+      "precise": "A thrown instance (built-in or custom) that unwinds the stack until a matching catch or until the transaction fails.",
+      "example": "throw new DmlException(); is unusual; insert of a bad row throws DmlException for you.",
+      "non_example": "A validation-rule message with no Apex on the stack.",
+      "confusable_neighbor": "addError on a trigger record: marks a row, not a thrown type unless it becomes DmlException.",
+      "boundary": "Some platform exceptions cannot be caught."
+    },
+    {
+      "term": "custom exception",
+      "plain": "Your own exception type for a service contract.",
+      "precise": "A class that extends Exception and whose name ends with Exception. Can wrap a cause.",
+      "example": "public class LAB_ShipmentException extends Exception {}",
+      "non_example": "public class LAB_ShipmentError (invalid name / not extending Exception).",
+      "confusable_neighbor": "AuraHandledException for LWC/Aura (neighbor, not this lesson's focus).",
+      "boundary": "Naming is required; an empty body still inherits constructors."
+    },
+    {
+      "term": "LimitException",
+      "plain": "The governor-limit failure you cannot catch.",
+      "precise": "System.LimitException and similar critical exceptions abort execution; catch and finally do not run.",
+      "example": "Too many SOQL queries in one transaction.",
+      "non_example": "DmlException for a missing required field—that is catchable.",
+      "confusable_neighbor": "Catchable QueryException for a bad query.",
+      "boundary": "Redesign/bulkify (APEX-007); do not wrap in try."
+    },
+    {
+      "term": "finally",
+      "plain": "A block that runs after try/catch for catchable paths.",
+      "precise": "At most one finally per try. Runs whether or not a catchable exception occurred. Does not run for uncatchable exceptions.",
+      "example": "finally { cr.Status__c = 'Closed'; } only if the exception was catchable and you still have a transaction.",
+      "non_example": "Using finally to catch LimitException.",
+      "confusable_neighbor": "Database.rollback in catch—different tool.",
+      "boundary": "finally is not a new governor pool."
+    },
+    {
+      "term": "defensive programming",
+      "plain": "Failing in a controlled, specific way instead of hiding errors.",
+      "precise": "Catch the narrowest type, preserve cause, do not return null from a swallowed Exception, and do not use try to 'handle' governors.",
+      "example": "catch (DmlException e) { throw new LAB_ShipmentException('Stop insert failed', e); }",
+      "non_example": "catch (Exception e) { return null; }",
+      "confusable_neighbor": "allOrNone false (APEX-005): that is DML policy, not exception policy.",
+      "boundary": "Defense is not the same as catching everything."
+    },
+    {
+      "term": "debug log",
+      "plain": "The platform trace of a transaction.",
+      "precise": "A log that can include database operations, system processes, and errors. User trace flags start capture; class/trigger flags override levels only.",
+      "example": "Setup → Debug Logs → user trace flag, then reproduce the LAB_ failure.",
+      "non_example": "System.debug in a 200-row loop as the only production observability.",
+      "confusable_neighbor": "Unhandled exception email: a notification, not the full log.",
+      "boundary": "Retention/size are org-sensitive; do not invent caps."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide if the failure is catchable",
+      "actor": "Developer",
+      "trigger": "Apex may fail",
+      "before": "Unknown exception family",
+      "after": "Governor/assert versus Dml/Query/custom",
+      "observe": "Design notes say 'cannot catch LimitException'",
+      "failure": "try/catch around a known SOQL-in-loop"
+    },
+    {
+      "step": 2,
+      "transition": "Catch the specific type",
+      "actor": "Developer",
+      "trigger": "Catchable failure expected",
+      "before": "Bare try",
+      "after": "catch (DmlException) or custom wrap; Exception last if used",
+      "observe": "Caller receives LAB_ShipmentException with getCause",
+      "failure": "catch (Exception e) return null"
+    },
+    {
+      "step": 3,
+      "transition": "Log with a trace flag",
+      "actor": "Developer",
+      "trigger": "Need evidence",
+      "before": "No log",
+      "after": "User debug log plus targeted class level",
+      "observe": "EXCEPTION_THROWN or USER_DEBUG lines for the LAB_ repro",
+      "failure": "Class trace flag alone with no user logging enabled"
+    },
+    {
+      "step": 4,
+      "transition": "Clean up only on catchable paths",
+      "actor": "Developer",
+      "trigger": "Resources or status flags",
+      "before": "finally assumed universal",
+      "after": "finally used knowing LimitException skips it",
+      "observe": "Code comment states the skip rule",
+      "failure": "Relying on finally to decrement a counter after a governor abort"
+    }
+  ],
+  "when_to_use": [
+    "When an Apex class must throw or catch DmlException/QueryException instead of returning null.",
+    "When a custom exception is the right contract for callers of a service method.",
+    "When defensive programming means narrow catch blocks plus debug-log evidence.",
+    "When explaining logging via debug logs and why LimitException cannot be handled."
+  ],
+  "when_not_to_use": [
+    "Do not use try/catch as a substitute for bulkification when a governor LimitException is the real defect (APEX-007).",
+    "Do not catch Exception in a trigger to hide addError or DML failures.",
+    "Do not treat System.debug as durable logging or as a place for customer secrets.",
+    "Do not use this exceptions lesson as a DML allOrNone guide (APEX-005) or a trigger-order map (APEX-009)."
+  ],
+  "configuration_or_code_location": [
+    "Apex class in a disposable sandbox.",
+    "Setup → Debug Logs for user trace flags.",
+    "Setup → Apex Exception Email for extra recipients.",
+    "Developer Console Logs tab."
+  ],
+  "worked_example": {
+    "scenario": "LAB_ShipmentService.insertStops catches failures. Callers need a domain exception. A second experiment proves LimitException is not catchable by querying in a loop on purpose in a scratch method that is never deployed. No production data.",
+    "inputs": [
+      "List of LAB_Stop__c including one invalid row",
+      "Custom class LAB_ShipmentException",
+      "User trace flag on the developer"
+    ],
+    "decisions": [
+      {
+        "decision": "catch (DmlException e) and throw new LAB_ShipmentException(message, e).",
+        "because": "Custom exceptions wrap cause; callers catch the domain type.",
+        "rejected": "catch (Exception e) { return null; }"
+      },
+      {
+        "decision": "Do not catch LimitException in the bulk path; fix the query-in-loop instead.",
+        "because": "LimitException cannot be caught; finally would not run.",
+        "rejected": "An empty try around the loop"
+      },
+      {
+        "decision": "Enable a user debug log rather than only a class trace flag.",
+        "because": "Class flags override levels but do not start logging alone.",
+        "rejected": "Class flag only, then wondering why no file appeared"
+      }
+    ],
+    "configuration_or_code": [
+      "public class LAB_ShipmentException extends Exception {}",
+      "try { insert stops; } catch (DmlException e) { throw new LAB_ShipmentException('Stop insert failed', e); }",
+      "Setup → Debug Logs → New user trace flag"
+    ],
+    "output": "Caller catch (LAB_ShipmentException) sees getCause as DmlException; no rows committed; a debug log exists for the user.",
+    "verification": [
+      "SOQL count of stops is unchanged after the failure.",
+      "getCause() is DmlException.",
+      "A class-only trace flag without user logging produces no new log file."
+    ],
+    "self_explanation": "Specific catch, custom wrap, logs that actually generate, governors redesigned not caught."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; synthetic LAB_ classes only.",
+    "starting_state_checks": [
+      "You can create Apex classes and debug logs.",
+      "No production users on the trace flag."
+    ],
+    "steps": [
+      "Create LAB_ShipmentException extends Exception.",
+      "Write a method that inserts a bad Account and wraps DmlException.",
+      "Call it from anonymous Apex inside catch (LAB_ShipmentException me) and print getMessage and getCause.",
+      "Add a user debug log and confirm EXCEPTION_THROWN or USER_DEBUG appears."
+    ],
+    "guided_completion": [
+      "If the class name does not end in Exception, it will not compile as a custom exception.",
+      "If you caught Exception and returned null, rewrite."
+    ],
+    "independent_challenge": "Add a finally that System.debugs 'cleanup' and then force a catchable DmlException; confirm the line appears. Note in comments that LimitException would skip it.",
+    "evidence": [
+      "Anonymous Apex output of getCause.",
+      "A downloaded debug log snippet with LAB_ names only."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ classes and expire the trace flag.",
+      "Do not email real customer traces."
+    ],
+    "limitations": "Does not prove Event Monitoring files or production log caps."
+  },
+  "decision_table": [
+    {
+      "signal": "DML failed on a required field and the caller should see a domain error.",
+      "choose": "catch (DmlException) and throw a custom *Exception with the cause.",
+      "not": "catch (Exception e) { return null; }",
+      "why": "Custom exceptions wrap inner exceptions; swallowing Exception hides the failure."
+    },
+    {
+      "signal": "A test or load hits too many SOQL queries.",
+      "choose": "Redesign/bulkify; do not write a catch for LimitException.",
+      "not": "try/catch/finally around the loop hoping to recover.",
+      "why": "LimitException cannot be caught; finally does not run."
+    },
+    {
+      "signal": "You need a log of a failing sandbox transaction.",
+      "choose": "User debug-log trace flag, optionally with class-level overrides.",
+      "not": "Only a class trace flag with no logging enabled.",
+      "why": "Class/trigger flags override levels but do not start capture by themselves."
+    },
+    {
+      "signal": "Cleanup must run after both success and catchable failure.",
+      "choose": "finally on that try, knowing governors skip it.",
+      "not": "A second DML in finally as a way to undo LimitException.",
+      "why": "finally is for catchable paths; uncatchable aborts skip it."
+    }
+  ],
+  "limitations": [
+    "Does not catalog every built-in exception type.",
+    "Does not replace bulkification (APEX-007).",
+    "Debug-log retention numbers are not invented here.",
+    "AuraHandledException / LWC error shape is a neighbor."
+  ],
+  "security_notes": [
+    "Do not System.debug secrets, session IDs, or real customer payloads.",
+    "Unhandled exception emails include org and user Ids—treat them as sensitive.",
+    "LAB_ data only."
+  ],
+  "common_mistakes": [
+    "catch (Exception e) return null.",
+    "Trying to catch LimitException.",
+    "Custom class not named *Exception.",
+    "Class trace flag without a user log.",
+    "Assuming finally runs after a governor abort."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Compile error that a custom type is not an Exception.",
+      "check": [
+        "The class extends Exception.",
+        "The name ends with Exception."
+      ],
+      "do_not_assume": "You need a managed package."
+    },
+    {
+      "symptom": "No debug log file after a failure.",
+      "check": [
+        "A user (or equivalent) trace flag that actually starts logging.",
+        "You reproduced after the flag was active."
+      ],
+      "do_not_assume": "A class-only CLASS_TRACING flag is enough."
+    },
+    {
+      "symptom": "catch and finally never ran on a bulk failure.",
+      "check": [
+        "The failure is LimitException or another uncatchable type.",
+        "Redesign the SOQL/DML, do not add more catch blocks."
+      ],
+      "do_not_assume": "The catch syntax is wrong."
+    }
+  ],
+  "production_notes": [
+    "Prefer specific catches and custom types at service boundaries.",
+    "Turn off leftover user trace flags.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What must accompany a try block?",
+      "options": {
+        "A": "At least one catch or one finally",
+        "B": "Exactly three catch blocks",
+        "C": "A SOSL FIND",
+        "D": "A trigger"
+      },
+      "answer": "A",
+      "rationale": "At least a catch or a finally must be present with try.",
+      "distractor_explanations": {
+        "B": "Zero or more catch blocks, with uniqueness rules.",
+        "C": "SOSL is unrelated.",
+        "D": "Triggers are APEX-008."
+      },
+      "concept": "try/catch/finally",
+      "citation_ids": ["SF-APEX-EX-STMT"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where must catch (Exception e) sit if used?",
+      "options": {
+        "A": "Last among catch blocks",
+        "B": "First always",
+        "C": "Inside finally",
+        "D": "It is illegal in Apex"
+      },
+      "answer": "A",
+      "rationale": "The general Exception type must be the last catch block when used.",
+      "distractor_explanations": {
+        "B": "Specific types should come first.",
+        "C": "finally is not a catch.",
+        "D": "Exception is legal, just last."
+      },
+      "concept": "catch order",
+      "citation_ids": ["SF-APEX-EX-STMT"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which exception cannot be caught?",
+      "options": {
+        "A": "LimitException from a governor",
+        "B": "DmlException from a missing required field",
+        "C": "A custom LAB_ShipmentException you threw",
+        "D": "QueryException from a bad SOQL"
+      },
+      "answer": "A",
+      "rationale": "LimitException is listed among uncatchable critical exceptions.",
+      "distractor_explanations": {
+        "B": "DmlException is catchable.",
+        "C": "Custom exceptions you throw are catchable.",
+        "D": "QueryException is catchable."
+      },
+      "concept": "LimitException",
+      "citation_ids": ["SF-APEX-EX-STMT"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Does finally run after LimitException?",
+      "options": {
+        "A": "No. catch and finally are skipped for uncatchable exceptions",
+        "B": "Yes, always",
+        "C": "Only in triggers",
+        "D": "Only if you catch Exception first"
+      },
+      "answer": "A",
+      "rationale": "When exceptions are uncatchable, catch and finally are not executed.",
+      "distractor_explanations": {
+        "B": "That is true only for catchable paths.",
+        "C": "The rule is not trigger-specific.",
+        "D": "You cannot catch LimitException."
+      },
+      "concept": "finally",
+      "citation_ids": ["SF-APEX-EX-STMT"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A custom exception class must do what?",
+      "options": {
+        "A": "Extend Exception and have a name ending in Exception",
+        "B": "Extend Account",
+        "C": "Be global and annotated @future",
+        "D": "Live inside a trigger only"
+      },
+      "answer": "A",
+      "rationale": "Create Custom Exceptions requires extending Exception and the *Exception name.",
+      "distractor_explanations": {
+        "B": "Account is an sObject.",
+        "C": "@future is async (APEX-011).",
+        "D": "Custom exceptions are classes."
+      },
+      "concept": "custom exception",
+      "citation_ids": ["SF-APEX-EX-CUSTOM"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What happens to processed DML when an exception occurs?",
+      "options": {
+        "A": "It is rolled back and not committed",
+        "B": "It always commits row by row",
+        "C": "It converts to SOSL",
+        "D": "It becomes metadata"
+      },
+      "answer": "A",
+      "rationale": "Exceptions in Apex: DML processed before the exception is rolled back.",
+      "distractor_explanations": {
+        "B": "That contradicts the rollback rule (partial success is APEX-005).",
+        "C": "SOSL is unrelated.",
+        "D": "DML is data, not metadata."
+      },
+      "concept": "exception rollback",
+      "citation_ids": ["SF-APEX-EX-DEF"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Who receives unhandled Apex exception email by default?",
+      "options": {
+        "A": "The user in LastModifiedBy on the failing class or trigger",
+        "B": "Every user in the org",
+        "C": "Only the running end user",
+        "D": "Nobody; email is impossible"
+      },
+      "answer": "A",
+      "rationale": "Unhandled exception emails go by default to LastModifiedBy on the failing class or trigger.",
+      "distractor_explanations": {
+        "B": "You can add more addresses; that is not the default.",
+        "C": "The end user sees a UI error, not necessarily the email.",
+        "D": "Email is documented."
+      },
+      "concept": "unhandled email",
+      "citation_ids": ["SF-APEX-EX-DEF"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Class/trigger trace flags by themselves do what?",
+      "options": {
+        "A": "Override log levels but do not start logging",
+        "B": "Always create a log file",
+        "C": "Catch LimitException",
+        "D": "Deploy the class"
+      },
+      "answer": "A",
+      "rationale": "The Debug Log topic states class/trigger flags override levels but do not cause logs to be generated or saved by themselves.",
+      "distractor_explanations": {
+        "B": "You still need logging to be enabled (user flag, etc.).",
+        "C": "Flags do not catch exceptions.",
+        "D": "Unrelated."
+      },
+      "concept": "debug log",
+      "citation_ids": ["SF-APEX-DEBUG-LOG"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which is defensive programming in this lesson?",
+      "options": {
+        "A": "catch (DmlException e) and wrap or rethrow with context",
+        "B": "catch (Exception e) { return null; }",
+        "C": "catch (LimitException e) { Limits.getQueries(); }",
+        "D": "Delete the debug log so nobody sees the error"
+      },
+      "answer": "A",
+      "rationale": "Narrow catch plus preserved cause is the documented custom-exception pattern.",
+      "distractor_explanations": {
+        "B": "Swallows the failure.",
+        "C": "LimitException cannot be caught.",
+        "D": "Hides evidence."
+      },
+      "concept": "defensive programming",
+      "citation_ids": ["SF-APEX-EX-CUSTOM", "SF-APEX-EX-STMT"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "getCause on a custom exception returns what?",
+      "options": {
+        "A": "The inner exception you passed to the constructor",
+        "B": "A SOQL list",
+        "C": "Trigger.new",
+        "D": "A SaveResult"
+      },
+      "answer": "A",
+      "rationale": "The custom-exception example passes the original DmlException as cause.",
+      "distractor_explanations": {
+        "B": "Not a query.",
+        "C": "Trigger context is separate.",
+        "D": "SaveResult is APEX-005."
+      },
+      "concept": "custom exception",
+      "citation_ids": ["SF-APEX-EX-CUSTOM"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates an exception-handling class from business data?",
+      "options": {
+        "A": "Deploying LAB_ShipmentException.cls does not insert stops; a thrown exception can roll back stop DML",
+        "B": "Exceptions are custom objects in Setup",
+        "C": "Debug logs are records you deploy",
+        "D": "finally inserts metadata"
+      },
+      "answer": "A",
+      "rationale": "The class is metadata. DML rows are data and roll back on exception.",
+      "distractor_explanations": {
+        "B": "Exception is a language type.",
+        "C": "Logs are diagnostic files, not deployable business records.",
+        "D": "finally does not deploy metadata."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-APEX-EX-DEF"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "System.assert failure is documented as what?",
+      "options": {
+        "A": "An uncatchable exception path (assertion statements fail)",
+        "B": "A catchable DmlException",
+        "C": "A SOSL miss",
+        "D": "A successful finally-only try"
+      },
+      "answer": "A",
+      "rationale": "Exception Statements lists assertion failures with uncatchable exceptions.",
+      "distractor_explanations": {
+        "B": "Assert is not DML.",
+        "C": "SOSL is unrelated.",
+        "D": "Assert aborts; it is not success."
+      },
+      "concept": "uncatchable",
+      "citation_ids": ["SF-APEX-EX-STMT"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "syntax",
+      "front": "try must include…",
+      "back": "At least one catch or one finally."
+    },
+    {
+      "id": "F2",
+      "category": "syntax",
+      "front": "Where does catch (Exception e) go?",
+      "back": "Last, after more specific types."
+    },
+    {
+      "id": "F3",
+      "category": "uncatchable",
+      "front": "Name an uncatchable exception.",
+      "back": "LimitException (governors). Assertion failures are also uncatchable."
+    },
+    {
+      "id": "F4",
+      "category": "finally",
+      "front": "Does finally run after LimitException?",
+      "back": "No. catch and finally are skipped."
+    },
+    {
+      "id": "F5",
+      "category": "custom",
+      "front": "Custom exception naming rule?",
+      "back": "Extend Exception and end the class name with Exception."
+    },
+    {
+      "id": "F6",
+      "category": "custom",
+      "front": "Why pass the original exception into a custom type?",
+      "back": "It becomes getCause()—the inner exception."
+    },
+    {
+      "id": "F7",
+      "category": "rollback",
+      "front": "DML before an exception?",
+      "back": "Rolled back; not committed."
+    },
+    {
+      "id": "F8",
+      "category": "email",
+      "front": "Default unhandled-exception email target?",
+      "back": "LastModifiedBy on the failing class or trigger."
+    },
+    {
+      "id": "F9",
+      "category": "log",
+      "front": "Class trace flag alone?",
+      "back": "Overrides levels but does not start logging by itself."
+    },
+    {
+      "id": "F10",
+      "category": "defense",
+      "front": "catch (Exception e) return null?",
+      "back": "Not defensive. Hides DmlException/QueryException and still cannot catch governors."
+    },
+    {
+      "id": "F11",
+      "category": "methods",
+      "front": "Four common exception methods?",
+      "back": "getMessage, getCause, getLineNumber, getStackTraceString (plus getTypeName)."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "Exceptions versus allOrNone false?",
+      "back": "allOrNone is DML policy (APEX-005). Exceptions are control-flow errors."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Service insert fails validation?",
+      "back": "catch DmlException and wrap in a custom *Exception."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Need a log of a sandbox failure?",
+      "back": "User debug-log trace flag, then reproduce."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "SOQL in a loop hits a governor?",
+      "back": "Bulkify (APEX-007). Do not add a catch."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do try, catch, and finally work in Apex?",
+      "answer_30_seconds": "try marks risky code. catch handles a unique type; Exception last. finally runs on catchable paths. You need at least catch or finally.",
+      "answer_2_minutes": "I catch DmlException or QueryException, not Exception first. I use finally for cleanup that is still in the same transaction. I state that LimitException skips both catch and finally so they hear I read Exception Statements. I do not treat finally as a new governor pool.",
+      "example": "try { insert stops; } catch (DmlException e) { throw new LAB_ShipmentException('failed', e); } finally { System.debug('attempted'); }",
+      "tradeoffs": [
+        "Narrow catch vs Exception last",
+        "finally cleanup vs rollback in catch"
+      ],
+      "follow_ups": [
+        "Can you have try/finally with no catch?",
+        "What changed in API 41 for unreachable throw?"
+      ],
+      "weak_answer_warnings": [
+        "Saying finally always runs, including after governors"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you create and use a custom exception?",
+      "answer_30_seconds": "Extend Exception, name it *Exception, throw it, and optionally pass the cause. Callers catch the domain type and can call getCause.",
+      "answer_2_minutes": "I show the guide's MerchandiseException pattern: catch DmlException, throw new MyException(message, e). That preserves the stack of the wrap line and the cause of the DML. I do not invent a second error-code enum unless the team already has one.",
+      "example": "public class LAB_ShipmentException extends Exception {}",
+      "tradeoffs": [
+        "Domain type vs raw DmlException",
+        "Rethrow vs wrap"
+      ],
+      "follow_ups": [
+        "What is AuraHandledException for?",
+        "Can inner classes be exceptions?"
+      ],
+      "weak_answer_warnings": [
+        "A class named LAB_ShipmentError that does not extend Exception"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A teammate catches Exception around a trigger handler and returns. The load still dies with a governor. What do you teach?",
+      "answer_30_seconds": "LimitException cannot be caught. Their catch never ran. They must bulkify, not wrap the loop.",
+      "answer_2_minutes": "I separate catchable DmlException from uncatchable LimitException. I ask for the debug log LIMIT_USAGE_FOR_NS. I refuse catch (Exception e) even for the DML path because it hides real row errors. I point them to APEX-007 for the redesign.",
+      "example": "SOQL inside for (Account a : Trigger.new) still aborts the transaction.",
+      "tradeoffs": [
+        "Catch DmlException vs redesign governors",
+        "addError vs throw"
+      ],
+      "follow_ups": [
+        "Does finally log the governor?",
+        "What does Limits.getQueries show before abort?"
+      ],
+      "weak_answer_warnings": [
+        "Adding another catch (LimitException)"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "You have no debug log after a failure, but a class trace flag exists. What is wrong?",
+      "answer_30_seconds": "Class flags override levels; they do not start logging. Add a user trace flag (or other start condition) and reproduce.",
+      "answer_2_minutes": "I open Setup → Debug Logs, add myself, reproduce the LAB_ path, then download. I may raise the class to FINEST once capture is on. I do not System.debug secrets. I mention unhandled-exception email as a backup signal, not the full log.",
+      "example": "CLASS_TRACING on LAB_ShipmentService with no user flag → zero files.",
+      "tradeoffs": [
+        "User flag vs developer console",
+        "FINEST vs HEAP_TOO_BIG noise"
+      ],
+      "follow_ups": [
+        "What is DEVELOPER_LOG?",
+        "Do time-based workflows appear? (Guide says they do not.)"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Salesforce for 'broken logs' without a user flag"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When is catch (Exception e) acceptable?",
+      "answer_30_seconds": "Almost never at a service boundary. If used, it must be last, log, and rethrow or convert to a custom type—not return null.",
+      "answer_2_minutes": "I prefer specific types. A top-level Queueable might catch Exception to write a status row—but that DML can also fail, and it still cannot catch governors. I would rather fail loud in a trigger than swallow. Interviewers treat return-null catches as a fail.",
+      "example": "catch (Exception e) { throw new LAB_ShipmentException('unexpected', e); } as last block.",
+      "tradeoffs": [
+        "Loud failure vs user-friendly wrapper",
+        "Trigger addError vs throw"
+      ],
+      "follow_ups": [
+        "How do you test the wrap?",
+        "Where do you store the status row without mixed DML?"
+      ],
+      "weak_answer_warnings": [
+        "Empty catch"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "What happens on an unhandled exception?",
+      "answer_30_seconds": "Execution stops, DML rolls back, a debug log can record it, LastModifiedBy gets email by default, and the UI shows an error.",
+      "answer_2_minutes": "I cite Exceptions in Apex. I mention you can add Apex Exception Email recipients. I mention Event Monitoring unexpected-exception files as optional, not as something I invent details for. I distinguish this from allOrNone false, where no exception is thrown for failed rows.",
+      "example": "A trigger throws; the Account edit page shows an error and the insert did not commit.",
+      "tradeoffs": [
+        "Email vs log vs Event Monitoring",
+        "Handled wrap vs unhandled abort"
+      ],
+      "follow_ups": [
+        "What PII is in the email?",
+        "Does the running user get the email?"
+      ],
+      "weak_answer_warnings": [
+        "Saying the DML committed anyway"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "getCause() is null on your custom exception. Why?",
+      "answer_30_seconds": "You constructed it with only a message, not the original exception. Pass e into the constructor.",
+      "answer_2_minutes": "The guide shows throw new MerchandiseException('...', e). Without the cause, callers only see your wrap line. I also check they did not catch Exception and new up a blank exception. I print getStackTraceString to see the throw line.",
+      "example": "throw new LAB_ShipmentException('failed'); versus (..., e).",
+      "tradeoffs": [
+        "Wrap vs rethrow the same instance",
+        "Message quality vs cause fidelity"
+      ],
+      "follow_ups": [
+        "initCause versus constructor?",
+        "How deep can causes nest?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming getCause as unimplemented"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "How do exceptions interact with Database.insert(list, false)?",
+      "answer_30_seconds": "Partial success often throws nothing. Failures live on SaveResult. A later uncaught exception can still roll back the successes.",
+      "answer_2_minutes": "This is the APEX-005 boundary. I inspect SaveResult instead of catching DmlException for that call. If I then throw a custom exception, I undo those partial inserts unless I wanted them kept—then I must not throw. Interviewers like people who can hold both models.",
+      "example": "Database.insert(stops, false) then throw new LAB_ShipmentException if any !isSuccess—rolls back the good stops too.",
+      "tradeoffs": [
+        "Keep partial rows vs fail the unit",
+        "SaveResult vs DmlException"
+      ],
+      "follow_ups": [
+        "Where would a savepoint sit?",
+        "Should a trigger use partial success?"
+      ],
+      "weak_answer_warnings": [
+        "Catching DmlException on allOrNone false as the only check"
+      ]
+    }
+  ]
+}

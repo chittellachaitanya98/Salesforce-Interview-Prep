@@ -1,0 +1,1050 @@
+{
+  "topic_id": "APEX-016",
+  "slug": "apex-tests-test-data-isolation-starttest-stoptest-mocks",
+  "title": "Apex tests, test data, isolation, `startTest/stopTest`, mocks, coverage, and meaningful assertions",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-015"
+  ],
+  "objectives": [
+    "Explain test isolation: tests do not see org data unless SeeAllData=true (discouraged).",
+    "Use Test.startTest/stopTest to run async and reset governor usage for the code under test.",
+    "Mock HTTP (and similar) instead of live callouts; assert behavior, not only coverage percent.",
+    "Cite official deployment coverage (75%) from the Apex Developer Guide without treating coverage as the goal."
+  ],
+  "diagnostic_question": "A test uses SeeAllData=true, never calls startTest/stopTest around a Queueable, has no HttpCalloutMock, asserts System.assert(true), and boasts 80% coverage. What is wrong with isolation, startTest/stopTest, mocks, coverage, and assertions?",
+  "definition": "Apex tests are @IsTest classes that deploy with your code. By default they cannot see org data—you insert synthetic LAB_ records (isolation). Test.startTest and Test.stopTest mark the tested work, reset governors for that block, and run queued async. HTTP callouts are mocked. Coverage of 75% is the official production-deploy floor, not a quality bar. Assertions must check data and behavior. ([Apex Testing](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_testing.htm); [Isolation of Test Data from Organization Data](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_testing_data.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+  "why_it_matters": "Green tests that query production Accounts, skip stopTest, and assert true will pass CI and fail production. Interviewers want isolation, startTest/stopTest, mocks, and meaningful assertions—not a coverage screenshot.",
+  "sixty_second_explanation": "Crash-test lab: you build dummy cars (test data), not steal street traffic (SeeAllData). startTest/stopTest is the timed crash window with a fresh governor budget and it releases the Queueable. Mocks are dummy walls so you do not need a real cliff. Coverage is how much of the chassis has sensors—75% is the legal minimum to leave the lab, not proof the dummy survived. Assertions are whether the dummy's belt held. Isolation means your dummies vanish when the test ends.",
+  "deeper_explanation": [
+    "The Apex Testing topic requires tests before production deploy. @IsTest classes do not count against production Apex limits in the usual packaging sense. Tests should be deterministic. ([Apex Testing](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_testing.htm))",
+    "Isolation: tests do not have access to org data by default. Insert what you need. SeeAllData=true is documented but discouraged because org data changes and tests become flaky. You still cannot see some setup objects without SeeAllData—re-read Isolation of Test Data rather than inventing the list. ([Isolation of Test Data](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_testing_data.htm))",
+    "Test.startTest() resets governor usage so setup DML does not starve the code under test. Test.stopTest() runs queued async (Queueable, future, batch in tests) and ends that fresh budget. The governors page notes that future/executeBatch inside start/stop do not count against queued-job limits the same way—cite that page, do not invent extra test-only numbers. ([Apex Testing](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_testing.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+    "Mocks: HttpCalloutMock + Test.setMock (APEX-013). You cannot make a real callout from a test without an allowed mechanism—default is mock. Coverage: 75% of Apex in the deployment plus coverage on every trigger is the official production deploy rule—reverify the exact wording on the current Testing / deploying topic. Coverage without assertions is theater.",
+    "Meaningful assertions: Assert.areEqual on LAB_ field values, row counts, exception types, Limits.getEmailInvocations, and mock call counts. System.assert(true) proves nothing. Test data factories must not hide DML-in-loop (APEX-018)."
+  ],
+  "mental_model": {
+    "analogy": "A crash-test lab: dummy cars are test data, the timed window is startTest/stopTest, dummy walls are mocks, sensor coverage is the 75% floor, and belt measurements are assertions. You do not tow real street cars into the lab (SeeAllData).",
+    "useful_mapping": [
+      "dummy car → inserted LAB_ records",
+      "street traffic → org data / SeeAllData=true",
+      "timed crash window → startTest / stopTest",
+      "fresh instrument budget → governors reset at startTest",
+      "dummy wall → HttpCalloutMock",
+      "sensor coverage 75% → deploy floor, not quality",
+      "belt measurement → Assert.areEqual on outcomes",
+      "cars crushed then gone → isolation / rollback of test DML"
+    ],
+    "where_it_breaks": [
+      "Some setup objects still need special handling; read Isolation of Test Data.",
+      "stopTest runs async once; it is not a general 'commit'.",
+      "75% is org-deploy math, not per-method pride."
+    ]
+  },
+  "teach_back_prompt": "Walk a failing production bug that tests missed because of SeeAllData, missing stopTest, no mock, 80% coverage, and assert(true).",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Isolation default vs SeeAllData."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "What startTest/stopTest do to governors and async."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "HttpCalloutMock registration order."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "75% coverage vs meaningful assertions."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: write a test plan aloud."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-TEST",
+      "title": "Apex Testing",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_testing.htm",
+      "supports": "Why tests exist; @IsTest; startTest/stopTest role; deploy requires tests.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Exact 75% sentence lives on the testing/deploy pages—reverify wording."
+    },
+    {
+      "source_id": "SF-APEX-ISOLATION",
+      "title": "Isolation of Test Data from Organization Data in Unit Tests",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_testing_data.htm",
+      "supports": "Tests do not see org data by default; SeeAllData=true is the documented exception and is discouraged for most tests.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Lists of objects that still require SeeAllData should be re-read, not memorized from blogs."
+    },
+    {
+      "source_id": "SF-APEX-GOV",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "Future/executeBatch inside startTest/stopTest have documented queued-job counting notes; per-transaction caps still apply inside the test window.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Do not invent extra test-only governor numbers."
+    },
+    {
+      "source_id": "SF-APEX-HTTP",
+      "title": "HTTP Classes",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_classes_restful_http.htm",
+      "supports": "Callouts belong behind mocks in tests (with APEX-013).",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Mock interface details are on the testing-HTTP subtopic."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Isolation",
+        "Test data factory",
+        "startTest/stopTest",
+        "Mocks",
+        "75% floor",
+        "Assertions"
+      ],
+      "accessible_description": "Isolation; Test data factory; startTest/stopTest; Mocks; 75% floor; Assertions"
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-TEST",
+        "SF-APEX-ISOLATION",
+        "SF-APEX-GOV"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Does this test prove behavior or only coverage?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  T[@IsTest method] --> Setup[Insert LAB_ test data]\n  Setup --> Start[Test.startTest: fresh governors]\n  Start --> Code[Code under test]\n  Code --> Mock[HttpCalloutMock if callout]\n  Code --> Stop[Test.stopTest: async runs]\n  Stop --> Assert[Meaningful assertions on LAB_ rows]\n  T --> Iso[No org data unless SeeAllData]\n  T --> Cov[Coverage 75% is deploy floor not the goal]",
+      "decision": "flowchart TD\n  Need[Need a test?] --> Q1{Needs org rows?}\n  Q1 -->|No| Insert[Insert LAB_ data; isolation default]\n  Q1 -->|Only if Guide requires that object| See[SeeAllData=true with a comment; still assert]\n  Need --> Q2{Async or lots of setup DML?}\n  Q2 -->|Yes| SS[startTest around the tested call; stopTest before asserts on async]\n  Need --> Q3{Callout?}\n  Q3 -->|Yes| Mock[Test.setMock before the call]\n  Need --> Q4{What to assert?}\n  Q4 -->|Behavior| A[Field values, counts, exceptions, Limits]\n  Q4 -->|Only percent| Bad[Not enough: coverage is not a test]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Apex tests are required to deploy to production. @IsTest methods exercise Apex. startTest/stopTest delimit the tested work and run queued async.",
+      "source_ids": [
+        "SF-APEX-TEST"
+      ],
+      "scope": "Testing purpose",
+      "validation": "Apex Testing topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "By default tests cannot access org data; they insert their own. SeeAllData=true is documented and discouraged for typical tests.",
+      "source_ids": [
+        "SF-APEX-ISOLATION"
+      ],
+      "scope": "Isolation",
+      "validation": "Isolation of Test Data topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Callout tests use mocks (HttpCalloutMock). Live network is the wrong default.",
+      "source_ids": [
+        "SF-APEX-HTTP",
+        "SF-APEX-TEST"
+      ],
+      "scope": "Mocks",
+      "validation": "HTTP classes plus testing.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Per-transaction governors still apply inside tests; startTest gives a fresh window. Official queued-job notes for future/executeBatch inside start/stop live on the governors page. Production deploy coverage is officially 75%—reverify the current testing/deploy sentence.",
+      "source_ids": [
+        "SF-APEX-GOV",
+        "SF-APEX-TEST"
+      ],
+      "scope": "Governors and coverage",
+      "validation": "Governors plus Testing/deploy.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Assert class APIs evolved; prefer System.Assert in new tests. Reverify the 75% deploy sentence on the current Testing topic for Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact list of objects invisible without SeeAllData must be read from Isolation of Test Data.",
+    "Whether 75% is computed per-class or per-deployment set: re-read the current deploy topic; do not invent the rounding rule."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Test isolation",
+      "telugu": "డమ్మీ కార్లు మాత్రమే; org �ార్లు మాత్రమే; org డేటా కాదు."
+    },
+    {
+      "english": "startTest/stopTest",
+      "telugu": "క్రాష్ విండో: కొత్త governor బడ్జెట్ + async నడు�్త governor బడ్జెట్ + async నడుస్తుంది."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Tests insert LAB_ data; they do not SeeAllData by default. startTest/stopTest reset governors and run Queueable. Mock HTTP. 75% coverage is the deploy floor. Assertions must check outcomes, not true.",
+    "two_minutes": "I write a factory that inserts isolated LAB_ rows. I startTest before the service, setMock if it callouts, stopTest before asserting async side effects. I runAs a standard user when the claim is security (APEX-015). I treat 80% coverage with assert(true) as a fail. I cite Isolation of Test Data and the Testing topic, and I reverify 75% wording on the deploy page."
+  },
+  "terminology": [
+    {
+      "term": "Apex test",
+      "plain": "@IsTest code that must accompany production Apex.",
+      "precise": "Methods that execute classes/triggers and assert. Required for production deploy.",
+      "example": "@IsTest static void archives_closed_cases() { ... }",
+      "non_example": "A Developer Console anonymous script.",
+      "confusable_neighbor": "Apex trigger: production path, not a test.",
+      "boundary": "Tests are metadata; LAB_ rows they insert are data that roll back."
+    },
+    {
+      "term": "test data",
+      "plain": "Rows the test inserts for itself.",
+      "precise": "Synthetic LAB_ records, users, and permission sets. Built in-test or via a factory.",
+      "example": "insert new LAB_Invoice__c(Name='LAB-1');",
+      "non_example": "Querying Account LIMIT 1 from the org.",
+      "confusable_neighbor": "SeeAllData: the discouraged escape hatch.",
+      "boundary": "Factory DML must still be bulk-safe."
+    },
+    {
+      "term": "isolation",
+      "plain": "Tests do not see org data by default.",
+      "precise": "Documented in Isolation of Test Data. Prevents flaky dependence on whoever last loaded Accounts.",
+      "example": "Test fails in an empty scratch org if it queried org Accounts—good, it was coupled.",
+      "non_example": "SeeAllData=true on every class.",
+      "confusable_neighbor": "startTest: governor window, not isolation.",
+      "boundary": "Some setup objects are special-cased on that page."
+    },
+    {
+      "term": "Test.startTest / Test.stopTest",
+      "plain": "The timed window around the code under test.",
+      "precise": "Resets governors at start; runs queued async at stop. Setup DML belongs before startTest.",
+      "example": "startTest(); System.enqueueJob(job); stopTest(); System.assertEquals(1, [SELECT count() FROM LAB_Work__c]);",
+      "non_example": "Database.setSavepoint (APEX-010).",
+      "confusable_neighbor": "Test.setMock: HTTP seam, not a governor window.",
+      "boundary": "stopTest is not a general commit API."
+    },
+    {
+      "term": "mock",
+      "plain": "Stand-in for an external system.",
+      "precise": "HttpCalloutMock / StubProvider / similar. Registered with Test.setMock before the call.",
+      "example": "LAB_AllocMock returns 200.",
+      "non_example": "Hitting the QA URL.",
+      "confusable_neighbor": "SeeAllData.",
+      "boundary": "APEX-013 owns HTTP mock shape."
+    },
+    {
+      "term": "coverage",
+      "plain": "Percent of Apex lines executed by tests.",
+      "precise": "Official production deploy floor is 75% (reverify current sentence) and triggers need coverage. Not a substitute for assertions.",
+      "example": "Deploy blocked at 74%.",
+      "non_example": "80% coverage with no asserts.",
+      "confusable_neighbor": "Limits.getCpuTime: performance, not coverage.",
+      "boundary": "Do not chase 100% on trivial getters at the expense of path tests."
+    },
+    {
+      "term": "assertion",
+      "plain": "A check that the outcome is the intended one.",
+      "precise": "Assert.areEqual, areNotEqual, isTrue, fail, exception types, Limits, row counts.",
+      "example": "Assert.areEqual(3, inv.Qty__c);",
+      "non_example": "System.assert(true);",
+      "confusable_neighbor": "System.debug as a 'check'.",
+      "boundary": "One behavior per test method keeps failures readable."
+    },
+    {
+      "term": "SeeAllData",
+      "plain": "Annotation that lets a test see org data.",
+      "precise": "Documented, discouraged for typical tests because org data is unstable.",
+      "example": "@IsTest(SeeAllData=true) only when the Isolation page requires that object.",
+      "non_example": "@IsTest(SeeAllData=true) on the whole suite.",
+      "confusable_neighbor": "Isolation default.",
+      "boundary": "Still write assertions; seeing data is not a test."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Create isolated LAB_ data",
+      "actor": "Developer",
+      "trigger": "New test",
+      "before": "Query org rows",
+      "after": "Insert factory data before startTest",
+      "observe": "Test passes in an empty scratch org",
+      "failure": "Account LIMIT 1"
+    },
+    {
+      "step": 2,
+      "transition": "Open the test window",
+      "actor": "Developer",
+      "trigger": "About to invoke production code",
+      "before": "Setup DML mixed with tested DML",
+      "after": "Test.startTest(); invoke; Test.stopTest();",
+      "observe": "Async side effects visible; governors reflect the tested call",
+      "failure": "Asserting Queueable results before stopTest"
+    },
+    {
+      "step": 3,
+      "transition": "Register mocks",
+      "actor": "Developer",
+      "trigger": "Code callouts",
+      "before": "Live HTTP",
+      "after": "Test.setMock before invoke",
+      "observe": "Test passes offline",
+      "failure": "Forgetting setMock"
+    },
+    {
+      "step": 4,
+      "transition": "Assert behavior and keep coverage honest",
+      "actor": "Developer",
+      "trigger": "After stopTest",
+      "before": "assert(true)",
+      "after": "Assert rows, fields, exceptions, Limits",
+      "observe": "Failure message names the behavior",
+      "failure": "Chasing 75% with unused private methods only"
+    }
+  ],
+  "when_to_use": [
+    "When deploying Apex: you need tests, isolated test data, and the official 75% coverage floor.",
+    "When the code enqueues Queueable/future/Batch: wrap the invoke in startTest/stopTest before asserting.",
+    "When the code callouts: mocks via HttpCalloutMock, not a live named credential.",
+    "When proving security (APEX-015): runAs plus isolation, not SeeAllData admin queries.",
+    "When a test is flaky across orgs: remove SeeAllData and insert LAB_ rows.",
+    "When coverage is 80% but nothing is asserted: add meaningful assertions or the test is theater."
+  ],
+  "when_not_to_use": [
+    "Do not use SeeAllData=true as the default for Apex tests.",
+    "Do not treat 75% coverage as proof the feature works.",
+    "Do not skip startTest/stopTest around async and then claim the Queueable was tested.",
+    "Do not call live HTTP from a unit test when a mock exists.",
+    "Do not assert(true) or assertNotEquals(null, null) as a coverage trick.",
+    "Do not use production customer rows as test data."
+  ],
+  "configuration_or_code_location": [
+    "classes/*Test.cls with @IsTest.",
+    "Test.startTest / Test.stopTest / Test.setMock / System.runAs.",
+    "Setup → Apex Test Execution / deploy validation.",
+    "Coverage in Developer Console or sfdx test report."
+  ],
+  "worked_example": {
+    "scenario": "LAB_AllocQueueable callouts then updates LAB_Order__c. Existing test uses SeeAllData, no mock, no stopTest, assert(true).",
+    "inputs": [
+      "Queueable + HTTP",
+      "Need isolated order row",
+      "Need 200 vs 500 paths"
+    ],
+    "decisions": [
+      {
+        "decision": "Insert LAB_Order__c in-test; drop SeeAllData.",
+        "because": "Isolation of Test Data: tests should not depend on org rows.",
+        "rejected": "Query Account LIMIT 1."
+      },
+      {
+        "decision": "setMock, startTest, enqueue, stopTest, assert Status__c.",
+        "because": "stopTest runs the Queueable; mock avoids the network.",
+        "rejected": "assert(true) after enqueue only."
+      },
+      {
+        "decision": "Second method for HTTP 500 writing LAB_Error__c.",
+        "because": "Meaningful assertions on both paths beat one 80% method.",
+        "rejected": "One method that never enters the catch."
+      }
+    ],
+    "configuration_or_code": [
+      "@IsTest static void reserve_ok() { LAB_Order__c o = LAB_Factory.order(); Test.setMock(HttpCalloutMock.class, new LAB_AllocMock(200)); Test.startTest(); System.enqueueJob(new LAB_AllocQueueable(o.Id)); Test.stopTest(); Assert.areEqual('Reserved', [SELECT Status__c FROM LAB_Order__c WHERE Id=:o.Id].Status__c); }"
+    ],
+    "output": "Test passes in a scratch org offline. 500 path asserts an error row. Coverage is a side effect.",
+    "verification": [
+      "Scratch org with no Accounts still passes.",
+      "Removing setMock fails the test (proves the mock was required).",
+      "Assert message names Reserved vs error."
+    ],
+    "self_explanation": "Dummy car, dummy wall, timed window, belt measurement—not a coverage sticker."
+  },
+  "hands_on_lab": {
+    "environment": "Scratch org or Developer sandbox; LAB_ classes only.",
+    "starting_state_checks": [
+      "Can run Apex tests",
+      "No SeeAllData on new tests"
+    ],
+    "steps": [
+      "Write LAB_Factory that inserts an order.",
+      "Write two tests: 200 and 500 mocks around startTest/stopTest.",
+      "Delete any SeeAllData and assert(true).",
+      "Run tests in a clean org or with data hidden to prove isolation."
+    ],
+    "guided_completion": [
+      "If the Queueable assert fails, you likely asserted before stopTest.",
+      "If the test needs an org Account, isolation is broken."
+    ],
+    "independent_challenge": "Add runAs standard user asserting FLS (APEX-015) without SeeAllData.",
+    "evidence": [
+      "Test run XML/CLI with two methods passing",
+      "No SeeAllData in the file"
+    ],
+    "stop_recovery_cleanup": [
+      "Keep tests; they are the product"
+    ],
+    "limitations": "Does not prove 75% org-wide math on a huge package."
+  },
+  "decision_table": [
+    {
+      "signal": "Test needs an Account-like row.",
+      "choose": "Insert a LAB_ record in the test or factory.",
+      "not": "SeeAllData=true and SELECT LIMIT 1.",
+      "why": "Isolation of Test Data: default is no org rows."
+    },
+    {
+      "signal": "Code enqueues Queueable that updates a field.",
+      "choose": "startTest, enqueue, stopTest, then assert the field.",
+      "not": "Assert immediately after enqueueJob.",
+      "why": "stopTest runs queued async."
+    },
+    {
+      "signal": "Code performs Http.send.",
+      "choose": "HttpCalloutMock + Test.setMock.",
+      "not": "Call the QA URL from the test.",
+      "why": "Mocks are the official HTTP test seam."
+    },
+    {
+      "signal": "Deploy blocked on coverage.",
+      "choose": "Add tests that execute uncovered branches with assertions.",
+      "not": "Empty tests to chase 75% only.",
+      "why": "75% is the floor; assertions are the point."
+    },
+    {
+      "signal": "You need a User or Profile in the test.",
+      "choose": "Insert a user + permission set, or use a documented setup-object pattern from Isolation of Test Data.",
+      "not": "SeeAllData to grab a production user.",
+      "why": "Synthetic users keep tests portable."
+    },
+    {
+      "signal": "Someone adds System.assert(true) to 'cover' a catch block.",
+      "choose": "Throw the condition and assert the LAB_ error row or exception type.",
+      "not": "Leave assert(true).",
+      "why": "Meaningful assertions check outcomes."
+    }
+  ],
+  "limitations": [
+    "75% rounding/deploy-set math should be re-read on the current deploy page.",
+    "Does not teach every StubProvider pattern.",
+    "Does not replace performance testing in a full sandbox.",
+    "Isolation special-case objects are on the Isolation page."
+  ],
+  "security_notes": [
+    "Do not SeeAllData to read customer rows in a test.",
+    "runAs users should not be real employees' usernames.",
+    "Mocks must not embed production tokens."
+  ],
+  "common_mistakes": [
+    "SeeAllData=true by habit.",
+    "Asserting async before stopTest.",
+    "No mock on a callout test.",
+    "Coverage worship without assertions.",
+    "Test factories that query org data internally."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Test fails in a new scratch org, passes in a full sandbox.",
+      "check": [
+        "Hidden SeeAllData or org queries in a factory",
+        "Hard-coded record types from prod"
+      ],
+      "do_not_assume": "Salesforce tests are nondeterministic."
+    },
+    {
+      "symptom": "Queueable field not updated in the test.",
+      "check": [
+        "stopTest called?",
+        "enqueue on a rolled-back path?"
+      ],
+      "do_not_assume": "Queueable is broken."
+    },
+    {
+      "symptom": "System.CalloutException in a test.",
+      "check": [
+        "setMock before the call",
+        "Multiple callouts need a multi-mock"
+      ],
+      "do_not_assume": "Named credential is missing."
+    },
+    {
+      "symptom": "Deploy fails at 74% coverage.",
+      "check": [
+        "Uncovered triggers",
+        "Classes excluded incorrectly"
+      ],
+      "do_not_assume": "Assertions were the blocker."
+    }
+  ],
+  "production_notes": [
+    "Run tests in an isolated pipeline org, not by SeeAllData against production.",
+    "Treat 75% as a gate, not a KPI.",
+    "No production test run that reads customer PII is authorized here."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Default test visibility of org data?",
+      "options": {
+        "A": "Tests do not see org data unless SeeAllData=true",
+        "B": "Tests always see all Accounts",
+        "C": "Tests see data only in production",
+        "D": "Tests never insert rows"
+      },
+      "answer": "A",
+      "rationale": "Isolation of Test Data.",
+      "distractor_explanations": {
+        "B": "That is SeeAllData.",
+        "C": "False.",
+        "D": "They should insert."
+      },
+      "concept": "Isolation",
+      "citation_ids": [
+        "SF-APEX-ISOLATION"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Test.stopTest() is important for Queueable tests because it:",
+      "options": {
+        "A": "Runs queued async so you can assert side effects",
+        "B": "Deletes the org",
+        "C": "Disables governors forever",
+        "D": "Enables SeeAllData"
+      },
+      "answer": "A",
+      "rationale": "Apex Testing: stopTest runs async.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Governors still exist.",
+        "D": "Unrelated."
+      },
+      "concept": "stopTest async",
+      "citation_ids": [
+        "SF-APEX-TEST"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why startTest after setup DML?",
+      "options": {
+        "A": "startTest resets governors so setup does not starve the tested code",
+        "B": "startTest inserts org data",
+        "C": "startTest is required to compile @IsTest",
+        "D": "startTest sends email"
+      },
+      "answer": "A",
+      "rationale": "startTest begins a fresh governor window.",
+      "distractor_explanations": {
+        "B": "You insert data yourself.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "startTest governors",
+      "citation_ids": [
+        "SF-APEX-TEST",
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Official production deploy coverage floor commonly cited from the Testing/deploy guidance?",
+      "options": {
+        "A": "75% (reverify the current sentence) plus covered triggers",
+        "B": "10%",
+        "C": "0% if you have one test",
+        "D": "100% required on every getter"
+      },
+      "answer": "A",
+      "rationale": "Testing/deploy: 75% is the official floor; reverify wording.",
+      "distractor_explanations": {
+        "B": "Too low.",
+        "C": "False.",
+        "D": "Not the official rule."
+      },
+      "concept": "75% coverage",
+      "citation_ids": [
+        "SF-APEX-TEST"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Best assertion after a reserve Queueable?",
+      "options": {
+        "A": "Assert.areEqual('Reserved', queried Status__c)",
+        "B": "System.assert(true)",
+        "C": "No assertion if coverage is 80%",
+        "D": "assertNotEquals(null, null)"
+      },
+      "answer": "A",
+      "rationale": "Meaningful assertions check outcomes.",
+      "distractor_explanations": {
+        "B": "Theater.",
+        "C": "Coverage is not a test.",
+        "D": "Tautology."
+      },
+      "concept": "Assertions",
+      "citation_ids": [
+        "SF-APEX-TEST"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Callout in the Queueable. Test must:",
+      "options": {
+        "A": "Test.setMock(HttpCalloutMock.class, mock) before enqueue",
+        "B": "Use the production named credential secret",
+        "C": "SeeAllData to borrow a token",
+        "D": "Skip stopTest"
+      },
+      "answer": "A",
+      "rationale": "HTTP mock seam.",
+      "distractor_explanations": {
+        "B": "Unsafe and brittle.",
+        "C": "Worse.",
+        "D": "You still need stopTest."
+      },
+      "concept": "Mocks",
+      "citation_ids": [
+        "SF-APEX-HTTP"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "SeeAllData=true is:",
+      "options": {
+        "A": "Documented and discouraged for typical tests",
+        "B": "Required on every class",
+        "C": "A coverage tool",
+        "D": "The same as startTest"
+      },
+      "answer": "A",
+      "rationale": "Isolation topic.",
+      "distractor_explanations": {
+        "B": "Opposite.",
+        "C": "False.",
+        "D": "Different feature."
+      },
+      "concept": "SeeAllData",
+      "citation_ids": [
+        "SF-APEX-ISOLATION"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where should factory DML sit relative to startTest?",
+      "options": {
+        "A": "Before startTest so it does not consume the tested governor window",
+        "B": "After stopTest only",
+        "C": "Inside a callout",
+        "D": "Only in production"
+      },
+      "answer": "A",
+      "rationale": "Setup then startTest.",
+      "distractor_explanations": {
+        "B": "Too late to arrange data for the tested call.",
+        "C": "Nonsense.",
+        "D": "False."
+      },
+      "concept": "Factory placement",
+      "citation_ids": [
+        "SF-APEX-TEST"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Test passes in prod-like sandbox, fails in scratch. First suspect?",
+      "options": {
+        "A": "Hidden org-data dependency (isolation leak)",
+        "B": "Salesforce randomizes Apex",
+        "C": "75% is different per continent",
+        "D": "Queueable cannot run in scratch orgs"
+      },
+      "answer": "A",
+      "rationale": "Isolation failures show up as org-dependent tests.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "Queueable runs in tests with stopTest."
+      },
+      "concept": "Flaky isolation",
+      "citation_ids": [
+        "SF-APEX-ISOLATION"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Governors inside the startTest window:",
+      "options": {
+        "A": "Still enforced; you just get a fresh allotment for the tested code",
+        "B": "Disabled",
+        "C": "Replaced by 50 MB email heap only",
+        "D": "Unlimited SOQL"
+      },
+      "answer": "A",
+      "rationale": "Governors page + Testing topic.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Email heap is APEX-014.",
+        "D": "100/200 still apply."
+      },
+      "concept": "Governors in tests",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Security test for FLS belongs with:",
+      "options": {
+        "A": "Inserted LAB_ rows + runAs standard user + assertions on fields",
+        "B": "SeeAllData and a sysadmin",
+        "C": "Coverage only",
+        "D": "No tests because security is Setup"
+      },
+      "answer": "A",
+      "rationale": "Isolation plus APEX-015 runAs.",
+      "distractor_explanations": {
+        "B": "Cannot prove FLS.",
+        "C": "Theater.",
+        "D": "Apex security is tested in Apex."
+      },
+      "concept": "Security tests",
+      "citation_ids": [
+        "SF-APEX-ISOLATION"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "assert(true) after enqueue without stopTest proves:",
+      "options": {
+        "A": "Almost nothing about the Queueable outcome",
+        "B": "That coverage is 100%",
+        "C": "That isolation is on",
+        "D": "That mocks ran"
+      },
+      "answer": "A",
+      "rationale": "No async, no data check.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "Empty assert",
+      "citation_ids": [
+        "SF-APEX-TEST"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "iso",
+      "front": "Default isolation?",
+      "back": "Tests do not see org data; insert what you need."
+    },
+    {
+      "id": "F2",
+      "category": "see",
+      "front": "SeeAllData=true?",
+      "back": "Documented escape hatch; discouraged for typical tests."
+    },
+    {
+      "id": "F3",
+      "category": "ss",
+      "front": "startTest does what to governors?",
+      "back": "Resets usage so setup DML does not starve the tested code."
+    },
+    {
+      "id": "F4",
+      "category": "ss",
+      "front": "stopTest does what to async?",
+      "back": "Runs queued Queueable/future/batch so you can assert."
+    },
+    {
+      "id": "F5",
+      "category": "mock",
+      "front": "HTTP in tests?",
+      "back": "HttpCalloutMock + Test.setMock before the call."
+    },
+    {
+      "id": "F6",
+      "category": "cov",
+      "front": "75% means?",
+      "back": "Official production deploy floor—reverify wording—not a quality bar."
+    },
+    {
+      "id": "F7",
+      "category": "asrt",
+      "front": "Meaningful assertion example?",
+      "back": "Assert.areEqual on a LAB_ field or row count after stopTest."
+    },
+    {
+      "id": "F8",
+      "category": "anti",
+      "front": "assert(true)?",
+      "back": "Not a test of behavior."
+    },
+    {
+      "id": "F9",
+      "category": "fact",
+      "front": "Where does factory DML go?",
+      "back": "Insert factory test data before Test.startTest so setup DML does not starve the tested governor window."
+    },
+    {
+      "id": "F10",
+      "category": "sec",
+      "front": "FLS test data?",
+      "back": "Synthetic user + perm set + runAs; no SeeAllData customer rows."
+    },
+    {
+      "id": "F11",
+      "category": "flake",
+      "front": "Passes in full copy, fails in scratch?",
+      "back": "An isolation leak: the test or factory still depends on org data instead of inserted LAB_ rows."
+    },
+    {
+      "id": "F12",
+      "category": "gov",
+      "front": "Are governors off in tests?",
+      "back": "No. startTest gives a fresh window; caps still apply."
+    },
+    {
+      "id": "F13",
+      "category": "trig",
+      "front": "Triggers and coverage?",
+      "back": "Triggers need test coverage to deploy; still assert their outcomes."
+    },
+    {
+      "id": "F14",
+      "category": "meta",
+      "front": "Test class vs records?",
+      "back": "Class is metadata; inserted LAB_ rows are data that roll back."
+    },
+    {
+      "id": "F15",
+      "category": "order",
+      "front": "Mock vs startTest order?",
+      "back": "setMock before the code that callouts; startTest around that code."
+    },
+    {
+      "id": "F16",
+      "category": "goal",
+      "front": "Coverage vs assertions?",
+      "back": "Coverage is the floor; assertions are the point of Apex tests."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do Apex tests isolate data?",
+      "answer_30_seconds": "By default they cannot see org data. I insert LAB_ rows. SeeAllData=true is documented and discouraged. Tests should pass in an empty scratch org.",
+      "answer_2_minutes": "I cite Isolation of Test Data. I show a factory. I refuse Account LIMIT 1. I mention some setup objects are special-cased on that page—I will re-read rather than invent the list. Test DML rolls back; the class remains metadata.",
+      "example": "LAB_Factory.order() inserts a LAB_Order__c the test owns.",
+      "tradeoffs": [
+        "Portable scratch tests vs full-copy convenience",
+        "SeeAllData special cases"
+      ],
+      "follow_ups": [
+        "Which objects still need SeeAllData?",
+        "Can tests see custom settings?"
+      ],
+      "weak_answer_warnings": [
+        "SeeAllData on every class"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What do startTest and stopTest do?",
+      "answer_30_seconds": "startTest resets governors for the tested code. stopTest runs queued async and ends that window. Setup DML belongs before startTest. Assertions on Queueable belong after stopTest.",
+      "answer_2_minutes": "I walk a Queueable test aloud. I mention the governors page note that future/executeBatch inside the window have special queued-job counting—I will not invent the number. I do not call stopTest a commit.",
+      "example": "startTest; enqueue LAB_AllocQueueable; stopTest; assert Status__c.",
+      "tradeoffs": [
+        "Setup budget vs tested budget",
+        "Async run vs commit"
+      ],
+      "follow_ups": [
+        "Two startTest calls?",
+        "Batch execute in tests?"
+      ],
+      "weak_answer_warnings": [
+        "Asserting async before stopTest"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A test has 82% coverage and assert(true). Ship it?",
+      "answer_30_seconds": "No. Coverage is the 75% deploy floor, not quality. I require assertions on outcomes. I add the missing 500 path even if coverage already passes.",
+      "answer_2_minutes": "I treat coverage theater as a review fail. I ask which behavior would break in production unnoticed. I cite Testing topic purpose: verify behavior, not lines.",
+      "example": "Catch block never entered; assert(true) at the end.",
+      "tradeoffs": [
+        "Floor vs quality",
+        "Path tests vs line tests"
+      ],
+      "follow_ups": [
+        "Is 100% required?",
+        "Do getters need tests?"
+      ],
+      "weak_answer_warnings": [
+        "Shipping on coverage alone"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Queueable callout test throws CalloutException.",
+      "answer_30_seconds": "Missing Test.setMock, or setMock after the enqueue window, or a second callout without a multi-mock. Fix the mock; do not SeeAllData a token.",
+      "answer_2_minutes": "I register the mock before startTest, enqueue, stopTest, assert. I add a 500 mock method. I connect APEX-013. I do not disable tests.",
+      "example": "LAB_AllocQueueable Http.send with no mock.",
+      "tradeoffs": [
+        "One mock vs chain of callouts",
+        "Offline CI vs QA network"
+      ],
+      "follow_ups": [
+        "StaticResourceCalloutMock?",
+        "Can tests allow real callouts?"
+      ],
+      "weak_answer_warnings": [
+        "Putting a password in the test"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "How do you structure a test class for a service?",
+      "answer_30_seconds": "Factory methods, one behavior per test, start/stop around the invoke, runAs when security matters, mocks when integrations matter, assertions on LAB_ rows.",
+      "answer_2_minutes": "I avoid a 400-line test method. I name methods after outcomes. I keep SeeAllData off. I will mention @TestSetup for shared inserts with care about governor mixing. I do not hide DML-in-loop in the factory (APEX-018).",
+      "example": "LAB_AllocServiceTest.reserve_ok and reserve_500.",
+      "tradeoffs": [
+        "@TestSetup vs per-method inserts",
+        "One assert vs several related asserts"
+      ],
+      "follow_ups": [
+        "TestVisible?",
+        "fflib mocks?"
+      ],
+      "weak_answer_warnings": [
+        "One test method for the whole class"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Tests pass locally, deploy to prod validation fails coverage.",
+      "answer_30_seconds": "Production validation runs the suite against the deploy set. Uncovered triggers or excluded tests in the package cause 75% failure. I look at the coverage report, not the sandbox UI.",
+      "answer_2_minutes": "I add tests for the uncovered trigger path with assertions. I do not add assert(true) fillers. I reverify whether the 75% math is per-deploy-set on the current page.",
+      "example": "New LAB_ trigger with no test in the change set.",
+      "tradeoffs": [
+        "Local run vs deploy validation",
+        "Trigger coverage vs class coverage"
+      ],
+      "follow_ups": [
+        "RunSpecifiedTests vs RunLocalTests?",
+        "Coverage on packaged code?"
+      ],
+      "weak_answer_warnings": [
+        "Lowering API version to dodge coverage"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "How do tests relate to governors and async job limits?",
+      "answer_30_seconds": "Inside startTest you get a fresh per-transaction allotment; caps still apply (100 SOQL, 10 sendEmail, 50 enqueue in sync). The governors page documents special counting for future/executeBatch inside start/stop. stopTest is when Batch/Queueable execute.",
+      "answer_2_minutes": "I will not claim tests disable governors. I arrange bulk data (200 rows) inside the window when proving bulkification (APEX-007/018). I cite the governors URL rather than a Trailhead round number if they disagree.",
+      "example": "Insert 200 LAB_ orders before startTest; startTest; update them; stopTest; assert one SOQL in the trigger via Limits or debug.",
+      "tradeoffs": [
+        "Bulk proof vs single-row tests",
+        "Test window vs daily async"
+      ],
+      "follow_ups": [
+        "Does stopTest consume daily async?",
+        "Limits.getQueueableJobs in tests?"
+      ],
+      "weak_answer_warnings": [
+        "Saying tests have unlimited SOQL"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "When is SeeAllData acceptable?",
+      "answer_30_seconds": "When the Isolation of Test Data topic says you cannot create that setup object in a test. Then I still assert, comment the reason, and minimize the query. It is never the default.",
+      "answer_2_minutes": "I open the Isolation page rather than memorizing an unofficial object list. I still prefer inserting what I can. I never SeeAllData to read customer Cases.",
+      "example": "@IsTest(SeeAllData=true) only to query a Pricebook2 if the current Isolation page still requires it—Needs verification per API version.",
+      "tradeoffs": [
+        "Documented exception vs habit",
+        "Customer data vs setup objects"
+      ],
+      "follow_ups": [
+        "Standard pricebook in tests now?",
+        "Custom settings vs custom metadata?"
+      ],
+      "weak_answer_warnings": [
+        "SeeAllData for convenience"
+      ]
+    }
+  ]
+}

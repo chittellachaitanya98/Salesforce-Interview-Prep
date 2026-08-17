@@ -1,0 +1,211 @@
+{
+  "topic_id": "DEVOPS-008",
+  "slug": "profiles-vs-permission-sets-in-source-control-and-deplo",
+  "title": "Profiles vs permission sets in source control and deployment",
+  "track": "Development lifecycle and DevOps",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": ["DEVOPS-007"],
+  "objectives": [
+    "Explain why profile metadata is a poor default unit in Git compared with permission sets.",
+    "State that unlocked/2GP package version create keeps only profile settings related to the packaged metadata.",
+    "Choose permission sets (and groups) as the source-driven authorization deploy unit.",
+    "Separate assigning users (data-like operation) from deploying permission-set metadata."
+  ],
+  "diagnostic_question": "A PR deploys the entire Admin profile XML to grant LAB_ object access, and an unlocked package version 'includes the profile.' What will reviewers and the package build actually keep?",
+  "definition": "Profiles and permission sets are both authorization metadata, but they behave differently in source control and packaging. Profile XML is large, noisy to merge, and is trimmed at unlocked or 2GP version create to settings related to the package's metadata. Permission sets are additive collections of permissions that retrieve and deploy as focused metadata and are the usual source-driven way to grant LAB_ access. User assignments are not the same as deploying the permission-set definition. ([How We Handle Profile Settings in Unlocked Packages](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_unlocked_pkg_intro.htm); [Permission Sets](https://help.salesforce.com/s/articleView?id=sf.perm_sets_overview.htm); [Project Setup](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_workspace_setup.htm))",
+  "why_it_matters": "Teams that commit Admin.profile-meta.xml fight Git, surprise package installs, and overwrite unrelated production permissions. Interviewers want permission sets in source, profiles as a thin baseline, and package profile trimming.",
+  "sixty_second_explanation": "Think of hotel keys. A profile is the floor's default wiring: huge, shared, painful to rewire in Git. A permission set is a stackable key card for LAB_ doors only. Deploying the card is metadata; handing cards to guests is assignment. When you ship a package, the factory keeps only the wiring snippets that belong to the packaged rooms and throws the rest of the floor plan away.",
+  "deeper_explanation": [
+    "Permission sets grant additional permissions to users on top of their profile. They are the documented way to extend access without cloning profiles for every job. Permission set groups bundle them. In a DX project they retrieve as small XML files that reviewers can read. ([Permission Sets](https://help.salesforce.com/s/articleView?id=sf.perm_sets_overview.htm))",
+    "Profiles remain in the platform as a baseline (login hours, some settings permission sets do not replace—Needs verification of the current 'profiles versus permission sets' Help table before listing every gap). As Git artifacts they are famous for merge conflicts because they include object, field, user, and app settings in one giant file (DEVOPS-003).",
+    "During unlocked or 2GP package version creation, the build inspects all profiles in the DX project and preserves only settings directly related to the package metadata. The profile itself and unrelated settings are discarded from the package. Do not expect Admin.profile in Git to become Admin in the subscriber org. ([Unlocked Packages](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_unlocked_pkg_intro.htm))",
+    "Deploying a permission set does not assign it to users. Assignments can be metadata in some retrieve shapes (PermissionSetAssignment is data-like / user-related—treat user assignment as a separate, careful operation; Needs verification of whether you retrieve assignments as metadata in your API version). Scratch-org docs tell you to assign a permission set after deploying source so users can see custom objects. Never grant via retrieving production User records into Git."
+  ],
+  "mental_model": {
+    "analogy": "Hotel keys: profile = default floor wiring (huge Git file); permission set = stackable key card for specific doors; package version create = factory that keeps only wiring for packaged rooms and discards the rest; assignment = handing cards to guests, not printing the card.",
+    "useful_mapping": [
+      "profile XML in Git → rewiring the whole floor in one PR",
+      "permission set XML → one stackable card",
+      "permission set group → a ring of cards",
+      "package profile trimming → factory discards unrelated wiring",
+      "user assignment → handing the card over",
+      "Minimum Access / baseline profile → thin wiring you rarely diff",
+      "Admin profile retrieve → noisy merge and overwrite risk",
+      "scratch org after deploy → still need to assign the card"
+    ],
+    "where_it_breaks": [
+      "Some settings still live only on profiles; confirm current Help before saying permission sets do everything.",
+      "Managed package manageability can lock subscriber edits.",
+      "Assignment is not always 'data' in the DEVOPS-001 Account sense; still do not commit production users.",
+      "The hotel does not encode OWD or sharing rules (SEC track)."
+    ]
+  },
+  "teach_back_prompt": "Explain why you would put a LAB_ permission set in Git instead of the Admin profile, then say what an unlocked package version does to profile XML.",
+  "review_schedule": [
+    {"interval": "1 day", "prompt": "Permission set versus profile as a Git unit."},
+    {"interval": "3 days", "prompt": "What package version create keeps from profiles."},
+    {"interval": "7 days", "prompt": "Deploy versus assign a permission set."},
+    {"interval": "14 days", "prompt": "Why Admin.profile PRs fail reviews."},
+    {"interval": "30 days", "prompt": "Two-minute interview: source-driven authorization."}
+  ],
+  "sources": [
+    {"source_id": "SF-UNLOCKED", "title": "Unlocked Packages", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_unlocked_pkg_intro.htm", "supports": "Package version create keeps only profile settings related to packaged metadata; unrelated profile settings discarded.", "release_or_version": "Salesforce DX Developer Guide / Summer '26", "last_verified": "2026-08-16", "limits": "Applies to unlocked and 2GP version create as stated in that profile-handling topic."},
+    {"source_id": "SF-PERMSETS", "title": "Permission Sets", "type": "Official Salesforce Help", "url": "https://help.salesforce.com/s/articleView?id=sf.perm_sets_overview.htm", "supports": "Permission sets extend user permissions without changing profiles; additive authorization metadata.", "release_or_version": "Salesforce Help / Summer '26", "last_verified": "2026-08-16", "limits": "Help navigation and edition availability vary. Exact 'user access 2.0' migration details are neighboring."},
+    {"source_id": "SF-DX-PROJECT", "title": "Project Setup", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_workspace_setup.htm", "supports": "DX project stores authorization metadata in source control with other customizations.", "release_or_version": "Salesforce DX Developer Guide / Summer '26", "last_verified": "2026-08-16", "limits": "Does not rank profile versus permission set files."},
+    {"source_id": "SF-DX-DEV", "title": "Development", "type": "Official developer documentation", "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_develop.htm", "supports": "After deploying source to a scratch org you must sometimes assign a permission set so users can access the app, especially custom objects.", "release_or_version": "Salesforce DX Developer Guide / Summer '26", "last_verified": "2026-08-16", "limits": "Does not document every assignment API."}
+  ],
+  "videos": [{"status": "not_verified", "title": "No verified official exact-topic video claimed in this pack", "channel": "Prefer Permission Sets Help and Unlocked Packages profile handling", "url": "", "language": "English", "duration": "", "level": "Advanced", "teaches_well": "", "gaps": "Needs verification before recommending a specific recording.", "free_or_paid": "Unknown", "last_verified": "2026-08-16"}],
+  "visuals": {
+    "infographic": {"format": "4:5 SVG", "size": "1600x2000", "zones": ["Profile XML noise", "Permission set files", "Package trimming", "Assign vs deploy", "Baseline profile", "Do not commit users"], "accessible_description": "Portrait contrasting bulky profile XML with permission-set metadata in Git and packaging."},
+    "cheat_sheet": {"format": "A4 HTML", "source_footer": ["SF-UNLOCKED", "SF-PERMSETS", "SF-DX-PROJECT", "SF-DX-DEV"]},
+    "system_map": {"format": "zoomable SVG", "title": "Authorization metadata from Git to assigned user"},
+    "mermaid": {
+      "structure": "flowchart TD\n  Git[Git] --> PS[PermissionSet metadata]\n  Git --> Prof[Profile XML]\n  PS --> Deploy[Metadata deploy or package]\n  Prof --> Trim[Unlocked/2GP version: only related settings kept]\n  Deploy --> Assign[Assign permission set to users]\n  Assign --> User[User can open LAB_ object]",
+      "decision": "flowchart TD\n  Need[Need to grant LAB_ access in source?] --> Q1{Additive feature permission?}\n  Q1 -->|Yes| PS[Permission set in Git; deploy; then assign]\n  Q1 -->|Baseline login hours etc.| Prof[Thin baseline profile; avoid Admin.profile dumps]\n  Need2[Packaging?] --> Q2{Expect full Admin profile in the version?}\n  Q2 -->|Yes| No[Wrong: unrelated settings discarded]\n  Q2 -->|No, use permission sets in the package| Yes[Package the permission set]"
+    }
+  },
+  "claims": [
+    {"claim_id": "C-001", "claim": "During unlocked or 2GP package version creation, only profile settings directly related to the package metadata are preserved; the profile itself and unrelated settings are discarded from the package.", "source_ids": ["SF-UNLOCKED"], "scope": "Profile trimming", "validation": "How We Handle Profile Settings in Unlocked Packages.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-002", "claim": "Permission sets grant additional permissions to users. They are authorization metadata suitable for source-driven retrieve/deploy.", "source_ids": ["SF-PERMSETS", "SF-DX-PROJECT"], "scope": "Permission sets", "validation": "Permission Sets Help plus DX project storing metadata in SCS.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-003", "claim": "After deploying source to a scratch org you must sometimes assign a permission set so users can access custom objects in the app.", "source_ids": ["SF-DX-DEV"], "scope": "Assign after deploy", "validation": "Development topic: Assign a Permission Set.", "last_verified": "2026-08-16"},
+    {"claim_id": "C-004", "claim": "Profiles in a DX project are still metadata files in source control, but packaging will not ship unrelated profile settings as a full profile clone.", "source_ids": ["SF-UNLOCKED", "SF-DX-PROJECT"], "scope": "Profiles in source", "validation": "Project Setup plus profile-handling in packaging.", "last_verified": "2026-08-16"}
+  ],
+  "changed_in_release": "Salesforce continues to shift user access toward permission sets and groups. Reverify Help for which settings remain profile-only in Summer '26.",
+  "unresolved_uncertainty": ["Exact remaining profile-only settings and User Access 2.0 migration steps are Help-sensitive.", "Whether PermissionSetAssignment retrieves as metadata in a given API version should be checked, not assumed."],
+  "telugu_glossary": [{"english": "Permission set", "telugu": "ప్రొఫైల్‌ను క్లోన్ చేయకుండా ఇచ్చే అదనపు అనుమతుల సెట్."}, {"english": "Profile", "telugu": "యూజర్ బేస్‌లైన్ అనుమతుల భారీ మెటాడేటా ఫైల్."}],
+  "interview_explanation": {
+    "thirty_seconds": "Put permission sets in Git for feature access. Profiles are noisy and get trimmed in unlocked/2GP versions to related settings only. Deploying a permission set does not assign users. Do not ship Admin.profile as the authorization strategy.",
+    "two_minutes": "I retrieve a small LAB_ permission set, review it in a PR, deploy it, then assign it in the scratch org. I keep a thin baseline profile I rarely touch. I explain package profile trimming so nobody expects Admin to clone. I keep OWD/sharing on the SEC track. I never commit production users to grant access."
+  },
+  "terminology": [
+    {"term": "profile", "plain": "The bulky baseline authorization metadata file.", "precise": "A metadata type that stores many user settings. In Git it is noisy. In unlocked/2GP versions, only settings related to packaged metadata survive.", "example": "Avoid retrieving Admin.profile to grant one LAB_ field.", "non_example": "A permission set named LAB_Boarding_User.", "confusable_neighbor": "Permission set.", "boundary": "Some settings may remain profile-only; confirm Help."},
+    {"term": "permission set", "plain": "An additive key card of permissions.", "precise": "A metadata component that grants additional permissions without replacing the profile. Source-friendly XML.", "example": "LAB_Boarding_User with CRUD on LAB_Gate__c in Git.", "non_example": "Cloning System Administrator for every squad.", "confusable_neighbor": "Profile.", "boundary": "Does not replace OWD."},
+    {"term": "permission set group", "plain": "A ring of permission-set cards assigned together.", "precise": "Bundles permission sets for assignment as one unit. Also metadata. Mute permissions are a neighboring advanced topic—Needs verification if used.", "example": "LAB_Agent_Group containing boarding and baggage permission sets.", "non_example": "A profile XML dump.", "confusable_neighbor": "Profile.", "boundary": "Group assignment still is not the same as deploying the group definition."},
+    {"term": "profile trimming", "plain": "The package factory throwing away unrelated profile wiring.", "precise": "Unlocked/2GP version create keeps only profile settings related to the package metadata and discards the rest.", "example": "Admin.profile in the repo does not become Admin in the install org.", "non_example": "Permission set XML included in the package directory shipping intact as a permission set.", "confusable_neighbor": ".forceignore excluding a profile file entirely.", "boundary": "Unpackaged source deploys of profiles are a different, still-dangerous path."},
+    {"term": "assignment", "plain": "Handing the permission set to a user.", "precise": "After metadata deploy, users still need the permission set assigned. Scratch-org workflows document this step for custom objects.", "example": "sf org assign permset --name LAB_Boarding_User --target-org scratch", "non_example": "Assuming project deploy start assigned everyone.", "confusable_neighbor": "Deploy of PermissionSet XML.", "boundary": "Do not commit production User records to assign."},
+    {"term": "baseline profile", "plain": "A thin profile you rarely diff.", "precise": "A source-driven pattern: Minimum Access or similar as login baseline, feature access via permission sets. Exact edition names Needs verification.", "example": "Users on a minimum-access profile plus LAB_ permission sets.", "non_example": "Every feature baked into Admin.profile.", "confusable_neighbor": "Permission set group.", "boundary": "License and edition constraints apply."},
+    {"term": "Admin profile in Git", "plain": "A common anti-pattern retrieve.", "precise": "Retrieving the System Administrator profile produces a huge XML that overwrites unrelated settings and fights merges.", "example": "A PR with thousands of unrelated objectPermissions lines.", "non_example": "A 40-line permission set for LAB_Gate__c.", "confusable_neighbor": "Permission set named Admin.", "boundary": "Even unpackaged deploy of Admin is high-risk in production."},
+    {"term": "source-driven authorization", "plain": "Review permission metadata in Git like Apex.", "precise": "Permission sets (and groups) live in the DX project, go through PRs, deploy as metadata, then get assigned.", "example": "PR adds fieldPermissions for LAB_GateNumber__c to LAB_Boarding_User.", "non_example": "Clicking profiles only in production Setup.", "confusable_neighbor": "Manual sharing, which is not this lesson.", "boundary": "SEC-004-style sharing is out of scope."}
+  ],
+  "mechanics": [
+    {"step": 1, "transition": "Grant in a permission set", "actor": "Developer + admin", "trigger": "New LAB_ object", "before": "Edit Admin profile in Setup", "after": "LAB_ permission set XML in Git", "observe": "Small PR diff", "failure": "Retrieve Admin.profile"},
+    {"step": 2, "transition": "Review and deploy metadata", "actor": "Reviewer + CI", "trigger": "PR", "before": "Unreviewed clicks", "after": "Permission set in the target org", "observe": "Deploy report includes PermissionSet", "failure": "Expecting users to see the object immediately"},
+    {"step": 3, "transition": "Assign", "actor": "Admin or CLI", "trigger": "Metadata present", "before": "Definition only", "after": "Target users have the set", "observe": "User can open LAB_ tab", "failure": "Committing User XML from production"},
+    {"step": 4, "transition": "Package without profile myths", "actor": "Packaging owner", "trigger": "Unlocked/2GP version", "before": "Admin.profile in the directory 'for access'", "after": "Permission set included; understand profile trimming", "observe": "Install org has the permission set, not a cloned Admin", "failure": "Blaming install because Admin did not copy"}
+  ],
+  "when_to_use": [
+    "When putting authorization in source control as permission set metadata instead of Admin.profile dumps.",
+    "When an unlocked or managed package version will not ship unrelated profile settings.",
+    "When a scratch org deploy succeeded but the user still cannot see a custom object—assign the permission set.",
+    "When a Git merge conflict explodes inside profile XML.",
+    "When deployment of a permission set must be separated from user assignment."
+  ],
+  "when_not_to_use": [
+    "Do not use this lesson as the full sharing/OWD design (later SEC).",
+    "Do not treat permission sets as a way to move business data.",
+    "Do not expect package version create to clone production Admin.",
+    "Do not use profile XML as the default PR unit even in org-development unpackaged deploys without a thin-baseline plan.",
+    "Do not confuse pipeline approvals (DEVOPS-007) with permission set metadata."
+  ],
+  "configuration_or_code_location": [
+    "force-app/main/default/permissionsets/*.permissionset-meta.xml",
+    "Avoid profiles/*.profile-meta.xml except a thin baseline.",
+    "sf org assign permset after scratch deploy.",
+    "Unlocked/2GP version create profile-handling behavior in the packaging build, not in Setup."
+  ],
+  "worked_example": {
+    "scenario": "LAB_Gate__c needs CRUD for agents. Someone retrieved Admin.profile. The app will be an unlocked package.",
+    "inputs": ["New custom object", "Git repo", "Unlocked package plan"],
+    "decisions": [
+      {"decision": "Create LAB_Boarding_User permission set in source with object/field permissions.", "because": "Additive, reviewable, packagable authorization metadata.", "rejected": "Grant only by editing Admin in Setup and retrieving the profile"},
+      {"decision": "Do not rely on Admin.profile in the package version.", "because": "Unrelated profile settings are discarded at version create.", "rejected": "Putting Admin.profile in the package directory as the access plan"},
+      {"decision": "After deploy to a scratch org, assign the permission set.", "because": "DX development guidance: assign a permission set so users can access custom objects.", "rejected": "Assuming deploy assigned all users"}
+    ],
+    "configuration_or_code": [
+      "Permission set XML for LAB_Gate__c CRUD in Git.",
+      "sf project deploy start --source-dir force-app --target-org scratch",
+      "sf org assign permset --name LAB_Boarding_User --target-org scratch"
+    ],
+    "output": "Small PR. Scratch user sees LAB_Gate__c. Package install will carry the permission set, not Admin.",
+    "verification": ["PR diff is the permission set, not thousands of profile lines.", "Scratch user without assignment cannot see the object.", "Package version does not claim to include full Admin."],
+    "self_explanation": "I used a permission set as the Git unit, assigned after deploy, and respected profile trimming."
+  },
+  "hands_on_lab": {
+    "environment": "Scratch org or sandbox; LAB_ object and permission set only.",
+    "starting_state_checks": ["You can create a permission set.", "You will not retrieve Admin.profile as the exercise."],
+    "steps": [
+      "Create LAB_ object (or use existing LAB_ metadata).",
+      "Create a permission set in source or Setup then retrieve only that permission set.",
+      "Deploy to a second user or scratch org and confirm they cannot see the object until assignment.",
+      "Write one sentence on unlocked/2GP profile trimming."
+    ],
+    "guided_completion": ["If you already retrieved a huge profile, discard it from the branch.", "If the user still cannot see the object, check tab visibility on the permission set and assignment."],
+    "independent_challenge": "Add a permission set group name in a diagram even if you do not create one.",
+    "evidence": ["Small permission set XML or retrieve output.", "Note that assignment was a separate step."],
+    "stop_recovery_cleanup": ["Delete LAB_ permission set from the disposable org.", "Do not deploy Admin.profile to production."],
+    "limitations": "Will not prove every profile-only setting."
+  },
+  "decision_table": [
+    {"signal": "A feature needs object/field/app access in Git.", "choose": "Permission set (and group if bundling) in the DX project.", "not": "Retrieving Admin.profile to capture one checkbox.", "why": "Permission sets are additive, small, and reviewable."},
+    {"signal": "Building an unlocked or 2GP version that 'includes profiles.'", "choose": "Put permission sets in the package; expect profile trimming of unrelated settings.", "not": "Assuming Admin.profile in the repo becomes Admin in the subscriber.", "why": "Version create keeps only related profile settings."},
+    {"signal": "Scratch org deploy succeeded; user cannot open the custom object.", "choose": "Assign the permission set.", "not": "Redeploying the object definition in a loop.", "why": "DX development: assign a permission set after deploying source."},
+    {"signal": "Git merge conflict inside a 4,000-line profile.", "choose": "Stop using that profile as the feature vehicle; move grants to a permission set.", "not": "Force-pushing one side of Admin.profile.", "why": "Profiles are a poor merge unit (DEVOPS-003)."},
+    {"signal": "Need to grant a production user access today.", "choose": "Assign an already-deployed permission set (or deploy the set first).", "not": "Committing the User record into Git.", "why": "Users are not the authorization metadata unit to version."}
+  ],
+  "limitations": ["Does not list every profile-only setting.", "Does not replace sharing architecture.", "Assignment APIs vary.", "No production profile deploy authorized."],
+  "security_notes": ["Least privilege: small permission sets.", "Review field-level security in the XML.", "Do not clone System Administrator as a shortcut.", "Assignments are sensitive."],
+  "common_mistakes": ["Admin.profile as the PR.", "Expecting packages to clone profiles.", "Forgetting assignment after deploy.", "Treating permission sets as data rows.", "Using profiles to store feature flags."],
+  "troubleshooting": [
+    {"symptom": "Package installed, Admin unchanged.", "check": ["Profile trimming.", "Whether a permission set was in the package."], "do_not_assume": "Install failed."},
+    {"symptom": "User cannot see LAB_ object after deploy.", "check": ["Permission set contents including tab.", "Assignment.", "License."], "do_not_assume": "The object metadata is missing."},
+    {"symptom": "Huge profile diff in a retrieve.", "check": ["You retrieved a full profile.", "Tighten --metadata PermissionSet:Name."], "do_not_assume": "Git corrupted XML."}
+  ],
+  "production_notes": ["Prefer permission sets in production deploys of feature access.", "Change Admin profile only with extreme review.", "This lesson does not authorize production authorization changes."],
+  "mcqs": [
+    {"id": "Q1", "category": "recall", "difficulty": "Foundation", "prompt": "What do permission sets do?", "options": {"A": "Grant additional permissions to users on top of their profile", "B": "Replace OWD", "C": "Copy Account rows", "D": "Create scratch orgs"}, "answer": "A", "rationale": "Permission Sets Help: additional permissions without having to change profiles.", "distractor_explanations": {"B": "Sharing is separate.", "C": "Data.", "D": "Org create."}, "concept": "Permission sets", "citation_ids": ["SF-PERMSETS"]},
+    {"id": "Q2", "category": "application", "difficulty": "Intermediate", "prompt": "Unlocked/2GP version create and profiles?", "options": {"A": "Only settings related to the package metadata are kept; unrelated profile settings are discarded", "B": "The entire Admin profile always ships", "C": "Profiles convert to Accounts", "D": "Profiles are forbidden in DX projects"}, "answer": "A", "rationale": "How We Handle Profile Settings in Unlocked Packages.", "distractor_explanations": {"B": "Unrelated settings discarded.", "C": "Nonsense.", "D": "They can exist; they trim."}, "concept": "Trimming", "citation_ids": ["SF-UNLOCKED"]},
+    {"id": "Q3", "category": "application", "difficulty": "Intermediate", "prompt": "After deploying an app with custom objects to a scratch org, what might you still need?", "options": {"A": "Assign a permission set so users can access the objects", "B": "Nothing; deploy always assigns everyone", "C": "A change set of Users", "D": "ignore-errors"}, "answer": "A", "rationale": "Development guide: Assign a Permission Set after deploying source.", "distractor_explanations": {"B": "Definition ≠ assignment.", "C": "Users are not a change set of data you should ship this way.", "D": "Dangerous flag."}, "concept": "Assign after deploy", "citation_ids": ["SF-DX-DEV"]},
+    {"id": "Q4", "category": "recall", "difficulty": "Foundation", "prompt": "Why are profiles painful in Git?", "options": {"A": "They are large XML files that mix many settings and conflict in merges", "B": "Git cannot store XML", "C": "Profiles are business data", "D": "Profiles expire in 7 days"}, "answer": "A", "rationale": "Source-control reality of profile metadata versus small permission sets.", "distractor_explanations": {"B": "Git stores XML.", "C": "Authorization metadata.", "D": "Scratch orgs expire, not profiles."}, "concept": "Git noise", "citation_ids": ["SF-DX-PROJECT"]},
+    {"id": "Q5", "category": "scenario", "difficulty": "Intermediate", "prompt": "Best Git unit to grant LAB_ object CRUD?", "options": {"A": "A permission set in the DX project", "B": "The full Admin profile retrieve", "C": "A CSV of User Ids", "D": "destructiveChanges.xml"}, "answer": "A", "rationale": "Additive, packagable, reviewable authorization metadata.", "distractor_explanations": {"B": "Noisy and trimmed in packages.", "C": "Data/PII.", "D": "Deletes."}, "concept": "Git unit", "citation_ids": ["SF-PERMSETS", "SF-DX-PROJECT"]},
+    {"id": "Q6", "category": "application", "difficulty": "Intermediate", "prompt": "Does deploying PermissionSet XML assign it to users?", "options": {"A": "No. Assignment is a separate step", "B": "Yes, always to all users", "C": "Yes, to Admin only automatically", "D": "Only if the file is named Admin"}, "answer": "A", "rationale": "Scratch-org workflow shows assign after deploy.", "distractor_explanations": {"B": "Too broad.", "C": "Not automatic.", "D": "Naming is not assignment."}, "concept": "Deploy vs assign", "citation_ids": ["SF-DX-DEV"]},
+    {"id": "Q7", "category": "recall", "difficulty": "Foundation", "prompt": "Permission set group?", "options": {"A": "A bundle of permission sets assigned as one unit", "B": "A sandbox type", "C": "A Git branch", "D": "A change set connection"}, "answer": "A", "rationale": "Groups bundle permission sets for assignment.", "distractor_explanations": {"B": "Environment.", "C": "VCS.", "D": "Channel."}, "concept": "PSG", "citation_ids": ["SF-PERMSETS"]},
+    {"id": "Q8", "category": "scenario", "difficulty": "Intermediate", "prompt": "Package install did not clone Admin. Interview answer?", "options": {"A": "Expected: unrelated profile settings are discarded at version create; ship permission sets instead", "B": "Salesforce bug always", "C": "Git cannot hold permission sets", "D": "You must use Data Loader on profiles"}, "answer": "A", "rationale": "Documented profile handling in unlocked/2GP.", "distractor_explanations": {"B": "Documented behavior.", "C": "They are metadata.", "D": "Wrong tool."}, "concept": "Not a bug", "citation_ids": ["SF-UNLOCKED"]},
+    {"id": "Q9", "category": "application", "difficulty": "Intermediate", "prompt": "Source-driven authorization means?", "options": {"A": "Review and deploy permission metadata from Git, then assign", "B": "Only click production profiles", "C": "Store User passwords in Git", "D": "Coverage replaces FLS"}, "answer": "A", "rationale": "DX project holds metadata in SCS; assignment follows deploy.", "distractor_explanations": {"B": "Org-as-truth.", "C": "Secret/PII fail.", "D": "Tests ≠ FLS."}, "concept": "Source-driven auth", "citation_ids": ["SF-DX-PROJECT", "SF-DX-DEV"]},
+    {"id": "Q10", "category": "scenario", "difficulty": "Intermediate", "prompt": "Retrieve of Profile:Admin created a 5,000-line PR. Next move?", "options": {"A": "Drop it; retrieve PermissionSet:LAB_Boarding_User instead", "B": "Merge to main immediately", "C": "Convert the profile to Accounts", "D": "Deploy with ignore-errors"}, "answer": "A", "rationale": "Narrow authorization metadata is the source-control unit.", "distractor_explanations": {"B": "Dangerous overwrite.", "C": "Nonsense.", "D": "Wrong flag."}, "concept": "Tighten retrieve", "citation_ids": ["SF-PERMSETS", "SF-DX-PROJECT"]},
+    {"id": "Q11", "category": "recall", "difficulty": "Foundation", "prompt": "Are permission sets metadata or business Account data?", "options": {"A": "Authorization metadata deployed with Metadata API/CLI", "B": "Opportunity rows", "C": "ContentVersion binaries", "D": "Scratch org durations"}, "answer": "A", "rationale": "They are customization metadata in the DX project.", "distractor_explanations": {"B": "Data.", "C": "Files.", "D": "Environments."}, "concept": "Metadata", "citation_ids": ["SF-DX-PROJECT"]},
+    {"id": "Q12", "category": "scenario", "difficulty": "Intermediate", "prompt": "OWD versus permission set in this lesson?", "options": {"A": "Permission sets are user permissions in source; OWD/sharing is a different security topic", "B": "Permission sets set OWD", "C": "OWD is a Git branch", "D": "Profiles are the only sharing rule"}, "answer": "A", "rationale": "Do not collapse sharing into permission-set DevOps.", "distractor_explanations": {"B": "OWD is org-wide default sharing.", "C": "Nonsense.", "D": "Sharing rules are separate metadata."}, "concept": "Not sharing", "citation_ids": ["SF-PERMSETS"]}
+  ],
+  "flashcards": [
+    {"id": "F1", "category": "ps", "front": "What is a permission set?", "back": "Additive authorization metadata granting extra permissions without changing the profile."},
+    {"id": "F2", "category": "trim", "front": "Package version create vs profiles?", "back": "Keeps only settings related to packaged metadata; discards the rest."},
+    {"id": "F3", "category": "assign", "front": "Deploy vs assign?", "back": "Deploy puts the permission set in the org. Assign grants it to a user."},
+    {"id": "F4", "category": "scratch", "front": "Scratch org custom objects still hidden?", "back": "Assign the permission set after deploying source."},
+    {"id": "F5", "category": "git", "front": "Why not Admin.profile in PRs?", "back": "Huge noisy XML, merge conflicts, overwrite risk, and packaging will not clone it."},
+    {"id": "F6", "category": "psg", "front": "Permission set group?", "back": "A bundle of permission sets assigned as one unit."},
+    {"id": "F7", "category": "baseline", "front": "Baseline profile pattern?", "back": "Thin profile plus feature permission sets, not Admin for every grant."},
+    {"id": "F8", "category": "meta", "front": "Are permission sets metadata?", "back": "Yes. They retrieve/deploy with the DX project, not as Account rows."},
+    {"id": "F9", "category": "package", "front": "Admin.profile in an unlocked package directory?", "back": "Do not expect a full Admin clone in the install org."},
+    {"id": "F10", "category": "users", "front": "Commit production users to grant access?", "back": "No. Assign permission sets; do not version User records as the grant mechanism."},
+    {"id": "F11", "category": "fls", "front": "Where do you review FLS in source?", "back": "fieldPermissions inside the permission set XML."},
+    {"id": "F12", "category": "merge", "front": "Profile merge conflict meaning?", "back": "You used a poor Git unit; move feature grants to a permission set."},
+    {"id": "F13", "category": "retrieve", "front": "How to retrieve one permission set?", "back": "sf project retrieve start --metadata PermissionSet:LAB_Boarding_User"},
+    {"id": "F14", "category": "sec", "front": "Does this replace OWD?", "back": "No. Sharing defaults are a different topic."},
+    {"id": "F15", "category": "cli", "front": "Example assign command family?", "back": "sf org assign permset for the scratch/sandbox user after deploy."}
+  ],
+  "interview_questions": [
+    {"id": "I1", "category": "foundational", "question": "Profiles versus permission sets in source control?", "answer_30_seconds": "Permission sets are small additive metadata and the right Git unit for feature access. Profiles are huge, merge-hostile, and get trimmed in package versions.", "answer_2_minutes": "I retrieve PermissionSet:LAB_… not Admin. I keep a thin baseline profile. I explain unlocked/2GP profile handling. I assign after deploy. I do not collapse sharing into this answer.", "example": "PR adds LAB_Boarding_User with LAB_Gate__c CRUD instead of 4,000 profile lines.", "tradeoffs": ["One profile per job vs permission set explosion", "PSG complexity"], "follow_ups": ["What remains profile-only?", "Mute permissions?"], "weak_answer_warnings": ["Always retrieve Admin"]},
+    {"id": "I2", "category": "foundational", "question": "What happens to profiles in an unlocked package version?", "answer_30_seconds": "The build keeps only profile settings related to the package metadata and discards unrelated settings and the profile as a whole from the package.", "answer_2_minutes": "I put permission sets in the package directory. I treat leftover profile files as a trap. I still may need subscriber-side assignment. I do not call this a platform bug.", "example": "Admin.profile in Git; install org Admin unchanged; LAB_ permission set present if it was packaged.", "tradeoffs": ["Packaging permission sets vs unpackaged profile deploys", "Org-dependent packages"], "follow_ups": ["2GP the same?", "Custom permissions?"], "weak_answer_warnings": ["The whole Admin profile always ships"]},
+    {"id": "I3", "category": "scenario", "question": "Scratch org has the object; the demo user cannot see it. Diagnose.", "answer_30_seconds": "Check the permission set contents and whether it was assigned. Deploy does not assign. Tab visibility and license also matter.", "answer_2_minutes": "I run sf org assign permset. I inspect objectPermissions and tabSettings. I do not redeploy CustomObject in a loop. I do not retrieve production Users. I mention OWD only as a neighbor if records exist but list views are empty.", "example": "LAB_Boarding_User not assigned to the scratch user after project deploy start.", "tradeoffs": ["Permset vs profile on the scratch user", "Standard vs custom tab"], "follow_ups": ["How do you assign in CI?", "Permission set group?"], "weak_answer_warnings": ["The retrieve failed because the tab is missing from Git always"]},
+    {"id": "I4", "category": "scenario", "question": "A teammate wants to deploy Admin.profile to production to 'sync permissions.'", "answer_30_seconds": "Refuse as a default. It overwrites unrelated production settings and is a merge nightmare. Ship permission sets for the feature delta.", "answer_2_minutes": "I show the diff size. I explain packaging trimming if they also package. I offer a permission set plus assignment list. If a genuine profile-only setting must move, I isolate that setting—Needs verification of current profile-only list—not the whole Admin file.", "example": "Replace a 5,000-line profile deploy with a 40-line permission set plus named assignees.", "tradeoffs": ["Speed of one profile deploy vs blast radius", "Who assigns in production"], "follow_ups": ["Change sets of profiles?", "Managed package restrictions?"], "weak_answer_warnings": ["Production Admin should match Git Admin always"]},
+    {"id": "I5", "category": "design", "question": "Design source-driven authorization for a 12-person app team.", "answer_30_seconds": "Thin baseline profiles, permission sets per capability, groups per job, Git review, deploy, then assignment via a controlled process—not User records in the repo.", "answer_2_minutes": "I map capabilities to sets so PRs stay small. I use groups so assignment is one ring of cards. I keep CI assigning only scratch users. Production assignment may be an admin task or a governed tool. I document profile trimming for the unlocked package.", "example": "LAB_Boarding_User + LAB_Baggage_User in LAB_Agent_Group, baseline Minimum Access-style profile.", "tradeoffs": ["Many small sets vs few fat sets", "Manual vs automated assignment"], "follow_ups": ["User Access Policies?", "Persona permission sets from Salesforce?"], "weak_answer_warnings": ["One Admin clone per team"]},
+    {"id": "I6", "category": "foundational", "question": "Is a permission set business data?", "answer_30_seconds": "No. It is authorization metadata you retrieve and deploy. User records are not the thing you version to grant it.", "answer_2_minutes": "DEVOPS-001 still applies: the definition is metadata. Assignments attach to users. I will not Data Load the permission set XML. I will not Metadata API the Account rows to 'give access.'", "example": "LAB_Boarding_User.permissionset-meta.xml in force-app; three sandbox users assigned in Setup.", "tradeoffs": ["Assignment as metadata vs as a post-deploy script", "CMDT vs permission sets for flags"], "follow_ups": ["Can assignments be retrieved?", "Is that supported on Coverage?"], "weak_answer_warnings": ["Permission sets are like Account teams data"]},
+    {"id": "I7", "category": "troubleshooting", "question": "Permission set is in Git and the org, user still denied a field.", "answer_30_seconds": "Check fieldPermissions in the XML, assignment, FLS versus object CRUD, then sharing/OWD as a neighbor, then license.", "answer_2_minutes": "I retrieve the org copy to see drift. I do not widen to Admin.profile. I check if a permission set group mutes the field. I keep this troubleshooting on authorization metadata, not on deploy flags.", "example": "objectPermissions allowRead true but fieldPermissions for LAB_GateNumber__c missing.", "tradeoffs": ["Fix the set vs add another set", "FLS vs sharing"], "follow_ups": ["How do you test as the user?", "Permission set vs custom permission?"], "weak_answer_warnings": ["Deploy Admin.profile to fix FLS"]},
+    {"id": "I8", "category": "challenge", "question": "A Java security lead says 'put roles in Spring Security config.' Translate.", "answer_30_seconds": "Our config is permission-set XML in Git, reviewed like code, deployed as metadata, assigned to users. Profiles are a bulky baseline, not the feature ACL file.", "answer_2_minutes": "I map Spring roles to permission sets, not to Salesforce Roles (that's hierarchy/sharing). I mention package trimming like a build that strips unused ACL lines. I mention assignment as a separate provision step. I do not claim OWD is Spring Security.", "example": "ROLE_BOARDING_AGENT → LAB_Boarding_User permission set in the DX project.", "tradeoffs": ["Many fine-grained sets vs coarse roles", "Salesforce Role vs permission set naming collision"], "follow_ups": ["What is a Salesforce Role?", "What is a custom permission?"], "weak_answer_warnings": ["Salesforce Role equals permission set", "Always retrieve Admin.profile"]}
+  ]
+}

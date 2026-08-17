@@ -1,0 +1,968 @@
+{
+  "topic_id": "APEX-005",
+  "slug": "dml-statements-database-methods-partial-success-save-re",
+  "title": "DML statements, Database methods, partial success, save results, and transaction control",
+  "track": "Apex and database programming",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-004"
+  ],
+  "objectives": [
+    "Choose a DML statement versus a Database class method for insert, update, upsert, delete, undelete, or merge.",
+    "Explain allOrNone false as partial success and how to read Database.SaveResult.",
+    "State that DML statements throw on bulk failure while Database methods can return per-row results instead.",
+    "Place savepoints and rollback as transaction-control neighbors without replacing APEX-010."
+  ],
+  "diagnostic_question": "A sandbox loader must insert 200 LAB_Stop__c rows and keep the good ones if ten fail validation. Would you write insert stops; or Database.insert(stops, false), and what would you read on each SaveResult?",
+  "definition": "DML writes sObjects to the Salesforce database. Apex offers DML statements (insert, update, upsert, delete, undelete, merge) that throw on error, and Database class methods that can allow partial success and return SaveResult (or sibling result) arrays. Transaction-control methods such as setSavepoint and rollback live on Database as well. ([DML Statements vs. Database Class Methods](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_dml_database.htm))",
+  "why_it_matters": "Interviewers listen for allOrNone, SaveResult.isSuccess, and the fact that one list DML is one statement. Choosing insert when you needed partial success rolls back the whole batch; choosing Database.insert(list, false) without inspecting results silently drops rows.",
+  "sixty_second_explanation": "Think of a bank teller versus nightly settlement. A DML statement is the teller window: if one check in the stack bounces, the whole stack stops and an exception is thrown. Database.insert(list, false) is settlement: each slip gets a SaveResult—paid or rejected—with errors you must read. convertLead and some recycle-bin APIs exist only on Database. Savepoints are the audit stamp you can roll back to; APEX-010 owns the deep concurrency story.",
+  "deeper_explanation": [
+    "Use DML statements when any error should throw and interrupt control flow (try/catch). Use Database methods when a bulk operation should allow remaining rows to succeed; pass false as the optional allOrNone parameter (default true). ([DML Statements vs. Database Class Methods](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_dml_database.htm))",
+    "Database.insert/update return SaveResult arrays aligned with the input list. Inspect isSuccess, getId, and getErrors. convertLead is only a Database method. Database also exposes transaction control, emptying the Recycle Bin, and query helpers. ([SaveResult Class](https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_methods_system_database_saveresult.htm))",
+    "Partial-success bulk DML from SOAP defaults or allOrNone false can retry a subset up to three attempts; triggers refire on the successful subset; governor limits reset between those attempts. A third-attempt failure surfaces a documented batch-retry error. ([Bulk DML Exception Handling](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dml_bulk_exceptions.htm))",
+    "List DML counts as one DML statement, not one per row—cite 150 statements and 10,000 DML rows from Execution Governors and Limits (APEX-007). Do not mix certain setup objects with non-setup DML in one transaction. Deep savepoint/locking design is APEX-010."
+  ],
+  "mental_model": {
+    "analogy": "A bank teller window versus nightly settlement with per-slip rejection notices.",
+    "useful_mapping": [
+      "DML statement insert list → teller: one bounce stops the whole stack and throws",
+      "Database.insert(list, false) → settlement: remaining slips can still post",
+      "SaveResult → the paid/rejected notice for one slip",
+      "allOrNone true (default) → treat Database like the teller",
+      "convertLead → a back-office operation that has no teller-window verb",
+      "setSavepoint/rollback → an audit stamp you can rewind to (APEX-010)"
+    ],
+    "where_it_breaks": [
+      "Partial success is not 'ignore errors'; you must read SaveResult.",
+      "Triggers still fire and share governors on retry subsets.",
+      "Setup-object mixing is a hard platform rule, not a teller preference.",
+      "The analogy does not encode order of execution (APEX-009)."
+    ]
+  },
+  "teach_back_prompt": "Explain DML statements versus Database.insert(list, false) to a teammate using the teller-versus-settlement idea, then name one place that analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: allOrNone default, SaveResult methods, when convertLead is available."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Given 200 rows with 10 expected validation failures, pick statement vs Database method."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Walk three-attempt partial-save behavior and trigger refire."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Diagnose a mixed User-role plus Account DML failure."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: partial success versus savepoint rollback."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-DML-DB",
+      "title": "DML Statements vs. Database Class Methods",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_dml_database.htm",
+      "supports": "Statement vs Database method; allOrNone; exceptions versus result arrays; convertLead and extra Database APIs.",
+      "release_or_version": "Apex Developer Guide / API 67.0 / Summer '26",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace the full Database class reference."
+    },
+    {
+      "source_id": "SF-APEX-SAVERESULT",
+      "title": "SaveResult Class",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexref.meta/apexref/apex_methods_system_database_saveresult.htm",
+      "supports": "SaveResult alignment with input rows; isSuccess, getId, getErrors.",
+      "release_or_version": "Apex Reference Guide",
+      "last_verified": "2026-08-16",
+      "limits": "getId null behavior on failed lock/update is API-version sensitive (notes for 52 vs 53+)."
+    },
+    {
+      "source_id": "SF-APEX-DML-BULK",
+      "title": "Bulk DML Exception Handling",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dml_bulk_exceptions.htm",
+      "supports": "Partial-save retry attempts, trigger refire on subsets, governor reset between attempts.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Applies to documented partial-save origins (SOAP defaults or allOrNone false)."
+    },
+    {
+      "source_id": "SF-APEX-DML-MORE",
+      "title": "More About DML",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_dml_database_more.htm",
+      "supports": "DML options, transaction control pointer, setup vs non-setup DML mixing restriction.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Full savepoint semantics are APEX-010."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "DML statements",
+        "Database methods",
+        "allOrNone",
+        "SaveResult",
+        "Partial success retries",
+        "Transaction control pointer"
+      ],
+      "accessible_description": "Portrait map: DML statements throw; Database methods can return SaveResult; allOrNone false allows partial success; inspect each result; savepoints are neighboring transaction control."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-DML-DB",
+        "SF-APEX-SAVERESULT",
+        "SF-APEX-DML-BULK",
+        "SF-APEX-DML-MORE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "DML statement versus Database method"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Write[Need to write sObjects] --> Stmt[DML statement insert update delete]\n  Write --> Db[Database class method]\n  Stmt --> Throw[Throws DmlException on failure]\n  Db --> All[allOrNone true default throws]\n  Db --> Part[allOrNone false SaveResult array]\n  Part --> SR[isSuccess getId getErrors]\n  Db --> Extra[convertLead savepoint emptyRecycleBin]",
+      "decision": "flowchart TD\n  Need[Need DML?] --> Q1{Must remaining rows succeed if one fails?}\n  Q1 -->|No fail the unit| Stmt[DML statement or Database allOrNone true]\n  Q1 -->|Yes keep good rows| Part[Database.insert list false]\n  Part --> Read[Read every SaveResult]\n  Need --> Q2{Lead convert or savepoint?}\n  Q2 -->|Yes| DbOnly[Database method only]\n  Q2 -->|Mixed setup objects| Split[Separate transactions APEX-010]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "DML statements throw Apex exceptions on bulk errors. Database methods can pass allOrNone false so remaining rows may succeed and return a result array instead of throwing.",
+      "source_ids": ["SF-APEX-DML-DB"],
+      "scope": "Statement vs Database method",
+      "validation": "DML Statements vs. Database Class Methods.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "SaveResult arrays align with the input sObject list. isSuccess, getId, and getErrors report per-row outcome.",
+      "source_ids": ["SF-APEX-SAVERESULT"],
+      "scope": "SaveResult",
+      "validation": "SaveResult Class in the Apex Reference Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Partial-success bulk DML can retry a shrinking subset up to three attempts, refire triggers on the subset, and reset governors between attempts.",
+      "source_ids": ["SF-APEX-DML-BULK"],
+      "scope": "Bulk partial save",
+      "validation": "Bulk DML Exception Handling.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Some setup sObjects cannot be mixed with non-setup DML in the same transaction. Database also provides transaction-control APIs.",
+      "source_ids": ["SF-APEX-DML-MORE", "SF-APEX-DML-DB"],
+      "scope": "Mixed DML and transaction control",
+      "validation": "More About DML and Database methods overview.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "SaveResult.getId behavior on failed updates is API-version sensitive (guide notes 52.0 vs 53.0+). Reverify the class API version.",
+  "unresolved_uncertainty": [
+    "Exact current list of setup objects that cannot mix with non-setup DML should be rechecked on the current Mixed DML page before an interview deep-dive."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "DML statement",
+      "telugu": "insert/update that throws if the bulk operation fails."
+    },
+    {
+      "english": "SaveResult",
+      "telugu": "Per-row success or error from a Database method."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "DML statements throw on error. Database.insert(list, false) allows partial success and returns SaveResult you must inspect. convertLead and savepoints are Database-only. List DML is one statement.",
+    "two_minutes": "I start from the business rule: must one bad row fail the batch? If yes, insert list or Database with allOrNone true. If a loader should keep good LAB_ rows, Database.insert(list, false) and loop SaveResult. I mention three-attempt partial-save and trigger refire so they hear I read Bulk DML Exception Handling. I do not mix User-role DML with Account in one transaction. Savepoints are APEX-010."
+  },
+  "terminology": [
+    {
+      "term": "DML statement",
+      "plain": "The Apex verbs insert, update, upsert, delete, undelete, and merge.",
+      "precise": "Standalone DML that processes sObjects and throws a DmlException when a bulk error should interrupt control flow.",
+      "example": "insert new List<Account>{ new Account(Name='LAB_A'), new Account(Name='LAB_B') };",
+      "non_example": "Database.insert(rows, false) with SaveResult handling.",
+      "confusable_neighbor": "SOQL SELECT, which reads and is not DML.",
+      "boundary": "merge and undelete have extra rules; convertLead is not a statement."
+    },
+    {
+      "term": "Database method",
+      "plain": "Database.insert/update/delete and related APIs that can return results.",
+      "precise": "Class methods that perform DML with an optional allOrNone flag, plus operations that have no statement form (convertLead, some recycle-bin and transaction APIs).",
+      "example": "Database.SaveResult[] sr = Database.insert(stops, false);",
+      "non_example": "A SOQL Database.query call—that is not DML.",
+      "confusable_neighbor": "Database.query (APEX-003).",
+      "boundary": "Default allOrNone is true (throwing behavior)."
+    },
+    {
+      "term": "partial success",
+      "plain": "Keeping the rows that saved when others failed.",
+      "precise": "Database DML with allOrNone false (or SOAP default partial save). Failed rows are reported; remaining rows can succeed. Triggers may refire on retry subsets.",
+      "example": "Loader keeps 190 good LAB_Stop__c inserts when 10 fail validation.",
+      "non_example": "Catching DmlException after insert list and assuming the good rows committed.",
+      "confusable_neighbor": "Savepoint rollback of the whole unit (APEX-010).",
+      "boundary": "You must inspect results; partial success is not silent ignore."
+    },
+    {
+      "term": "SaveResult",
+      "plain": "The per-row outcome of Database insert or update.",
+      "precise": "Array aligned with the input sObjects. isSuccess, getId, getErrors. Sibling types exist for delete and undelete.",
+      "example": "if (!sr.isSuccess()) { for (Database.Error e : sr.getErrors()) { ... } }",
+      "non_example": "A debug log line with no result object.",
+      "confusable_neighbor": "DmlException on a throwing statement.",
+      "boundary": "getId null behavior on some failed updates is version-sensitive."
+    },
+    {
+      "term": "allOrNone",
+      "plain": "The flag that says fail all rows or allow partial success.",
+      "precise": "Optional Boolean on Database DML. Default true: one failure throws and remaining rows do not proceed. False: result array, partial success possible.",
+      "example": "Database.update(accounts, false)",
+      "non_example": "A validation rule named All_or_None__c.",
+      "confusable_neighbor": "Trigger addError on one row in a bulk trigger—related but not this flag.",
+      "boundary": "Statements have no allOrNone parameter; they throw."
+    },
+    {
+      "term": "transaction control",
+      "plain": "Savepoints and rollback on the Database class.",
+      "precise": "Database.setSavepoint and rollback let you rewind DML inside one Apex transaction. Mixed DML and locking details continue in APEX-010.",
+      "example": "Savepoint sp = Database.setSavepoint(); try { insert a; } catch (DmlException e) { Database.rollback(sp); }",
+      "non_example": "allOrNone false, which is per-call partial success, not a named savepoint.",
+      "confusable_neighbor": "Order of execution commit (APEX-009).",
+      "boundary": "This lesson only introduces the APIs; concurrency is later."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Decide throw versus partial success",
+      "actor": "Developer",
+      "trigger": "Need to write records from an Apex class",
+      "before": "List of sObjects in memory",
+      "after": "Statement or Database method chosen",
+      "observe": "Written rule: one failure fails all, or keep good rows",
+      "failure": "insert list when the loader must keep valid rows"
+    },
+    {
+      "step": 2,
+      "transition": "Bulk the DML",
+      "actor": "Developer",
+      "trigger": "Many rows",
+      "before": "Temptation to insert inside a loop",
+      "after": "One list DML statement",
+      "observe": "One DML in the debug log for the list",
+      "failure": "insert row inside for-each"
+    },
+    {
+      "step": 3,
+      "transition": "Inspect SaveResult when allOrNone is false",
+      "actor": "Developer",
+      "trigger": "Database.insert(list, false) returns",
+      "before": "Unchecked result array",
+      "after": "Each failure logged or queued for retry",
+      "observe": "Failed LAB_ names appear in debug with getErrors",
+      "failure": "Ignoring the array and assuming all rows saved"
+    },
+    {
+      "step": 4,
+      "transition": "Keep setup DML separate",
+      "actor": "Developer",
+      "trigger": "Need User/Role/Group DML plus Account",
+      "before": "One method doing both",
+      "after": "Split across transactions (async or separate request)",
+      "observe": "No mixed DML exception",
+      "failure": "insert account and update UserRole in one try"
+    }
+  ],
+  "when_to_use": [
+    "When an Apex class must write records and you need to choose DML statements versus Database methods.",
+    "When partial success is required and SaveResult (or delete/undelete results) must be inspected.",
+    "When convertLead, emptyRecycleBin, or savepoint APIs force a Database method rather than a DML verb.",
+    "When explaining transaction control at a high level before the deeper APEX-010 locking lesson."
+  ],
+  "when_not_to_use": [
+    "Do not use DML statements when the loader must keep valid rows after some validation failures—use Database methods with allOrNone false.",
+    "Do not treat SaveResult as optional logging; unread results hide lost rows.",
+    "Do not mix setup-object DML with Account-style DML in one transaction.",
+    "Do not use this DML lesson as a SOQL/SOSL primer (APEX-003/004) or as a full savepoint/locking design (APEX-010)."
+  ],
+  "configuration_or_code_location": [
+    "Apex class or anonymous Apex in a disposable sandbox.",
+    "Debug logs: DML_BEGIN / DML_END statement counts.",
+    "Developer Console for DmlException versus SaveResult errors.",
+    "Setup only for verifying validation rules that cause expected failures."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox loader inserts LAB_Stop__c rows for a shipment. Ten rows omit a required field on purpose. The good rows must remain. A second method converts a LAB_ Lead and must use the correct API. No production data.",
+    "inputs": [
+      "List of 20 LAB_Stop__c, 10 missing required fields",
+      "One Lead eligible for convert in the sandbox",
+      "API 67.0 class"
+    ],
+    "decisions": [
+      {
+        "decision": "Database.insert(stops, false) and loop SaveResult.",
+        "because": "Partial success is required; a DML statement would throw and keep nothing.",
+        "rejected": "insert stops; inside try/catch hoping good rows committed"
+      },
+      {
+        "decision": "Read getErrors on failures; do not retry blindly in the same list without fixing data.",
+        "because": "Partial success still reports why a row failed.",
+        "rejected": "Ignoring the result array"
+      },
+      {
+        "decision": "Database.convertLead for the lead path.",
+        "because": "convertLead is only a Database method.",
+        "rejected": "A convert DML statement that does not exist"
+      }
+    ],
+    "configuration_or_code": [
+      "Database.SaveResult[] results = Database.insert(stops, false);",
+      "for (Integer i = 0; i < results.size(); i++) { if (!results[i].isSuccess()) { System.debug(stops[i].Name + ' ' + results[i].getErrors()); } }",
+      "Database.convertLead(leadConvert); // Database-only"
+    ],
+    "output": "Ten LAB_Stop__c rows exist; ten failures are visible on SaveResult; lead convert uses Database.",
+    "verification": [
+      "SOQL count of LAB_Stop__c is 10, not 0 and not 20.",
+      "Debug shows REQUIRED_FIELD_MISSING or equivalent on failures.",
+      "insert stops; in a scratch copy rolls back all 20—contrast documented."
+    ],
+    "self_explanation": "Partial success needed Database methods and unread SaveResult would have hidden the ten failures."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; Account or LAB_ custom object with a required field.",
+    "starting_state_checks": [
+      "You can insert Accounts.",
+      "A validation rule or required field can fail on purpose."
+    ],
+    "steps": [
+      "Build a list of two Accounts: one valid LAB_Good, one missing Name.",
+      "Run insert list in try/catch and record whether either row exists.",
+      "Run Database.insert(list, false) and print each SaveResult.",
+      "Write one sentence on convertLead existing only as a Database method."
+    ],
+    "guided_completion": [
+      "If both rows exist after the throwing insert, the missing-Name case did not fail as expected.",
+      "If you skip looping SaveResult, redo that step."
+    ],
+    "independent_challenge": "Add Database.update(list, false) on a mix of valid and stale Ids; compare getId notes for your API version.",
+    "evidence": [
+      "SOQL counts after both attempts.",
+      "SaveResult debug for the failed row."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Accounts.",
+      "Do not deploy the loader to production."
+    ],
+    "limitations": "Does not prove mixed DML with UserRole or three-attempt SOAP retries."
+  },
+  "decision_table": [
+    {
+      "signal": "Any failure should abort the Apex unit and roll back that DML call's work.",
+      "choose": "DML statement or Database method with allOrNone true (default).",
+      "not": "Database.insert(list, false) without caring about results.",
+      "why": "Statements and default Database methods throw and interrupt control flow."
+    },
+    {
+      "signal": "A loader must keep valid rows when some fail validation.",
+      "choose": "Database.insert/update(list, false) and inspect SaveResult.",
+      "not": "insert list; plus an empty catch.",
+      "why": "Partial success is the documented allOrNone false behavior."
+    },
+    {
+      "signal": "You need to convert a Lead in Apex.",
+      "choose": "Database.convertLead.",
+      "not": "A convert DML statement.",
+      "why": "The guide states convertLead is only a Database class method."
+    },
+    {
+      "signal": "You updated a UserRole and an Account in one method and got mixed DML.",
+      "choose": "Split setup and non-setup DML across transactions.",
+      "not": "Wrapping both in Database.insert(..., false).",
+      "why": "More About DML documents the setup/non-setup mixing restriction."
+    }
+  ],
+  "limitations": [
+    "Does not list every DML governor number except by citing APEX-007 / Execution Governors.",
+    "Savepoint isolation and FOR UPDATE locking are APEX-010.",
+    "Order of execution around DML is APEX-009.",
+    "Mixed DML object lists are release-sensitive."
+  ],
+  "security_notes": [
+    "Partial success can leave an org half-updated; design compensating actions.",
+    "Do not log SaveResult messages that contain customer PII.",
+    "LAB_ data only."
+  ],
+  "common_mistakes": [
+    "insert inside a for-loop.",
+    "allOrNone false without reading SaveResult.",
+    "Assuming try/catch around insert list commits the good rows.",
+    "Looking for a convert DML statement.",
+    "Mixing setup and non-setup DML."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "DmlException: first error on row 0; no rows in the database.",
+      "check": [
+        "You used a DML statement or allOrNone true.",
+        "Fix data or switch to partial success if that is the product rule."
+      ],
+      "do_not_assume": "SaveResult was returned; statements throw instead."
+    },
+    {
+      "symptom": "Some rows missing after Database.insert(list, false).",
+      "check": [
+        "Loop SaveResult and getErrors.",
+        "Validation, FLS, or duplicates on those rows."
+      ],
+      "do_not_assume": "The platform dropped rows at random."
+    },
+    {
+      "symptom": "Mixed DML exception mentioning setup objects.",
+      "check": [
+        "User, UserRole, Group, and similar setup DML in the same transaction as Account-style DML.",
+        "Move one side to async or a later request."
+      ],
+      "do_not_assume": "allOrNone false fixes mixed DML."
+    }
+  ],
+  "production_notes": [
+    "Bulk list DML; never DML in a loop.",
+    "Treat unread SaveResult as a production defect.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the default allOrNone behavior on Database.insert?",
+      "options": {
+        "A": "True: one failure throws and remaining sObjects are not processed",
+        "B": "False: partial success is the default",
+        "C": "There is no allOrNone parameter",
+        "D": "It only applies to SOQL"
+      },
+      "answer": "A",
+      "rationale": "The optional parameter defaults to true, matching throwing DML-statement behavior.",
+      "distractor_explanations": {
+        "B": "False must be passed explicitly for partial success.",
+        "C": "The parameter exists on Database methods.",
+        "D": "allOrNone is a DML flag."
+      },
+      "concept": "allOrNone",
+      "citation_ids": ["SF-APEX-DML-DB"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When should you prefer a DML statement according to the guide?",
+      "options": {
+        "A": "When any bulk error should throw and interrupt control flow",
+        "B": "When you need convertLead",
+        "C": "When you must keep successful rows after failures",
+        "D": "When you need SaveResult.getErrors"
+      },
+      "answer": "A",
+      "rationale": "Use DML statements if you want errors thrown as Apex exceptions.",
+      "distractor_explanations": {
+        "B": "convertLead is Database-only.",
+        "C": "That is allOrNone false.",
+        "D": "SaveResult comes from Database methods."
+      },
+      "concept": "DML statement",
+      "citation_ids": ["SF-APEX-DML-DB"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Database.insert(list, false) returns what?",
+      "options": {
+        "A": "A SaveResult array aligned with the input list",
+        "B": "Always a thrown DmlException and no array",
+        "C": "A single Boolean",
+        "D": "List<AggregateResult>"
+      },
+      "answer": "A",
+      "rationale": "SaveResult arrays correspond positionally to the sObject list.",
+      "distractor_explanations": {
+        "B": "False suppresses the throw-all behavior.",
+        "C": "Per-row objects, not one Boolean.",
+        "D": "Aggregates are SOQL."
+      },
+      "concept": "SaveResult",
+      "citation_ids": ["SF-APEX-SAVERESULT"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which operation is only a Database method, not a DML statement?",
+      "options": {
+        "A": "convertLead",
+        "B": "insert",
+        "C": "update",
+        "D": "delete"
+      },
+      "answer": "A",
+      "rationale": "The guide states convertLead is only available as a Database class method.",
+      "distractor_explanations": {
+        "B": "insert exists as a statement.",
+        "C": "update exists as a statement.",
+        "D": "delete exists as a statement."
+      },
+      "concept": "Database method",
+      "citation_ids": ["SF-APEX-DML-DB"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "On partial-success retries, what happens to triggers?",
+      "options": {
+        "A": "They fire on the first attempt and refire on subsequent successful subsets",
+        "B": "They never fire",
+        "C": "They fire only after commit",
+        "D": "They convert to SOSL"
+      },
+      "answer": "A",
+      "rationale": "Bulk DML Exception Handling says triggers fire on the first attempt and refire on subsets.",
+      "distractor_explanations": {
+        "B": "Triggers do fire.",
+        "C": "This is still pre-commit DML work.",
+        "D": "SOSL is unrelated."
+      },
+      "concept": "partial success",
+      "citation_ids": ["SF-APEX-DML-BULK"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which SaveResult method reports whether that row saved?",
+      "options": {
+        "A": "isSuccess()",
+        "B": "getGlobalDescribe()",
+        "C": "FIND",
+        "D": "Trigger.isBefore"
+      },
+      "answer": "A",
+      "rationale": "isSuccess returns true if the DML operation succeeded for that object.",
+      "distractor_explanations": {
+        "B": "Describe is APEX-002.",
+        "C": "FIND is SOSL.",
+        "D": "Trigger context is APEX-008."
+      },
+      "concept": "SaveResult",
+      "citation_ids": ["SF-APEX-SAVERESULT"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "insert accounts; in a for-loop of 200 rows is wrong because?",
+      "options": {
+        "A": "Each insert is a separate DML statement toward the per-transaction cap",
+        "B": "Apex forbids insert",
+        "C": "SaveResult is mandatory on statements",
+        "D": "Loops disable triggers"
+      },
+      "answer": "A",
+      "rationale": "List DML counts as one statement; per-row DML burns the statement governor (150 cited on the limits page / APEX-007).",
+      "distractor_explanations": {
+        "B": "insert is legal.",
+        "C": "Statements throw; they do not return SaveResult.",
+        "D": "Triggers still fire."
+      },
+      "concept": "bulk DML",
+      "citation_ids": ["SF-APEX-DML-DB"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You DML a UserRole and an Account in one method. What documented issue can occur?",
+      "options": {
+        "A": "Mixed DML: setup and non-setup sObjects cannot share one transaction",
+        "B": "SOSL crowding",
+        "C": "Describe tokens become null",
+        "D": "FIND braces are required"
+      },
+      "answer": "A",
+      "rationale": "More About DML documents the setup/non-setup mixing restriction.",
+      "distractor_explanations": {
+        "B": "Crowding is SOSL.",
+        "C": "Describe is unrelated.",
+        "D": "FIND is SOSL syntax."
+      },
+      "concept": "mixed DML",
+      "citation_ids": ["SF-APEX-DML-MORE"]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where do savepoints live in the Apex API?",
+      "options": {
+        "A": "Database.setSavepoint and Database.rollback",
+        "B": "A DML statement named savepoint",
+        "C": "Schema.getGlobalDescribe",
+        "D": "SOSL RETURNING"
+      },
+      "answer": "A",
+      "rationale": "Database provides transaction-control methods; this lesson introduces them and defers depth to APEX-010.",
+      "distractor_explanations": {
+        "B": "There is no savepoint statement.",
+        "C": "Describe is metadata.",
+        "D": "SOSL is search."
+      },
+      "concept": "transaction control",
+      "citation_ids": ["SF-APEX-DML-DB", "SF-APEX-DML-MORE"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "During second and third partial-save attempts, governors do what?",
+      "options": {
+        "A": "Reset to their original state before the first attempt",
+        "B": "Double automatically",
+        "C": "Disappear",
+        "D": "Apply only to SOSL"
+      },
+      "answer": "A",
+      "rationale": "Bulk DML Exception Handling states governors reset between those attempts.",
+      "distractor_explanations": {
+        "B": "They reset, not double.",
+        "C": "Governors still apply.",
+        "D": "This is DML, not SOSL."
+      },
+      "concept": "partial success",
+      "citation_ids": ["SF-APEX-DML-BULK"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates a DML Apex class from business data?",
+      "options": {
+        "A": "Deploying the class does not insert Account rows; DML at runtime does",
+        "B": "SaveResult objects are custom objects in Setup",
+        "C": "DML statements deploy metadata",
+        "D": "allOrNone creates fields"
+      },
+      "answer": "A",
+      "rationale": "The class is metadata. Inserted rows are data.",
+      "distractor_explanations": {
+        "B": "SaveResult is a platform type.",
+        "C": "DML writes records.",
+        "D": "allOrNone is a flag."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-APEX-DML-DB"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You catch DmlException after insert list. Did the successful-looking rows before the failure commit?",
+      "options": {
+        "A": "No. An exception rolls back processed DML in that transaction unless you used a documented partial-save path",
+        "B": "Yes, always, because Apex commits per row",
+        "C": "Only if SOSL ran first",
+        "D": "Only in before triggers"
+      },
+      "answer": "A",
+      "rationale": "Throwing DML is all-or-none for that operation; exceptions roll back processed DML. Partial success requires the Database false path.",
+      "distractor_explanations": {
+        "B": "Apex does not commit each row independently on a throwing insert.",
+        "C": "SOSL is unrelated.",
+        "D": "Trigger timing does not change statement semantics."
+      },
+      "concept": "DML statement",
+      "citation_ids": ["SF-APEX-DML-DB"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "Name the core DML statements.",
+      "back": "insert, update, upsert, delete, undelete, and merge."
+    },
+    {
+      "id": "F2",
+      "category": "database",
+      "front": "When do you use Database methods over statements?",
+      "back": "Partial success, convertLead, recycle-bin helpers, or transaction-control APIs."
+    },
+    {
+      "id": "F3",
+      "category": "allOrNone",
+      "front": "Default allOrNone on Database.insert?",
+      "back": "True: one failure throws; remaining rows are not processed."
+    },
+    {
+      "id": "F4",
+      "category": "SaveResult",
+      "front": "Three SaveResult methods to remember?",
+      "back": "isSuccess(), getId(), getErrors()."
+    },
+    {
+      "id": "F5",
+      "category": "partial",
+      "front": "Does allOrNone false skip triggers?",
+      "back": "No. Triggers fire and can refire on retry subsets."
+    },
+    {
+      "id": "F6",
+      "category": "partial",
+      "front": "How many partial-save attempts can the engine make?",
+      "back": "Up to three documented attempts; then a batch-retry error can fail the operation."
+    },
+    {
+      "id": "F7",
+      "category": "lead",
+      "front": "How do you convert a Lead in Apex?",
+      "back": "Database.convertLead—not a DML statement."
+    },
+    {
+      "id": "F8",
+      "category": "bulk",
+      "front": "insert inside a loop?",
+      "back": "Anti-pattern. One list DML is one statement."
+    },
+    {
+      "id": "F9",
+      "category": "mixed",
+      "front": "Account plus UserRole in one transaction?",
+      "back": "Mixed DML risk. Split setup and non-setup writes."
+    },
+    {
+      "id": "F10",
+      "category": "txn",
+      "front": "Where are savepoints?",
+      "back": "Database.setSavepoint and rollback; deeper design is APEX-010."
+    },
+    {
+      "id": "F11",
+      "category": "pitfall",
+      "front": "Catch DmlException after insert list and keep good rows?",
+      "back": "No. Throwing DML rolls back that work. Use allOrNone false instead."
+    },
+    {
+      "id": "F12",
+      "category": "pitfall",
+      "front": "Unread SaveResult array?",
+      "back": "Failed rows disappear without an exception. Always inspect."
+    },
+    {
+      "id": "F13",
+      "category": "boundary",
+      "front": "DML versus SOQL?",
+      "back": "DML writes. SOQL reads."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Loader must keep valid rows?",
+      "back": "Database.insert(list, false) plus SaveResult loop."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Need atomic fail-all for a short list?",
+      "back": "DML statement or Database with allOrNone true."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "DML statements versus Database methods—how do you choose?",
+      "answer_30_seconds": "Statements throw and stop the bulk operation. Database methods can pass allOrNone false for partial success and return SaveResult. convertLead is Database-only.",
+      "answer_2_minutes": "I map the product rule first. Atomic fail-all: insert list. Keep good rows: Database.insert(list, false) and inspect results. I mention default allOrNone true so they hear I did not assume partial success. I keep savepoints as a pointer to APEX-010 and governors to APEX-007.",
+      "example": "Loader uses Database.insert(stops, false); a payment class uses insert invoiceLines;",
+      "tradeoffs": [
+        "Atomic consistency vs partial loaders",
+        "Exception control flow vs result arrays"
+      ],
+      "follow_ups": [
+        "What is upsert's external-id key?",
+        "What is merge's three-record cap? (Reverify.)"
+      ],
+      "weak_answer_warnings": [
+        "Saying they are identical"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you read SaveResult correctly?",
+      "answer_30_seconds": "The array lines up with the input list. isSuccess, getId, getErrors. Never ignore the array after allOrNone false.",
+      "answer_2_minutes": "I loop by index so I can pair results[i] with rows[i]. I collect errors for a retry file. I mention getId version notes if they ask about failed updates. I do not treat a missing exception as success.",
+      "example": "for (Integer i = 0; i < sr.size(); i++) if (!sr[i].isSuccess()) log(rows[i], sr[i].getErrors());",
+      "tradeoffs": [
+        "Per-row retry vs failing the job",
+        "Debug vs custom log object"
+      ],
+      "follow_ups": [
+        "DeleteResult versus SaveResult?",
+        "What is Database.Error.getStatusCode?"
+      ],
+      "weak_answer_warnings": [
+        "Not looping the results"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A catch around insert list shows a DmlException. The caller thinks the first 50 rows saved. What do you say?",
+      "answer_30_seconds": "They did not. Throwing DML rolls back that work. If they needed partial success they must use Database.insert(list, false).",
+      "answer_2_minutes": "I distinguish exception rollback from partial-save retries. I would not add a savepoint here unless they need a manual rewind (APEX-010). I would also check whether they DML'd in a loop, which is a separate governor defect.",
+      "example": "insert stops; throws on row 51; SOQL count is 0, not 50.",
+      "tradeoffs": [
+        "Fail-all vs partial success",
+        "Savepoint vs allOrNone"
+      ],
+      "follow_ups": [
+        "What if the catch only logs and rethrows?",
+        "What about addError in a trigger?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing that 50 rows committed"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Walk partial-success retry behavior.",
+      "answer_30_seconds": "The engine tries all rows, sets failures aside, retries the rest, and can try a third time. Triggers refire on subsets. Governors reset between attempts.",
+      "answer_2_minutes": "I cite Bulk DML Exception Handling. I warn that trigger logic must be idempotent because the subset can change. A third-attempt failure can surface the documented too-many-batch-retries message. This is not the same as my own for-loop retry.",
+      "example": "SOAP API insert of 200 Accounts with 5 validation failures; triggers see 200 then 195.",
+      "tradeoffs": [
+        "Idempotent triggers vs one-shot side effects",
+        "Partial success vs failing the API call"
+      ],
+      "follow_ups": [
+        "Does this apply to a simple insert statement from Apex?",
+        "What resets besides governors?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing five retry attempts"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When would you refuse partial success?",
+      "answer_30_seconds": "When the rows are one business document—invoice plus lines—and a half-write is worse than a throw.",
+      "answer_2_minutes": "Loaders and integrations often want allOrNone false. Financial postings usually want a statement or allOrNone true, sometimes with a savepoint around a larger unit (APEX-010). I also refuse per-row DML as a fake 'partial success' strategy.",
+      "example": "LAB_Invoice__c plus lines uses insert lists in one transaction; a CSV account loader uses Database.insert(..., false).",
+      "tradeoffs": [
+        "Document integrity vs throughput",
+        "User-facing error vs silent skips"
+      ],
+      "follow_ups": [
+        "How do you report skipped rows to an admin?",
+        "Where do you store SaveResult errors?"
+      ],
+      "weak_answer_warnings": [
+        "allOrNone false on every DML by habit"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "What is mixed DML, in one interview answer?",
+      "answer_30_seconds": "You cannot DML certain setup objects with non-setup records in the same transaction because access levels would be inconsistent.",
+      "answer_2_minutes": "I give the classic UserRole plus Account example from the guide's idea. The fix is a separate transaction—often Queueable or a future, which is APEX-011. allOrNone false does not fix it. I mark the exact object list as needs verification against the current page.",
+      "example": "insert account; then update UserRole in the same test method fails.",
+      "tradeoffs": [
+        "Sync setup updates vs async split",
+        "Test design vs production design"
+      ],
+      "follow_ups": [
+        "Which objects are setup objects today?",
+        "Does System.runAs change this?"
+      ],
+      "weak_answer_warnings": [
+        "Calling it a governor limit"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "Database.insert(list, false) 'succeeds' but rows are missing. Walk the diagnosis.",
+      "answer_30_seconds": "Read SaveResult. Failures do not throw. Check validation, duplicates, and FLS on the failed indexes.",
+      "answer_2_minutes": "I print results[i].getErrors() next to rows[i].Name. I confirm I did not also have a trigger addError. I check whether a later rollback (savepoint or uncaught exception) wiped the successes. I do not 'fix' it by switching to insert in a loop.",
+      "example": "Ten LAB_ stops missing a required field; array has ten isSuccess false.",
+      "tradeoffs": [
+        "Fail the job vs write an error file",
+        "User mode vs system mode (APEX-014)"
+      ],
+      "follow_ups": [
+        "How do duplicate rules appear on SaveResult?",
+        "What if getId is null on an update?"
+      ],
+      "weak_answer_warnings": [
+        "Assuming the method return means all rows saved"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "How is allOrNone false different from a savepoint rollback?",
+      "answer_30_seconds": "allOrNone false is per Database call: some rows in that list can save. A savepoint rewinds the transaction to a named mark, including successful DML you already did.",
+      "answer_2_minutes": "I would use partial success for a loader. I would use a savepoint when a later step fails and the earlier insert must disappear—APEX-010. Mixing both without a diagram is how teams lose track of what committed. Interviewers want that vocabulary split.",
+      "example": "Insert accounts with allOrNone false; later Database.rollback(sp) can still remove the successes if they were after the savepoint.",
+      "tradeoffs": [
+        "Partial keep vs full rewind",
+        "One Database call vs multi-step unit of work"
+      ],
+      "follow_ups": [
+        "How many savepoints can you set? (Cite or mark needs verification.)",
+        "Does rollback restore static variables?"
+      ],
+      "weak_answer_warnings": [
+        "Treating savepoint as allOrNone"
+      ]
+    }
+  ]
+}

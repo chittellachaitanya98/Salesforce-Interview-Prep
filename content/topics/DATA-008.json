@@ -1,0 +1,1057 @@
+{
+  "topic_id": "DATA-008",
+  "slug": "record-types-business-processes-picklists-and-dependent",
+  "title": "Record types, business processes, picklists, and dependent picklists",
+  "track": "Data model and configuration",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-007"
+  ],
+  "objectives": [
+    "Explain a record type as a way to offer different picklist values and page layouts for different business processes on the same object.",
+    "Place the master picklist as the complete value list, then subset values per record type.",
+    "Use a dependent picklist so available values change with a controlling field, and preview with record types when both exist.",
+    "Refuse a new object or a new text field when the need is a different process, layout, or picklist subset."
+  ],
+  "diagnostic_question": "Facilities wants residential vs commercial properties with different status values, different layouts, and a city picklist that depends on region. Is that two objects, two record types, or a dependent picklist—or all three ideas?",
+  "definition": "A record type lets an object support different business processes, page layouts, and picklist values. Before creating record types, put every possible value in the master picklist—the complete list that any record type can use—then subset values per record type and assign layouts by profile. A dependent picklist limits values based on a controlling field; if record types exist, a dependent value is available only when it is in the selected record type and allowed for the controlling value. ([Create Record Types](https://help.salesforce.com/s/articleView?id=creating_record_types.htm); [Define a Dependent Picklist](https://help.salesforce.com/s/articleView?id=platform.fields_defining_field_dependencies.htm); [Page Layouts](https://help.salesforce.com/s/articleView?id=customize_layout.htm))",
+  "why_it_matters": "Teams clone objects for 'commercial vs residential' when a record type plus picklist subsets would do. Interviewers listen for master picklist versus record-type values, for layout assignment by profile and record type, and for dependent picklists that still honor record types.",
+  "sixty_second_explanation": "Think of a restaurant. The record type is which menu you sat down with—lunch or catering. The business process is the ticket stages that kitchen uses for that menu. The master picklist is every dish the restaurant knows how to cook. Each menu shows a subset. A dependent picklist is the wine list that appears only after you pick steak. The dining-room furniture (page layout) is assigned by menu plus who you are (profile). Do not build a second restaurant building for a second menu.",
+  "deeper_explanation": [
+    "Create Record Types Help: include all possible values in the master picklist first. Creating a record type without cloning copies master values; you then customize values for that record type. Assign one layout to all profiles or a different layout per profile. ([Create Record Types](https://help.salesforce.com/s/articleView?id=creating_record_types.htm))",
+    "Page layouts: the combination of the user's profile and the record type determines which page layout is displayed. ([Page Layouts](https://help.salesforce.com/s/articleView?id=customize_layout.htm))",
+    "Dependent picklists: choose a controlling field and dependent field, then fill the matrix. Preview can use a record type because the record type controls controlling-field values, and both record type and controlling value determine dependent values. Some picklists and checkboxes cannot be controlling fields. ([Define a Dependent Picklist](https://help.salesforce.com/s/articleView?id=platform.fields_defining_field_dependencies.htm))",
+    "Business processes (Sales process, Lead process, Support process, and similar) are the stage/status picklist wrappers used with record types on those standard objects. Exact process names and which objects have them are object-specific—Needs verification on the object in Setup rather than inventing a universal process catalog.",
+    "Record types are metadata. Records store which record type they use (business data). Changing record-type picklist availability does not rewrite historical values automatically. Do not use record types as a security model; profiles and permission sets still own object access (SEC)."
+  ],
+  "mental_model": {
+    "analogy": "A restaurant: record type is the menu you sat down with, business process is that menu's ticket stages, master picklist is every dish the kitchen can cook, dependent picklist is the wine that appears after you choose steak, and page layout is the table setting assigned by menu plus guest type.",
+    "useful_mapping": [
+      "object → the restaurant (one building)",
+      "record type → lunch vs catering menu",
+      "business process → ticket stages for that menu",
+      "master picklist → full kitchen repertoire",
+      "record-type values → dishes printed on this menu",
+      "dependent picklist → wine list gated by the dish",
+      "page layout assignment → table setting from menu + guest profile"
+    ],
+    "where_it_breaks": [
+      "Record types are not security; a profile can still query fields not on the layout.",
+      "Not every object has a formal business-process setup object.",
+      "Global value sets shared across objects are a neighboring picklist topic—confirm current Help if asked.",
+      "Dynamic Forms can reduce how many layouts you need (DATA-009); the restaurant still has menus."
+    ]
+  },
+  "teach_back_prompt": "Explain master picklist versus record-type values, then how a dependent picklist interacts with a record type, without creating a second object.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Define record type, master picklist, and dependent picklist."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Residential vs commercial: object vs record type vs picklist subset."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Who sees which layout: profile + record type."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Preview a dependency matrix with a record type selected."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: when not to clone an object."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-RT",
+      "title": "Create Record Types",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=creating_record_types.htm",
+      "supports": "Master picklist first; clone vs master values; unique record type label; assign one layout or per-profile layouts; then edit picklist values.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-DEP",
+      "title": "Define a Dependent Picklist",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.fields_defining_field_dependencies.htm",
+      "supports": "Controlling and dependent fields; matrix; record type preview; dependent value must be in the record type and allowed for the controlling value.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-LAYOUT",
+      "title": "Page Layouts",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=customize_layout.htm",
+      "supports": "Profile plus record type determine which page layout a user sees.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-XOBJ",
+      "title": "Tips for Building Cross-Object Formulas",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.fields_creating_cross_object_notes.htm",
+      "supports": "Record-type default formulas are narrower than formula fields; record types interact with formulas as a neighboring constraint.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "One object",
+        "Record types",
+        "Master picklist",
+        "Value subsets",
+        "Dependent matrix",
+        "Layout = profile + record type"
+      ],
+      "accessible_description": "One object hosts record types that subset the master picklist, drive dependent picklists with record types, and assign page layouts with profiles."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-RT",
+        "SF-HELP-DEP",
+        "SF-HELP-LAYOUT",
+        "SF-HELP-XOBJ"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Master picklist → record type values → dependent matrix → layout assignment"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Obj[Object] --> RT[Record types]\n  Obj --> Master[Master picklist all values]\n  Master --> Sub[Values available on each record type]\n  RT --> Lay[Page layout assignment with profile]\n  Ctrl[Controlling field] --> Dep[Dependent picklist]\n  RT --> Dep",
+      "decision": "flowchart TD\n  Need[Different experience on one object] --> Q1{Different noun / grain?}\n  Q1 -->|Yes| NewObj[New object DATA-001]\n  Q1 -->|No same noun| Q2{Different values layouts or process?}\n  Q2 -->|Yes| RT[Record type plus picklists]\n  Q2 -->|Values depend on another field| Dep[Dependent picklist]\n  RT --> Q3{Need a second database table?}\n  Q3 -->|No| Keep[Keep one object]\n  Need --> Q4{Need a calculated display?}\n  Q4 -->|Yes| FF[Formula DATA-006 not a record type]",
+      "sequence": "sequenceDiagram\n  participant User\n  participant RecordType\n  participant Controlling\n  participant Dependent\n  User->>RecordType: Select Commercial\n  RecordType->>Controlling: Available region values\n  User->>Controlling: Select East\n  Controlling->>Dependent: Cities allowed for East and Commercial"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Before creating record types, include all possible values in the master picklist. A new record type created without cloning includes master picklist values, which you then customize per record type.",
+      "source_ids": [
+        "SF-HELP-RT",
+        "SF-HELP-DEP"
+      ],
+      "scope": "Master picklist and record types",
+      "validation": "Create Record Types plus dependent-picklist record-type note.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Record types are assigned page layouts either one layout for all profiles or a different layout per profile. At runtime, profile plus record type determine the page layout.",
+      "source_ids": [
+        "SF-HELP-RT",
+        "SF-HELP-LAYOUT"
+      ],
+      "scope": "Layout assignment",
+      "validation": "Create Record Types assignment step plus Page Layouts Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A dependent picklist value is available only if it is available on the selected record type and allowed for the selected controlling value. Preview can test a record type.",
+      "source_ids": [
+        "SF-HELP-DEP",
+        "SF-HELP-RT"
+      ],
+      "scope": "Dependencies plus record types",
+      "validation": "Define a Dependent Picklist preview note.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Record types support different business processes and picklist values on the same object; they are not a reason to clone the object when the noun and grain are the same.",
+      "source_ids": [
+        "SF-HELP-RT",
+        "SF-HELP-LAYOUT"
+      ],
+      "scope": "One object many processes",
+      "validation": "Create Record Types purpose plus layout assignment.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Record type UI, dynamic forms reducing layout count, and picklist value-set features are release-sensitive. Reverify Create Record Types for Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact catalog of standard business-process setup objects (Sales/Lead/Support/Solution) should be confirmed on the target object in Setup.",
+    "Global picklist value set mechanics are neighboring; confirm current Help if asked to share values across objects."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Record type",
+      "telugu": "A process-and-layout flavor of the same object."
+    },
+    {
+      "english": "Master picklist",
+      "telugu": "The complete list of picklist values for the object."
+    },
+    {
+      "english": "Dependent picklist",
+      "telugu": "Values that appear only for a controlling field value."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Record types give one object different processes, picklist values, and layouts. Fill the master picklist first, then subset per record type. Layouts are assigned by profile plus record type. Dependent picklists still require the value on that record type.",
+    "two_minutes": "I refuse a second Property object for commercial vs residential. I create two record types, subset Status, assign layouts. I add Region controlling City. I preview both record types. I do not use record types as FLS. I mention business processes on Opportunity/Lead/Case as the stage wrapper—Needs verification of the exact process name on that object."
+  },
+  "terminology": [
+    {
+      "term": "record type",
+      "plain": "A flavor of the same object for a process.",
+      "precise": "Lets you offer different picklist values and page layouts (and, on some objects, a business process) for different kinds of records.",
+      "example": "LAB_Property__c Residential vs Commercial.",
+      "non_example": "A second custom object CommercialProperty__c with the same grain.",
+      "confusable_neighbor": "Record: one row; it stores which record type it uses.",
+      "boundary": "Not a security model."
+    },
+    {
+      "term": "master picklist",
+      "plain": "Every value the object can ever use.",
+      "precise": "The complete list of picklist values that can be used in any record type. Add values here before creating record types.",
+      "example": "Status values New, Occupied, Rehab, Sold all on the master.",
+      "non_example": "Values that exist only in a Flow decision.",
+      "confusable_neighbor": "Record-type values: the subset shown for one type.",
+      "boundary": "Help: include all possible values first."
+    },
+    {
+      "term": "business process",
+      "plain": "The stage path used with a record type on some standard objects.",
+      "precise": "Setup wrappers such as sales or support processes that define stage/status values for a record type. Object-specific—confirm in Setup.",
+      "example": "A sales process assigned to an Opportunity record type.",
+      "non_example": "A custom status picklist on a custom object without a Process setup object.",
+      "confusable_neighbor": "Path: a presentation of stages, neighboring.",
+      "boundary": "Do not invent a process object for every custom object."
+    },
+    {
+      "term": "picklist",
+      "plain": "A field whose values are chosen from a list.",
+      "precise": "A data type (DATA-002) whose allowed values can be subsetted by record type and can control or depend on another picklist.",
+      "example": "LAB_Region__c picklist.",
+      "non_example": "A Text field with suggested words.",
+      "confusable_neighbor": "Multi-select picklist: neighboring type with different dependency rules—Needs verification.",
+      "boundary": "Master values live on the field."
+    },
+    {
+      "term": "dependent picklist",
+      "plain": "A picklist filtered by another field.",
+      "precise": "Values available when the user selects a controlling field value; also gated by record type when record types exist.",
+      "example": "City depends on Region.",
+      "non_example": "A formula that displays city.",
+      "confusable_neighbor": "Controlling field: the driver, sometimes a checkbox.",
+      "boundary": "Not every picklist can be controlling."
+    },
+    {
+      "term": "controlling field",
+      "plain": "The field that drives a dependency.",
+      "precise": "The field chosen first in the dependency matrix. Some picklist and checkbox fields are not available as controlling fields.",
+      "example": "LAB_Region__c controlling LAB_City__c.",
+      "non_example": "The page layout section header.",
+      "confusable_neighbor": "Record type: also gates values, but is not the controlling field.",
+      "boundary": "Confirm availability in the New Dependency wizard."
+    },
+    {
+      "term": "page layout assignment",
+      "plain": "Which layout a user sees for a record type.",
+      "precise": "Assigned when creating a record type (one layout or per profile). Runtime: profile + record type.",
+      "example": "Commercial + Facilities profile → Commercial layout.",
+      "non_example": "Compact layout: highlights panel (DATA-009).",
+      "confusable_neighbor": "Lightning record page: another assignment layer (DATA-009).",
+      "boundary": "Layout is presentation, not the record type itself."
+    },
+    {
+      "term": "record type on the record",
+      "plain": "Which flavor this row is.",
+      "precise": "Business data: the record stores its record type. Changing available picklist values later does not always rewrite old values.",
+      "example": "A LAB_ property saved as Commercial.",
+      "non_example": "The record type metadata definition.",
+      "confusable_neighbor": "Default record type on a profile: who gets which default on create.",
+      "boundary": "Conversion between types is a data operation."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Keep one object if the noun matches",
+      "actor": "Admin + BA",
+      "trigger": "Two 'kinds' of property",
+      "before": "Clone-object temptation",
+      "after": "One object, two record types",
+      "observe": "Written grain check",
+      "failure": "CommercialProperty__c clone"
+    },
+    {
+      "step": 2,
+      "transition": "Fill the master picklist",
+      "actor": "Admin",
+      "trigger": "Record types planned",
+      "before": "Values missing from master",
+      "after": "All values on the field first",
+      "observe": "Master list complete",
+      "failure": "Adding a value only on one type and expecting others to see it later without master"
+    },
+    {
+      "step": 3,
+      "transition": "Subset values and assign layouts",
+      "actor": "Admin",
+      "trigger": "Record types created",
+      "before": "All types show all values and one layout",
+      "after": "Per-type values; profile+type layouts",
+      "observe": "Create a LAB_ record of each type",
+      "failure": "Using record types as FLS"
+    },
+    {
+      "step": 4,
+      "transition": "Add dependencies and preview",
+      "actor": "Admin",
+      "trigger": "Values depend on another field",
+      "before": "Flat picklists",
+      "after": "Controlling/dependent matrix; preview each record type",
+      "observe": "City hidden for the wrong region or type",
+      "failure": "Ignoring record type in the preview"
+    }
+  ],
+  "when_to_use": [
+    "When one object needs different picklist values, page layouts, or business processes for different kinds of records.",
+    "When you must maintain a master picklist and then subset values per record type.",
+    "When a picklist should depend on a controlling field and still honor record types.",
+    "When layout assignment must vary by profile and record type together.",
+    "When someone wants a second object but the noun and grain are the same."
+  ],
+  "when_not_to_use": [
+    "Do not create a new object or schema when a record type and picklists can express the process difference.",
+    "Do not use record types as a substitute for field-level security or sharing.",
+    "Do not use a text field instead of a picklist when values must be controlled and subsetted.",
+    "Do not use a record type to calculate a value (formula) or to aggregate children (roll-up).",
+    "Do not add a dependent picklist value that is missing from the record type and expect it to appear."
+  ],
+  "configuration_or_code_location": [
+    "Object Manager → Record Types; Picklist field value set (master).",
+    "Fields & Relationships → Field Dependencies.",
+    "Record type creation: layout assignment by profile.",
+    "Profiles: default record type and available record types."
+  ],
+  "worked_example": {
+    "scenario": "LAB_Property__c needs Residential and Commercial processes. Status values differ. City should depend on Region. Facilities and Finance profiles need different layouts for Commercial. Sandbox only.",
+    "inputs": [
+      "One custom object",
+      "Two processes",
+      "Region/city dependency",
+      "Two profiles"
+    ],
+    "decisions": [
+      {
+        "decision": "Two record types on LAB_Property__c, not two objects.",
+        "because": "Same noun and grain.",
+        "rejected": "LAB_CommercialProperty__c"
+      },
+      {
+        "decision": "Put all Status, Region, and City values on the master picklists first.",
+        "because": "Help says include all possible values before creating record types.",
+        "rejected": "Inventing values only inside one record type"
+      },
+      {
+        "decision": "Region controlling City; preview both record types.",
+        "because": "A city is available only if the record type and controlling value both allow it.",
+        "rejected": "A text city field"
+      }
+    ],
+    "configuration_or_code": [
+      "Create record types; subset Status; assign layouts per profile for Commercial.",
+      "Create the dependency matrix; preview Residential and Commercial.",
+      "Create one LAB_ record of each type as each profile (or view as)."
+    ],
+    "output": "One object, two record types, dependent city, layout assignment documented.",
+    "verification": [
+      "Commercial does not show a Residential-only status.",
+      "City options change with Region and with record type in Preview.",
+      "Finance sees a different Commercial layout than Facilities if assigned."
+    ],
+    "self_explanation": "I used menus, not a second building, and I filled the kitchen repertoire first."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_Property__c.",
+    "starting_state_checks": [
+      "You can create record types and picklists.",
+      "Two profiles or one profile plus two layouts you can assign."
+    ],
+    "steps": [
+      "Add Status, Region, and City picklists with a full master list.",
+      "Create Residential and Commercial record types; subset Status.",
+      "Create Region→City dependency; preview both types.",
+      "Assign layouts and create one LAB_ record per type."
+    ],
+    "guided_completion": [
+      "If a city never appears, check both the matrix and the record type values.",
+      "If both types look identical, you assigned the same layout and did not subset values."
+    ],
+    "independent_challenge": "Hide a status on Commercial only and prove a Commercial record cannot pick it in the UI.",
+    "evidence": [
+      "Preview screenshot per record type.",
+      "Layout assignment screenshot."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ records; deactivate record types if needed.",
+      "Do not deploy."
+    ],
+    "limitations": "Does not prove every standard business-process object."
+  },
+  "decision_table": [
+    {
+      "signal": "Same business noun, different process, values, or layout.",
+      "choose": "Record types and picklist subsets on one object.",
+      "not": "A cloned custom object for each process.",
+      "why": "Record types exist to support different processes and values on one object."
+    },
+    {
+      "signal": "Every value any type might use is not on the field yet.",
+      "choose": "Add values to the master picklist first, then subset per record type.",
+      "not": "Create the record type and hope missing values appear.",
+      "why": "Help: include all possible values in the master list before creating record types."
+    },
+    {
+      "signal": "City should change when Region changes, and types further restrict cities.",
+      "choose": "Dependent picklist plus record type availability.",
+      "not": "A validation rule as the first design, or a text city.",
+      "why": "Preview uses record type and controlling value together."
+    },
+    {
+      "signal": "Finance and Facilities must see different fields on Commercial records.",
+      "choose": "Assign different page layouts by profile for that record type.",
+      "not": "Two record types that mean the same process just to split layouts, if a profile assignment would do.",
+      "why": "Profile plus record type determine the layout."
+    },
+    {
+      "signal": "The need is a calculated city from a parent.",
+      "choose": "Formula field, not a record type or picklist.",
+      "not": "A Commercial record type that 'means' the city.",
+      "why": "Record types do not calculate values."
+    }
+  ],
+  "limitations": [
+    "Standard business-process object list is not exhaustive here.",
+    "Global value sets are neighboring.",
+    "Dynamic Forms may reduce layout count (DATA-009).",
+    "Record types do not replace sharing."
+  ],
+  "security_notes": [
+    "Hiding a field on a layout is not FLS.",
+    "Available record types on a profile control create options, not record-level access.",
+    "Do not use record types to hide confidential fields from API users."
+  ],
+  "common_mistakes": [
+    "Cloning the object for a second process.",
+    "Forgetting the master picklist.",
+    "Expecting a dependent value that is not on the record type.",
+    "Using record types as security.",
+    "Using text instead of picklists for controlled values."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "A city never appears for Commercial + East.",
+      "check": [
+        "City is on the Commercial record type.",
+        "The dependency matrix allows East→that city."
+      ],
+      "do_not_assume": "The picklist field was deleted."
+    },
+    {
+      "symptom": "Two profiles see the same Commercial page.",
+      "check": [
+        "Record type layout assignment per profile.",
+        "They are not viewing the same Lightning page override (DATA-009)."
+      ],
+      "do_not_assume": "Record types failed to create."
+    },
+    {
+      "symptom": "New status missing on all types.",
+      "check": [
+        "Value exists on the master picklist.",
+        "Each record type includes it if needed."
+      ],
+      "do_not_assume": "You must create a new record type."
+    }
+  ],
+  "production_notes": [
+    "Record types and picklist values are metadata; existing records keep their type and stored values until updated as data.",
+    "Deactivating a record type used by records needs a data plan.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What should you do before creating record types, per Help?",
+      "options": {
+        "A": "Include all possible values in the master picklist",
+        "B": "Delete all picklists",
+        "C": "Create a new object per value",
+        "D": "Turn off page layouts"
+      },
+      "answer": "A",
+      "rationale": "Include all possible record type values in the master list of picklists first.",
+      "distractor_explanations": {
+        "B": "You need the master list.",
+        "C": "That clones objects.",
+        "D": "Layouts are assigned, not turned off."
+      },
+      "concept": "Master picklist first",
+      "citation_ids": [
+        "SF-HELP-RT",
+        "SF-HELP-DEP"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "If you create a record type without cloning, which picklist values does it get?",
+      "options": {
+        "A": "The master picklist values for standard and custom picklists",
+        "B": "No values",
+        "C": "Only globally unique IDs",
+        "D": "Only formula return types"
+      },
+      "answer": "A",
+      "rationale": "The new record type automatically includes the master picklist values.",
+      "distractor_explanations": {
+        "B": "It includes master values.",
+        "C": "Not IDs.",
+        "D": "Not formula types."
+      },
+      "concept": "Default values on new type",
+      "citation_ids": [
+        "SF-HELP-RT",
+        "SF-HELP-LAYOUT"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Who determines the page layout at runtime when record types exist?",
+      "options": {
+        "A": "The combination of the user's profile and the record type",
+        "B": "The record type only",
+        "C": "The owner only",
+        "D": "The formula field only"
+      },
+      "answer": "A",
+      "rationale": "Page Layouts Help: profile and record type together.",
+      "distractor_explanations": {
+        "B": "Profile also matters.",
+        "C": "Owner is not the layout key.",
+        "D": "Formulas do not assign layouts."
+      },
+      "concept": "Layout assignment",
+      "citation_ids": [
+        "SF-HELP-LAYOUT",
+        "SF-HELP-RT"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "When is a dependent picklist value available if record types exist?",
+      "options": {
+        "A": "Only if it is available in the selected record type and the selected controlling value",
+        "B": "If it exists anywhere on the master, always",
+        "C": "If the page layout is compact",
+        "D": "If the field is a formula"
+      },
+      "answer": "A",
+      "rationale": "The dependent-picklist preview note.",
+      "distractor_explanations": {
+        "B": "Record type can hide a master value.",
+        "C": "Compact layouts are DATA-009.",
+        "D": "Dependencies are picklists, not formulas."
+      },
+      "concept": "RT + controlling",
+      "citation_ids": [
+        "SF-HELP-DEP",
+        "SF-HELP-RT"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Residential vs commercial properties, same grain. First design?",
+      "options": {
+        "A": "Record types on one Property object",
+        "B": "Two custom objects",
+        "C": "A roll-up summary",
+        "D": "A named credential"
+      },
+      "answer": "A",
+      "rationale": "Same noun and grain: record types, not a cloned object.",
+      "distractor_explanations": {
+        "B": "Clone is the common fail.",
+        "C": "Roll-ups aggregate children.",
+        "D": "Unrelated."
+      },
+      "concept": "One object",
+      "citation_ids": [
+        "SF-HELP-RT",
+        "SF-HELP-LAYOUT"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the master picklist?",
+      "options": {
+        "A": "The complete list of picklist values that can be used in any record type",
+        "B": "The layout assigned to System Administrator",
+        "C": "The default record type on a profile",
+        "D": "A JunctionIdList"
+      },
+      "answer": "A",
+      "rationale": "Help's definition of the master picklist.",
+      "distractor_explanations": {
+        "B": "That is a layout.",
+        "C": "That is a profile default.",
+        "D": "Unrelated."
+      },
+      "concept": "Master definition",
+      "citation_ids": [
+        "SF-HELP-RT",
+        "SF-HELP-DEP"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "City never shows for Commercial in Preview. Checks?",
+      "options": {
+        "A": "City is on the Commercial record type and allowed for the controlling value",
+        "B": "Only whether the object is standard",
+        "C": "Only the org API version",
+        "D": "Only whether OwnerId exists"
+      },
+      "answer": "A",
+      "rationale": "Both gates are required.",
+      "distractor_explanations": {
+        "B": "Custom objects can have dependencies.",
+        "C": "Not the first check.",
+        "D": "Owner is unrelated."
+      },
+      "concept": "Missing dependent value",
+      "citation_ids": [
+        "SF-HELP-DEP",
+        "SF-HELP-RT"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Record types as the only way to hide a salary field from API users?",
+      "options": {
+        "A": "No. Layouts and record types are not field-level security",
+        "B": "Yes. Record types encrypt fields",
+        "C": "Yes. Dependent picklists are FLS",
+        "D": "Yes. Master picklists hide API fields"
+      },
+      "answer": "A",
+      "rationale": "Security is FLS/sharing, not record type presentation.",
+      "distractor_explanations": {
+        "B": "They do not encrypt.",
+        "C": "Dependencies are value filters.",
+        "D": "Master lists define values."
+      },
+      "concept": "Not security",
+      "citation_ids": [
+        "SF-HELP-LAYOUT",
+        "SF-HELP-RT"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Create Record Types lets you assign layouts how?",
+      "options": {
+        "A": "One layout to all profiles, or a different layout for each profile",
+        "B": "Only by owner",
+        "C": "Only by formula",
+        "D": "Only by named credential"
+      },
+      "answer": "A",
+      "rationale": "The create wizard's layout options.",
+      "distractor_explanations": {
+        "B": "Owner is not the option.",
+        "C": "Formulas do not assign layouts.",
+        "D": "Unrelated."
+      },
+      "concept": "Layout options",
+      "citation_ids": [
+        "SF-HELP-RT",
+        "SF-HELP-LAYOUT"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Need a value calculated from other fields, not chosen from a list.",
+      "options": {
+        "A": "Formula field, not a record type or picklist",
+        "B": "A new record type named Calculated",
+        "C": "A dependent picklist with one value",
+        "D": "A business process with no stages"
+      },
+      "answer": "A",
+      "rationale": "Record types do not calculate; formulas do.",
+      "distractor_explanations": {
+        "B": "A name is not a formula.",
+        "C": "Still a chosen value.",
+        "D": "Processes are stage lists."
+      },
+      "concept": "Not a formula",
+      "citation_ids": [
+        "SF-HELP-XOBJ",
+        "SF-HELP-RT"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Why preview a dependency with a record type?",
+      "options": {
+        "A": "The record type controls controlling-field values, and both gates control the dependent picklist",
+        "B": "Preview deletes the matrix",
+        "C": "Record types cannot affect picklists",
+        "D": "Preview is only for roll-ups"
+      },
+      "answer": "A",
+      "rationale": "Help's preview note.",
+      "distractor_explanations": {
+        "B": "Preview does not delete.",
+        "C": "They do affect available values.",
+        "D": "Wrong topic."
+      },
+      "concept": "Preview",
+      "citation_ids": [
+        "SF-HELP-DEP",
+        "SF-HELP-RT"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A new Status value is missing on Residential.",
+      "options": {
+        "A": "Add it to the master picklist if needed, then include it on the Residential record type",
+        "B": "Create a new object",
+        "C": "Convert the field to Text",
+        "D": "Add a roll-up"
+      },
+      "answer": "A",
+      "rationale": "Master first, then record-type inclusion.",
+      "distractor_explanations": {
+        "B": "Not an object problem.",
+        "C": "Loses controlled values.",
+        "D": "Unrelated."
+      },
+      "concept": "Missing status",
+      "citation_ids": [
+        "SF-HELP-RT",
+        "SF-HELP-DEP"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "rt",
+      "front": "What does a record type change on an object?",
+      "back": "Available picklist values, page layouts, and on some objects a business process."
+    },
+    {
+      "id": "F2",
+      "category": "master",
+      "front": "What is the master picklist?",
+      "back": "The complete list of picklist values any record type can use."
+    },
+    {
+      "id": "F3",
+      "category": "order",
+      "front": "What first, before creating record types?",
+      "back": "Put every possible value on the master picklist."
+    },
+    {
+      "id": "F4",
+      "category": "layout",
+      "front": "Who chooses the page layout when record types exist?",
+      "back": "The user's profile plus the record type together."
+    },
+    {
+      "id": "F5",
+      "category": "dep",
+      "front": "When is a dependent value available with record types?",
+      "back": "When the record type includes it and the controlling value allows it."
+    },
+    {
+      "id": "F6",
+      "category": "clone",
+      "front": "Same noun, two processes—clone the object?",
+      "back": "No. Use record types on one object."
+    },
+    {
+      "id": "F7",
+      "category": "newrt",
+      "front": "New record type without cloning gets which values?",
+      "back": "The master picklist values, which you then customize."
+    },
+    {
+      "id": "F8",
+      "category": "sec",
+      "front": "Are record types field-level security?",
+      "back": "No. Layouts and types are presentation, not FLS."
+    },
+    {
+      "id": "F9",
+      "category": "preview",
+      "front": "Why Preview on a dependency?",
+      "back": "To test controlling values and record types together."
+    },
+    {
+      "id": "F10",
+      "category": "process",
+      "front": "What is a business process here?",
+      "back": "A stage/status wrapper assigned to a record type on some standard objects."
+    },
+    {
+      "id": "F11",
+      "category": "data",
+      "front": "Is the record's record type metadata or data?",
+      "back": "The definition is metadata; the value on each record is business data."
+    },
+    {
+      "id": "F12",
+      "category": "text",
+      "front": "Text field instead of picklist for Status?",
+      "back": "Avoid it if you need controlled, subsettable values."
+    },
+    {
+      "id": "F13",
+      "category": "assign",
+      "front": "Two layout assignment modes when creating a type?",
+      "back": "One layout for all profiles, or a different layout per profile."
+    },
+    {
+      "id": "F14",
+      "category": "control",
+      "front": "Can every picklist be a controlling field?",
+      "back": "No. Some picklist and checkbox fields are not available as controlling fields."
+    },
+    {
+      "id": "F15",
+      "category": "formula",
+      "front": "Record type that calculates a number?",
+      "back": "Wrong tool. Use a formula field."
+    },
+    {
+      "id": "F16",
+      "category": "city",
+      "front": "City missing for Commercial + East?",
+      "back": "Check record-type values and the dependency matrix."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What is a record type, and how do picklists relate?",
+      "answer_30_seconds": "A record type is a process-and-layout flavor of one object. The master picklist holds every value; each record type subsets those values. Layouts are assigned by profile plus record type.",
+      "answer_2_minutes": "I refuse object clones when the noun matches. I fill the master list first. I mention dependent picklists as a second filter on top of record types. I do not call record types a security model. I mention business processes on some standard objects as Needs verification by object.",
+      "example": "LAB_Property__c Residential vs Commercial with different Status values.",
+      "tradeoffs": [
+        "One object vs clone",
+        "Master vs subset"
+      ],
+      "follow_ups": [
+        "What is a business process?",
+        "Who assigns layouts?"
+      ],
+      "weak_answer_warnings": [
+        "Defining record type as a new object"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "Commercial vs residential properties—two objects?",
+      "answer_30_seconds": "No, if grain is the same. Use two record types, subset picklists, and assign layouts. Build a second object only if the noun or relationships truly differ.",
+      "answer_2_minutes": "I ask whether units, vendors, and fields are the same shape. If yes, record types. I add Region→City dependency. I assign Finance vs Facilities layouts on Commercial. I do not use types as FLS for a confidential field.",
+      "example": "Rejected LAB_CommercialProperty__c; created two record types on LAB_Property__c.",
+      "tradeoffs": [
+        "Clone vs type",
+        "Layout vs FLS"
+      ],
+      "follow_ups": [
+        "When would you split objects?",
+        "How do reports filter by record type?"
+      ],
+      "weak_answer_warnings": [
+        "Agreeing to clone for speed"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "foundational",
+      "question": "How do dependent picklists interact with record types?",
+      "answer_30_seconds": "A dependent value appears only if the record type includes it and the controlling value allows it. Preview both gates.",
+      "answer_2_minutes": "I fill the matrix, then I include cities on each record type that should see them. A city on the master but not on Commercial will not appear for Commercial even if East allows it. I mention some fields cannot be controlling.",
+      "example": "Preview Commercial + East shows only cities in both gates.",
+      "tradeoffs": [
+        "Matrix vs record-type subset",
+        "Checkbox controller vs picklist controller"
+      ],
+      "follow_ups": [
+        "What fields cannot control?",
+        "Do multi-selects depend the same way?"
+      ],
+      "weak_answer_warnings": [
+        "Only checking the matrix"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "design",
+      "question": "Finance and Facilities need different Commercial screens.",
+      "answer_30_seconds": "Assign different page layouts to those profiles for the Commercial record type. Do not create a third record type that means the same process unless the values also differ.",
+      "answer_2_minutes": "Create Record Types allows one layout for all profiles or a layout per profile. Runtime uses profile + record type. DATA-009 may add a Lightning page layer. I still keep one Commercial type if the process is the same.",
+      "example": "Commercial + Finance layout hides operational fields; Facilities layout shows them.",
+      "tradeoffs": [
+        "Per-profile layout vs extra record type",
+        "Lightning page vs page layout"
+      ],
+      "follow_ups": [
+        "What if they need different picklist values too?",
+        "Is compact layout assigned the same way?"
+      ],
+      "weak_answer_warnings": [
+        "Creating Finance-Commercial as a new object"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A new Status does not appear on Residential.",
+      "answer_30_seconds": "Add it to the master picklist if it is missing, then include it on the Residential record type. Creating a new type is the wrong first move.",
+      "answer_2_minutes": "I open the Status field's value set, then Record Type picklist maintenance. I test a LAB_ Residential record. I do not convert Status to Text. Historical records keep old values until updated as data.",
+      "example": "Added Rehab to the master list and to Residential only.",
+      "tradeoffs": [
+        "Master vs type inclusion",
+        "Deactivate vs delete a value"
+      ],
+      "follow_ups": [
+        "What happens to old records using a deactivated value?",
+        "Does API ignore record-type value subsets? Needs verification."
+      ],
+      "weak_answer_warnings": [
+        "Creating a second Status field"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "scenario",
+      "question": "City is blank on a Commercial record even though East is set.",
+      "answer_30_seconds": "Check whether that city is on the Commercial record type and whether the dependency matrix allows East→city. Also check the layout includes City.",
+      "answer_2_minutes": "I use Preview with Commercial selected. I do not start with sharing. If they typed city as Text, I convert to a dependent picklist. If a formula should display parent city, that is DATA-006, not this picklist.",
+      "example": "Preview showed city missing from Commercial; adding it to the type fixed the UI.",
+      "tradeoffs": [
+        "Type gate vs matrix gate vs layout",
+        "Picklist vs formula city"
+      ],
+      "follow_ups": [
+        "Can a checkbox be controlling?",
+        "How do you migrate text cities?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the user's browser only"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "foundational",
+      "question": "Are record types a security tool?",
+      "answer_30_seconds": "No. They change available values and which layout is assigned. Field-level security and sharing still decide what an API or user can access.",
+      "answer_2_minutes": "I say a profile can query a field that is not on the layout. Record types available on a profile control which types you can create. I would not hide salary with a record type. SEC topics own authorization.",
+      "example": "Salary still readable via API despite being off the Commercial layout.",
+      "tradeoffs": [
+        "Layout hide vs FLS",
+        "Available types vs record access"
+      ],
+      "follow_ups": [
+        "What does default record type on a profile do?",
+        "Can permission sets grant record types?"
+      ],
+      "weak_answer_warnings": [
+        "Promising record types hide fields from reports and API"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "When is a business process part of the answer?",
+      "answer_30_seconds": "On objects that have a formal process setup—commonly Opportunity stages, Lead status, or Case status—assigned to a record type. Custom objects usually use an ordinary picklist plus record types.",
+      "answer_2_minutes": "I do not invent a Process object for LAB_Property__c. I subset the Status picklist per type. If the interviewer says Opportunity, I mention a sales process assigned to the record type and then verify the current Setup name. I keep Path as presentation.",
+      "example": "Opportunity record type New Business assigned a sales process; LAB_Property__c uses a Status picklist only.",
+      "tradeoffs": [
+        "Standard process vs custom picklist",
+        "Path vs process"
+      ],
+      "follow_ups": [
+        "Which objects have processes?",
+        "Can two types share one process?"
+      ],
+      "weak_answer_warnings": [
+        "Saying every object has a sales process"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,974 @@
+{
+  "topic_id": "LWC-005",
+  "slug": "dom-events-custom-events-bubbling-composition-and-light",
+  "title": "DOM events, custom events, bubbling, composition, and Lightning Message Service",
+  "track": "Lightning Web Components",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-004"
+  ],
+  "objectives": [
+    "Dispatch a CustomEvent from a child so a parent handles it with an on* listener in the parent template.",
+    "Name events in lowercase with underscores, never with an on prefix, and put only primitives or copies in detail.",
+    "Choose properties and methods to communicate down, events to communicate up, and Lightning Message Service to communicate across the DOM.",
+    "State that LMS can connect LWC, Aura, Visualforce, and utility bar on a Lightning page."
+  ],
+  "diagnostic_question": "A child selection must update a parent, a utility-bar widget must hear the same fact, and a teammate wants to fire an onselected event whose detail is the live contact object. Which DOM event, custom event, bubbling, composition, and Lightning Message Service choices do you make?",
+  "definition": "Lightning web components dispatch standard DOM events and CustomEvent instances to communicate up the containment hierarchy. Parents listen with on* attributes. Communicate down with public properties or methods. Communicate across the DOM—including Aura, Visualforce, and utility bar—with Lightning Message Service. ([Events](https://developer.salesforce.com/docs/platform/lwc/guide/events.html); [Create and Dispatch Events](https://developer.salesforce.com/docs/platform/lwc/guide/events-create-dispatch.html); [LMS](https://developer.salesforce.com/docs/platform/lwc/guide/use-message-channel.html))",
+  "why_it_matters": "Interviewers fail candidates who shout down with events, pass mutable objects in detail, name events onselected, or use LMS for a direct parent/child pair. The wrong channel creates hidden coupling and security-sensitive mutation.",
+  "sixty_second_explanation": "The child does not shout down the stairwell; the parent already passed tickets (@api). The child shouts up with a CustomEvent the parent hears as onselected. Put a contact Id in detail, not the live object. If a Visualforce page or utility bar must hear it too, that is the building PA: Lightning Message Service on a message channel—not another nested event.",
+  "deeper_explanation": [
+    "Use events to communicate up. A child such as c-todo-item dispatches so the parent c-todo-app knows a user selected it. Events are built on DOM Events. Strongly prefer CustomEvent. To communicate down, pass properties or call public methods. To communicate between components that are not in that tree, use Lightning message service or a pub-sub utility. ([Communicate with Events](https://developer.salesforce.com/docs/platform/lwc/guide/events.html))",
+    "Create events with new CustomEvent(type) and dispatch with this.dispatchEvent. Event type strings should have no uppercase, no spaces, and use underscores to separate words. Do not prefix with on, or the parent listener becomes ononmessage. Simple events may have no payload. To pass data, set detail to primitives, or copy objects so listeners cannot mutate your data. ([Create and Dispatch Events](https://developer.salesforce.com/docs/platform/lwc/guide/events-create-dispatch.html))",
+    "Parents listen with HTML attributes oneventtype, for example onprevious and onnext on a nested paginator, or onselected when the child dispatches selected. The parent handler reads event.detail. ([Create and Dispatch Events](https://developer.salesforce.com/docs/platform/lwc/guide/events-create-dispatch.html))",
+    "Lightning Message Service communicates across the DOM on a Lightning page among Visualforce, Aura, and LWC, including utility bar and pop-out utilities. It is available in Lightning Experience and for Lightning components in Experience Builder sites. Choose application-wide versus active-area subscription when you configure scope. ([LMS](https://developer.salesforce.com/docs/platform/lwc/guide/use-message-channel.html))"
+  ],
+  "mental_model": {
+    "analogy": "A stairwell versus a building PA: the child shouts up with CustomEvent; the parent does not shout down (it passes tickets). Unrelated rooms—Aura, Visualforce, utility bar—use the PA (Lightning Message Service) on a message channel.",
+    "useful_mapping": [
+      "CustomEvent type selected → shout name, lowercase with underscores",
+      "parent onselected={handler} → ear on the child's door",
+      "detail primitive Id → a slip of paper, not the whole filing cabinet",
+      "@api down → tickets, not events",
+      "LMS message channel → building PA",
+      "VF / Aura / utility bar → other rooms on the same floor"
+    ],
+    "where_it_breaks": [
+      "bubbles and composed flags are DOM mechanics, not acoustics—reverify the propagate page before quoting defaults.",
+      "LMS is not a replacement for a direct parent listener.",
+      "Pub-sub utilities are mentioned as an alternative but are not the first-party LMS channel.",
+      "The analogy does not encode Experience Cloud licensing."
+    ]
+  },
+  "teach_back_prompt": "Walk a parent/child selection: the CustomEvent name, the parent on* listener, what belongs in detail, and when you would add Lightning Message Service instead of another nested event.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Up with events, down with properties, across with LMS."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Name an event and write the parent on* attribute. Why not onselected as the type?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Why copy or use primitives in detail?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Utility bar must hear a record page LWC: which service?"
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: custom events, bubbling/composition boundaries, LMS."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-EVENTS",
+      "title": "Communicate with Events",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/events.html",
+      "supports": "Events communicate up; properties/methods down; LMS or pub-sub across components; CustomEvent recommended.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace the propagate page for bubbles/composed defaults."
+    },
+    {
+      "source_id": "SF-LWC-DISPATCH",
+      "title": "Create and Dispatch Events",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/events-create-dispatch.html",
+      "supports": "CustomEvent naming, no on prefix, detail primitives or copies, parent on* listeners, paginator and selected examples.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not document LMS."
+    },
+    {
+      "source_id": "SF-LWC-LMS",
+      "title": "Communicate Across the DOM with Lightning Message Service",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/use-message-channel.html",
+      "supports": "LMS across VF, Aura, LWC, utility bar; LEX and Experience Builder; application vs active area scope.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Publish/subscribe API details live on sibling LMS pages."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Events up",
+        "Properties down",
+        "CustomEvent naming",
+        "detail primitives",
+        "Parent on* listener",
+        "LMS across DOM"
+      ],
+      "accessible_description": "Portrait map of parent/child events: child dispatches CustomEvent, parent listens on the child tag, properties still flow down, LMS reaches VF/Aura/utility bar."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-EVENTS",
+        "SF-LWC-DISPATCH",
+        "SF-LWC-LMS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Parent/child events versus Lightning Message Service"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Parent[parent template] -->|@api properties and methods down| Child[child component]\n  Child -->|CustomEvent selected detail Id| Parent\n  Parent -->|onselected handler| ParentJs[parent JavaScript]\n  Child -.->|do not shout down with events| Parent\n  RecordLwc[record page LWC] -->|Lightning Message Service| Channel[message channel]\n  Channel --> Util[utility bar LWC]\n  Channel --> Aura[Aura component]\n  Channel --> Vf[Visualforce page]",
+      "decision": "flowchart TD\n  Talk[Need components to talk?] --> Q1{Same parent/child tree?}\n  Q1 -->|Parent to child| Down[Set @api properties or call @api methods]\n  Q1 -->|Child to parent| Up[dispatch CustomEvent; parent on* listener]\n  Q1 -->|Unrelated DOM VF Aura utility bar| Lms[Lightning Message Service on a message channel]\n  Up --> Q2{Payload?}\n  Q2 -->|None| Simple[Type only: previous / next]\n  Q2 -->|Data| Prim[detail primitive or a copy — not the live object]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Use events to communicate up the containment hierarchy. Communicate down with properties or public methods. Communicate across the DOM with Lightning Message Service (or a pub-sub utility).",
+      "source_ids": ["SF-LWC-EVENTS"],
+      "scope": "Channel choice",
+      "validation": "Communicate with Events tip and intro.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Create CustomEvent with a lowercase underscore-separated type, no on prefix. Prefer primitives or copies in detail so listeners cannot mutate the child's object.",
+      "source_ids": ["SF-LWC-DISPATCH"],
+      "scope": "CustomEvent shape",
+      "validation": "Create and Dispatch Events naming and detail guidance.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Parents listen with oneventtype attributes such as onprevious, onnext, or onselected, and read event.detail in the handler.",
+      "source_ids": ["SF-LWC-DISPATCH"],
+      "scope": "Parent listeners",
+      "validation": "Paginator and selected examples.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Lightning Message Service communicates across the DOM among Visualforce, Aura, and LWC including utility bar, in Lightning Experience and Experience Builder sites.",
+      "source_ids": ["SF-LWC-LMS"],
+      "scope": "LMS",
+      "validation": "Communicate Across the DOM with Lightning Message Service.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Handbook rewrite 2026-08-16. Reverify bubbles/composed defaults on the event propagation page before quoting numeric defaults.",
+  "unresolved_uncertainty": [
+    "events-propagate.html body was not retrieved this session. Do not invent bubbles/composed default booleans in interviews without opening that page.",
+    "Exact lightning/messageService import names and APPLICATION_SCOPE constants belong to the LMS API reference pages."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "CustomEvent",
+      "telugu": "చైల్డ్ పైకి అరుసే DOM ఈవెంట్."
+    },
+    {
+      "english": "Lightning Message Service",
+      "telugu": "పేజీలో VF, Aura, LWC కోసం భవనం PA."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Child-to-parent is CustomEvent and an on* listener. Parent-to-child is @api. Across Visualforce, Aura, or the utility bar is Lightning Message Service. detail should be a primitive or a copy.",
+    "two_minutes": "I name events selected not onselected. I show the paginator previous/next pattern and the contact Id in detail. I refuse live object references in detail. I do not use LMS for a nested child. I admit bubbles/composed defaults Need verification on the propagate page."
+  },
+  "terminology": [
+    {
+      "term": "CustomEvent",
+      "plain": "The recommended object a component dispatches to announce something happened.",
+      "precise": "new CustomEvent(type, { detail }) then this.dispatchEvent. Preferred over ad-hoc event types for a consistent browser experience.",
+      "example": "this.dispatchEvent(new CustomEvent('selected', { detail: this.contact.Id }));",
+      "non_example": "Setting a parent field directly from the child.",
+      "confusable_neighbor": "Aura application events, a different event model.",
+      "boundary": "Platform events are integration, not LWC DOM events."
+    },
+    {
+      "term": "event type",
+      "plain": "The string name of the event, such as selected or next.",
+      "precise": "No uppercase, no spaces, underscores to separate words. Do not prefix with on.",
+      "example": "selected → parent listens onselected.",
+      "non_example": "onselected as the type, which forces ononselected in markup.",
+      "confusable_neighbor": "HTML onclick, which is a standard DOM listener name, not your custom type.",
+      "boundary": "LMS channel names are metadata, not CustomEvent types."
+    },
+    {
+      "term": "detail",
+      "plain": "The optional payload on CustomEvent.",
+      "precise": "No required shape, but send primitives or a copy. Passing a live object lets listeners mutate it by reference.",
+      "example": "detail: this.contact.Id",
+      "non_example": "detail: this.contact where this.contact is the wired object.",
+      "confusable_neighbor": "@api property, which is down, not up.",
+      "boundary": "Do not put secrets in detail."
+    },
+    {
+      "term": "on* listener",
+      "plain": "The parent template attribute that hears the child's event.",
+      "precise": "Syntax oneventtype. Event previous → onprevious. Handler receives the event object.",
+      "example": "<c-lab-paginator onprevious={handlePrevious}></c-lab-paginator>",
+      "non_example": "window.addEventListener as the first choice for a direct child.",
+      "confusable_neighbor": "LMS subscribe, which is not a template on* attribute.",
+      "boundary": "Standard lightning-button onclick is a base-component event, still handled with on*."
+    },
+    {
+      "term": "communicate up",
+      "plain": "Child tells parent via an event.",
+      "precise": "Official direction for events in the containment hierarchy.",
+      "example": "c-todo-item dispatches so c-todo-app knows it was selected.",
+      "non_example": "Parent dispatching an event for the child to set a property.",
+      "confusable_neighbor": "Bubbling to grandparents, which needs propagate flags—Needs verification.",
+      "boundary": "Owner still sets properties down (LWC-004)."
+    },
+    {
+      "term": "Lightning Message Service",
+      "plain": "The platform PA that carries messages across the page DOM.",
+      "precise": "Communicate among VF, Aura, and LWC including utility bar and pop-out utilities. LEX and Experience Builder sites. Subscribe to the whole app or the active area.",
+      "example": "Record-page LWC publishes a channel the utility-bar LWC subscribes to.",
+      "non_example": "A CustomEvent for a nested child in the same template.",
+      "confusable_neighbor": "Platform Events / Pub/Sub API, which are org integration, not page DOM.",
+      "boundary": "Open CTI softphones are mentioned as an LMS consumer; details are out of scope."
+    },
+    {
+      "term": "message channel",
+      "plain": "The named pipe LMS publishers and subscribers share.",
+      "precise": "Created as metadata (LightningMessageChannel). Components publish and subscribe on that channel.",
+      "example": "LAB_RecordSelected__c message channel used by two LWCs on one page.",
+      "non_example": "A CustomEvent type string reused as if it were LMS.",
+      "confusable_neighbor": "Platform event entity, a different metadata type.",
+      "boundary": "Exact XML fields of the channel Need verification on Create a Message Channel."
+    },
+    {
+      "term": "bubbling and composition",
+      "plain": "DOM flags that decide whether an event climbs ancestors and whether it crosses shadow boundaries.",
+      "precise": "Important for grandparents and shadow. Parent on* on the child tag is shown in the dispatch topic without requiring you to invent defaults. Quote bubbles/composed only from the propagate page.",
+      "example": "Needs verification: opening Configure Event Propagation before stating default false/false.",
+      "non_example": "Using LMS because you are unsure about bubbles.",
+      "confusable_neighbor": "LWC composition (parent nesting children), a different word.",
+      "boundary": "This lesson flags the topic; it does not invent the table."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Pick the channel",
+      "actor": "Developer",
+      "trigger": "Two pieces of UI must share a fact",
+      "before": "Unknown direction",
+      "after": "Down = @api, up = CustomEvent, across DOM = LMS",
+      "observe": "Written choice on the PR",
+      "failure": "LMS for a nested child, or events to push data down"
+    },
+    {
+      "step": 2,
+      "transition": "Name and dispatch",
+      "actor": "Developer",
+      "trigger": "Child user action",
+      "before": "No event",
+      "after": "CustomEvent type without on prefix; dispatchEvent",
+      "observe": "Parent onselected fires",
+      "failure": "Type onselected causing ononselected"
+    },
+    {
+      "step": 3,
+      "transition": "Shape detail",
+      "actor": "Developer",
+      "trigger": "Need a payload",
+      "before": "Temptation to pass the live object",
+      "after": "Primitive Id or a shallow copy",
+      "observe": "Parent looks up the contact in its own list",
+      "failure": "Listener mutates the child's contact"
+    },
+    {
+      "step": 4,
+      "transition": "Cross the page if needed",
+      "actor": "Developer",
+      "trigger": "Utility bar or VF/Aura must hear it",
+      "before": "Only parent/child events",
+      "after": "Message channel plus LMS publish/subscribe",
+      "observe": "Utility bar updates without being in the child's template",
+      "failure": "Trying to bubble a CustomEvent into Visualforce"
+    }
+  ],
+  "when_to_use": [
+    "When a child Lightning web component must notify its parent with a custom event the parent handles in the template.",
+    "When you must choose events for communicating up versus public properties for composition down.",
+    "When bubbling beyond the parent or crossing shadow needs the official propagate page rather than invented flags.",
+    "When Visualforce, Aura, or a utility bar must hear a message: Lightning Message Service, not a nested CustomEvent.",
+    "When detail on a custom event should be a primitive or a copy, not a live wired object."
+  ],
+  "when_not_to_use": [
+    "Do not use custom events to push data down into a child—that is @api composition (LWC-004).",
+    "Do not use Lightning Message Service as the default for a parent that already nests the child in its template.",
+    "Do not treat this events lesson as LDS/Apex data access (LWC-006).",
+    "Do not invent bubbles/composed defaults without the propagate page.",
+    "Do not publish LMS messages with real customer secrets from a lab org."
+  ],
+  "configuration_or_code_location": [
+    "labChild.js dispatchEvent of CustomEvent('selected').",
+    "labParent.html onselected={handleSelected}.",
+    "LightningMessageChannel metadata for LMS labs.",
+    "Utility bar LWC subscribe versus record-page LWC publish."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox list of LAB_ contacts sits in labParent. Each labContactItem must tell the parent which Id was selected. A utility-bar helper must show the same Id. A teammate passes the whole contact object in detail and names the event onselected.",
+    "inputs": [
+      "Parent/child tree for the list",
+      "Utility bar not in that tree",
+      "Synthetic contact Ids"
+    ],
+    "decisions": [
+      {
+        "decision": "Dispatch CustomEvent('selected') with detail: contact Id. Parent uses onselected.",
+        "because": "Naming and primitive detail follow Create and Dispatch Events.",
+        "rejected": "Event type onselected and detail: this.contact"
+      },
+      {
+        "decision": "Parent still sets item fields with @api, not with a downward event.",
+        "because": "Events communicate up; properties communicate down.",
+        "rejected": "Parent firing an event for the child to set name"
+      },
+      {
+        "decision": "Utility bar subscribes on an LMS message channel; the parent or a sibling publishes the Id.",
+        "because": "LMS is for communication across the DOM, including utility bar.",
+        "rejected": "Expecting the CustomEvent to reach Visualforce or the utility bar"
+      }
+    ],
+    "configuration_or_code": [
+      "this.dispatchEvent(new CustomEvent('selected', { detail: this.contactId }));",
+      "<c-lab-contact-item onselected={handleSelected} contact-id={c.Id}></c-lab-contact-item>",
+      "LMS publish of the same Id for the utility-bar subscriber — Needs verification of exact lightning/messageService method names on the publish page."
+    ],
+    "output": "Parent shows the selected contact from its own array. Utility bar can show the Id via LMS. Child object is not mutated via detail.",
+    "verification": [
+      "Markup is onselected, event type is selected.",
+      "detail is an Id string.",
+      "Utility bar is not a parent template listener."
+    ],
+    "self_explanation": "Up, down, and across were three different channels."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable scratch org; LAB_ components only.",
+    "starting_state_checks": [
+      "You can create LWCs and, if testing LMS, a message channel in a non-production org.",
+      "No real contact data."
+    ],
+    "steps": [
+      "Build labPaginator that dispatches previous and next with no detail. Parent listens onprevious and onnext and changes a page number field.",
+      "Build labContactItem that dispatches selected with detail set to a string Id. Parent onselected stores the Id.",
+      "Refactor a bad branch (in comments) that used type onselected and passed a live object; write why it is wrong.",
+      "If the org allows, create a LAB_ message channel and publish the selected Id so a second LWC on the same app page updates—do not use CustomEvent for that second component."
+    ],
+    "guided_completion": [
+      "If the parent handler never runs, check on + event type spelling.",
+      "If LMS is silent, confirm both components are on a Lightning page that supports LMS."
+    ],
+    "independent_challenge": "Add a third LWC that is not nested; it must not hear selected unless you add LMS.",
+    "evidence": [
+      "Child JS showing CustomEvent names without on prefix and primitive detail.",
+      "Parent HTML showing onprevious/onnext or onselected handlers."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ LWCs and any lab message channel.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not prove Open CTI. bubbles/composed not exercised without the propagate page."
+  },
+  "decision_table": [
+    {
+      "signal": "Nested child must tell the parent a button was clicked.",
+      "choose": "CustomEvent with a simple type; parent on* listener.",
+      "not": "Lightning Message Service for that direct pair.",
+      "why": "Events communicate up the containment hierarchy."
+    },
+    {
+      "signal": "Parent must pass a contact Id into the child.",
+      "choose": "@api property / attribute — composition down.",
+      "not": "A CustomEvent fired by the parent at the child as the default.",
+      "why": "Communicate down with properties or methods."
+    },
+    {
+      "signal": "Utility bar, Aura, or Visualforce must hear the same selection.",
+      "choose": "Lightning Message Service on a message channel.",
+      "not": "Hoping a DOM CustomEvent bubbles into Visualforce.",
+      "why": "LMS is the documented cross-DOM service on a Lightning page."
+    },
+    {
+      "signal": "You need to pass data in the event.",
+      "choose": "detail as a primitive or a copied object.",
+      "not": "The live wired record object by reference.",
+      "why": "Listeners can mutate objects passed by reference."
+    }
+  ],
+  "limitations": [
+    "bubbles/composed defaults Need verification.",
+    "LMS publish/subscribe API names Need the sibling pages.",
+    "Does not teach platform events.",
+    "Does not teach LDS cache invalidation."
+  ],
+  "security_notes": [
+    "Do not put secrets or whole records in event detail or LMS payloads.",
+    "Copied detail still may include fields the listener should not see—filter first.",
+    "LMS subscribers still obey user CRUD/FLS when they load records."
+  ],
+  "common_mistakes": [
+    "Event type prefixed with on.",
+    "Passing live objects in detail.",
+    "Using events to communicate down.",
+    "LMS for a nested child.",
+    "Assuming CustomEvent reaches Visualforce."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Parent handler never runs.",
+      "check": [
+        "Event type versus on* spelling",
+        "dispatchEvent actually called",
+        "Child tag is the one with the listener"
+      ],
+      "do_not_assume": "You must set bubbles true without reading the propagate page."
+    },
+    {
+      "symptom": "Utility bar does not update.",
+      "check": [
+        "Are they in the same Lightning page?",
+        "Is LMS the channel, not CustomEvent?",
+        "Subscribe scope application vs active area"
+      ],
+      "do_not_assume": "The child's CustomEvent should have crossed the bar."
+    }
+  ],
+  "production_notes": [
+    "Document event types as a public contract like @api.",
+    "Prefer Ids in detail; let the parent own the record list.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which direction are LWC events for in the containment hierarchy?",
+      "options": {
+        "A": "Up — child notifies parent",
+        "B": "Down — parent notifies child as the default",
+        "C": "Only to Apex",
+        "D": "Only to Visualforce"
+      },
+      "answer": "A",
+      "rationale": "Use events to communicate up. Down is properties or methods.",
+      "distractor_explanations": {
+        "B": "Down is not the event default.",
+        "C": "Apex is a different channel.",
+        "D": "VF uses LMS, not a nested CustomEvent."
+      },
+      "concept": "Events up",
+      "citation_ids": ["SF-LWC-EVENTS"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How should you communicate down to a child?",
+      "options": {
+        "A": "Pass properties or call public methods",
+        "B": "Always LMS",
+        "C": "Always CustomEvent from the parent",
+        "D": "Always platform events"
+      },
+      "answer": "A",
+      "rationale": "Communicate with Events: down via properties or public methods.",
+      "distractor_explanations": {
+        "B": "LMS is across the DOM.",
+        "C": "Events are up.",
+        "D": "Integration, not parent/child UI."
+      },
+      "concept": "Down channel",
+      "citation_ids": ["SF-LWC-EVENTS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why not name your CustomEvent type onmessage?",
+      "options": {
+        "A": "The parent listener would be ononmessage",
+        "B": "on is required in the type",
+        "C": "CustomEvent forbids the letter o",
+        "D": "LMS requires that name"
+      },
+      "answer": "A",
+      "rationale": "Do not prefix the event name with on because inline handlers already start with on.",
+      "distractor_explanations": {
+        "B": "Opposite of the Guide.",
+        "C": "Nonsense.",
+        "D": "Unrelated."
+      },
+      "concept": "Event naming",
+      "citation_ids": ["SF-LWC-DISPATCH"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why prefer a contact Id in detail instead of the contact object?",
+      "options": {
+        "A": "Objects are passed by reference; a listener can mutate the child's data",
+        "B": "detail cannot hold strings",
+        "C": "Ids are illegal in detail",
+        "D": "CustomEvent forbids detail"
+      },
+      "answer": "A",
+      "rationale": "Send primitives or copy data so receivers cannot mutate your object.",
+      "distractor_explanations": {
+        "B": "Primitives are recommended.",
+        "C": "The recipes example uses Id.",
+        "D": "detail is the payload field."
+      },
+      "concept": "detail safety",
+      "citation_ids": ["SF-LWC-DISPATCH"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Child dispatches previous. Parent listener attribute?",
+      "options": {
+        "A": "onprevious",
+        "B": "ononprevious",
+        "C": "previousHandler as an HTML attribute name",
+        "D": "lightning-message-channel"
+      },
+      "answer": "A",
+      "rationale": "Listeners use oneventtype. Type previous → onprevious.",
+      "distractor_explanations": {
+        "B": "That is the doubled-on failure mode.",
+        "C": "The function is bound as {handler}; the attribute is onprevious.",
+        "D": "LMS is a different channel."
+      },
+      "concept": "on* attribute",
+      "citation_ids": ["SF-LWC-DISPATCH"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Lightning Message Service can communicate among which of these on a Lightning page?",
+      "options": {
+        "A": "Visualforce, Aura, and Lightning web components, including utility bar",
+        "B": "Only nested parent/child LWCs",
+        "C": "Only Apex REST",
+        "D": "Only Classic JavaScript buttons"
+      },
+      "answer": "A",
+      "rationale": "LMS page lists VF, Aura, LWC, utility bar, pop-out utilities.",
+      "distractor_explanations": {
+        "B": "Parent/child should use events/properties.",
+        "C": "Apex REST is integration.",
+        "D": "Classic JS buttons are not the LMS story."
+      },
+      "concept": "LMS participants",
+      "citation_ids": ["SF-LWC-LMS"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A utility-bar LWC must show the record a page LWC selected. Best channel?",
+      "options": {
+        "A": "Lightning Message Service",
+        "B": "Nested CustomEvent only",
+        "C": "A parent @api from the bar into the page",
+        "D": "SOQL in a getter"
+      },
+      "answer": "A",
+      "rationale": "Utility bar is a documented LMS participant across the DOM.",
+      "distractor_explanations": {
+        "B": "The bar is not in the page LWC's template tree.",
+        "C": "The bar is not the page component's child in that direction as a default.",
+        "D": "Unrelated to the notification channel."
+      },
+      "concept": "LMS vs events",
+      "citation_ids": ["SF-LWC-LMS", "SF-LWC-EVENTS"]
+    },
+    {
+      "id": "Q8",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Recommended constructor for LWC events?",
+      "options": {
+        "A": "CustomEvent",
+        "B": "Aura.event",
+        "C": "Platform event sObject",
+        "D": "window.alert"
+      },
+      "answer": "A",
+      "rationale": "The Guide strongly recommends CustomEvent.",
+      "distractor_explanations": {
+        "B": "Aura model.",
+        "C": "Integration event.",
+        "D": "Not an event bus."
+      },
+      "concept": "CustomEvent",
+      "citation_ids": ["SF-LWC-EVENTS", "SF-LWC-DISPATCH"]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Event type naming rules include which set?",
+      "options": {
+        "A": "No uppercase, no spaces, underscores to separate words",
+        "B": "Must be PascalCase",
+        "C": "Must start with on",
+        "D": "Must include a hyphen like folder names"
+      },
+      "answer": "A",
+      "rationale": "Create and Dispatch Events lists those DOM-standard recommendations.",
+      "distractor_explanations": {
+        "B": "Opposite of no uppercase.",
+        "C": "Do not prefix with on.",
+        "D": "Hyphens are not the cited event-type rule."
+      },
+      "concept": "Type string",
+      "citation_ids": ["SF-LWC-DISPATCH"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "CustomEvent versus Lightning Message Service?",
+      "options": {
+        "A": "CustomEvent is the parent/child up channel; LMS is cross-DOM including VF/Aura/utility bar",
+        "B": "They are identical APIs",
+        "C": "LMS replaces @api properties",
+        "D": "CustomEvent is only for Apex"
+      },
+      "answer": "A",
+      "rationale": "Events page plus LMS page together define the split.",
+      "distractor_explanations": {
+        "B": "Different APIs and metadata.",
+        "C": "Down is still properties.",
+        "D": "CustomEvent is client DOM."
+      },
+      "concept": "Channel compare",
+      "citation_ids": ["SF-LWC-EVENTS", "SF-LWC-LMS"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "c-paginator fires previous with no payload. Is that valid?",
+      "options": {
+        "A": "Yes. Simple events can announce that something happened without detail",
+        "B": "No. detail is required",
+        "C": "No. It must be LMS",
+        "D": "No. It must bubble into Apex"
+      },
+      "answer": "A",
+      "rationale": "The paginator example dispatches previous/next with no data payload.",
+      "distractor_explanations": {
+        "B": "detail is optional.",
+        "C": "Paginator is nested; events suffice.",
+        "D": "Apex is not the listener."
+      },
+      "concept": "Simple events",
+      "citation_ids": ["SF-LWC-DISPATCH"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What should you do before quoting bubbles: false as an LWC default in an interview?",
+      "options": {
+        "A": "Open the official event propagation page; this lesson marks those defaults as Needs verification",
+        "B": "Always invent false/false",
+        "C": "Always invent true/true",
+        "D": "Say LWC has no DOM events"
+      },
+      "answer": "A",
+      "rationale": "The propagate page was not fully retrieved; honest interviews cite the page rather than invent flags.",
+      "distractor_explanations": {
+        "B": "Do not invent.",
+        "C": "Do not invent.",
+        "D": "LWC events are DOM events."
+      },
+      "concept": "bubbling uncertainty",
+      "citation_ids": ["SF-LWC-EVENTS"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "direction",
+      "front": "Events go which way in the LWC tree?",
+      "back": "Up. Child dispatches; parent listens."
+    },
+    {
+      "id": "F2",
+      "category": "direction",
+      "front": "How do you communicate down?",
+      "back": "Public properties or public methods, not events as the default."
+    },
+    {
+      "id": "F3",
+      "category": "custom",
+      "front": "Recommended event object?",
+      "back": "CustomEvent created in JS and dispatched with dispatchEvent."
+    },
+    {
+      "id": "F4",
+      "category": "naming",
+      "front": "Why not type onselected?",
+      "back": "The parent attribute would be ononselected. Use selected and onselected."
+    },
+    {
+      "id": "F5",
+      "category": "naming",
+      "front": "Event type character rules?",
+      "back": "No uppercase, no spaces, underscores between words."
+    },
+    {
+      "id": "F6",
+      "category": "detail",
+      "front": "What belongs in detail?",
+      "back": "Primitives or a copied object, not a live mutable reference."
+    },
+    {
+      "id": "F7",
+      "category": "parent",
+      "front": "previous event — parent attribute?",
+      "back": "onprevious={handler} on the child tag."
+    },
+    {
+      "id": "F8",
+      "category": "lms",
+      "front": "When is Lightning Message Service the tool?",
+      "back": "Communication across the DOM: VF, Aura, LWC, utility bar on a Lightning page."
+    },
+    {
+      "id": "F9",
+      "category": "lms",
+      "front": "Is LMS for a nested child?",
+      "back": "No. Nested child-to-parent should be CustomEvent."
+    },
+    {
+      "id": "F10",
+      "category": "lms",
+      "front": "LMS available where?",
+      "back": "Lightning Experience and Lightning components in Experience Builder sites."
+    },
+    {
+      "id": "F11",
+      "category": "bubbling",
+      "front": "May you invent bubbles/composed defaults here?",
+      "back": "No. Open the event propagation page; this pack marks them Needs verification."
+    },
+    {
+      "id": "F12",
+      "category": "example",
+      "front": "Paginator events in the Guide?",
+      "back": "previous and next with no payload; parent increments page number."
+    },
+    {
+      "id": "F13",
+      "category": "example",
+      "front": "selected event payload in recipes?",
+      "back": "detail is the contact Id primitive; parent finds the contact in its list."
+    },
+    {
+      "id": "F14",
+      "category": "composition-word",
+      "front": "Composition in this title versus LWC-004?",
+      "back": "Here it is event composition/bubbling across shadow; LWC-004 is parent nesting children."
+    },
+    {
+      "id": "F15",
+      "category": "boundary",
+      "front": "Platform Events versus LMS?",
+      "back": "Platform Events are org integration. LMS is same-page DOM messaging."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do Lightning web components communicate up, down, and across?",
+      "answer_30_seconds": "Up: CustomEvent to the parent. Down: @api properties or methods. Across the DOM, including Aura, Visualforce, and utility bar: Lightning Message Service.",
+      "answer_2_minutes": "I start from the Events tip. I do not fire events downward. I do not use LMS for a nested child. I name events without an on prefix. I keep detail primitive. I refuse to invent bubbles defaults.",
+      "example": "c-lab-item dispatches selected with an Id; parent onselected; utility bar uses LMS.",
+      "tradeoffs": [
+        "Direct events vs LMS fan-out",
+        "Primitive detail vs copied DTO"
+      ],
+      "follow_ups": [
+        "What is a pub-sub utility?",
+        "Where is LMS unavailable?"
+      ],
+      "weak_answer_warnings": [
+        "Events in every direction",
+        "LMS as the only tool"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "How do you create and listen for a custom event?",
+      "answer_30_seconds": "In the child, new CustomEvent('selected', { detail: id }) and dispatchEvent. In the parent template, onselected={handler} and read event.detail.",
+      "answer_2_minutes": "I show paginator previous/next with no payload and the contact-list selected Id. I stress lowercase underscore names. I copy objects if I must send more than an Id. I import nothing extra for CustomEvent; it is a browser API.",
+      "example": "labPaginator onprevious/onnext changing pageNumber in the parent class.",
+      "tradeoffs": [
+        "No payload vs Id payload",
+        "One event vs two types previous/next"
+      ],
+      "follow_ups": [
+        "Why two event types on the paginator?",
+        "Where does the handler live?"
+      ],
+      "weak_answer_warnings": [
+        "Aura.event syntax"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A teammate puts the whole wired contact in detail. What do you change?",
+      "answer_30_seconds": "Pass the Id or a copied plain object. Live objects are by reference; the parent could mutate the child's data.",
+      "answer_2_minutes": "I cite Create and Dispatch Events. The parent already has the contacts array from @wire or a list; it looks up by Id like the recipes component. I also strip fields the listener should not see. I do not switch to LMS just because detail was wrong.",
+      "example": "detail: this.contact.Id instead of detail: this.contact from a wired list item.",
+      "tradeoffs": [
+        "Id lookup vs copied DTO",
+        "Extra parent logic vs safer child"
+      ],
+      "follow_ups": [
+        "What if the parent does not have the list?",
+        "Is a shallow copy enough?"
+      ],
+      "weak_answer_warnings": [
+        "Passing the proxy object because it is convenient"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Visualforce on the same Lightning page must react to an LWC button. CustomEvent or LMS?",
+      "answer_30_seconds": "Lightning Message Service. CustomEvent stays in the LWC containment tree and is not the VF bridge.",
+      "answer_2_minutes": "LMS is documented for VF, Aura, and LWC including utility bar. I create a message channel and publish/subscribe. I pick application versus active-area scope from the LMS pages. I do not invent a DOM bubble into iframe VF without that service.",
+      "example": "LWC publishes LAB_RecordSelected__c; a VF page on the same record page subscribes.",
+      "tradeoffs": [
+        "LMS vs replacing VF with LWC",
+        "Application scope vs active area"
+      ],
+      "follow_ups": [
+        "Does LMS run in Classic?",
+        "What about Open CTI?"
+      ],
+      "weak_answer_warnings": [
+        "window.postMessage as the first official answer"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Parent wrote onselected but nothing runs. The child type is onselected. What is wrong?",
+      "answer_30_seconds": "The type should be selected. onselected as the type makes the listener ononselected. Rename the CustomEvent type.",
+      "answer_2_minutes": "I also check dispatchEvent is reached, the handler is bound with {handleSelected}, and the listener sits on the child tag. I do not flip bubbles as the first fix. I look at spelling of underscores.",
+      "example": "Child: new CustomEvent('selected'); parent: onselected={handleSelected}.",
+      "tradeoffs": [
+        "Rename type vs rename listener",
+        "Debug handler vs debug dispatch"
+      ],
+      "follow_ups": [
+        "What if the type has a space?",
+        "What if it is PascalCase?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming LMS"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A grandparent never sees the child's event. What do you not invent?",
+      "answer_30_seconds": "I do not invent bubbles and composed defaults. I open Configure Event Propagation. Meanwhile I can have the parent re-dispatch or pass a callback property if the design allows.",
+      "answer_2_minutes": "This pack marks propagate defaults as Needs verification. Interview honesty beats a memorized false/false. If the listener is on the child tag in the parent, the dispatch topic already shows that working. Grandparent and shadow crossing are the propagate page.",
+      "example": "Parent listens onselected on c-lab-item; grandparent needs its own listener or a re-dispatch from the parent.",
+      "tradeoffs": [
+        "Re-dispatch vs LMS",
+        "Read the propagate page vs guess"
+      ],
+      "follow_ups": [
+        "What does composed mean in DOM terms?",
+        "Is a container guaranteed to hear all events?"
+      ],
+      "weak_answer_warnings": [
+        "Stating unverified default booleans as fact"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you skip both CustomEvent and LMS?",
+      "answer_30_seconds": "When the parent can pass a property or call an @api method, or when a base component event already exists, or when no UI communication is needed because the server owns the state.",
+      "answer_2_minutes": "Not every click needs a custom type. lightning-button onclick may be enough inside one component. Parent-to-child reset is an @api method (LWC-004). Record refresh after Apex is LWC-006. I add LMS only when another DOM tree must hear it.",
+      "example": "A child's internal toggle stays private; only commit dispatches selected.",
+      "tradeoffs": [
+        "Internal state vs public event contract",
+        "Base-component events vs custom types"
+      ],
+      "follow_ups": [
+        "When is pub-sub mentioned?",
+        "When is a platform event the real tool?"
+      ],
+      "weak_answer_warnings": [
+        "An LMS channel per button"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this with the stairwell versus PA analogy and where it breaks.",
+      "answer_30_seconds": "Child shouts up the stairwell with CustomEvent; parent does not shout down. Other rooms use the building PA (LMS). It breaks on bubbles/composed flags and on licensing for Experience Cloud.",
+      "answer_2_minutes": "I draw the parent/child mermaid: properties down, selected up, LMS to utility bar and VF. I name events correctly and keep detail primitive. I never use a generic catalog metaphor. I admit the propagate page was not inlined here.",
+      "example": "labContactItem selected Id, parent onselected, utility bar LMS subscriber.",
+      "tradeoffs": [
+        "Analogy vs DOM vocabulary",
+        "Honesty about unverified flags"
+      ],
+      "follow_ups": [
+        "What must you not invent?",
+        "How does composition mean two different things?"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphors",
+        "Invented bubbling table"
+      ]
+    }
+  ]
+}

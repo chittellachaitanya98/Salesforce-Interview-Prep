@@ -1,0 +1,1053 @@
+{
+  "topic_id": "APEX-018",
+  "slug": "common-apex-patterns-anti-patterns-maintainability-and-",
+  "title": "Common Apex patterns, anti-patterns, maintainability, and performance",
+  "track": "Apex and database programming",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "APEX-017"
+  ],
+  "objectives": [
+    "Name official trigger/service patterns: one trigger per object, bulkification, SOQL/DML outside loops.",
+    "Call out anti-patterns: SOQL/DML in loops, recursion without a guard, god classes, hardcoded secrets.",
+    "Connect maintainability (thin trigger, testable service) to performance (maps, fewer queries, async choice).",
+    "Cite governors (100 SOQL, 150 DML, 10 sendEmail, 50 enqueue) as the performance budget, not invented numbers."
+  ],
+  "diagnostic_question": "A 900-line trigger queries Contacts inside for(Trigger.new), updates each, calls sendEmail per row, and recurses on the same update. Which patterns, anti-patterns, maintainability, and performance changes do you make first?",
+  "definition": "Common Apex patterns are the official bulk shapes: one trigger per object, collections and maps, SOQL/DML outside loops, thin triggers that call services, and async when the parent transaction cannot finish the work. Anti-patterns invert those. Maintainability is whether a teammate can test and change the service. Performance is staying inside Execution Governors and Limits while remaining correct. ([Triggers and Bulk Best Practices](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_bestpract.htm); [Execution Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm); [Apex Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm))",
+  "why_it_matters": "Most production Apex incidents are anti-patterns that only appear at 200 records. Interviewers want maps, one trigger, a service, tests, and cited governors—not a framework brand name.",
+  "sixty_second_explanation": "Surgical checklist: one incision plan per object (one trigger), count instruments on a tray (maps, one SOQL, one DML), no fishing expeditions inside the wound (SOQL in a loop), a named procedure card (service class), and a timeout on the clock (governors: 100 SOQL, 150 DML, 10 sendEmail, 50 enqueue). Cowboy surgery is a 900-line trigger that emails and callouts per row and recurses. Maintainability is whether another surgeon can rehearse it in the crash-test lab (APEX-016). Performance is finishing before the 10,000 ms CPU / 10-minute transaction clocks.",
+  "deeper_explanation": [
+    "Triggers and Bulk Best Practices: write triggers to handle 200 records; put SOQL and DML outside loops; use maps keyed by Id; one trigger per object that delegates. Recursion needs a static guard or a field that stops re-entry. ([Trigger best practices](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_bestpract.htm))",
+    "Maintainability: thin trigger → handler/service → selector. Services are inherited sharing (APEX-015) and unit-tested (APEX-016). God classes and copy-paste helpers rot. Hardcoded secrets belong in named credentials (APEX-013).",
+    "Performance: fewer SOQL/DML, selective filters, maps instead of nested loops, async (APEX-011) when the parent save cannot finish, no callout-after-DML (APEX-013), no FOR UPDATE across callouts (APEX-010). Cite 100 SOQL, 150 DML, 10,000 ms CPU sync, 6 MB heap, 10 sendEmail, 50 enqueueJob from the governors page.",
+    "Anti-patterns: SOQL/DML in loops; per-row sendEmail or enqueueJob; SeeAllData tests; without sharing on UI classes; Publish Immediately for inventory; System.debug in loops; empty catch; recursion without a guard.",
+    "Frameworks (fflib, trigger frameworks) are optional. Interviews reward the official bulk rules first. Do not invent a Salesforce-required framework name."
+  ],
+  "mental_model": {
+    "analogy": "A surgical checklist: one incision plan per organ (one trigger), instruments on a tray (maps and bulk DML), no fishing in the wound (SOQL in a loop), a named procedure card (service), and a wall clock (governors). Cowboy surgery is the 900-line trigger.",
+    "useful_mapping": [
+      "one incision plan → one trigger per object",
+      "instrument tray → Map<Id, sObject> and list DML",
+      "fishing in the wound → SOQL/DML inside for(Trigger.new)",
+      "procedure card → testable service class",
+      "wall clock → 100 SOQL / 150 DML / 10,000 ms CPU",
+      "second operating room → Queueable/Batch after commit",
+      "cowboy monologue → god-class trigger",
+      "rehearsal → isolated tests with assertions"
+    ],
+    "where_it_breaks": [
+      "A framework name is not on the official checklist.",
+      "Batch chunk commits are a consistency trade-off, not a performance free lunch.",
+      "The surgery analogy does not encode sharing keywords."
+    ]
+  },
+  "teach_back_prompt": "Refactor a 900-line trigger aloud into one trigger, a service, maps, one DML, tests, and an async callout—naming the anti-patterns you removed.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "One trigger per object and bulk maps."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Four anti-patterns and the official fix."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Maintainability: thin trigger plus tests."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Performance: cite four governor rows."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: patterns vs anti-patterns."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-TRIGBP",
+      "title": "Triggers and Bulk Best Practices",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_triggers_bestpract.htm",
+      "supports": "Bulk-safe triggers, SOQL/DML outside loops, collections, one-trigger discipline as commonly taught from this topic.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Framework brand names are not required by this page."
+    },
+    {
+      "source_id": "SF-APEX-GOV",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "Performance budget: 100 SOQL, 150 DML, 10,000 ms CPU sync, 6 MB heap, 10 sendEmail, 50 enqueueJob, 100 callouts, 120 s.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Summer '26 / API 67.0; reverify later."
+    },
+    {
+      "source_id": "SF-APEX-DEVGUIDE",
+      "title": "Apex Developer Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm",
+      "supports": "Hub connecting triggers, async, security, and tests that maintainable code must use.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Does not mandate a single handler framework."
+    },
+    {
+      "source_id": "SF-APEX-TEST",
+      "title": "Apex Testing",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_testing.htm",
+      "supports": "Maintainability requires tests with assertions, not coverage theater.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "75% is a floor (APEX-016)."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Apex Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "One trigger",
+        "Service layer",
+        "Maps / bulk DML",
+        "Anti-pattern loop",
+        "Governors clock",
+        "Tests"
+      ],
+      "accessible_description": "One trigger; Service layer; Maps / bulk DML; Anti-pattern loop; Governors clock; Tests"
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-TRIGBP",
+        "SF-APEX-GOV",
+        "SF-APEX-TEST"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Is this a checklist pattern or cowboy surgery?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Trig[One trigger per object] --> H[Thin handler]\n  H --> Svc[Service: maps, one SOQL, one DML]\n  Svc --> Sec[Sharing + user mode APEX-015]\n  Svc --> Async[Queueable/Batch if needed APEX-011]\n  Svc --> Test[Isolated tests APEX-016]\n  Loop[SOQL in loop] --> Fail[LimitException at 200 rows]\n  God[900-line trigger] --> Rot[Unmaintainable, untested paths]",
+      "decision": "flowchart TD\n  Smell[Code smell] --> Q1{SOQL or DML inside for Trigger.new?}\n  Q1 -->|Yes| Bulk[Collect Ids, one query, map, one DML]\n  Q1 -->|No| Q2{Per-row sendEmail or enqueueJob?}\n  Q2 -->|Yes| List[One sendEmail or one Queueable with a list]\n  Q2 -->|No| Q3{Trigger updates the same record and re-enters?}\n  Q3 -->|Yes| Guard[Static recursion guard or stop-field]\n  Q3 -->|No| Q4{Logic in the trigger body?}\n  Q4 -->|Yes| Svc[Move to a service; add assertions]\n  Q4 -->|Callout after DML| Qable[Queueable after commit]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Official bulk practice: triggers must handle batches; SOQL and DML belong outside loops; use collections/maps. One trigger per object that delegates is the maintainable shape.",
+      "source_ids": [
+        "SF-APEX-TRIGBP"
+      ],
+      "scope": "Bulk patterns",
+      "validation": "Triggers and Bulk Best Practices.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Performance budgets come from Execution Governors and Limits: 100 SOQL, 150 DML, 10,000 ms CPU (sync), 6 MB heap, 10 sendEmail, 50 enqueueJob, 100 callouts.",
+      "source_ids": [
+        "SF-APEX-GOV"
+      ],
+      "scope": "Performance governors",
+      "validation": "Summer '26 governors table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Maintainability requires tests that assert behavior (Apex Testing), not coverage theater.",
+      "source_ids": [
+        "SF-APEX-TEST"
+      ],
+      "scope": "Tests as maintainability",
+      "validation": "Apex Testing.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Async, security, callouts, and transactions are complementary patterns: do not hide them inside a god trigger.",
+      "source_ids": [
+        "SF-APEX-DEVGUIDE",
+        "SF-APEX-TRIGBP"
+      ],
+      "scope": "Composition",
+      "validation": "Guide hub plus trigger practices.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Governor numbers above are Summer '26 / API 67.0. Reverify before quoting in a later release. Trigger best-practices page wording should be re-read if a framework debate starts.",
+  "unresolved_uncertainty": [
+    "Salesforce does not require a named trigger framework; do not invent an official fflib mandate.",
+    "Exact recursion-guard recipe (static vs custom setting) is design, not a single Guide number."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Bulkification",
+      "telugu": "200 రికార్డులకు ఒక SOQL, ఒక DML."
+    },
+    {
+      "english": "Anti-pattern",
+      "telugu": "లూప్‌లో SOQL/DML, god trigger, recursion without guard."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "One trigger per object, maps, SOQL/DML outside loops, thin service, tests with assertions. Anti-patterns: loops, per-row email/enqueue, recursion, god classes. Performance is the governors table: 100 SOQL, 150 DML, 10 sendEmail, 50 enqueue.",
+    "two_minutes": "I refactor the 900-line trigger into a handler that calls LAB_OrderService. I collect Ids, one query, map, one DML. Email becomes one sendEmail. Callouts become one Queueable. I add a recursion guard. I write isolated tests for 200 rows. I cite Triggers and Bulk Best Practices and Execution Governors and Limits. I do not sell a framework as official."
+  },
+  "terminology": [
+    {
+      "term": "bulkification",
+      "plain": "Writing Apex that survives 200-record batches.",
+      "precise": "Collections, maps, SOQL/DML outside loops. Official trigger best practices.",
+      "example": "Map<Id, Account> from one query, then one update.",
+      "non_example": "for (Account a : Trigger.new) { [SELECT ...]; update a; }",
+      "confusable_neighbor": "Batch Apex: a job type, not the only bulk tool.",
+      "boundary": "200 is the trigger batch size commonly discussed; still cite governors, not unofficial 201."
+    },
+    {
+      "term": "pattern",
+      "plain": "A repeatable official shape.",
+      "precise": "One trigger, service layer, map lookup, list DML, Queueable after commit, user mode, isolated tests.",
+      "example": "LAB_AccountTrigger → LAB_AccountService.updateNames(Trigger.new).",
+      "non_example": "Copy-paste the same SOQL into three triggers.",
+      "confusable_neighbor": "Anti-pattern: the inversion.",
+      "boundary": "Frameworks are optional packaging of these shapes."
+    },
+    {
+      "term": "anti-pattern",
+      "plain": "A shape that fails bulk, security, or change.",
+      "precise": "SOQL/DML in loops; per-row sendEmail/enqueue; SeeAllData; without sharing on UI; empty catch; recursion; secrets in code.",
+      "example": "sendEmail inside for(Trigger.new).",
+      "non_example": "One sendEmail with a list (pattern).",
+      "confusable_neighbor": "LimitException: the usual symptom, not the root.",
+      "boundary": "Name the anti-pattern in code review."
+    },
+    {
+      "term": "maintainability",
+      "plain": "A teammate can change and test it safely.",
+      "precise": "Thin trigger, small services, names, isolation tests, no god class.",
+      "example": "LAB_AllocService with two test methods.",
+      "non_example": "900-line trigger with assert(true) tests.",
+      "confusable_neighbor": "Performance: related but not identical.",
+      "boundary": "Coverage 75% is not maintainability."
+    },
+    {
+      "term": "performance",
+      "plain": "Finishing inside official governors with acceptable user time.",
+      "precise": "Fewer queries, selective SOQL, maps not nested loops, async offload, no debug floods.",
+      "example": "One SOQL for 200 rows vs 200 SOQL.",
+      "non_example": "Micro-optimizing a string while leaving SOQL in a loop.",
+      "confusable_neighbor": "Daily async: org performance, not one trigger.",
+      "boundary": "Cite the governors URL."
+    },
+    {
+      "term": "recursion guard",
+      "plain": "Stop the trigger from re-entering forever.",
+      "precise": "Static Boolean/set of Ids, or a field that the second pass ignores. Needed when you update the same object.",
+      "example": "if (LAB_OrderService.alreadyRan) return;",
+      "non_example": "Empty catch around the update.",
+      "confusable_neighbor": "Savepoint: undo, not a guard.",
+      "boundary": "Still respect APEX-009 re-entry rules."
+    },
+    {
+      "term": "service layer",
+      "plain": "Where the work lives instead of the trigger body.",
+      "precise": "A class methods can call from trigger, REST, and tests.",
+      "example": "LAB_OrderService.applyDefaults(List<LAB_Order__c> rows)",
+      "non_example": "Business rules pasted into the trigger and a Flow.",
+      "confusable_neighbor": "Selector: query-only neighbor.",
+      "boundary": "inherited sharing on the service (APEX-015)."
+    },
+    {
+      "term": "god class",
+      "plain": "One type that does DML, HTTP, email, and sharing bypass.",
+      "precise": "Unmaintainable and untestable. Split by reason to change.",
+      "example": "A 900-line trigger.",
+      "non_example": "A 40-line service with one reason.",
+      "confusable_neighbor": "Batch class: allowed to be a job, still should call services.",
+      "boundary": "If you cannot write a 200-row test, it is too big."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Spot the anti-pattern",
+      "actor": "Reviewer",
+      "trigger": "PR or incident",
+      "before": "Works for one record",
+      "after": "Name loop / recursion / god class / per-row async",
+      "observe": "200-row test fails or would fail",
+      "failure": "Shipping because the UI click worked"
+    },
+    {
+      "step": 2,
+      "transition": "Bulkify with maps",
+      "actor": "Developer",
+      "trigger": "Need related data",
+      "before": "Query in loop",
+      "after": "Collect Ids, one SOQL, Map, one DML",
+      "observe": "Limits.getQueries stays flat at 200 rows",
+      "failure": "Map unused, still query in loop"
+    },
+    {
+      "step": 3,
+      "transition": "Move logic to a service; add a guard",
+      "actor": "Developer",
+      "trigger": "Trigger body grows",
+      "before": "God trigger",
+      "after": "Thin trigger + service + recursion guard",
+      "observe": "Two entry points share the service",
+      "failure": "Second trigger on the same object"
+    },
+    {
+      "step": 4,
+      "transition": "Prove with tests; offload heavy work",
+      "actor": "Developer",
+      "trigger": "Callout/email/volume",
+      "before": "Sync soup",
+      "after": "One sendEmail / one Queueable; isolated 200-row test",
+      "observe": "Assertions on LAB_ rows after stopTest",
+      "failure": "Coverage-only test"
+    }
+  ],
+  "when_to_use": [
+    "When a trigger must handle 200 rows: apply official bulkification patterns (maps, SOQL/DML outside loops).",
+    "When a class is a god trigger: split a service for maintainability and test it (APEX-016).",
+    "When you see per-row sendEmail or enqueueJob: those are anti-patterns against 10 sendEmail and 50 enqueue.",
+    "When the same update re-enters the trigger: add a recursion guard, do not empty-catch.",
+    "When performance is 'slow': measure LIMIT_USAGE against Execution Governors and Limits, not vibes.",
+    "When choosing async: Queueable/Batch from APEX-011, not a new anti-pattern of 200 futures."
+  ],
+  "when_not_to_use": [
+    "Do not adopt a trigger framework brand as if the Guide required it.",
+    "Do not micro-optimize strings while leaving SOQL in a loop.",
+    "Do not treat 75% coverage as maintainability.",
+    "Do not 'fix performance' with without sharing on a UI class (APEX-015).",
+    "Do not invent governor numbers; quote the official table.",
+    "Do not add a second trigger on the same object to avoid touching the first."
+  ],
+  "configuration_or_code_location": [
+    "triggers/LAB_OrderTrigger.trigger (one file) calling LAB_OrderService.",
+    "Maps and list DML in the service.",
+    "Tests with 200 LAB_ rows inside startTest (APEX-016).",
+    "Governors page open during review."
+  ],
+  "worked_example": {
+    "scenario": "LAB_Order trigger: for each row, query Account, update a stamp, sendEmail, enqueue Queueable, and update the order again (recursion). Works in the UI for one order. Breaks in Data Loader.",
+    "inputs": [
+      "200-row load",
+      "Need account name stamp",
+      "Need one confirmation email path",
+      "Need one allocator Queueable"
+    ],
+    "decisions": [
+      {
+        "decision": "Collect AccountIds, one SOQL, Map<Id,Account>, one order update.",
+        "because": "Trigger best practices: no SOQL/DML in loops.",
+        "rejected": "Query Account inside the for loop."
+      },
+      {
+        "decision": "One sendEmail with a list; one Queueable holding Id list.",
+        "because": "Governors: 10 sendEmail methods, 50 enqueue sync—do not use 200 calls.",
+        "rejected": "Per-row sendEmail and enqueue."
+      },
+      {
+        "decision": "Move logic to LAB_OrderService; static recursion guard; isolated 200-row test.",
+        "because": "Maintainability + APEX-016 assertions.",
+        "rejected": "Second trigger and assert(true)."
+      }
+    ],
+    "configuration_or_code": [
+      "trigger LAB_OrderTrigger on LAB_Order__c (after insert) { LAB_OrderService.afterInsert(Trigger.new); }",
+      "Map<Id, Account> accounts = new Map<Id, Account>([SELECT Id, Name FROM Account WHERE Id IN :accountIds]);",
+      "Messaging.sendEmail(mails); System.enqueueJob(new LAB_AllocQueueable(orderIds));"
+    ],
+    "output": "200-row test: one SOQL for accounts, one order DML, one sendEmail, one enqueue. No recursion loop.",
+    "verification": [
+      "Limits.getQueries / getDmlStatements / getEmailInvocations / getQueueableJobs asserted.",
+      "No second trigger file.",
+      "stopTest asserts allocator mock path once."
+    ],
+    "self_explanation": "Checklist surgery: one plan, one tray of instruments, rehearsal with 200 dummies."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ trigger that currently loops.",
+    "starting_state_checks": [
+      "You can deploy trigger + test",
+      "No production objects"
+    ],
+    "steps": [
+      "Write the looping anti-pattern in a scratch class and watch a 200-row test hit SOQL 100.",
+      "Refactor to maps + one DML + one sendEmail + one Queueable.",
+      "Add a recursion guard and a test that updates the same row once.",
+      "Assert Limits in the test window (APEX-016)."
+    ],
+    "guided_completion": [
+      "If 200 rows still run 200 SOQL, the map is unused.",
+      "If getQueueableJobs is 200, you still enqueue per row."
+    ],
+    "independent_challenge": "List four anti-patterns you removed and the official source for the bulk rule.",
+    "evidence": [
+      "Test asserting Limits at 200 rows",
+      "Trigger file under 20 lines"
+    ],
+    "stop_recovery_cleanup": [
+      "Keep the refactored LAB_ code or delete the lab objects"
+    ],
+    "limitations": "Does not prove CPU 10,000 ms on huge heap payloads."
+  },
+  "decision_table": [
+    {
+      "signal": "SOQL inside for(Trigger.new).",
+      "choose": "Collect Ids, one query, Map, use in the loop.",
+      "not": "Leave it because 'we only click one row'.",
+      "why": "Trigger best practices plus SOQL 100."
+    },
+    {
+      "signal": "DML inside the same loop.",
+      "choose": "Build a list, one update/insert.",
+      "not": "update record; per iteration.",
+      "why": "DML 150 is methods/statements, and row caps still apply—bulk DML is the pattern."
+    },
+    {
+      "signal": "sendEmail or enqueueJob per Trigger.new row.",
+      "choose": "One sendEmail list; one Queueable with Ids.",
+      "not": "200 method calls.",
+      "why": "sendEmail 10; enqueueJob 50 sync."
+    },
+    {
+      "signal": "Trigger updates the same object and fires again forever.",
+      "choose": "Recursion guard or stop-field; still honor APEX-009.",
+      "not": "Empty catch.",
+      "why": "Re-entry is a pattern you design, not an exception you swallow."
+    },
+    {
+      "signal": "Logic, HTTP, email, and queries all live in the trigger.",
+      "choose": "Thin trigger + service; Queueable for HTTP.",
+      "not": "Second trigger to 'split' without a service.",
+      "why": "Maintainability: one reason to change per class."
+    },
+    {
+      "signal": "Performance complaint; LIMIT_USAGE shows 90 SOQL.",
+      "choose": "Remove loop queries / add maps; cite 100 SOQL.",
+      "not": "without sharing to 'go faster'.",
+      "why": "Performance is governors and selectivity, not sharing bypass."
+    }
+  ],
+  "limitations": [
+    "No official mandate for a named framework.",
+    "CPU/heap tuning beyond citing 10,000 ms / 6 MB needs measurement (APEX-017).",
+    "Does not replace data-model selectivity (indexes).",
+    "Governor numbers are Summer '26 / API 67.0."
+  ],
+  "security_notes": [
+    "Do not 'speed up' with without sharing on UI services.",
+    "Do not log collections that contain PII in a performance debug.",
+    "Secrets stay in named credentials, not helper constants."
+  ],
+  "common_mistakes": [
+    "SOQL/DML in loops.",
+    "Per-row email and Queueable.",
+    "Two triggers on one object plus a Flow, no owner.",
+    "Framework debate instead of bulk maps.",
+    "Coverage without a 200-row test."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "LimitException only in Data Loader.",
+      "check": [
+        "SOQL/DML in loops",
+        "Per-row email/enqueue"
+      ],
+      "do_not_assume": "Data Loader is broken."
+    },
+    {
+      "symptom": "Trigger runs until CPU 10,000 ms.",
+      "check": [
+        "Recursion",
+        "Nested loops vs maps"
+      ],
+      "do_not_assume": "Need Batch for 50 rows."
+    },
+    {
+      "symptom": "Cannot write a unit test.",
+      "check": [
+        "God class",
+        "SeeAllData factory",
+        "Callout in constructor"
+      ],
+      "do_not_assume": "Apex tests are optional (they are not)."
+    },
+    {
+      "symptom": "Reviewer demands fflib before merge.",
+      "check": [
+        "Are official bulk rules already met?"
+      ],
+      "do_not_assume": "A brand name is in the Apex Developer Guide as required."
+    }
+  ],
+  "production_notes": [
+    "Require a 200-row test on trigger changes.",
+    "Watch Apex Jobs after moving work async.",
+    "No production refactor is authorized by this lab alone."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Official bulk rule for SOQL in triggers?",
+      "options": {
+        "A": "Query outside the loop; use collections/maps",
+        "B": "Query once per Trigger.new row",
+        "C": "SOQL is unlimited in triggers",
+        "D": "Only Batch may query"
+      },
+      "answer": "A",
+      "rationale": "Triggers and Bulk Best Practices.",
+      "distractor_explanations": {
+        "B": "The anti-pattern.",
+        "C": "100 sync cap.",
+        "D": "Triggers query too."
+      },
+      "concept": "SOQL outside loop",
+      "citation_ids": [
+        "SF-APEX-TRIGBP"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Synchronous SOQL governor you cite for performance?",
+      "options": {
+        "A": "100",
+        "B": "10",
+        "C": "5",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "Governors table.",
+      "distractor_explanations": {
+        "B": "sendEmail.",
+        "C": "Batch concurrency.",
+        "D": "False."
+      },
+      "concept": "100 SOQL",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "200 sendEmail method calls in a trigger fail because:",
+      "options": {
+        "A": "sendEmail methods are capped at 10 per transaction",
+        "B": "Email heap is 6 MB only",
+        "C": "Callouts are 10",
+        "D": "Coverage is 75%"
+      },
+      "answer": "A",
+      "rationale": "Governors: 10 sendEmail methods.",
+      "distractor_explanations": {
+        "B": "Inbound heap is 50 MB; ordinary heap is 6/12.",
+        "C": "Callouts are 100.",
+        "D": "Tests."
+      },
+      "concept": "Email anti-pattern",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "200 System.enqueueJob in a sync trigger fail because:",
+      "options": {
+        "A": "enqueueJob is 50 per synchronous transaction",
+        "B": "Flex Queue is 50",
+        "C": "Future is required",
+        "D": "Scheduled Apex is 50"
+      },
+      "answer": "A",
+      "rationale": "Governors: 50 enqueue sync.",
+      "distractor_explanations": {
+        "B": "Flex is 100 Holding.",
+        "C": "False.",
+        "D": "Scheduled is 100 classes."
+      },
+      "concept": "Enqueue anti-pattern",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Maintainable trigger shape?",
+      "options": {
+        "A": "One trigger per object that calls a service",
+        "B": "Five triggers plus the same SOQL pasted",
+        "C": "All logic in a Flow and a trigger with no owner",
+        "D": "Anonymous Apex in production"
+      },
+      "answer": "A",
+      "rationale": "One-trigger + service maintainability.",
+      "distractor_explanations": {
+        "B": "Anti-pattern.",
+        "C": "Unmaintainable mix.",
+        "D": "Not a pattern."
+      },
+      "concept": "One trigger",
+      "citation_ids": [
+        "SF-APEX-TRIGBP"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Works in UI, fails at 200 rows. First suspect?",
+      "options": {
+        "A": "SOQL/DML or per-row email/enqueue anti-patterns",
+        "B": "Salesforce disables triggers at 200",
+        "C": "75% coverage",
+        "D": "Named credentials expire at 200"
+      },
+      "answer": "A",
+      "rationale": "Classic bulk miss.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Tests.",
+        "D": "False."
+      },
+      "concept": "Bulk miss",
+      "citation_ids": [
+        "SF-APEX-TRIGBP"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Recursion on the same update. Pattern?",
+      "options": {
+        "A": "Static guard or stop-field; do not empty-catch",
+        "B": "without sharing",
+        "C": "SeeAllData",
+        "D": "Publish Immediately"
+      },
+      "answer": "A",
+      "rationale": "Re-entry control.",
+      "distractor_explanations": {
+        "B": "Security.",
+        "C": "Tests.",
+        "D": "Events."
+      },
+      "concept": "Recursion",
+      "citation_ids": [
+        "SF-APEX-TRIGBP"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Performance 'fix' that is actually an anti-pattern?",
+      "options": {
+        "A": "without sharing on the LWC controller to skip sharing checks",
+        "B": "Maps instead of nested queries",
+        "C": "One DML list",
+        "D": "Queueable for a callout after commit"
+      },
+      "answer": "A",
+      "rationale": "Security is not a performance knob (APEX-015).",
+      "distractor_explanations": {
+        "B": "Pattern.",
+        "C": "Pattern.",
+        "D": "Pattern."
+      },
+      "concept": "Fake performance",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Sync CPU time on the governors table?",
+      "options": {
+        "A": "10,000 milliseconds",
+        "B": "60,000 milliseconds only",
+        "C": "10 seconds lock wait only",
+        "D": "Unlimited in triggers"
+      },
+      "answer": "A",
+      "rationale": "10,000 ms sync; 60,000 ms async.",
+      "distractor_explanations": {
+        "B": "Async row.",
+        "C": "FOR UPDATE wait.",
+        "D": "False."
+      },
+      "concept": "CPU",
+      "citation_ids": [
+        "SF-APEX-GOV"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Is a named trigger framework required by the Apex Developer Guide?",
+      "options": {
+        "A": "No. Official bulk rules are; brand names are optional",
+        "B": "Yes, fflib is mandatory",
+        "C": "Yes, only in Classic",
+        "D": "Yes, or coverage cannot reach 75%"
+      },
+      "answer": "A",
+      "rationale": "Do not invent an official framework mandate.",
+      "distractor_explanations": {
+        "B": "Not in the Guide as required.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "No official framework",
+      "citation_ids": [
+        "SF-APEX-DEVGUIDE",
+        "SF-APEX-TRIGBP"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Maintainability test for a service?",
+      "options": {
+        "A": "Isolated 200-row test with assertions on LAB_ fields and Limits",
+        "B": "assert(true) and 80% coverage",
+        "C": "SeeAllData Account LIMIT 1",
+        "D": "No test if the trigger is small"
+      },
+      "answer": "A",
+      "rationale": "Apex Testing + bulk proof.",
+      "distractor_explanations": {
+        "B": "Theater.",
+        "C": "Isolation fail.",
+        "D": "Triggers need tests."
+      },
+      "concept": "Tests",
+      "citation_ids": [
+        "SF-APEX-TEST"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Callout plus DML in the trigger body. Pattern?",
+      "options": {
+        "A": "DML then Queueable callout after commit (or callout-first if designed)",
+        "B": "Http.send after insert in the loop",
+        "C": "50 futures from Batch execute",
+        "D": "FOR UPDATE then callout then DML"
+      },
+      "answer": "A",
+      "rationale": "Compose APEX-010/011/013 patterns.",
+      "distractor_explanations": {
+        "B": "Uncommitted work + loop.",
+        "C": "Future 0 from batch.",
+        "D": "Lock release."
+      },
+      "concept": "Compose patterns",
+      "citation_ids": [
+        "SF-APEX-TRIGBP",
+        "SF-APEX-GOV"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "pat",
+      "front": "One-trigger pattern?",
+      "back": "One trigger per object that delegates to a service."
+    },
+    {
+      "id": "F2",
+      "category": "pat",
+      "front": "Bulk SOQL pattern?",
+      "back": "Collect Ids, one query, Map, no query in the loop."
+    },
+    {
+      "id": "F3",
+      "category": "pat",
+      "front": "Bulk DML pattern?",
+      "back": "Build a list; one insert/update/delete."
+    },
+    {
+      "id": "F4",
+      "category": "anti",
+      "front": "Classic anti-pattern?",
+      "back": "SOQL or DML inside for(Trigger.new)."
+    },
+    {
+      "id": "F5",
+      "category": "anti",
+      "front": "Per-row sendEmail?",
+      "back": "Anti-pattern; 10 sendEmail methods per transaction."
+    },
+    {
+      "id": "F6",
+      "category": "anti",
+      "front": "Per-row enqueueJob?",
+      "back": "Anti-pattern; 50 enqueue per sync transaction."
+    },
+    {
+      "id": "F7",
+      "category": "rec",
+      "front": "Recursion guard?",
+      "back": "Static flag/Id set or stop-field; not an empty catch."
+    },
+    {
+      "id": "F8",
+      "category": "gov",
+      "front": "Four performance numbers to cite?",
+      "back": "100 SOQL, 150 DML, 10 sendEmail, 50 enqueue (plus CPU 10,000 ms sync)."
+    },
+    {
+      "id": "F9",
+      "category": "maint",
+      "front": "Maintainability signal?",
+      "back": "A teammate can write a 200-row isolated test with assertions."
+    },
+    {
+      "id": "F10",
+      "category": "perf",
+      "front": "Maps vs nested loops?",
+      "back": "Maps are the official bulk lookup shape."
+    },
+    {
+      "id": "F11",
+      "category": "fw",
+      "front": "Official framework name?",
+      "back": "None required. Bulk rules are official."
+    },
+    {
+      "id": "F12",
+      "category": "cpu",
+      "front": "Sync CPU cap?",
+      "back": "10,000 milliseconds on the governors table."
+    },
+    {
+      "id": "F13",
+      "category": "sec",
+      "front": "without sharing to go faster?",
+      "back": "Anti-pattern on UI/REST classes."
+    },
+    {
+      "id": "F14",
+      "category": "test",
+      "front": "Coverage without asserts?",
+      "back": "Not maintainability."
+    },
+    {
+      "id": "F15",
+      "category": "async",
+      "front": "Heavy work in the save?",
+      "back": "Queueable/Batch after commit—not 200 futures."
+    },
+    {
+      "id": "F16",
+      "category": "god",
+      "front": "God class?",
+      "back": "One type that does DML, HTTP, email, and sharing bypass—split it."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What Apex patterns do you insist on in review?",
+      "answer_30_seconds": "One trigger per object, maps, SOQL/DML outside loops, thin service, recursion guard, isolated tests. I cite Triggers and Bulk Best Practices and the governors table.",
+      "answer_2_minutes": "I walk a 200-row story. I refuse per-row email and enqueue. I do not require fflib by name. I connect security and callout sequencing as part of the pattern set, not extras.",
+      "example": "LAB_OrderTrigger calls LAB_OrderService.afterInsert(Trigger.new).",
+      "tradeoffs": [
+        "Framework optional vs bulk required",
+        "One service vs god trigger"
+      ],
+      "follow_ups": [
+        "Two objects in one service?",
+        "When is a second trigger OK?"
+      ],
+      "weak_answer_warnings": [
+        "Framework brand as the only answer"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Name four anti-patterns and the official limit they hit.",
+      "answer_30_seconds": "SOQL in a loop (100). DML in a loop (150 statements / row caps). Per-row sendEmail (10). Per-row enqueueJob (50). Bonus: future from batch (0).",
+      "answer_2_minutes": "I cite Execution Governors and Limits URLs. I do not invent 10 callouts. I mention CPU 10,000 ms when recursion spins. I offer the map/list fix for each.",
+      "example": "for (Order o : Trigger.new) { [SELECT ...]; update o; Messaging.sendEmail(...); System.enqueueJob(...); }",
+      "tradeoffs": [
+        "Symptom LimitException vs root anti-pattern",
+        "Sync vs async caps"
+      ],
+      "follow_ups": [
+        "What about 10,000 DML rows?",
+        "Heap 6 MB?"
+      ],
+      "weak_answer_warnings": [
+        "Vague 'not bulkified' without a limit"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "UI works, Data Loader of 200 fails. Walk it.",
+      "answer_30_seconds": "I assume a loop anti-pattern. I read the exception trace (APEX-017) to the LAB_ line, then refactor to maps and one DML, then a 200-row test.",
+      "answer_2_minutes": "I do not blame Data Loader. I check email/enqueue counts. I add Limits assertions. I look for recursion if CPU died. I expire any panic FINEST flag.",
+      "example": "LAB_Order trigger queries Account per row; 200 rows → 200+ SOQL.",
+      "tradeoffs": [
+        "One-row luck vs bulk truth",
+        "Fix vs catch"
+      ],
+      "follow_ups": [
+        "Partial success Database.update?",
+        "Batch instead of trigger?"
+      ],
+      "weak_answer_warnings": [
+        "Catch LimitException"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "How do you keep a trigger maintainable as rules grow?",
+      "answer_30_seconds": "Thin trigger, service methods named after outcomes, one reason to change per class, tests per behavior, no second stealth trigger.",
+      "answer_2_minutes": "I split email and HTTP out of the service into collaborators if they grow. I use inherited sharing. I refuse a 900-line method. I do not add a framework unless the team already has one.",
+      "example": "LAB_OrderService.applyDefaults vs LAB_OrderMailer vs LAB_AllocQueueable.",
+      "tradeoffs": [
+        "Split too early vs god class",
+        "Shared service vs copy-paste"
+      ],
+      "follow_ups": [
+        "Handler vs service naming?",
+        "Custom metadata for rules?"
+      ],
+      "weak_answer_warnings": [
+        "Another trigger file to avoid merge conflicts only"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "When is Batch a performance pattern vs an anti-pattern escape?",
+      "answer_30_seconds": "Batch is for QueryLocator volume the parent transaction cannot hold (APEX-011). It is an anti-pattern if you use it to hide a loop you could map in the trigger, because each execute commits separately (APEX-010).",
+      "answer_2_minutes": "I ask whether 200 rows in the trigger already fit governors after bulkification. If yes, stay sync. If millions, Batch. I cite 5 active + 100 Holding so I do not spawn Batch from a trigger per row.",
+      "example": "Nightly archive of millions: Batch. Stamp account name on 200 orders: trigger maps.",
+      "tradeoffs": [
+        "Volume vs laziness",
+        "Chunk commits vs one save"
+      ],
+      "follow_ups": [
+        "Cursors + Queueable alternative?",
+        "Scheduled thin execute?"
+      ],
+      "weak_answer_warnings": [
+        "Database.executeBatch inside for(Trigger.new)"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "CPU 10,000 ms on a 50-row update. What anti-pattern?",
+      "answer_30_seconds": "Recursion or nested loops over queries, not 'need Batch.' I look for trigger-on-update-of-self without a guard, or debug/serialize in a loop.",
+      "answer_2_minutes": "I use a debug log LIMIT_USAGE and the stack (APEX-017). I add a guard and maps. I write a test that updates once and asserts the service ran once. I cite 10,000 ms sync from the governors page.",
+      "example": "LAB_Order after-update updates the same order, re-enters until CPU dies.",
+      "tradeoffs": [
+        "Recursion vs volume",
+        "CPU vs SOQL"
+      ],
+      "follow_ups": [
+        "Workflow re-entry vs Apex recursion?",
+        "Static reset between tests?"
+      ],
+      "weak_answer_warnings": [
+        "Raising CPU in Setup"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "challenge",
+      "question": "How do patterns compose with security, async, and tests?",
+      "answer_30_seconds": "Service uses inherited sharing and user mode (APEX-015). Heavy HTTP is Queueable (APEX-011/013). Tests insert LAB_ data, start/stop, mock, assert Limits and fields (APEX-016). Diagnosis uses small logs (APEX-017).",
+      "answer_2_minutes": "I refuse a review that only argues framework names. I draw the checklist: bulk, security, async host, test, log. I cite official URLs for any number I speak.",
+      "example": "LAB_OrderService USER_MODE query, one DML, one Queueable, 200-row test with mock.",
+      "tradeoffs": [
+        "Checklist vs framework",
+        "Official numbers vs folklore"
+      ],
+      "follow_ups": [
+        "Where does CDC fit?",
+        "Where does Flow fit?"
+      ],
+      "weak_answer_warnings": [
+        "Patterns as slogans without governors"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "design",
+      "question": "What will you not claim is an official Salesforce pattern?",
+      "answer_30_seconds": "That fflib or a specific trigger framework is required. That 10 callouts is the cap. That SeeAllData is best practice. That without sharing is a performance feature.",
+      "answer_2_minutes": "I will say the Guide requires bulk-safe triggers, tests, and governors. Everything else is team convention. I mark unofficial lists Needs verification. I keep analogies concrete—surgical checklist, not generic filler.",
+      "example": "A review comment 'must use fflib or it is not enterprise'—you ask for the official bulk defects instead.",
+      "tradeoffs": [
+        "Team convention vs Guide",
+        "Enterprise theater vs 200-row test"
+      ],
+      "follow_ups": [
+        "When would you adopt a framework anyway?",
+        "How do you document team conventions?"
+      ],
+      "weak_answer_warnings": [
+        "Inventing official brand requirements"
+      ]
+    }
+  ]
+}

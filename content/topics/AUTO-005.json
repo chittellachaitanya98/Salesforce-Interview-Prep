@@ -1,0 +1,1055 @@
+{
+  "topic_id": "AUTO-005",
+  "slug": "autolaunched-scheduled-platform-event-triggered-and-orc",
+  "title": "Autolaunched, scheduled, platform-event-triggered, and orchestration concepts",
+  "track": "Declarative automation",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "AUTO-004"
+  ],
+  "objectives": [
+    "Match autolaunched, schedule-triggered, platform-event-triggered, and orchestration starts to official Help trigger tables.",
+    "Explain that autolaunched no-trigger flows run in the background without screens or choices, and can be called by buttons, other flows, or Apex.",
+    "Describe schedule-triggered batch runs and $Record, and when Help points to Batch Apex instead.",
+    "Contrast platform-event-triggered Flow (async, separate transaction) with Flow Orchestration (coordinate multiple flows and teams)."
+  ],
+  "diagnostic_question": "You need a button that runs background updates, a nightly membership reminder, a reaction when a printer publishes an event, and a hiring process across HR and Finance. Before reading, which of autolaunched, scheduled, platform-event, orchestration, validation, or Apex owns each piece?",
+  "definition": "Not every Flow starts from a screen or a record save. Autolaunched flows run in the background when a button, another flow, or Apex calls them. Schedule-triggered flows run at a specified time and frequency for a batch of records. Platform event-triggered flows start when an event message is received. Flow Orchestration coordinates multiple flows and assigns work to teams. ([Which automation tool](https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm); [Flow Types](https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm); [Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm); [Subscribe to Platform Event Messages with Flows](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_subscribe_flow.htm))",
+  "why_it_matters": "Interviewers fail candidates who put screens on an autolaunched flow, who use a validation rule as a nightly job, or who confuse orchestration with a single approval. Choosing the start is as important as choosing Flow versus Apex.",
+  "sixty_second_explanation": "Think of a city transit system. Autolaunched Flow is an on-demand shuttle you radio from a button, another route, or Apex. Schedule-triggered Flow is the midnight bus that stops at every matching record. Platform-event Flow is radio dispatch when a sensor (event) fires. Orchestration is a multi-crew construction project that assigns stages to HR, Finance, and hiring. A formula is the printed timetable, validation is the inspector who will not let an illegal bus leave the depot, and approval is a human dispatcher. Batch Apex is the freight train when the midnight bus cannot carry the volume.",
+  "deeper_explanation": [
+    "Which-tool trigger table: custom button or link that starts background work → Autolaunched; called by another flow → Autolaunched or Screen; called by Apex → Autolaunched; specified time and frequency → Schedule-Triggered; platform event message received → Platform Event-Triggered; coordinate multiple flows across teams → Flow Orchestration. ([Which automation tool](https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm))",
+    "Flow Types: Autolaunched No Trigger runs in the background and does not support screens, local actions, choices, or choice sets. Schedule-Triggered launches at a specified time and frequency for each record in a batch and also does not support user interaction or screens. Platform Event Triggered launches when a platform event occurs, in the background. Orchestration types exist for multi-step, multi-user processes. ([Flow Types](https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm))",
+    "Triggered Flows: a schedule-triggered flow starts at the specified time and frequency for a batch of records; configure it on the Start element of your autolaunched flow; $Record gives each interview the record's field values. Record-triggered scheduled paths are a different offset on a save, not this type. ([Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm); [Schedule-Triggered Flows](https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger_schedule.htm))",
+    "Platform Events developer guide: create a platform event-triggered flow from the Start element. Interviews run asynchronously in a separate transaction from the publisher; a flow can receive a batch of up to 200 event messages; order within a batch follows replay Id. Debug logs appear under Automated Process, but CreatedById/LastModifiedById use the publishing user. If an event fails, the flow does not start and no flow error email is sent. If flows, paused interviews, and processes subscribe to the same event, order is not guaranteed. ([Subscribe with Flows](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_subscribe_flow.htm))",
+    "Complementary tools: Batch Apex when you must process more records than scheduled-triggered flows allow (Help's example class of problem: 600,000 contacts); Apex for CPU-intensive work. Validation rules and formula fields are not start mechanisms. Approvals route people; orchestration coordinates flows and teams. Flow Approval Processes do not consume orchestration runs (AUTO-001)."
+  ],
+  "mental_model": {
+    "analogy": "City transit: autolaunched is an on-demand shuttle, schedule-triggered is the midnight bus, platform-event is radio dispatch from a sensor, orchestration is a multi-crew construction project.",
+    "useful_mapping": [
+      "button / Apex / subflow call → radio the shuttle (autolaunched)",
+      "daily/weekly batch → midnight bus with $Record as each stop",
+      "platform event message → dispatch when the sensor fires",
+      "Flow Orchestration → assign stages to different crews",
+      "Batch Apex → freight train when the bus cannot carry the volume",
+      "validation rule → inspector who refuses an illegal departure",
+      "approval → human dispatcher, not a bus route"
+    ],
+    "where_it_breaks": [
+      "One Salesforce transaction can still mix record-triggered Flow and Apex (AUTO-003 / APEX-009).",
+      "Scheduled paths on record-triggered Flow are not the midnight bus type.",
+      "The 200-message batch and 600,000-contact figures are documented examples/caps to reverify, not your org's guarantee.",
+      "Orchestration credits are a neighboring billing concern; Help says Flow Approval Processes do not consume them."
+    ]
+  },
+  "teach_back_prompt": "Assign autolaunched, scheduled, platform-event, and orchestration to four scenarios, then say when you would refuse a validation rule or choose Batch Apex instead of scheduled Flow.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory: autolaunched has no screens; schedule uses $Record; platform event is async; orchestration coordinates teams."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Five starts: button, midnight batch, printer event, hiring crews, illegal save."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Explain 200-message batches and Automated Process debug logs."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Walk 'scheduled Flow cannot do 600k contacts'."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: transit mapping plus Batch Apex complementary."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-HELP-WHICH-TOOL",
+      "title": "Get Started Automating a Business Task with a Flow",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.process_which_tool.htm",
+      "supports": "Trigger table for autolaunched, schedule-triggered, platform event, orchestration; Batch Apex complementary.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Examples are illustrative."
+    },
+    {
+      "source_id": "SF-HELP-FLOW-TYPES",
+      "title": "Flow Types",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.flow_concepts_type.htm",
+      "supports": "Autolaunched no screens/choices; schedule-triggered batch; platform event type; orchestration types.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Type picker can add rows; reverify."
+    },
+    {
+      "source_id": "SF-HELP-TRIGGERED",
+      "title": "Triggered Flows",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.flow_concepts_trigger.htm",
+      "supports": "Schedule-triggered batch, $Record, scheduled paths vs this type.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace platform event developer guide."
+    },
+    {
+      "source_id": "SF-DEV-PE-FLOW",
+      "title": "Subscribe to Platform Event Messages with Flows",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_subscribe_flow.htm",
+      "supports": "PE-triggered Flow; async separate transaction; 200-message batches; Automated Process logs vs publishing user; no flow email if event fails.",
+      "release_or_version": "Official developer documentation",
+      "last_verified": "2026-08-16",
+      "limits": "Replay and high-volume event behavior can change; reverify."
+    },
+    {
+      "source_id": "SF-HELP-ORCH",
+      "title": "Get Started with Flow Orchestration",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=platform.orchestrator_get_started.htm",
+      "supports": "Entry point for orchestration as a multi-flow, multi-user coordinator.",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "Edition and credit details Need verification in the org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Autolaunched",
+        "Schedule-triggered",
+        "Platform event",
+        "Orchestration",
+        "Batch Apex",
+        "Not validation"
+      ],
+      "accessible_description": "Portrait of Flow start types versus validation, approval, and Batch Apex."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-HELP-WHICH-TOOL",
+        "SF-HELP-FLOW-TYPES",
+        "SF-DEV-PE-FLOW"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "What starts this interview?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Button[Button or Apex or parent Flow] --> Auto[Autolaunched no-trigger]\n  Clock[Time and frequency] --> Sched[Schedule-triggered batch / $Record]\n  PE[Platform event message] --> PEflow[Platform event-triggered Flow]\n  Teams[Multiple flows and teams] --> Orch[Flow Orchestration]\n  Sched --> Volume{More records than scheduled Flow allows?}\n  Volume -->|Yes| Batch[Batch Apex]",
+      "decision": "flowchart TD\n  Start[How should it start?] --> Q1{Person filling screens?}\n  Q1 -->|Yes| Screen[Screen Flow AUTO-004]\n  Q1 -->|No| Q2{Record save?}\n  Q2 -->|Yes| RT[Record-triggered AUTO-003]\n  Q2 -->|Button/Apex/subflow| Auto[Autolaunched]\n  Q2 -->|Clock batch| Sched[Schedule-triggered]\n  Q2 -->|Event bus| PE[Platform event-triggered]\n  Q2 -->|Many flows and crews| Orch[Orchestration]\n  Q2 -->|Refuse illegal data| VR[Validation rule]\n  Q2 -->|CPU or huge volume| Apex[Apex / Batch Apex]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Autolaunched flows start from a custom button/link, another flow, or Apex, run in the background, and do not support screens, local actions, choices, or choice sets.",
+      "source_ids": [
+        "SF-HELP-WHICH-TOOL",
+        "SF-HELP-FLOW-TYPES"
+      ],
+      "scope": "Autolaunched",
+      "validation": "Which-tool table and Flow Types.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Schedule-triggered flows run at a specified time and frequency for a batch of records without user interaction. $Record exposes each record. Batch Apex is the complementary tool when volume exceeds scheduled-triggered Flow.",
+      "source_ids": [
+        "SF-HELP-TRIGGERED",
+        "SF-HELP-WHICH-TOOL"
+      ],
+      "scope": "Scheduled",
+      "validation": "Triggered Flows and complementary table.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Platform event-triggered flows start when an event is received, run asynchronously in a separate transaction, can batch up to 200 messages, log under Automated Process while DML user fields follow the publisher, and send no flow error email if the event never starts the flow.",
+      "source_ids": [
+        "SF-DEV-PE-FLOW",
+        "SF-HELP-FLOW-TYPES"
+      ],
+      "scope": "Platform events",
+      "validation": "Subscribe to Platform Event Messages with Flows.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Flow Orchestration coordinates multiple flows and assigns them to multiple teams or individuals (Help's hiring-process example).",
+      "source_ids": [
+        "SF-HELP-WHICH-TOOL",
+        "SF-HELP-ORCH"
+      ],
+      "scope": "Orchestration",
+      "validation": "Complementary tools and Get Started with Flow Orchestration.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Platform event and orchestration capabilities are release-sensitive. Reverify type pickers and whether high-volume platform events change batching in the target org.",
+  "unresolved_uncertainty": [
+    "Exact scheduled-flow record caps are not restated here; Help's 600,000-contact Batch Apex example is illustrative.",
+    "Orchestration run credits and edition gates Need verification before promising a design."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Autolaunched Flow",
+      "telugu": "స్క్రీన్ లేకుండా బ్యాక్‌గ్రౌండ్‌లో నడిచే ఫ్లో."
+    },
+    {
+      "english": "Schedule-triggered Flow",
+      "telugu": "సమయం మరియు ఫ్రీక్వెన్సీ ప్రకారం బ్యాచ్ రికార్డులపై నడిచే ఫ్లో."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Autolaunched is background, no screens, started by button, subflow, or Apex. Scheduled is a clock batch with $Record. Platform-event is async on the event bus. Orchestration coordinates multiple flows and teams. Validation is not a start. Batch Apex covers volume scheduled Flow cannot.",
+    "two_minutes": "I pick the start from Help's table, not from habit. I never put choices on an autolaunched no-trigger flow. I do not use a scheduled Flow as a validation rule or an approval. If the nightly job is bigger than scheduled Flow allows, I say Batch Apex. Platform-event interviews are a different transaction from the publisher, which is why debug sits under Automated Process while CreatedById is the publisher."
+  },
+  "terminology": [
+    {
+      "term": "autolaunched Flow",
+      "plain": "A background flow with no screens.",
+      "precise": "No-trigger autolaunched type: launched by button, link, another flow, Apex, API, or orchestration. No screens, local actions, choices, or choice sets.",
+      "example": "Complete Sale button starts LAB_PostCloseTasks.",
+      "non_example": "A screen Flow the user clicks Next on.",
+      "confusable_neighbor": "Record-triggered: a different start, still can be background.",
+      "boundary": "Subflow children are often this type."
+    },
+    {
+      "term": "schedule-triggered Flow",
+      "plain": "A flow that runs on a clock for a batch of records.",
+      "precise": "Once, daily, or weekly at a specified time for records that meet filter criteria. No user interaction. $Record is each record.",
+      "example": "Every Saturday, email LAB_ memberships about to expire.",
+      "non_example": "A scheduled path on a record-triggered Flow (offset after a save).",
+      "confusable_neighbor": "Batch Apex: complementary when volume exceeds this type.",
+      "boundary": "Do not invent unofficial batch size numbers."
+    },
+    {
+      "term": "$Record",
+      "plain": "The record for the current scheduled (or record-triggered) interview.",
+      "precise": "Triggered Flows: $Record gives each schedule-triggered interview its record field values.",
+      "example": "Update LAB_ Membership Stage from $Record in the nightly flow.",
+      "non_example": "A screen Flow recordId input is a different contract.",
+      "confusable_neighbor": "Get Records: explicit query, not $Record.",
+      "boundary": "Schedule type vs record-triggered $Record share the name with different starts."
+    },
+    {
+      "term": "platform event-triggered Flow",
+      "plain": "A flow that starts when a platform event message is received.",
+      "precise": "Background. Async separate transaction. Up to 200 messages per batch. Debug under Automated Process; DML user fields follow the publisher. Failed events do not start the flow or email a flow error.",
+      "example": "Printer out-of-ink event creates a LAB_ Case.",
+      "non_example": "Change Data Capture is a neighboring event family—confirm the event type.",
+      "confusable_neighbor": "Paused interviews can also resume on events.",
+      "boundary": "Order vs other subscribers is not guaranteed."
+    },
+    {
+      "term": "Flow Orchestration",
+      "plain": "A multi-step, multi-user coordinator of flows.",
+      "precise": "Help: coordinate multiple flows and assign them to multiple teams; hiring example. Distinct from a single autolaunched flow and from approval processes.",
+      "example": "HR, Finance, and hiring each run different flows in sequence.",
+      "non_example": "Classic Approval Processes on one object.",
+      "confusable_neighbor": "Evaluation autolaunched flows for orchestration conditions are a neighboring type.",
+      "boundary": "Credits Need verification."
+    },
+    {
+      "term": "Batch Apex",
+      "plain": "The complementary programmatic batch when scheduled Flow cannot cover volume.",
+      "precise": "Help: perform an operation for more records than scheduled-triggered flows allow, example updating 600,000 contacts.",
+      "example": "Nightly update of a documented huge Contact set.",
+      "non_example": "A formula field.",
+      "confusable_neighbor": "Queueable Apex: a different async type (APEX-011).",
+      "boundary": "Do not treat 600,000 as your org's cap."
+    },
+    {
+      "term": "scheduled path",
+      "plain": "A time offset on a record-triggered Flow, not schedule-triggered type.",
+      "precise": "Part of the flow runs after the triggering save, e.g. three days later.",
+      "example": "Follow-up email three days after LAB_ Quote create.",
+      "non_example": "Saturday midnight membership batch (schedule-triggered type).",
+      "confusable_neighbor": "Platform event wait/pause: another delay mechanism.",
+      "boundary": "AUTO-003 introduced this; do not collapse types."
+    },
+    {
+      "term": "Automated Process user",
+      "plain": "The user shown on debug logs for platform event-triggered interviews.",
+      "precise": "Logs appear under Automated Process, but the interview runs in the context of the publishing user for CreatedById and LastModifiedById.",
+      "example": "Debug log named Automated Process after a PE publish.",
+      "non_example": "The running user of a screen Flow.",
+      "confusable_neighbor": "Without sharing vs this log name: different topics.",
+      "boundary": "Do not assume CRUD as Automated Process without checking publisher context."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name the start, not the canvas",
+      "actor": "Admin",
+      "trigger": "Need automation without a screen",
+      "before": "Someone cloned a screen Flow",
+      "after": "Autolaunched vs scheduled vs PE vs orchestration written down",
+      "observe": "Type picker matches the start",
+      "failure": "Adding a Screen to no-trigger autolaunched"
+    },
+    {
+      "step": 2,
+      "transition": "Configure the Start element",
+      "actor": "Admin",
+      "trigger": "Type chosen",
+      "before": "Missing object/event/schedule",
+      "after": "Button/Apex/subflow wired, or schedule + filter, or platform event selected",
+      "observe": "Debug or scheduled run in sandbox",
+      "failure": "Using a validation rule as the clock"
+    },
+    {
+      "step": 3,
+      "transition": "Respect complementary Apex",
+      "actor": "Admin + developer",
+      "trigger": "Volume or CPU",
+      "before": "Scheduled Flow already failing volume",
+      "after": "Written Batch Apex or invocable Apex reason",
+      "observe": "Record count vs Help's complementary table",
+      "failure": "Apex for a 20-record nightly reminder"
+    },
+    {
+      "step": 4,
+      "transition": "Keep metadata vs data",
+      "actor": "Admin",
+      "trigger": "Ready to activate",
+      "before": "Confusing interviews with the flow definition",
+      "after": "The flow is metadata; LAB_ rows are data the batch visits",
+      "observe": "Retrieve .flow vs query count",
+      "failure": "Thinking schedule insert creates the Flow"
+    }
+  ],
+  "when_to_use": [
+    "Use an autolaunched Flow when a button, another Flow, or Apex must run background work with no screens.",
+    "Use a schedule-triggered Flow when a clock should process a filtered batch via $Record, such as daily membership reminders.",
+    "Use a platform-event-triggered Flow when a platform event message should start background automation in a separate transaction.",
+    "Use Flow Orchestration when multiple flows and teams must be coordinated, not when a validation rule or a single approval would suffice.",
+    "Use Batch Apex when the batch is larger than scheduled-triggered Flow can handle, and Apex for CPU-intensive work—not as the default shuttle."
+  ],
+  "when_not_to_use": [
+    "Do not use an autolaunched Flow when a person must complete screens—that is a screen Flow.",
+    "Do not use a schedule-triggered Flow as a substitute for a validation rule that must block illegal saves.",
+    "Do not use a platform-event Flow when a record save should start the work—that is record-triggered (AUTO-003).",
+    "Do not use Flow Orchestration when you only need a formula field, a validation rule, or one approval process.",
+    "Do not use Apex or Batch Apex for a small nightly reminder a schedule-triggered Flow can send."
+  ],
+  "configuration_or_code_location": [
+    "New Flow → Autolaunched, Schedule-Triggered, Platform Event-Triggered, or Orchestration type.",
+    "Start element: schedule frequency and object filter, or platform event.",
+    "Custom button/link or Apex `Flow.Interview` / invocable launch for autolaunched.",
+    "Setup → Platform Events for the event definition (metadata), not the business rows."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox membership ops: (1) Complete Sale button runs background Task creates, (2) daily job emails LAB_ memberships expiring in 30 days, (3) a LAB_ PrinterOutOfInk__e event opens a Case, (4) a future hiring design will need HR+Finance stages. No production data.",
+    "inputs": [
+      "Button with no screen",
+      "Daily batch",
+      "Platform event",
+      "Multi-team later"
+    ],
+    "decisions": [
+      {
+        "decision": "Autolaunched Flow for the button.",
+        "because": "Which-tool: custom button → Autolaunched.",
+        "rejected": "Screen Flow or Apex trigger first"
+      },
+      {
+        "decision": "Schedule-triggered Flow for expirations.",
+        "because": "Specified time and frequency for a batch; $Record.",
+        "rejected": "A validation rule that emails"
+      },
+      {
+        "decision": "Platform event-triggered Flow for the printer event.",
+        "because": "Start when the event message is received.",
+        "rejected": "Record-triggered on Account"
+      },
+      {
+        "decision": "Park orchestration until multiple teams own stages; do not use it for the nightly email.",
+        "because": "Help's hiring example is multi-flow coordination.",
+        "rejected": "Orchestration for a single scheduled email"
+      }
+    ],
+    "configuration_or_code": [
+      "Autolaunched LAB_PostCloseTasks.",
+      "Schedule-triggered LAB_MembershipExpiry daily.",
+      "PE-triggered LAB_PrinterInkCase on LAB_PrinterOutOfInk__e."
+    ],
+    "output": "Button work is silent; nightly emails use $Record; Cases appear asynchronously after the event.",
+    "verification": [
+      "Click the button: no screen, Tasks created.",
+      "Debug the scheduled Flow with one LAB_ membership row.",
+      "Publish the event; Case CreatedById is the publisher; debug log under Automated Process."
+    ],
+    "self_explanation": "I matched four starts. I did not use validation as a clock or orchestration as an email tool."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ names only.",
+    "starting_state_checks": [
+      "You can create flows and a custom platform event",
+      "No production subscribers"
+    ],
+    "steps": [
+      "Create an autolaunched Flow with no screens and launch it from a custom button on a LAB_ record.",
+      "Create a schedule-triggered Flow on a LAB_ object with a filter and $Record field update or email.",
+      "Create a custom platform event and a PE-triggered Flow that creates a LAB_ Case.",
+      "Write one sentence on when Batch Apex would replace the scheduled Flow."
+    ],
+    "guided_completion": [
+      "If you added a Screen to autolaunched, change type.",
+      "If the scheduled Flow has a Next button, it is the wrong type."
+    ],
+    "independent_challenge": "Document why Flow Orchestration is not required for the nightly email.",
+    "evidence": [
+      "Button with no UI",
+      "Scheduled debug of $Record",
+      "PE publish creating a Case"
+    ],
+    "stop_recovery_cleanup": [
+      "Deactivate flows and delete LAB_ event",
+      "Do not deploy to production"
+    ],
+    "limitations": "Does not prove 200-message PE batches or 600k Batch Apex."
+  },
+  "decision_table": [
+    {
+      "signal": "User clicks Complete Sale and should not see screens.",
+      "choose": "Autolaunched Flow from a custom button or link.",
+      "not": "Screen Flow, or a validation rule.",
+      "why": "Which-tool: custom button → Autolaunched; type has no screens."
+    },
+    {
+      "signal": "Every night, records that expire in 30 days need an email.",
+      "choose": "Schedule-triggered Flow with $Record.",
+      "not": "A formula field, or Apex as the first tool for a small set.",
+      "why": "Schedule-triggered is time and frequency for a batch."
+    },
+    {
+      "signal": "An external printer publishes out-of-ink events.",
+      "choose": "Platform event-triggered Flow.",
+      "not": "Record-triggered on Account, or a validation rule.",
+      "why": "Which-tool: platform event message → Platform Event-Triggered."
+    },
+    {
+      "signal": "Hiring needs HR, Finance, and hiring team each running flows.",
+      "choose": "Flow Orchestration.",
+      "not": "One validation rule, or one formula field.",
+      "why": "Complementary table: coordinate multiple flows and teams."
+    },
+    {
+      "signal": "You must update more contacts than scheduled-triggered Flow allows.",
+      "choose": "Batch Apex as Help's complementary tool.",
+      "not": "Another scheduled Flow you already know cannot cover the volume, or a validation rule.",
+      "why": "Complementary Automation Tools."
+    }
+  ],
+  "limitations": [
+    "Does not teach PE replay tooling or High-Volume PE internals.",
+    "Does not configure orchestration stages in depth.",
+    "Does not list governor numbers (APEX-007).",
+    "External-system-change and Data Cloud triggers are neighboring types."
+  ],
+  "security_notes": [
+    "Platform event subscribers can create records; confirm who can publish.",
+    "Scheduled Flow runs without a clicking user—design entry conditions carefully.",
+    "Never subscribe production events in a lab org."
+  ],
+  "common_mistakes": [
+    "Screens on autolaunched no-trigger.",
+    "Using scheduled Flow as a validation rule.",
+    "Confusing scheduled paths with schedule-triggered type.",
+    "Expecting PE Flow in the publisher's transaction.",
+    "Using orchestration for a single email."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Cannot add a Screen to the flow.",
+      "check": [
+        "Type is autolaunched no-trigger or schedule-triggered",
+        "Use Screen Flow if a person must interact"
+      ],
+      "do_not_assume": "Builder is broken."
+    },
+    {
+      "symptom": "No flow error email when the event 'fails'.",
+      "check": [
+        "If the event never started the flow, Help says no flow error email",
+        "Debug the platform event itself"
+      ],
+      "do_not_assume": "Email deliverability is the cause."
+    },
+    {
+      "symptom": "Scheduled Flow cannot finish a huge Contact update.",
+      "check": [
+        "Complementary Batch Apex",
+        "Entry filters to shrink the batch"
+      ],
+      "do_not_assume": "A validation rule will batch it."
+    }
+  ],
+  "production_notes": [
+    "Inventory platform event subscribers before adding another Flow.",
+    "Document why Batch Apex was chosen using Help's volume wording.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Autolaunched no-trigger flows do not support what?",
+      "options": {
+        "A": "Screens, local actions, choices, or choice sets",
+        "B": "Being called by Apex",
+        "C": "Being called by another flow",
+        "D": "Assignments"
+      },
+      "answer": "A",
+      "rationale": "Flow Types: this type does not support screens, local actions, choices, or choice sets.",
+      "distractor_explanations": {
+        "B": "Apex can call it.",
+        "C": "Parent flows can call it.",
+        "D": "Assignments are allowed."
+      },
+      "concept": "No screens",
+      "citation_ids": [
+        "SF-HELP-FLOW-TYPES"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Custom button starts background work. Type?",
+      "options": {
+        "A": "Autolaunched",
+        "B": "Screen Flow",
+        "C": "Validation rule",
+        "D": "Formula field"
+      },
+      "answer": "A",
+      "rationale": "Which-tool: custom button or link → Autolaunched.",
+      "distractor_explanations": {
+        "B": "Screens need a form.",
+        "C": "Validation blocks saves.",
+        "D": "Formula computes."
+      },
+      "concept": "Button",
+      "citation_ids": [
+        "SF-HELP-WHICH-TOOL"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Saturday midnight batch over filtered records. Type?",
+      "options": {
+        "A": "Schedule-triggered Flow",
+        "B": "Screen Flow",
+        "C": "Classic Approval Processes",
+        "D": "A validation rule"
+      },
+      "answer": "A",
+      "rationale": "Which-tool: specified time and frequency → Schedule-Triggered.",
+      "distractor_explanations": {
+        "B": "No user.",
+        "C": "Approvals route people.",
+        "D": "Validation is not a clock."
+      },
+      "concept": "Schedule",
+      "citation_ids": [
+        "SF-HELP-WHICH-TOOL"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does $Record do in a schedule-triggered Flow?",
+      "options": {
+        "A": "Gives each interview access to that batch record's field values",
+        "B": "Sends an approval email",
+        "C": "Creates a formula field",
+        "D": "Publishes a platform event automatically"
+      },
+      "answer": "A",
+      "rationale": "Triggered Flows: $Record for each schedule-triggered interview.",
+      "distractor_explanations": {
+        "B": "Approvals are separate.",
+        "C": "Formulas are object metadata.",
+        "D": "Not automatic."
+      },
+      "concept": "$Record",
+      "citation_ids": [
+        "SF-HELP-TRIGGERED"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Printer publishes a platform event. Flow type?",
+      "options": {
+        "A": "Platform Event-Triggered",
+        "B": "Before-save record-triggered",
+        "C": "Validation rule",
+        "D": "Formula field"
+      },
+      "answer": "A",
+      "rationale": "Which-tool: platform event message received → Platform Event-Triggered.",
+      "distractor_explanations": {
+        "B": "That is a record save.",
+        "C": "Not an event bus.",
+        "D": "Not an event bus."
+      },
+      "concept": "PE type",
+      "citation_ids": [
+        "SF-HELP-WHICH-TOOL"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "PE-triggered Flow runs in which transaction relative to the publisher?",
+      "options": {
+        "A": "Asynchronously in a separate transaction",
+        "B": "Always in the same synchronous save",
+        "C": "Inside a validation rule",
+        "D": "Inside a formula field"
+      },
+      "answer": "A",
+      "rationale": "Developer guide: each PE-triggered flow runs asynchronously in a separate transaction.",
+      "distractor_explanations": {
+        "B": "There can be a delay.",
+        "C": "Validation is different.",
+        "D": "Formulas are different."
+      },
+      "concept": "Async PE",
+      "citation_ids": [
+        "SF-DEV-PE-FLOW"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Maximum platform event messages in one Flow batch, per the developer guide?",
+      "options": {
+        "A": "200",
+        "B": "2",
+        "C": "32",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "A flow can receive a batch of event messages at once, up to a maximum of 200.",
+      "distractor_explanations": {
+        "B": "Too small.",
+        "C": "Apex method parameter cap, not this.",
+        "D": "There is a documented maximum."
+      },
+      "concept": "200 batch",
+      "citation_ids": [
+        "SF-DEV-PE-FLOW"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Debug logs for PE-triggered flows appear as whom, and who is CreatedById?",
+      "options": {
+        "A": "Logs under Automated Process; CreatedById is the publishing user",
+        "B": "Always the System Administrator for both",
+        "C": "Always Guest User",
+        "D": "The validation rule author"
+      },
+      "answer": "A",
+      "rationale": "Logs: Automated Process. DML user fields: publisher.",
+      "distractor_explanations": {
+        "B": "Not both.",
+        "C": "Not documented here.",
+        "D": "Unrelated."
+      },
+      "concept": "Automated Process",
+      "citation_ids": [
+        "SF-DEV-PE-FLOW"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "HR, Finance, and hiring each need assigned flows. Complementary tool?",
+      "options": {
+        "A": "Flow Orchestration",
+        "B": "A single formula field",
+        "C": "A single validation rule",
+        "D": "A screen choice resource on autolaunched"
+      },
+      "answer": "A",
+      "rationale": "Which-tool: coordinate multiple flows and teams → Flow Orchestration.",
+      "distractor_explanations": {
+        "B": "Formula computes.",
+        "C": "Validation blocks saves.",
+        "D": "Autolaunched cannot have choices."
+      },
+      "concept": "Orchestration",
+      "citation_ids": [
+        "SF-HELP-WHICH-TOOL"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "When does Help tell you to use Batch Apex instead of scheduled Flow?",
+      "options": {
+        "A": "When you must operate on more records than scheduled-triggered flows allow",
+        "B": "Whenever a formula exists",
+        "C": "To replace all autolaunched flows",
+        "D": "To replace validation rules"
+      },
+      "answer": "A",
+      "rationale": "Complementary table, example 600,000 contacts.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Autolaunched remains valid.",
+        "D": "Validation is different."
+      },
+      "concept": "Batch Apex",
+      "citation_ids": [
+        "SF-HELP-WHICH-TOOL"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "If the platform event fails and the flow never starts, what about flow error email?",
+      "options": {
+        "A": "No flow error email is sent; debug the platform event",
+        "B": "Apex always emails the admin",
+        "C": "A validation rule emails instead",
+        "D": "Orchestration always emails"
+      },
+      "answer": "A",
+      "rationale": "If an event fails, the flow doesn't start, so a flow error email isn't sent.",
+      "distractor_explanations": {
+        "B": "Not documented as automatic.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "No email",
+      "citation_ids": [
+        "SF-DEV-PE-FLOW"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Apex class should start background Flow after stage change. Child type?",
+      "options": {
+        "A": "Autolaunched",
+        "B": "Screen Flow",
+        "C": "Validation rule",
+        "D": "Formula field"
+      },
+      "answer": "A",
+      "rationale": "Which-tool: called by Apex code → Autolaunched.",
+      "distractor_explanations": {
+        "B": "No user in that path.",
+        "C": "Not callable that way.",
+        "D": "Not callable that way."
+      },
+      "concept": "Apex launches Flow",
+      "citation_ids": [
+        "SF-HELP-WHICH-TOOL"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "auto",
+      "front": "Autolaunched screens?",
+      "back": "No. No-trigger autolaunched flows do not support screens, choices, or local actions."
+    },
+    {
+      "id": "F2",
+      "category": "auto",
+      "front": "What can start autolaunched?",
+      "back": "Custom button/link, another flow, or Apex (and other listed hosts)."
+    },
+    {
+      "id": "F3",
+      "category": "sched",
+      "front": "Schedule-triggered in one line?",
+      "back": "Runs at a specified time and frequency for a batch of records, no user interaction."
+    },
+    {
+      "id": "F4",
+      "category": "sched",
+      "front": "$Record on scheduled Flow?",
+      "back": "Each interview gets that batch record's field values."
+    },
+    {
+      "id": "F5",
+      "category": "pe",
+      "front": "PE-triggered start?",
+      "back": "When a platform event message is received."
+    },
+    {
+      "id": "F6",
+      "category": "pe",
+      "front": "Same transaction as publisher?",
+      "back": "No. Async separate transaction; delay is possible."
+    },
+    {
+      "id": "F7",
+      "category": "pe",
+      "front": "PE batch size cap in that guide?",
+      "back": "Up to 200 event messages in a batch, order preserved within the batch."
+    },
+    {
+      "id": "F8",
+      "category": "pe",
+      "front": "Who shows on PE debug logs?",
+      "back": "Automated Process user; CreatedById still reflects the publisher."
+    },
+    {
+      "id": "F9",
+      "category": "orch",
+      "front": "Orchestration vs one Flow?",
+      "back": "Orchestration coordinates multiple flows and teams, like a hiring process."
+    },
+    {
+      "id": "F10",
+      "category": "apex",
+      "front": "Batch Apex complementary when?",
+      "back": "More records than scheduled-triggered flows allow."
+    },
+    {
+      "id": "F11",
+      "category": "boundary",
+      "front": "Scheduled Flow vs validation?",
+      "back": "Scheduled is a clock batch. Validation blocks illegal saves."
+    },
+    {
+      "id": "F12",
+      "category": "boundary",
+      "front": "Scheduled path vs schedule-triggered?",
+      "back": "Path is an offset on record-triggered. Type is a clock batch."
+    },
+    {
+      "id": "F13",
+      "category": "pe",
+      "front": "Event fails, flow never starts?",
+      "back": "No flow error email. Debug the platform event."
+    },
+    {
+      "id": "F14",
+      "category": "orch",
+      "front": "Approvals vs orchestration?",
+      "back": "Approvals route a record to people. Orchestration coordinates flows and crews."
+    },
+    {
+      "id": "F15",
+      "category": "analogy",
+      "front": "Transit one-liner?",
+      "back": "Shuttle=autolaunched, midnight bus=scheduled, radio=PE, construction crew=orchestration."
+    },
+    {
+      "id": "F16",
+      "category": "apex",
+      "front": "Apex calling Flow?",
+      "back": "Use autolaunched. Screen Flow would expect a person."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Autolaunched versus screen versus schedule-triggered?",
+      "answer_30_seconds": "Autolaunched is background, no screens, started by button/subflow/Apex. Screen needs a person. Schedule-triggered is a clock batch with $Record.",
+      "answer_2_minutes": "I use Help's trigger table. I never put choices on no-trigger autolaunched. I do not use scheduled Flow as a validation rule or as an approval. Record-triggered remains AUTO-003 if a save should start the work.",
+      "example": "Complete Sale button → autolaunched LAB_PostCloseTasks.",
+      "tradeoffs": [
+        "Start vs canvas",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "Can Apex start a screen Flow?",
+        "Where does record-triggered sit?"
+      ],
+      "weak_answer_warnings": [
+        "Screens on autolaunched"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "When do you pick platform-event-triggered Flow?",
+      "answer_30_seconds": "When a platform event message should start background work. It is not a record save and not a validation rule.",
+      "answer_2_minutes": "I explain async separate transactions, 200-message batches, Automated Process logs versus publisher CreatedById, and no flow email if the event never starts the flow. Order versus other subscribers is not guaranteed.",
+      "example": "LAB_PrinterOutOfInk__e publishes; a platform-event-triggered Flow creates a LAB_ Case in a later transaction.",
+      "tradeoffs": [
+        "Event bus vs save",
+        "Flow vs Apex subscriber"
+      ],
+      "follow_ups": [
+        "Pause/resume on events?",
+        "CDC vs custom PE?"
+      ],
+      "weak_answer_warnings": [
+        "Expecting it in the publisher's trigger"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Nightly job must touch more contacts than scheduled Flow can. What do you say?",
+      "answer_30_seconds": "Help's complementary tool is Batch Apex when volume exceeds scheduled-triggered Flow. I do not invent a number beyond Help's 600,000-contact example class of problem.",
+      "answer_2_minutes": "I first ask whether filters can shrink the batch. I do not use a validation rule or a formula as a batch engine. I may still use Flow plus invocable Apex if only one step is code.",
+      "example": "Updating a documented huge LAB_ Contact set nightly.",
+      "tradeoffs": [
+        "Filter vs Batch Apex",
+        "Scheduled Flow vs Apex"
+      ],
+      "follow_ups": [
+        "Queueable vs Batch?",
+        "Who owns the class?"
+      ],
+      "weak_answer_warnings": [
+        "Quoting unofficial caps as law"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Hiring across HR, Finance, and hiring team. Orchestration or approval?",
+      "answer_30_seconds": "If each team runs different flows as stages, that is Flow Orchestration. If one record needs a human accept/reject, that is an approval process.",
+      "answer_2_minutes": "I do not replace a PTO approval with orchestration, or a nightly email with orchestration. AUTO-001 already said Flow Approval Processes do not consume orchestration runs.",
+      "example": "Multi-stage LAB_ hiring versus LAB_ PTO approval.",
+      "tradeoffs": [
+        "Coordination vs routing",
+        "Orch vs Apex"
+      ],
+      "follow_ups": [
+        "Evaluation flows?",
+        "Credits?"
+      ],
+      "weak_answer_warnings": [
+        "Orchestration for one email"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "design",
+      "question": "Why not a validation rule for the midnight membership email?",
+      "answer_30_seconds": "Validation True means invalid save. A reminder is communication on a legal record. That is schedule-triggered Flow (or after-save), not validation.",
+      "answer_2_minutes": "A formula might display days-to-expiry but will not send the email. Apex is unnecessary for a modest batch. Approval is a human decision, not a reminder.",
+      "example": "LAB_ Membership expiry email at 30 days.",
+      "tradeoffs": [
+        "Block vs notify",
+        "Formula vs Flow"
+      ],
+      "follow_ups": [
+        "Record-triggered scheduled path instead?",
+        "Email Alert vs Send Email?"
+      ],
+      "weak_answer_warnings": [
+        "Validation that 'emails' in the error text"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "foundational",
+      "question": "Apex should launch a Flow after Opportunity stage changes. Which type?",
+      "answer_30_seconds": "Autolaunched. Which-tool: called by Apex code → Autolaunched. A screen Flow would wait for a person who is not there.",
+      "answer_2_minutes": "I still ask whether a record-triggered Flow could do it without Apex. If Apex already exists, it can start the autolaunched interview. I pass input variables explicitly; there is no recordId action contract unless a Flow action is used.",
+      "example": "Trigger or invocable starts LAB_PostCloseTasks.",
+      "tradeoffs": [
+        "Apex+Flow vs pure Flow",
+        "Autolaunched vs screen"
+      ],
+      "follow_ups": [
+        "How do you test the interview?",
+        "What inputs?"
+      ],
+      "weak_answer_warnings": [
+        "Screen Flow from a trigger"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "troubleshooting",
+      "question": "PE Flow never runs and nobody got a flow error email.",
+      "answer_30_seconds": "If the event failed, the flow never started, so Help says no flow error email. Debug the platform event, subscriber, and that the Start element selects that event.",
+      "answer_2_minutes": "I do not look only at Flow fault emails. I do not 'fix' it with a validation rule. I remember other subscribers may interleave.",
+      "example": "Failed publish of LAB_PrinterOutOfInk__e.",
+      "tradeoffs": [
+        "Event vs Flow",
+        "Logs under Automated Process"
+      ],
+      "follow_ups": [
+        "Replay Id?",
+        "User context for DML?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Flow email recipients first"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Transit analogy, then break it.",
+      "answer_30_seconds": "Shuttle is autolaunched, midnight bus is scheduled, radio is platform event, construction crew is orchestration, freight train is Batch Apex. It breaks because scheduled paths on record-triggered Flow are not the midnight bus type, and one save still has AUTO-003 rooms.",
+      "answer_2_minutes": "Validation is the inspector, formula the printed timetable, approval a human dispatcher. I never use a labeled-drawer story.",
+      "example": "Someone designing a scheduled path thinking they created a schedule-triggered Flow.",
+      "tradeoffs": [
+        "Type vs path",
+        "Flow vs Apex"
+      ],
+      "follow_ups": [
+        "Where does Data Cloud trigger sit?",
+        "Where does HTTP callout sit?"
+      ],
+      "weak_answer_warnings": [
+        "Stopping at the analogy"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1024 @@
+{
+  "topic_id": "ARCH-009",
+  "slug": "performance-caching-limits-scale-testing-and-graceful-d",
+  "title": "Performance, caching, limits, scale testing, and graceful degradation",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-008"
+  ],
+  "objectives": [
+    "Explain Salesforce performance as throughput under governor limits, not only CPU time.",
+    "Place Platform Cache (session versus org partitions) against transactional statics and against skipping SOQL.",
+    "Use Scale Center, ApexGuru, and Scale Test in Full sandbox as official observability and scale-testing tools.",
+    "Define graceful degradation: keep the critical path working when a cache miss, async queue delay, or non-critical dependency fails."
+  ],
+  "diagnostic_question": "A LAB_ pricing LWC is slow at month-end close, hits CPU, and a non-critical recommendation callout times out. Before you add indexes or more Apex, which of performance, caching, limits, scale testing, or graceful degradation do you apply first—and in which environment?",
+  "definition": "On Salesforce, performance is how many concurrent requests complete in time while staying inside platform governor limits. Caching (Platform Cache partitions, plus in-transaction statics) reduces repeat SOQL. Scale testing uses Scale Test in a Full sandbox to simulate production load before go-live. Graceful degradation keeps core work available when a non-critical dependency fails. ([Well-Architected Reliable](https://architect.salesforce.com/docs/architect/well-architected/guide/reliable); [Platform Cache Partitions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_cache_partition_setup.htm))",
+  "why_it_matters": "Candidates who only recite CPU time miss throughput, selective SOQL, cache partitions, and Full-sandbox scale tests. Interviewers also want a degradation story: if recommendations time out, quote still saves. Limits exist because the platform is multitenant; they are a design input, not an insult.",
+  "sixty_second_explanation": "Treat month-end like an ER surge. Governor limits are the number of beds: they protect every tenant, not just you. Platform Cache is the crash cart already counted so you do not run to the pharmacy (SOQL) for the same supply list. Scale Center is the occupancy board; Scale Test is a drill in a Full sandbox that looks like the real ward. Graceful degradation is diverting non-urgent consults so trauma still gets a bay.",
+  "deeper_explanation": [
+    "Well-Architected Reliable defines throughput as concurrent requests completed in a time interval. Solutions designed for throughput stay inside governor limits. Focusing only on maximum CPU time misses bulkification, selective SOQL, async offload, and cache. ApexGuru (in Scale Center) flags SOQL/DML in loops and missed cache opportunities. ([Well-Architected Reliable](https://architect.salesforce.com/docs/architect/well-architected/guide/reliable))",
+    "The Lightning Platform Cache holds session and org data in partitions so one app does not steal another app's space. Create partitions in Setup; use Cache.Session / Cache.Org (and CacheBuilder) from Apex. Session cache is per user session; org cache is shared. Allocations are whole numbers, zero or five or greater per segment, summing to org capacity. Partitions are not auto-pulled into packages. ([Platform Cache Partitions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_cache_partition_setup.htm); [Well-Architected Reliable](https://architect.salesforce.com/docs/architect/well-architected/guide/reliable))",
+    "Scale Center shows long-running transactions, exception hotspots, and throughput bottlenecks. Scale Test simulates large UI/API workloads before production; Well-Architected Resilient maps performance and scale testing to Full sandbox (not Developer sandbox). Exact governor numbers live in the Execution Governors and Limits table—reverify for the API version; do not invent a private cheat sheet in the interview. ([Well-Architected Reliable](https://architect.salesforce.com/docs/architect/well-architected/guide/reliable); [Resilient environment strategy](https://architect.salesforce.com/docs/architect/well-architected/guide/resilient); [Governors and Limits](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm))",
+    "Graceful degradation is failure mitigation in Reliable/availability language: classify what is critical, keep a basic path working, and do not let a non-critical callout or cache miss fail quote save. Async is favored to protect synchronous CPU, but Scale Test in Full sandbox is how you learn whether queue latency is acceptable. Cache is not a source of truth; on miss, query and refill."
+  ],
+  "mental_model": {
+    "analogy": "Hospital ER surge plan: beds are governor limits; crash-cart inventory is Platform Cache; occupancy board is Scale Center; Full-sandbox drill is Scale Test; diverting non-urgent consults is graceful degradation.",
+    "useful_mapping": [
+      "governor limits → finite beds on a shared ward (multitenant)",
+      "throughput → patients completed per hour, not one CPU lab test",
+      "Platform Cache org partition → shared supply list",
+      "Platform Cache session partition → one patient's chart on the tray",
+      "ApexGuru → flags of SOQL-in-loop 'running to pharmacy each pill'",
+      "Scale Center → occupancy and hotspot board",
+      "Scale Test in Full sandbox → surge drill with production-like volume",
+      "graceful degradation → trauma bay stays open if the gift shop POS dies"
+    ],
+    "where_it_breaks": [
+      "Cache is not durable storage; a miss is expected.",
+      "Full sandbox data volume still may not match production skew—Needs verification per org.",
+      "Governor tables change by context (sync vs async); quote the live table.",
+      "The analogy does not encode LDV indexes or ownership skew (ARCH-003)."
+    ]
+  },
+  "teach_back_prompt": "Explain why 'we will just raise the CPU limit' is the wrong performance answer, where Platform Cache fits, and how graceful degradation would handle a timed-out recommendation callout on a quote save.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Throughput versus CPU; session cache versus org cache."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Which sandbox for scale testing, and why not Developer sandbox?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Name three ApexGuru anti-patterns and one cache miss behavior."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Design graceful degradation for a non-critical callout without notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: performance, caching, limits, scale testing, graceful degradation."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-WA-RELIABLE",
+      "title": "Well-Architected — Reliable",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/reliable",
+      "supports": "Throughput vs CPU-only; Platform Cache; ApexGuru; Scale Center; Scale Test; async tradeoffs; availability as shared responsibility.",
+      "release_or_version": "Well-Architected / Summer '26 review",
+      "last_verified": "2026-08-16",
+      "limits": "Product names (Scale Test, ApexGuru) can shift; reverify Setup labels."
+    },
+    {
+      "source_id": "SF-CACHE-PART",
+      "title": "Platform Cache Partitions",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_cache_partition_setup.htm",
+      "supports": "Partitions; session vs org segments; allocation rules; partitions not auto-included in packages.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Total cache capacity is edition/license sensitive."
+    },
+    {
+      "source_id": "SF-GOV-LIMITS",
+      "title": "Execution Governors and Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_gov_limits.htm",
+      "supports": "Authoritative governor tables for the API version under discussion.",
+      "release_or_version": "Apex Developer Guide / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Numbers differ by sync/async/batch context; always open the table instead of reciting from memory."
+    },
+    {
+      "source_id": "SF-WA-RESILIENT",
+      "title": "Well-Architected — Resilient (environment strategy)",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/resilient",
+      "supports": "Performance and scale testing mapped to Full sandbox; scratch/dev sandboxes for other tasks.",
+      "release_or_version": "Well-Architected",
+      "last_verified": "2026-08-16",
+      "limits": "Sandbox licenses and refresh intervals are org-specific."
+    },
+    {
+      "source_id": "SF-MULTITENANT",
+      "title": "Platform Multitenant Architecture",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/fundamentals/guide/platform-multitenant-architecture",
+      "supports": "Governors exist to protect shared multitenant resources; inefficient row-by-row DML hits limits by design.",
+      "release_or_version": "Architecture Fundamentals",
+      "last_verified": "2026-08-16",
+      "limits": "Internal cache details of the platform are not customer-tunable."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Well-Architected Reliable and Apex Cache guide",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Throughput not only CPU",
+        "Governor limits",
+        "Platform Cache partitions",
+        "Scale Center ApexGuru",
+        "Scale Test Full sandbox",
+        "Graceful degradation"
+      ],
+      "accessible_description": "Portrait map of Salesforce performance: throughput under governors, cache partitions, Full-sandbox scale tests, and a degraded path that still saves the quote."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-WA-RELIABLE",
+        "SF-CACHE-PART",
+        "SF-GOV-LIMITS",
+        "SF-WA-RESILIENT"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Critical path versus cache and callout"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Req[Synchronous request] --> CPU[Governor-limited transaction]\n  CPU --> Cache{Platform Cache hit?}\n  Cache -->|Yes| Fast[Skip repeat SOQL]\n  Cache -->|No| SOQL[Selective query + put cache]\n  CPU --> Async[Optional async offload]\n  Observe[Scale Center / ApexGuru] --> CPU\n  Test[Scale Test in Full sandbox] --> Observe",
+      "decision": "flowchart TD\n  Slow[Slow or failing feature?] --> Q1{Critical user path?}\n  Q1 -->|No| Degrade[Graceful degradation: skip or queue; still save core]\n  Q1 -->|Yes| Q2{Repeat reference data?}\n  Q2 -->|Yes| Cache[Platform Cache partition + CacheBuilder]\n  Q2 -->|Hot Apex/SOQL| Limits[Bulkify, selective SOQL, async; check governors table]\n  Limits --> Q3{Need production-like load proof?}\n  Q3 -->|Yes| Full[Scale Test in Full sandbox — not Developer sandbox]\n  Q3 -->|No| Local[Unit tests plus Scale Center in current env]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Well-Architected Reliable treats throughput (concurrent completed requests) as the performance lens. CPU time is only one governor. ApexGuru flags SOQL/DML in loops and missed cache opportunities.",
+      "source_ids": ["SF-WA-RELIABLE"],
+      "scope": "Performance / throughput",
+      "validation": "Well-Architected Reliable performance section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Platform Cache uses partitions with session and org segments so apps do not steal each other's capacity. Allocations are whole numbers, zero or five-plus per segment. Partitions must be packaged explicitly.",
+      "source_ids": ["SF-CACHE-PART", "SF-WA-RELIABLE"],
+      "scope": "Caching",
+      "validation": "Platform Cache Partitions plus Reliable cache guidance.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Governor limits protect multitenant shared resources. Quote numbers only from the current Execution Governors and Limits table for the execution context.",
+      "source_ids": ["SF-GOV-LIMITS", "SF-MULTITENANT"],
+      "scope": "Limits",
+      "validation": "Governors table plus multitenant fundamentals.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Performance and scale testing belongs in a Full sandbox. Scale Test simulates production-like UI/API load before production deploy. Scale Center surfaces long-running transactions and bottlenecks.",
+      "source_ids": ["SF-WA-RESILIENT", "SF-WA-RELIABLE"],
+      "scope": "Scale testing",
+      "validation": "Resilient environment table plus Reliable Scale Test/Center.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Availability of solutions built on the platform is a shared responsibility. Architect for failure mitigation: keep critical paths working when non-critical dependencies fail (graceful degradation), and validate async latency tradeoffs with Scale Test.",
+      "source_ids": ["SF-WA-RELIABLE"],
+      "scope": "Graceful degradation",
+      "validation": "Reliable availability and async tradeoff notes.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify Scale Test product name, ApexGuru availability, and governor tables for Summer '26 / API 67.0 in the target org.",
+  "unresolved_uncertainty": [
+    "Numeric governor limits, cache capacity, and Scale Test licensing are org- and edition-sensitive; this lesson does not freeze a number table.",
+    "Whether a given org has Proactive Monitoring or ApexGuru enabled needs verification in Setup."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Governor limits",
+      "telugu": "షేర్డ్ ప్లాట్‌ఫామ్‌ను కాపాడే లావాదేవీ పరిమితులు."
+    },
+    {
+      "english": "Graceful degradation",
+      "telugu": "అనవసర భాగం ఫెయిల్ అయినా ముఖ్యమైన పని నడవడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Performance is throughput inside governors, not only CPU. Cache partitions cut repeat SOQL. Prove load with Scale Test in a Full sandbox. If a non-critical callout dies, still save the quote.",
+    "two_minutes": "I start from the critical user path. I bulkify and make SOQL selective, then cache stable reference data in a named partition. I read Scale Center/ApexGuru instead of guessing. I refuse Developer sandbox as a scale-test stand-in. I design a degraded mode: skip recommendations, queue the callout, do not fail LAB_Quote__c save. I open the governors table rather than reciting last year's numbers."
+  },
+  "terminology": [
+    {
+      "term": "performance",
+      "plain": "How fast and how many requests finish without tripping limits.",
+      "precise": "Well-Architected throughput: concurrent requests completed in an interval, inside governors. Not CPU alone.",
+      "example": "Month-end LAB_Quote__c save stays under CPU and SOQL while 200 users work.",
+      "non_example": "A single debug log that looks 'fast' with one row.",
+      "confusable_neighbor": "Availability: uptime versus speed.",
+      "boundary": "Query selectivity details overlap ARCH-003 LDV."
+    },
+    {
+      "term": "caching",
+      "plain": "Remembering data you already fetched so you do not query it again.",
+      "precise": "Platform Cache session vs org partitions, plus in-transaction statics. CacheBuilder checks cache then SOQL. Not a system of record.",
+      "example": "Org cache of LAB_Price_Book_Flags__mdt for the day.",
+      "non_example": "Storing every Account in cache as the database.",
+      "confusable_neighbor": "Event bus: messages, not a cache.",
+      "boundary": "Partition capacity and TTL are org-specific."
+    },
+    {
+      "term": "governor limits",
+      "plain": "Per-transaction caps so one tenant cannot exhaust the shared pod.",
+      "precise": "Documented in Execution Governors and Limits. Sync versus async contexts differ. Multitenant architecture explains why they exist.",
+      "example": "Too many SOQL in a loop throws a limit exception.",
+      "non_example": "A contractual SLA with a customer.",
+      "confusable_neighbor": "Feature licenses: commercial, not transaction governors.",
+      "boundary": "Always cite the live table in an interview if asked for a number."
+    },
+    {
+      "term": "scale testing",
+      "plain": "Proving the design with production-like volume before production.",
+      "precise": "Scale Test in a Full sandbox simulates UI/API load. Well-Architected maps performance/scale testing to Full sandbox, not Developer sandbox.",
+      "example": "JMeter/Playwright-style load against Full sandbox as described in Reliable tools.",
+      "non_example": "Clicking Save twice in a Developer sandbox.",
+      "confusable_neighbor": "Unit tests: correctness, not pod-scale throughput.",
+      "boundary": "Scale Test access is licensed; Needs verification."
+    },
+    {
+      "term": "graceful degradation",
+      "plain": "The important action still works when a side feature fails.",
+      "precise": "Failure mitigation: classify critical versus optional. Cache miss → query. Recommendation callout timeout → save quote, queue or skip extras.",
+      "example": "LAB_Quote__c saves; LAB_Recommend__c stays pending.",
+      "non_example": "Failing the whole save because a banner service 500s.",
+      "confusable_neighbor": "Retry storms: not graceful if they melt the limits.",
+      "boundary": "Do not hide data-integrity failures as 'degradation.'"
+    },
+    {
+      "term": "Platform Cache",
+      "plain": "Salesforce's official in-memory cache for session and org data.",
+      "precise": "Partitions with session and org segments. Cache.Session / Cache.Org APIs. Package partitions explicitly.",
+      "example": "Named partition LABPricing with org capacity for flag metadata.",
+      "non_example": "Visualforce view state as a cache strategy (Reliable anti-pattern).",
+      "confusable_neighbor": "Custom metadata: durable config, not a hot cache.",
+      "boundary": "Capacity is not unlimited; design keys and TTL."
+    },
+    {
+      "term": "Scale Center",
+      "plain": "The org's performance hotspot dashboard.",
+      "precise": "Self-serve insights: long-running transactions, exceptions, throughput bottlenecks. ApexGuru analyzes Apex/SOQL anti-patterns.",
+      "example": "Hotspot on LAB_QuoteService.calculate at 16:00.",
+      "non_example": "Debug logs as the only production profiler.",
+      "confusable_neighbor": "Event Monitoring: user/activity telemetry (ARCH-010 observability).",
+      "boundary": "Availability of ApexGuru/Proactive Monitoring needs org verification."
+    },
+    {
+      "term": "Full sandbox",
+      "plain": "The copy that can hold production-like data volume for scale tests.",
+      "precise": "Resilient environment table: performance and scale testing → Full sandbox. Refresh interval is long (documented as 29 days in that table—reverify).",
+      "example": "Scale Test against Full sandbox before a peak season release.",
+      "non_example": "Scratch org as a scale-test stand-in.",
+      "confusable_neighbor": "Partial Copy: UAT-sized data, not the scale-test row.",
+      "boundary": "ARCH-011 owns the broader environment strategy."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Identify the critical path",
+      "actor": "Architect",
+      "trigger": "Slowness or limit errors",
+      "before": "Everything treated as equally critical",
+      "after": "Quote save vs recommendation banner separated",
+      "observe": "User journey map",
+      "failure": "Failing save because a widget timed out"
+    },
+    {
+      "step": 2,
+      "transition": "Remove limit anti-patterns",
+      "actor": "Developer",
+      "trigger": "ApexGuru or Scale Center hotspot",
+      "before": "SOQL/DML in loops",
+      "after": "Bulkified, selective SOQL, async where latency allows",
+      "observe": "Governors table for the context",
+      "failure": "Caching a query that must be transactional-fresh"
+    },
+    {
+      "step": 3,
+      "transition": "Add cache partitions",
+      "actor": "Developer + admin",
+      "trigger": "Repeat immutable-enough reference data",
+      "before": "Same SOQL every transaction",
+      "after": "Named partition; CacheBuilder; miss path queries",
+      "observe": "Setup partitions; package includes them",
+      "failure": "One default partition stolen by a noisy job"
+    },
+    {
+      "step": 4,
+      "transition": "Scale-test and degrade",
+      "actor": "Architect",
+      "trigger": "Before production peak",
+      "before": "Only unit tests",
+      "after": "Scale Test in Full sandbox; degraded mode documented",
+      "observe": "Throughput and error rate versus baseline",
+      "failure": "Scale test in Developer sandbox"
+    }
+  ],
+  "when_to_use": [
+    "When a feature is slow or throws limits: start with performance as throughput, then caching and governors—not a bigger CPU myth.",
+    "When the same reference data is read across transactions: Platform Cache partitions, not Visualforce view state.",
+    "When you must prove a peak-season design: scale testing in a Full sandbox with Scale Test / Scale Center, not a Developer sandbox click-through.",
+    "When a non-critical dependency fails: graceful degradation so the core save still commits."
+  ],
+  "when_not_to_use": [
+    "Do not use Platform Cache as the system of record or to hide non-selective SOQL on huge volatile data.",
+    "Do not treat governor limits as optional or as a request to Salesforce Support to 'raise CPU' as the architecture.",
+    "Do not run scale testing in a Developer sandbox and call it production-like.",
+    "Do not call a data-integrity failure graceful degradation; integrity errors must still fail the transaction."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Platform Cache (partitions).",
+    "Apex Cache.Org / Cache.Session / CacheBuilder.",
+    "Scale Center / ApexGuru / Scale Test (Help: technical_requirements_performance_assistant).",
+    "Execution Governors and Limits in the Apex Developer Guide for the class API version."
+  ],
+  "worked_example": {
+    "scenario": "Month-end: 200 users save LAB_Quote__c. Pricing flags live in custom metadata. A recommendation HTTP callout often times out. CPU and SOQL spike. Disposable Full sandbox available for a scale drill. No production data in the code sample.",
+    "inputs": [
+      "Repeat reads of LAB_Price_Book_Flags__mdt",
+      "SOQL in a loop in an old helper (ApexGuru)",
+      "Optional recommendation service",
+      "Peak concurrent saves"
+    ],
+    "decisions": [
+      {
+        "decision": "Bulkify the helper and cache flags in an org partition via CacheBuilder.",
+        "because": "Reliable + Cache Partitions: do not steal one partition; skip repeat SOQL for stable data.",
+        "rejected": "Query flags on every line item"
+      },
+      {
+        "decision": "Save the quote even if recommendations fail; queue or skip the callout.",
+        "because": "Graceful degradation of a non-critical path; availability is shared responsibility.",
+        "rejected": "AddError on the quote when the banner service 500s"
+      },
+      {
+        "decision": "Prove the change with Scale Test in Full sandbox, not Developer sandbox.",
+        "because": "Resilient environment strategy maps scale testing to Full sandbox.",
+        "rejected": "Two clicks in a scratch org as 'load test'"
+      }
+    ],
+    "configuration_or_code": [
+      "Create partition LABPricing (org segment ≥ 5 MB if capacity allows—Needs verification of org allocation).",
+      "CacheBuilder loads metadata; miss queries once.",
+      "Try/catch around recommendation callout; persist quote regardless.",
+      "Scale Test plan against Full sandbox; compare Scale Center hotspots before/after."
+    ],
+    "output": "Quote save succeeds under load; recommendations may be pending; governors stay inside the table.",
+    "verification": [
+      "ApexGuru no longer flags the looped SOQL on that helper.",
+      "Forced cache miss still returns correct flags from SOQL.",
+      "Killing the recommendation endpoint still inserts LAB_Quote__c in a test."
+    ],
+    "self_explanation": "I optimized the critical path, cached stable flags, degraded the banner, and picked the right sandbox for scale testing."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ Apex only. Use Full sandbox only if the org has one and policy allows.",
+    "starting_state_checks": [
+      "You can create Apex and, if licensed, a cache partition.",
+      "No production customer data in tests."
+    ],
+    "steps": [
+      "Write LAB_FlagCache using CacheBuilder that stores a small LAB_ metadata or custom setting equivalent.",
+      "Add a method that still works when you Cache.Org.remove the key (miss path).",
+      "Wrap a fake recommendation callout so quote DML proceeds on timeout.",
+      "Open the current Governors and Limits table and note sync vs async CPU in a comment without copying unofficial blogs."
+    ],
+    "guided_completion": [
+      "If cache APIs fail, the org may lack cache capacity—document Needs verification.",
+      "If you only have a Developer sandbox, write why it is not a scale-test environment."
+    ],
+    "independent_challenge": "List three ApexGuru anti-patterns you would hunt on a hotspot class.",
+    "evidence": [
+      "Miss-path test still returns flags.",
+      "Written Full-sandbox scale-test rationale."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ classes and unused partitions.",
+      "Do not run destructive load against production."
+    ],
+    "limitations": "May not have Scale Test licenses; do not fake results."
+  },
+  "decision_table": [
+    {
+      "signal": "The same custom metadata or role list is queried in almost every transaction.",
+      "choose": "Platform Cache org partition with CacheBuilder and a SOQL miss path.",
+      "not": "Visualforce view state or a static map that dies at the transaction boundary when you needed cross-request cache.",
+      "why": "Reliable plus Cache Partitions: dedicated space, miss still queries."
+    },
+    {
+      "signal": "ApexGuru or logs show SOQL/DML in a loop and CPU near the governor.",
+      "choose": "Bulkify and selective SOQL first; open the governors table for that context.",
+      "not": "Ask to 'raise the CPU limit' as the design.",
+      "why": "Limits protect the multitenant pod; anti-patterns are the usual root cause."
+    },
+    {
+      "signal": "You must prove month-end concurrency before go-live.",
+      "choose": "Scale Test in a Full sandbox; watch Scale Center hotspots.",
+      "not": "Developer sandbox click-through as scale testing.",
+      "why": "Resilient environment strategy assigns performance/scale testing to Full sandbox."
+    },
+    {
+      "signal": "A recommendation or banner callout fails but quote data is valid.",
+      "choose": "Graceful degradation: commit the quote; skip or queue the extra.",
+      "not": "Fail the entire save on a non-critical timeout.",
+      "why": "Reliable availability: shared responsibility and failure mitigation."
+    },
+    {
+      "signal": "A cache key is missing at runtime.",
+      "choose": "Query, refill the partition, continue.",
+      "not": "Throw to the user as if the database were down.",
+      "why": "Cache is an accelerator, not the system of record."
+    }
+  ],
+  "limitations": [
+    "Does not replace LDV indexing (ARCH-003) or lock design (ARCH-008).",
+    "Does not freeze governor numbers.",
+    "Scale Test and ApexGuru may be unavailable; say so.",
+    "Cache TTL/eviction details are implementation-specific."
+  ],
+  "security_notes": [
+    "Do not cache secrets, session IDs, or other users' record data in org cache.",
+    "Session cache still requires CRUD/FLS on any miss-path query.",
+    "Load tests must use synthetic data, not production extracts with PII, unless policy explicitly allows masked Full sandbox data."
+  ],
+  "common_mistakes": [
+    "CPU-only performance story.",
+    "Cache as database.",
+    "Scale test in Developer sandbox.",
+    "Failing critical DML because a widget failed.",
+    "One shared cache partition for every app."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Limit exception on SOQL or CPU during a save.",
+      "check": [
+        "ApexGuru loop anti-patterns.",
+        "Selective SOQL / field list.",
+        "Whether work can be async after commit."
+      ],
+      "do_not_assume": "Salesforce will raise the governor for this org."
+    },
+    {
+      "symptom": "Cache always misses.",
+      "check": [
+        "Partition exists and is packaged.",
+        "Key naming / namespace.",
+        "Capacity exhausted by another app."
+      ],
+      "do_not_assume": "CacheBuilder is broken."
+    },
+    {
+      "symptom": "Works in Developer sandbox, fails at peak in production.",
+      "check": [
+        "No Full-sandbox scale test was run.",
+        "Data volume and concurrency differ.",
+        "Scale Center hotspots."
+      ],
+      "do_not_assume": "A single unit test proved throughput."
+    }
+  ],
+  "production_notes": [
+    "Schedule Scale Center reviews around releases.",
+    "Document degraded-mode UX for support.",
+    "This lesson does not authorize production load tests against live customers."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Well-Architected Reliable says teams that only watch CPU time miss which performance idea?",
+      "options": {
+        "A": "Throughput (concurrent completed requests) and other limit/cache/async methods",
+        "B": "OWD",
+        "C": "Change Data Capture payloads",
+        "D": "Permission set groups"
+      },
+      "answer": "A",
+      "rationale": "Reliable warns against a narrow CPU focus and defines throughput.",
+      "distractor_explanations": {
+        "B": "Sharing is not the performance section.",
+        "C": "EDA is ARCH-007.",
+        "D": "Authorization is not throughput."
+      },
+      "concept": "Throughput",
+      "citation_ids": ["SF-WA-RELIABLE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Platform Cache session versus org segment?",
+      "options": {
+        "A": "Session is per user session; org is shared across users in the org",
+        "B": "Both are durable like custom objects",
+        "C": "Org cache is only for files",
+        "D": "Session cache replaces FLS"
+      },
+      "answer": "A",
+      "rationale": "Cache Partitions: session for individual sessions, org for data any users can access.",
+      "distractor_explanations": {
+        "B": "Cache is in-memory, not a database.",
+        "C": "Not file storage.",
+        "D": "Cache is not authorization."
+      },
+      "concept": "Cache segments",
+      "citation_ids": ["SF-CACHE-PART"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why do governor limits exist according to platform fundamentals?",
+      "options": {
+        "A": "To stop one tenant from monopolizing shared multitenant resources",
+        "B": "To prevent using Flow",
+        "C": "To force ISV managed packages",
+        "D": "To disable async Apex"
+      },
+      "answer": "A",
+      "rationale": "Multitenant architecture explains governors as shared-resource protection.",
+      "distractor_explanations": {
+        "B": "Flow has its own limits but is not the reason governors exist.",
+        "C": "Packaging is unrelated.",
+        "D": "Async has different, still finite, limits."
+      },
+      "concept": "Why limits",
+      "citation_ids": ["SF-MULTITENANT", "SF-GOV-LIMITS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Where does Well-Architected map performance and scale testing?",
+      "options": {
+        "A": "Full sandbox",
+        "B": "Scratch org only",
+        "C": "Developer sandbox as the scale-test standard",
+        "D": "Production during peak hours"
+      },
+      "answer": "A",
+      "rationale": "Resilient environment table: Performance and Scale Testing → Full sandbox.",
+      "distractor_explanations": {
+        "B": "Scratch is for source-driven build, not that row.",
+        "C": "Explicit anti-pattern: scale tests in Developer sandbox.",
+        "D": "Reliable says do not load production at peak."
+      },
+      "concept": "Scale testing environment",
+      "citation_ids": ["SF-WA-RESILIENT"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is true about packaging Platform Cache partitions?",
+      "options": {
+        "A": "Add referenced partitions to the package explicitly; they are not pulled in automatically",
+        "B": "They always deploy with any Apex class",
+        "C": "They cannot be packaged",
+        "D": "They are the same as custom metadata types"
+      },
+      "answer": "A",
+      "rationale": "Cache Partitions topic: partitions are not automatic package dependencies; validation is runtime.",
+      "distractor_explanations": {
+        "B": "Not automatic.",
+        "C": "They can be packaged if added.",
+        "D": "Different metadata."
+      },
+      "concept": "Package partitions",
+      "citation_ids": ["SF-CACHE-PART"]
+    },
+    {
+      "id": "Q6",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Recommendation callout times out during LAB_Quote__c save. Graceful degradation?",
+      "options": {
+        "A": "Commit the quote; skip or queue recommendations",
+        "B": "addError on the quote for any callout failure",
+        "C": "Delete the quote",
+        "D": "Disable governors"
+      },
+      "answer": "A",
+      "rationale": "Non-critical dependency should not take down the critical path.",
+      "distractor_explanations": {
+        "B": "Treats a banner as data integrity.",
+        "C": "Destructive and wrong.",
+        "D": "Impossible and unsafe."
+      },
+      "concept": "Graceful degradation",
+      "citation_ids": ["SF-WA-RELIABLE"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "ApexGuru in Scale Center is used to detect which kind of issue?",
+      "options": {
+        "A": "Throughput-limiting Apex/SOQL anti-patterns such as SOQL in loops and missed cache use",
+        "B": "OWD misconfiguration only",
+        "C": "Expired certificates only",
+        "D": "Duplicate matching rules only"
+      },
+      "answer": "A",
+      "rationale": "Reliable lists ApexGuru anti-pattern detection including loops and cache misses.",
+      "distractor_explanations": {
+        "B": "Sharing is a different track.",
+        "C": "Certificates are identity.",
+        "D": "Duplicate rules are data quality."
+      },
+      "concept": "ApexGuru",
+      "citation_ids": ["SF-WA-RELIABLE"]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "If an interviewer asks for the synchronous CPU limit number, what is the handbook-safe answer?",
+      "options": {
+        "A": "Open the current Execution Governors and Limits table for that context; do not recite an unofficial number",
+        "B": "Always 10,000 milliseconds in every context forever",
+        "C": "There are no CPU limits",
+        "D": "CPU limits apply only to Flow"
+      },
+      "answer": "A",
+      "rationale": "Numbers are versioned and context-specific; the governors page is authoritative.",
+      "distractor_explanations": {
+        "B": "May be stale or wrong for async/batch.",
+        "C": "False.",
+        "D": "Apex has CPU limits."
+      },
+      "concept": "Limits table",
+      "citation_ids": ["SF-GOV-LIMITS"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Cache key missing. Correct miss path?",
+      "options": {
+        "A": "Query the data, put it in cache, continue the transaction",
+        "B": "Fail the user because cache is the database",
+        "C": "Switch to Publish Immediately",
+        "D": "Drop FLS"
+      },
+      "answer": "A",
+      "rationale": "CacheBuilder pattern: cache is an accelerator.",
+      "distractor_explanations": {
+        "B": "Cache is not the system of record.",
+        "C": "Events are unrelated.",
+        "D": "Security is not a miss-path."
+      },
+      "concept": "Cache miss",
+      "citation_ids": ["SF-CACHE-PART", "SF-WA-RELIABLE"]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Session and org cache allocations on a partition must be which kind of numbers?",
+      "options": {
+        "A": "Whole numbers that are zero or five or greater, summing within org capacity",
+        "B": "Any fraction",
+        "C": "Always exactly 1 MB each",
+        "D": "Unlimited"
+      },
+      "answer": "A",
+      "rationale": "Cache Partitions: zero or five-plus, whole numbers, sum ≤ capacity.",
+      "distractor_explanations": {
+        "B": "Whole numbers required.",
+        "C": "Not a universal 1 MB rule.",
+        "D": "Capacity is finite."
+      },
+      "concept": "Allocations",
+      "citation_ids": ["SF-CACHE-PART"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates cache metadata from business data?",
+      "options": {
+        "A": "The partition definition is metadata; cached LAB_ flag values are a copy of configuration or data, not a second database",
+        "B": "Cache partitions are Account rows",
+        "C": "Governor limits are custom objects",
+        "D": "Scale Center is a sandbox type"
+      },
+      "answer": "A",
+      "rationale": "Partitions are Setup metadata; payload is a cached copy.",
+      "distractor_explanations": {
+        "B": "Partitions are not records of Account.",
+        "C": "Limits are platform rules.",
+        "D": "Scale Center is a monitoring product."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-CACHE-PART"]
+    },
+    {
+      "id": "Q12",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Reliable suggests async to protect sync CPU. What must you still validate?",
+      "options": {
+        "A": "Queue latency during spikes, using Scale Test in Full sandbox if the tradeoff matters",
+        "B": "That async has no governors",
+        "C": "That users always prefer waiting forever",
+        "D": "That Developer sandbox equals production volume"
+      },
+      "answer": "A",
+      "rationale": "Reliable: async can increase latency in queues; Scale Test validates the tradeoff.",
+      "distractor_explanations": {
+        "B": "Async has limits too.",
+        "C": "UX may reject extra latency.",
+        "D": "Wrong environment."
+      },
+      "concept": "Async tradeoff",
+      "citation_ids": ["SF-WA-RELIABLE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "Throughput in Well-Architected Reliable?",
+      "back": "Concurrent requests completed in a time interval, inside governors—not CPU alone."
+    },
+    {
+      "id": "F2",
+      "category": "cache",
+      "front": "Session vs org Platform Cache?",
+      "back": "Session is per user session; org is shared in the org."
+    },
+    {
+      "id": "F3",
+      "category": "cache",
+      "front": "Are cache partitions auto-packaged?",
+      "back": "No. Add them to the package explicitly."
+    },
+    {
+      "id": "F4",
+      "category": "limits",
+      "front": "Where do you quote governor numbers from?",
+      "back": "The current Execution Governors and Limits table for that context."
+    },
+    {
+      "id": "F5",
+      "category": "limits",
+      "front": "Why do governors exist?",
+      "back": "To protect shared multitenant resources from runaway work."
+    },
+    {
+      "id": "F6",
+      "category": "scale",
+      "front": "Which sandbox for performance/scale testing?",
+      "back": "Full sandbox, not Developer sandbox."
+    },
+    {
+      "id": "F7",
+      "category": "scale",
+      "front": "Scale Center is for?",
+      "back": "Long-running transactions, exception hotspots, throughput bottlenecks."
+    },
+    {
+      "id": "F8",
+      "category": "scale",
+      "front": "ApexGuru flags?",
+      "back": "SOQL/DML in loops, expensive methods, missed cache opportunities."
+    },
+    {
+      "id": "F9",
+      "category": "degrade",
+      "front": "Graceful degradation on a quote save?",
+      "back": "Still save the quote if a non-critical recommendation callout fails."
+    },
+    {
+      "id": "F10",
+      "category": "cache",
+      "front": "Cache miss correct behavior?",
+      "back": "Query, refill cache, continue. Cache is not the database."
+    },
+    {
+      "id": "F11",
+      "category": "anti-pattern",
+      "front": "Visualforce view state as cache?",
+      "back": "Reliable anti-pattern for application caching."
+    },
+    {
+      "id": "F12",
+      "category": "async",
+      "front": "Async always better?",
+      "back": "It can protect sync CPU but may add queue latency; Scale Test the tradeoff."
+    },
+    {
+      "id": "F13",
+      "category": "alloc",
+      "front": "Partition allocation rule?",
+      "back": "Whole numbers, zero or five or greater per segment, sum ≤ org capacity."
+    },
+    {
+      "id": "F14",
+      "category": "security",
+      "front": "What not to put in org cache?",
+      "back": "Secrets, session IDs, or another user's sensitive records."
+    },
+    {
+      "id": "F15",
+      "category": "tools",
+      "front": "Scale Test purpose?",
+      "back": "Simulate production-like UI/API load before production deploy."
+    },
+    {
+      "id": "F16",
+      "category": "integrity",
+      "front": "Is a validation failure 'graceful degradation'?",
+      "back": "No. Integrity errors must still fail the transaction."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you talk about Salesforce performance without only saying CPU?",
+      "answer_30_seconds": "Throughput: completed concurrent requests inside governors. Bulkify, selective SOQL, cache, async. CPU is one limit among many.",
+      "answer_2_minutes": "I use Well-Architected Reliable language. I mention ApexGuru anti-patterns. I refuse 'raise the limit' as architecture. I point at Scale Center evidence. I keep LDV indexes in ARCH-003 unless asked.",
+      "example": "LAB_QuoteService is the Scale Center hotspot at month-end close.",
+      "tradeoffs": [
+        "Sync UX versus async throughput",
+        "Cache freshness versus SOQL cost"
+      ],
+      "follow_ups": [
+        "What is throughput?",
+        "Where do you get limit numbers?"
+      ],
+      "weak_answer_warnings": [
+        "Reciting a blog's CPU number as eternal truth"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Explain Platform Cache partitions.",
+      "answer_30_seconds": "Named slices of session and org cache so apps do not steal capacity. Allocate whole numbers, zero or five-plus. Package partitions explicitly. Miss means query.",
+      "answer_2_minutes": "I cache stable reference data, not every Account. I use CacheBuilder. I do not use view state as a cache. I check org capacity. I never cache secrets.",
+      "example": "LABPricing org partition for flag metadata.",
+      "tradeoffs": [
+        "Org vs session scope",
+        "TTL freshness vs hit rate"
+      ],
+      "follow_ups": [
+        "Packaging?",
+        "CacheBuilder?"
+      ],
+      "weak_answer_warnings": [
+        "Cache as the system of record"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Month-end quotes are slow and a recommendation callout flakes. Design it.",
+      "answer_30_seconds": "Fix bulk/SOQL, cache flags, degrade recommendations, scale-test in Full sandbox.",
+      "answer_2_minutes": "Critical path is quote save. I bulkify, cache metadata, and isolate the callout so timeout does not addError the quote. I use Scale Center to confirm the hotspot moved. I schedule Scale Test in Full sandbox before peak. I will not call a Developer sandbox a load test.",
+      "example": "LAB_Quote__c plus optional LAB_Recommend__c.",
+      "tradeoffs": [
+        "Banner completeness versus save reliability",
+        "Cache TTL versus price-flag changes"
+      ],
+      "follow_ups": [
+        "How do users see pending recommendations?",
+        "What if flags change hourly?"
+      ],
+      "weak_answer_warnings": [
+        "Fail the save when the banner 500s"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A teammate wants to scale-test in a Developer sandbox this afternoon. Your answer?",
+      "answer_30_seconds": "No. Well-Architected maps performance and scale testing to Full sandbox. Developer sandbox lacks production-like volume.",
+      "answer_2_minutes": "I explain scratch/dev for build, partial for UAT, Full for scale. Refresh cadence on Full is slow, so we plan it. If we lack a Full sandbox, I say that gap is an environment-strategy risk (ARCH-011), not a reason to fake a load test.",
+      "example": "Peak-season Scale Test rehearsal runs only on a Full sandbox.",
+      "tradeoffs": [
+        "Full sandbox cost versus production incident cost",
+        "Data masking in Full copies"
+      ],
+      "follow_ups": [
+        "Partial Copy?",
+        "Scale Test licensing?"
+      ],
+      "weak_answer_warnings": [
+        "Developer sandbox is 'basically production'"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "CPU limit on a trigger. Walk the diagnosis.",
+      "answer_30_seconds": "Scale Center/ApexGuru for loops and extra SOQL. Bulkify. Consider async after commit. Do not start by asking Support to raise CPU.",
+      "answer_2_minutes": "I reproduce with bulk rows, not one record. I check recursion and extra Flow. I look at cache misses that turned into SOQL storms. I open the governors table for trigger context. I only then consider splitting work. Lock issues belong to ARCH-008 if the error is row lock, not CPU.",
+      "example": "LAB_Quote__c after-save plus helper in a loop.",
+      "tradeoffs": [
+        "More async versus user-visible freshness",
+        "Cache versus always-fresh query"
+      ],
+      "follow_ups": [
+        "How do you test bulk 200?",
+        "Flow vs Apex CPU?"
+      ],
+      "weak_answer_warnings": [
+        "The limit is a Salesforce bug"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Production cache seems empty after a package install. Cause?",
+      "answer_30_seconds": "Partitions are not auto-included in packages. Runtime validation means compile succeeded and cache misses.",
+      "answer_2_minutes": "I check Setup partitions in the subscriber org and the package contents. I add partitions to the package and a post-install check. I confirm keys include namespace. I do not blame CacheBuilder first.",
+      "example": "LABPricing partition missing after unlocked package upgrade.",
+      "tradeoffs": [
+        "Default partition versus named partitions",
+        "Org-dependent packages (ARCH-010)"
+      ],
+      "follow_ups": [
+        "Namespace in keys?",
+        "Capacity stolen by another app?"
+      ],
+      "weak_answer_warnings": [
+        "Apex cannot see cache so the feature is impossible"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When is caching the wrong performance move?",
+      "answer_30_seconds": "When data is highly volatile, user-specific and sensitive, or the real issue is non-selective SOQL on huge tables. Cache will not fix a table scan.",
+      "answer_2_minutes": "I cache reference data. I do not cache other people's Opportunities in org cache. I fix indexes and filters (ARCH-003) for LDV. I do not use cache to store secrets. If every transaction must see the latest Qty, that is locking (ARCH-008), not cache.",
+      "example": "Inventory Qty is a lock problem; price-book flags are a cache candidate.",
+      "tradeoffs": [
+        "Freshness versus hit rate",
+        "Org cache versus query"
+      ],
+      "follow_ups": [
+        "Custom metadata instead of cache?",
+        "Platform Cache vs Redis off-platform?"
+      ],
+      "weak_answer_warnings": [
+        "Cache the entire org"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach performance, cache, limits, scale testing, and graceful degradation with one picture.",
+      "answer_30_seconds": "ER surge: beds are limits, crash cart is cache, occupancy board is Scale Center, Full-sandbox drill is Scale Test, diverting gift-shop POS failure is degradation.",
+      "answer_2_minutes": "I then break it: cache is not the pharmacy warehouse, Full sandbox may still lack production skew, and governors must be read from the table. Interviewers want the Full-sandbox choice and a quote that still saves.",
+      "example": "LAB_Quote__c critical path versus recommendation banner.",
+      "tradeoffs": [
+        "Metaphor versus citing Reliable",
+        "Drill cost versus incident cost"
+      ],
+      "follow_ups": [
+        "Map ApexGuru",
+        "Map session cache"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer filler"
+      ]
+    }
+  ]
+}

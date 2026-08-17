@@ -1,0 +1,997 @@
+{
+  "topic_id": "ARCH-002",
+  "slug": "requirements-nonfunctional-requirements-constraints-ass",
+  "title": "Requirements, nonfunctional requirements, constraints, assumptions, and trade-offs",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-001"
+  ],
+  "objectives": [
+    "Separate functional requirements from nonfunctional requirements, constraints, assumptions, and explicit trade-offs on Salesforce designs.",
+    "Use Well-Architected Intentional strategy—prioritization, roadmapping, and governance—to make trade-offs visible to business and technology stakeholders.",
+    "Refuse to treat an unspoken assumption as a constraint, or a preference as a platform limit.",
+    "Keep requirement decisions as design metadata; do not confuse them with the business data records a solution will store."
+  ],
+  "diagnostic_question": "A stakeholder says 'make it real-time, perfectly secure, and done this sprint, and assume Finance will clean the data.' Which of those is a requirement, which is an NFR, which is a constraint, which is an assumption, and which trade-off is still unmade?",
+  "definition": "On Salesforce architecture work, a requirement states what the solution must do for the business; a nonfunctional requirement (NFR) states how well it must do it (security, reliability, maintainability, operability). A constraint is a limit you do not control (edition, regulation, existing system of record). An assumption is a belief you will validate. A trade-off is an explicit choice between competing goods, guided by Well-Architected compasses. ([Intentional](https://architect.salesforce.com/docs/architect/well-architected/guide/intentional); [Well-Architected Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/overview))",
+  "why_it_matters": "Most failed Salesforce programs did not lack Apex; they shipped against silent assumptions and unstated NFRs. Interviewers listen for whether you can name the constraint versus the preference, and whether you can say what you gave up. Well-Architected Easy exists partly because those trade-off conversations are hard.",
+  "sixty_second_explanation": "Treat a Salesforce design like a bridge specification. Functional requirements are that vehicles must cross. Nonfunctional requirements are load rating, wind, and inspection cadence. Constraints are the river width, the budget, and the soil you did not pick. Assumptions are last year's survey until a new boring proves it. Trade-offs are extra lanes versus stronger piers—you cannot maximize both with the same steel. Write them down before you pick Flow, Apex, or an object.",
+  "deeper_explanation": [
+    "Well-Architected Intentional architectures are planned and delivered strategically, maintained effectively, and readable. Strategy means delivery and maintenance teams share the why, can triage urgent requests, and can see impacts and trade-offs of those requests. ([Intentional](https://architect.salesforce.com/docs/architect/well-architected/guide/intentional))",
+    "Prioritization evaluates business impact, new work, and maintenance work. Roadmaps are not a backlog dump: items enter the backlog only when they tie to a roadmap deliverable. That is how functional scope stays honest against NFRs such as maintainability. ([Intentional](https://architect.salesforce.com/docs/architect/well-architected/guide/intentional))",
+    "Easy Overview states that Easy architectures may require more intelligent—and difficult—trade-off analyses with stakeholders. A design that is resilient to a programmer but not maintainable for an administrator fails Easy. That sentence is an NFR conflict, not a taste argument. ([Easy Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/easy-overview.html))",
+    "The Well-Architected Overview tells architects to return to Trusted, Easy, and Adaptable as compass points when evaluating complex details and trade-offs. Use those compasses to record the trade-off; do not hide it inside a tool choice. ([Well-Architected Overview](https://architect.salesforce.com/docs/architect/well-architected/guide/overview))",
+    "Constraints include platform and license facts you must reverify in the target org. Do not invent governor-limit numbers here; cite current Limits documentation or mark Needs verification. Assumptions expire: write the test that would kill each one."
+  ],
+  "mental_model": {
+    "analogy": "A bridge engineering specification: the crossing is the functional requirement; load and wind ratings are NFRs; river width and budget are constraints; the soil survey is an assumption until re-tested; extra lanes versus stronger piers is the trade-off.",
+    "useful_mapping": [
+      "functional requirement → vehicles must get to the other bank (what the business does)",
+      "nonfunctional requirement → load, wind, inspection, maintainability (how well)",
+      "constraint → river width, edition, regulation, existing system of record",
+      "assumption → last survey; must be validated or it becomes a hidden constraint",
+      "trade-off → extra lanes versus pier strength; recorded against Trusted / Easy / Adaptable",
+      "roadmap item → a span you committed to, not every wish in the backlog"
+    ],
+    "where_it_breaks": [
+      "A bridge has one river; a Salesforce org has edition, license, and package gates that can change per org.",
+      "NFRs such as 'real-time' are not automatically a 120-second callout timeout; cite the integration or Limits doc in play.",
+      "Budget is a constraint only if Finance actually set it; a rumor is an assumption.",
+      "The analogy does not pick Flow versus Apex; ARCH-005 owns that boundary."
+    ]
+  },
+  "teach_back_prompt": "Explain requirement, NFR, constraint, assumption, and trade-off using the bridge spec, then name one place that analogy breaks on Salesforce.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "From memory, define requirement, NFR, constraint, assumption, and trade-off in one line each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Classify five stakeholder sentences from a LAB_ intake into those five buckets."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Write one trade-off that uses Trusted, Easy, or Adaptable as the deciding compass."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Kill one assumption with a test you could run in a sandbox this week."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: why a backlog is not a roadmap, plus one NFR that failed Easy."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-WA-INTENTIONAL",
+      "title": "Intentional | Easy | Well-Architected",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/intentional",
+      "supports": "Strategy, prioritization, roadmapping, governance; trade-offs of requests made visible; roadmap is not a backlog list.",
+      "release_or_version": "Well-Architected Easy / Intentional",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define IEEE requirement taxonomy; apply the Salesforce architecture conversation, not a generic BA textbook."
+    },
+    {
+      "source_id": "SF-WA-EASY",
+      "title": "Easy | Well-Architected",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/easy-overview.html",
+      "supports": "Easy architectures require difficult trade-off analyses; programmer-only designs can fail Easy.",
+      "release_or_version": "Well-Architected Easy",
+      "last_verified": "2026-08-16",
+      "limits": "Does not enumerate every NFR category; pair with Trusted and Adaptable pages when scoring."
+    },
+    {
+      "source_id": "SF-WA-OVERVIEW",
+      "title": "Salesforce Well-Architected Overview",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/overview",
+      "supports": "Trusted, Easy, and Adaptable as compass points for evaluating architectural trade-offs.",
+      "release_or_version": "Well-Architected",
+      "last_verified": "2026-08-16",
+      "limits": "Compasses guide the trade-off; they are not a numbered scoring product unless you cite a current tools page."
+    },
+    {
+      "source_id": "SF-ARCH-CENTER",
+      "title": "Salesforce Architecture Center",
+      "type": "Official Salesforce Architect documentation",
+      "url": "https://architect.salesforce.com/",
+      "supports": "Decision Guides and patterns help architects evaluate trade-offs and select an approach from business requirements, data flows, and scalability needs.",
+      "release_or_version": "Architecture Center",
+      "last_verified": "2026-08-16",
+      "limits": "Homepage copy; follow a specific Decision Guide when a pattern is in play."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Well-Architected Intentional and Architecture Center Decision Guides",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Requirement vs NFR",
+        "Constraint vs assumption",
+        "Trade-off with compasses",
+        "Roadmap vs backlog",
+        "Validate assumptions",
+        "No invented limits"
+      ],
+      "accessible_description": "Portrait map separating functional requirements, NFRs, constraints, assumptions, and recorded trade-offs, with Well-Architected compasses as the decision key."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-WA-INTENTIONAL",
+        "SF-WA-EASY",
+        "SF-WA-OVERVIEW",
+        "SF-ARCH-CENTER"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Requirement to trade-off map"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Need[Business outcome] --> FR[Functional requirements: what]\n  Need --> NFR[Nonfunctional requirements: how well]\n  Need --> Con[Constraints: cannot change here]\n  Need --> Asm[Assumptions: must validate]\n  FR --> Trade[Recorded trade-off]\n  NFR --> Trade\n  Con --> Trade\n  Asm --> Test[Test that would kill the assumption]\n  Trade --> Compass[Trusted / Easy / Adaptable compass]",
+      "decision": "flowchart TD\n  Stmt[Stakeholder sentence] --> Q1{Do we control this limit?}\n  Q1 -->|No, verified| Con[Constraint: edition, regulation, system of record]\n  Q1 -->|Believed, not proven| Asm[Assumption: write a validation test]\n  Q1 -->|Yes, a want| Q2{Is it what vs how well?}\n  Q2 -->|What the business does| FR[Functional requirement]\n  Q2 -->|How well: security, speed, ownership| NFR[Nonfunctional requirement]\n  NFR --> Q3{Two goods collide?}\n  Q3 -->|Yes| Trade[Explicit trade-off using Well-Architected compasses]\n  Q3 -->|No| Spec[Keep both in the spec]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Intentional strategy means teams can triage urgent requests and understand the impacts and trade-offs of those requests.",
+      "source_ids": ["SF-WA-INTENTIONAL"],
+      "scope": "Strategy and trade-offs",
+      "validation": "Intentional page, Strategy section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "A roadmap is not a summary of the backlog; backlog items should tie to a roadmap deliverable.",
+      "source_ids": ["SF-WA-INTENTIONAL"],
+      "scope": "Roadmapping versus backlog",
+      "validation": "Intentional page, Roadmapping section.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Easy architectures often require difficult trade-off analyses; a programmer-only design can fail Easy even if it is technically reliable.",
+      "source_ids": ["SF-WA-EASY"],
+      "scope": "NFR conflict: maintainability",
+      "validation": "Easy Overview maintainability warning.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Architects return to Trusted, Easy, and Adaptable as compass points when evaluating complex architectural trade-offs. Architecture Center Decision Guides help evaluate trade-offs from requirements and scale needs.",
+      "source_ids": ["SF-WA-OVERVIEW", "SF-ARCH-CENTER"],
+      "scope": "Recording trade-offs",
+      "validation": "Well-Architected Overview compass language; Architecture Center homepage Decision Guide purpose.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Intentional and Easy pages remain the strategy/trade-off source; reverify Architecture Center Decision Guide URLs if you cite a named guide in an interview.",
+  "unresolved_uncertainty": [
+    "Whether a named NFR (for example a specific page-load target) is attainable is org- and license-specific; do not invent numeric SLAs.",
+    "Edition constraints must be confirmed in the target org, not assumed from a blog."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Functional requirement",
+      "telugu": "వ్యాపారం ఏమి చేయాలో చెప్పే అవసరం."
+    },
+    {
+      "english": "Nonfunctional requirement",
+      "telugu": "ఎంత బాగా, ఎంత సురక్షితంగా, ఎవరు నిర్వహించాలో చెప్పే అవసరం."
+    },
+    {
+      "english": "Constraint",
+      "telugu": "ఈ ప్రాజెక్టులో మార్చలేని పరిమితి."
+    },
+    {
+      "english": "Assumption",
+      "telugu": "నిరూపించాల్సిన నమ్మకం; రాసి పరీక్షించాలి."
+    },
+    {
+      "english": "Trade-off",
+      "telugu": "రెండు మంచి విషయాల్లో ఒకదాన్ని ఎంచుకుని నమోదు చేసే నిర్ణయం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I split what the business does from how well it must work, from limits we cannot change, from beliefs we must test, and from the trade-off we actually chose. Then I name the Well-Architected compass that decided it.",
+    "two_minutes": "Functional requirements are outcomes. NFRs are Trusted, Easy, and Adaptable qualities such as security, maintainability, and changeability. Constraints are verified edition, regulation, or system-of-record limits. Assumptions get an owner and a kill test. Trade-offs are written when two goods collide. Intentional strategy says those impacts must be visible, and a backlog is not a roadmap."
+  },
+  "terminology": [
+    {
+      "term": "functional requirement",
+      "plain": "What the business must be able to do in Salesforce.",
+      "precise": "An outcome-level statement of capability (who does what to which record) that is not itself a how-well, how-fast, or who-owns quality.",
+      "example": "A LAB_ volunteer coordinator can close a LAB_Shift without calling a developer.",
+      "non_example": "The page must 'feel instant'—that is an NFR until it has a measurable, cited target.",
+      "confusable_neighbor": "User story chrome (As a... I want...) that hides the NFR in the same sentence.",
+      "boundary": "Object and field modeling is DATA; this lesson only names the requirement grain."
+    },
+    {
+      "term": "nonfunctional requirement",
+      "plain": "How well the solution must work: security, reliability, ownership, changeability.",
+      "precise": "A quality constraint on the design—Trusted, Easy, or Adaptable attributes such as compliance, maintainability, or resilience—not a new business verb.",
+      "example": "LAB_ automation must be maintainable by the admin team (Easy / Intentional maintainability).",
+      "non_example": "Create a LAB_Shift record—that is functional.",
+      "confusable_neighbor": "A preference ('I like Apex') pretending to be an NFR.",
+      "boundary": "Numeric latency or limit values need a cited Limits or integration doc, or Needs verification."
+    },
+    {
+      "term": "constraint",
+      "plain": "A limit this project does not get to change.",
+      "precise": "An externally imposed bound that has been verified: regulation, contractual system of record, edition or license fact, or an already-chosen platform boundary.",
+      "example": "LAB_ donations must remain in the existing finance system of record; Salesforce stores status only.",
+      "non_example": "'We probably cannot buy that license' with no org check—that is still an assumption.",
+      "confusable_neighbor": "Self-imposed team habit treated as a platform constraint.",
+      "boundary": "Do not invent governor numbers as constraints without current Limits documentation."
+    },
+    {
+      "term": "assumption",
+      "plain": "A belief you will treat as true until a test kills it.",
+      "precise": "An unverified statement that would change the design if false; it needs an owner, a validation method, and an expiry.",
+      "example": "Assume Finance will publish a nightly LAB_ file; validate with a sample file this sprint.",
+      "non_example": "A signed regulation that already forbids storing a data class—that is a constraint.",
+      "confusable_neighbor": "Risk: an assumption is a belief; a risk is a possible future event with impact.",
+      "boundary": "Unowned assumptions are not architecture; they are deferred defects."
+    },
+    {
+      "term": "trade-off",
+      "plain": "The choice you made when two good things could not both be maximized.",
+      "precise": "An explicit, recorded decision between competing requirements or NFRs, using Trusted, Easy, and Adaptable as compass points, including what you gave up.",
+      "example": "Choose admin-owned Flow (Easy) over a denser Apex service, accepting less complex branching.",
+      "non_example": "Picking a tool in a meeting with no record of what was sacrificed.",
+      "confusable_neighbor": "Compromise as a social apology; a trade-off is a design artifact.",
+      "boundary": "Architecture Center Decision Guides help when a named pattern is in play (ARCH-006 for integration)."
+    },
+    {
+      "term": "roadmap versus backlog",
+      "plain": "The committed why-and-when versus the parking lot of ideas.",
+      "precise": "Intentional roadmapping: a prioritized, validated view of work. The backlog is not a summary of the roadmap; items enter the backlog when they tie to a roadmap deliverable.",
+      "example": "LAB_ intake v1 is on the roadmap; a wishlist LWC theme is not until it ties to a deliverable.",
+      "non_example": "A 200-item backlog labeled 'roadmap'.",
+      "confusable_neighbor": "Sprint board: execution of already-accepted backlog items.",
+      "boundary": "This is governance of requirements, not a mandate of a particular ALM tool."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Capture the outcome",
+      "actor": "Architect + product owner",
+      "trigger": "A request arrives",
+      "before": "A mix of wishes, fears, and tool names",
+      "after": "One business outcome sentence",
+      "observe": "Written who/what/record grain",
+      "failure": "Starting in Object Manager before the outcome is named"
+    },
+    {
+      "step": 2,
+      "transition": "Sort the five buckets",
+      "actor": "Architect + BA",
+      "trigger": "Outcome exists",
+      "before": "Unsorted stakeholder sentences",
+      "after": "Requirements, NFRs, constraints, assumptions, open trade-offs labeled",
+      "observe": "A table with owners on assumptions",
+      "failure": "Calling every sentence a requirement"
+    },
+    {
+      "step": 3,
+      "transition": "Validate constraints and assumptions",
+      "actor": "Architect + org admin",
+      "trigger": "Buckets labeled",
+      "before": "Rumored edition limits and hoped-for data feeds",
+      "after": "Verified constraints; assumptions with kill tests",
+      "observe": "Org edition/license note; a sandbox test or sample file date",
+      "failure": "Inventing a numeric Salesforce limit as if it were a constraint"
+    },
+    {
+      "step": 4,
+      "transition": "Record the trade-off",
+      "actor": "Architect + stakeholders",
+      "trigger": "Two goods collide",
+      "before": "An unspoken preference",
+      "after": "A compass-based trade-off in the design record",
+      "observe": "Trusted / Easy / Adaptable named plus what was given up",
+      "failure": "Hiding the choice inside 'we just used Apex'"
+    }
+  ],
+  "when_to_use": [
+    "When a Salesforce architecture interview asks you to separate requirements from nonfunctional requirements, constraints, assumptions, and trade-offs.",
+    "When stakeholders mix 'real-time,' 'secure,' 'this sprint,' and 'Finance will clean it' in one sentence.",
+    "When you must show Intentional strategy: impacts and trade-offs visible, roadmap not equal to backlog.",
+    "When two NFRs collide (for example maintainability versus complexity) and you need Well-Architected compasses to record the trade-off."
+  ],
+  "when_not_to_use": [
+    "Do not use this requirements lesson as a substitute for Flow versus Apex product choice (ARCH-005) or an integration pattern (ARCH-006).",
+    "Do not treat unverified edition rumors as constraints, or invent governor-limit numbers as NFRs.",
+    "Do not call a backlog dump a roadmap and claim Intentional strategy.",
+    "Do not skip Trusted data classification by labeling storage of sensitive data as a 'stretch NFR'."
+  ],
+  "configuration_or_code_location": [
+    "Design record / ADR: five-bucket table plus trade-off paragraph.",
+    "Well-Architected Intentional and Easy pages for strategy and maintainability NFRs.",
+    "Architecture Center Decision Guides when a named pattern trade-off is required.",
+    "Org Setup only to verify a suspected edition or license constraint—not to 'configure requirements.'"
+  ],
+  "worked_example": {
+    "scenario": "A LAB_ clinic sandbox wants Salesforce to 'book beds in real time, be perfectly secure, finish this sprint, and assume the hospital ADT feed is clean.' No production patient data.",
+    "inputs": [
+      "Functional wish: book a LAB_Bed",
+      "NFR language: real-time and perfectly secure",
+      "Schedule wish: this sprint",
+      "Data belief: ADT feed is clean"
+    ],
+    "decisions": [
+      {
+        "decision": "Treat 'book a LAB_Bed' as the functional requirement; 'this sprint' as a schedule constraint only if leadership signed it.",
+        "because": "Mixing date pressure into the capability hides the real scope.",
+        "rejected": "One user story that says 'secure real-time booking this sprint'"
+      },
+      {
+        "decision": "Split 'perfectly secure' into Trusted NFRs that can be tested (classification, access actors) rather than an absolute.",
+        "because": "An untestable NFR is not architecture.",
+        "rejected": "Promise perfect security with no data class"
+      },
+      {
+        "decision": "Label the clean ADT feed as an assumption with a sample-file kill test this week.",
+        "because": "Intentional strategy requires visible impacts; a dirty feed changes the design.",
+        "rejected": "Build matching logic as if the feed were a constraint"
+      }
+    ],
+    "configuration_or_code": [
+      "Write the five-bucket table in the LAB_ design record.",
+      "Do not load real ADT files; use a synthetic LAB_ sample.",
+      "Record a trade-off: Easy admin-owned booking vs a custom real-time integration (ARCH-006 later) if the assumption dies."
+    ],
+    "output": "A design record where booking is functional, security and operability are NFRs, the sprint date is a signed constraint or a wish, and the feed is an owned assumption.",
+    "verification": [
+      "Every stakeholder sentence is in one of the five buckets.",
+      "The assumption has a kill test and an owner.",
+      "No invented millisecond SLA is written as a platform fact."
+    ],
+    "self_explanation": "I refused to treat hopes as constraints. Real-time and security are NFRs to specify, not slogans. The feed is an assumption until a file proves it."
+  },
+  "hands_on_lab": {
+    "environment": "Wiki or document plus optional disposable sandbox; synthetic LAB_ names only.",
+    "starting_state_checks": [
+      "You can open the Intentional Well-Architected page.",
+      "No production patient or finance files are in the workspace."
+    ],
+    "steps": [
+      "Collect eight raw stakeholder sentences for a LAB_ process (email, chat, or invented but realistic).",
+      "Sort each into requirement, NFR, constraint, assumption, or trade-off—rewrite mixed sentences.",
+      "For every assumption, write a kill test you could run this week.",
+      "Record one trade-off using a Trusted, Easy, or Adaptable compass and state what you gave up."
+    ],
+    "guided_completion": [
+      "If 'real-time' has no measurable meaning, keep it as an NFR to specify, not a constraint.",
+      "If you wrote a numeric limit, cite Limits documentation or mark Needs verification."
+    ],
+    "independent_challenge": "Show how the design changes if the clean-feed assumption dies.",
+    "evidence": [
+      "The five-bucket table with owners on assumptions.",
+      "One trade-off paragraph naming a Well-Architected compass."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete any real operational files that slipped into the lab.",
+      "Do not deploy a Requirements__c object to production as a souvenir."
+    ],
+    "limitations": "This lab practices requirements hygiene; it does not certify a particular BA template."
+  },
+  "decision_table": [
+    {
+      "signal": "The sentence describes a business action on a record (who does what).",
+      "choose": "Capture it as a functional requirement with grain.",
+      "not": "Bury it inside a security slogan or a sprint date.",
+      "why": "Architecture Center work starts from business requirements; mixing how-well language hides the outcome."
+    },
+    {
+      "signal": "The sentence is about security, reliability, maintainability, or operability.",
+      "choose": "Capture it as an NFR and map it to Trusted, Easy, or Adaptable.",
+      "not": "Treat 'perfectly secure' as already satisfied by MFA folklore.",
+      "why": "Easy Overview frames maintainability as a first-class quality that can fail independently of compile success."
+    },
+    {
+      "signal": "The limit is verified in the org, contract, or regulation and the team cannot change it here.",
+      "choose": "Record a constraint and design inside it.",
+      "not": "Invent a governor number or treat a rumor as a constraint.",
+      "why": "False constraints shrink the design space; unverified numbers are not Salesforce documentation."
+    },
+    {
+      "signal": "The design only works if an unproven feed, team, or volume is true.",
+      "choose": "Record an assumption with an owner and a kill test.",
+      "not": "Build as if the belief were already a constraint.",
+      "why": "Intentional strategy requires visible impacts of requests; silent beliefs skip governance."
+    },
+    {
+      "signal": "Two accepted goods cannot both be maximized (speed versus ownership, thin slice versus integration).",
+      "choose": "Write an explicit trade-off using Well-Architected compasses.",
+      "not": "Pick a tool in the hallway and leave no record of what was given up.",
+      "why": "The Overview tells architects to use Trusted, Easy, and Adaptable as compass points for trade-offs."
+    }
+  ],
+  "limitations": [
+    "This topic does not teach a specific user-story syntax or ticket tool.",
+    "Numeric SLAs and governor numbers are out of scope unless cited from current official Limits or integration docs.",
+    "Edition and license constraints are org-specific.",
+    "Decision Guides for a named pattern belong to later ARCH topics."
+  ],
+  "security_notes": [
+    "A security slogan is not a Trusted NFR until data class and actors are named.",
+    "Do not load real personal data to 'validate an assumption.'",
+    "Assumptions about who can see records still require SEC design; this lesson only flags the NFR."
+  ],
+  "common_mistakes": [
+    "Calling the backlog the roadmap.",
+    "Treating preferences as platform constraints.",
+    "Leaving assumptions unowned.",
+    "Recording a tool choice without the trade-off it implies.",
+    "Inventing limit numbers to win an NFR argument."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Every sentence in the intake is labeled 'requirement.'",
+      "check": [
+        "Re-sort into the five buckets.",
+        "Ask 'what vs how well vs cannot change vs unproven vs given up.'"
+      ],
+      "do_not_assume": "More user stories will fix it."
+    },
+    {
+      "symptom": "Build fails when an external file is dirty.",
+      "check": [
+        "Was feed quality an assumption without a kill test?",
+        "Was dirty data treated as a constraint too late?"
+      ],
+      "do_not_assume": "Salesforce matching is broken."
+    },
+    {
+      "symptom": "Admins cannot change a rule the business changes weekly.",
+      "check": [
+        "Maintainability NFR was missing or lost a trade-off to cleverness.",
+        "Easy Overview programmer-only warning."
+      ],
+      "do_not_assume": "The admins need more training instead of a different seam."
+    }
+  ],
+  "production_notes": [
+    "Keep the five-bucket table with the design so later changes re-validate assumptions.",
+    "Do not promote LAB_ requirement objects to production.",
+    "Reverify org edition before quoting a constraint in a go-live review."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What is the difference between a functional requirement and a nonfunctional requirement in this lesson?",
+      "options": {
+        "A": "Functional is what the business does; NFR is how well (security, ownership, reliability)",
+        "B": "Functional is Apex; NFR is Flow",
+        "C": "They are the same as constraints",
+        "D": "NFRs are only report colors"
+      },
+      "answer": "A",
+      "rationale": "Requirements state capability; NFRs state qualities such as Trusted/Easy/Adaptable attributes.",
+      "distractor_explanations": {
+        "B": "Tools are not the definition of FR vs NFR.",
+        "C": "Constraints are verified limits you cannot change here.",
+        "D": "Visual chrome is not the NFR category this lesson teaches."
+      },
+      "concept": "FR vs NFR",
+      "citation_ids": ["SF-WA-EASY", "SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "According to Intentional roadmapping, how does a roadmap relate to a backlog?",
+      "options": {
+        "A": "A roadmap is not a summary of the backlog; items should enter the backlog when tied to a roadmap deliverable",
+        "B": "The backlog is the roadmap",
+        "C": "Roadmaps are illegal on Salesforce",
+        "D": "Only Apex classes may appear on a roadmap"
+      },
+      "answer": "A",
+      "rationale": "The Intentional page states the relationship is the opposite of treating the backlog as the roadmap.",
+      "distractor_explanations": {
+        "B": "That is the anti-pattern the page warns about.",
+        "C": "Roadmapping is part of Intentional strategy.",
+        "D": "Roadmaps are business-and-technology views, not an Apex list."
+      },
+      "concept": "Roadmap vs backlog",
+      "citation_ids": ["SF-WA-INTENTIONAL"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What makes something a constraint rather than an assumption in this topic?",
+      "options": {
+        "A": "It is a verified limit this project cannot change (regulation, edition, system of record)",
+        "B": "Someone said 'probably' in a meeting",
+        "C": "It is always a governor limit you invent",
+        "D": "It is a preferred button color"
+      },
+      "answer": "A",
+      "rationale": "Constraints are imposed and verified; assumptions are unproven beliefs that need kill tests.",
+      "distractor_explanations": {
+        "B": "That is still an assumption.",
+        "C": "Do not invent limits.",
+        "D": "Preference is not a constraint."
+      },
+      "concept": "Constraint",
+      "citation_ids": ["SF-WA-INTENTIONAL", "SF-ARCH-CENTER"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "'Finance will send a clean nightly file' is best labeled as what until proven?",
+      "options": {
+        "A": "An assumption with an owner and a kill test",
+        "B": "A verified platform constraint",
+        "C": "A sharing rule",
+        "D": "A functional requirement to create Accounts"
+      },
+      "answer": "A",
+      "rationale": "The feed quality is unproven; Intentional strategy requires visible impacts, so validate it.",
+      "distractor_explanations": {
+        "B": "You have not verified cleanliness.",
+        "C": "Sharing is a different SEC concern.",
+        "D": "Creating Accounts might be functional later; the cleanliness claim is not."
+      },
+      "concept": "Assumption",
+      "citation_ids": ["SF-WA-INTENTIONAL"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A programmer-only service compiles but admins must change the rule weekly. Which NFR conflict is this?",
+      "options": {
+        "A": "Easy maintainability can fail even if the design is technically reliable",
+        "B": "Trusted always forbids Apex",
+        "C": "Adaptable forbids tests",
+        "D": "Constraints require undocumented code"
+      },
+      "answer": "A",
+      "rationale": "Easy Overview: a programmer-maintainable but admin-unmaintainable design is not Easy.",
+      "distractor_explanations": {
+        "B": "Trusted does not ban Apex.",
+        "C": "Adaptable includes testing strategy.",
+        "D": "The opposite of Intentional readability."
+      },
+      "concept": "Maintainability NFR",
+      "citation_ids": ["SF-WA-EASY"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Two goods collide. What does Well-Architected tell you to use when recording the trade-off?",
+      "options": {
+        "A": "Trusted, Easy, and Adaptable as compass points",
+        "B": "Only the loudest engineer’s framework",
+        "C": "A random numeric score you invent",
+        "D": "The backlog order alone"
+      },
+      "answer": "A",
+      "rationale": "The Overview describes those capabilities as compass points for trade-offs.",
+      "distractor_explanations": {
+        "B": "Personal taste is not the framework.",
+        "C": "Do not invent scores or limits.",
+        "D": "Backlog order is not the compass."
+      },
+      "concept": "Trade-off compasses",
+      "citation_ids": ["SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Intentional strategy requires which visibility when urgent requests arrive?",
+      "options": {
+        "A": "Impacts and trade-offs of the requests are understandable to stakeholders",
+        "B": "Urgent requests skip Trusted data classification",
+        "C": "Urgent requests must be Apex",
+        "D": "Urgent requests hide assumptions"
+      },
+      "answer": "A",
+      "rationale": "Intentional Strategy: urgent requests can be triaged and stakeholders understand impacts and trade-offs.",
+      "distractor_explanations": {
+        "B": "Trusted is not waived by urgency.",
+        "C": "Tool choice is a later trade-off.",
+        "D": "Hiding assumptions is the failure mode."
+      },
+      "concept": "Strategy",
+      "citation_ids": ["SF-WA-INTENTIONAL"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "'Make it real-time this sprint and perfectly secure; Finance will clean the data.' First architecture move?",
+      "options": {
+        "A": "Split functional booking from NFRs, verify any date constraint, and treat clean data as an assumption",
+        "B": "Start coding a global Apex API immediately",
+        "C": "Invent a 50-millisecond platform SLA as a constraint",
+        "D": "Ignore security because Easy means fast"
+      },
+      "answer": "A",
+      "rationale": "The sentence mixes FR, NFR, schedule, and assumption; sort before building.",
+      "distractor_explanations": {
+        "B": "Tooling before buckets is the common miss.",
+        "C": "Do not invent scale numbers.",
+        "D": "Trusted is not optional."
+      },
+      "concept": "Intake sorting",
+      "citation_ids": ["SF-WA-INTENTIONAL", "SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A team labels a 200-item Jira list 'the roadmap.' What is the Intentional critique?",
+      "options": {
+        "A": "A roadmap is a prioritized validated view; it is not a backlog summary",
+        "B": "Jira is forbidden on Salesforce projects",
+        "C": "Roadmaps may only contain Apex classes",
+        "D": "Backlogs automatically satisfy Easy"
+      },
+      "answer": "A",
+      "rationale": "Intentional Roadmapping: backlog items should tie to roadmap deliverables, not the reverse dump.",
+      "distractor_explanations": {
+        "B": "The tool is not the issue.",
+        "C": "Roadmaps are outcome views.",
+        "D": "A long backlog is not Easy."
+      },
+      "concept": "Roadmap anti-pattern",
+      "citation_ids": ["SF-WA-INTENTIONAL"]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Someone cites 'the API limit is 3' with no documentation. How do you treat it?",
+      "options": {
+        "A": "Not a constraint until cited from current official Limits or API docs; otherwise Needs verification",
+        "B": "It is automatically a constraint because it is a number",
+        "C": "It is a functional requirement",
+        "D": "It proves Adaptable"
+      },
+      "answer": "A",
+      "rationale": "This handbook forbids invented scale numbers; constraints must be verified.",
+      "distractor_explanations": {
+        "B": "A number without a source is not Salesforce documentation.",
+        "C": "Limits are not business verbs.",
+        "D": "Unverified folklore is not resilience."
+      },
+      "concept": "No invented limits",
+      "citation_ids": ["SF-ARCH-CENTER", "SF-WA-OVERVIEW"]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "How do Architecture Center Decision Guides relate to this topic?",
+      "options": {
+        "A": "They help evaluate trade-offs from requirements, data flows, and scalability needs",
+        "B": "They replace the need to write assumptions",
+        "C": "They are Setup menus named Requirements",
+        "D": "They forbid Well-Architected compasses"
+      },
+      "answer": "A",
+      "rationale": "The Architecture Center describes Decision Guides as helping architects evaluate trade-offs and select an approach.",
+      "distractor_explanations": {
+        "B": "Assumptions still need owners and tests.",
+        "C": "Guides are documentation, not a Setup object.",
+        "D": "They sit alongside Well-Architected."
+      },
+      "concept": "Decision Guides",
+      "citation_ids": ["SF-ARCH-CENTER"]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Requirement decisions versus business data—what is the split?",
+      "options": {
+        "A": "The five-bucket table and trade-off record are design metadata; LAB_ records the solution stores are business data",
+        "B": "Writing a requirement inserts Account rows",
+        "C": "Assumptions are stored as User records automatically",
+        "D": "NFRs are Recycle Bin items"
+      },
+      "answer": "A",
+      "rationale": "Handbook metadata-versus-data split: design artifacts are not the operational records.",
+      "distractor_explanations": {
+        "B": "A spec does not create Accounts.",
+        "C": "No such automatic storage.",
+        "D": "Recycle Bin is a data-lifecycle concern (ARCH-003)."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-WA-INTENTIONAL"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "Functional requirement in one line?",
+      "back": "What the business must be able to do—who does what to which record."
+    },
+    {
+      "id": "F2",
+      "category": "definition",
+      "front": "Nonfunctional requirement in one line?",
+      "back": "How well it must work: security, reliability, maintainability, changeability."
+    },
+    {
+      "id": "F3",
+      "category": "definition",
+      "front": "Constraint versus assumption?",
+      "back": "A constraint is a verified limit you cannot change here. An assumption is an unproven belief with a kill test."
+    },
+    {
+      "id": "F4",
+      "category": "definition",
+      "front": "What is a trade-off in this lesson?",
+      "back": "A recorded choice between competing goods, using Trusted, Easy, or Adaptable, including what you gave up."
+    },
+    {
+      "id": "F5",
+      "category": "intentional",
+      "front": "Roadmap versus backlog?",
+      "back": "A roadmap is not a backlog summary. Backlog items should tie to a roadmap deliverable."
+    },
+    {
+      "id": "F6",
+      "category": "intentional",
+      "front": "What must stakeholders see on urgent requests?",
+      "back": "Impacts and trade-offs, so triage is possible (Intentional strategy)."
+    },
+    {
+      "id": "F7",
+      "category": "nfr",
+      "front": "Programmer-only design, admin-owned process. Which NFR fails?",
+      "back": "Easy maintainability, even if the code is reliable."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Two goods collide. What compasses?",
+      "back": "Trusted, Easy, and Adaptable as compass points for the trade-off."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "How do you treat an unsourced 'API limit is 3'?",
+      "back": "Not a constraint. Cite official Limits docs or mark Needs verification."
+    },
+    {
+      "id": "F10",
+      "category": "scenario",
+      "front": "'Finance will send a clean file.' Bucket?",
+      "back": "Assumption until a sample file kill test passes."
+    },
+    {
+      "id": "F11",
+      "category": "scenario",
+      "front": "'Book a LAB_Bed.' Bucket?",
+      "back": "Functional requirement (capability), not an NFR by itself."
+    },
+    {
+      "id": "F12",
+      "category": "scenario",
+      "front": "'Perfectly secure.' Bucket?",
+      "back": "NFR that must be specified (data class, actors)—not a slogan and not automatically a constraint."
+    },
+    {
+      "id": "F13",
+      "category": "boundary",
+      "front": "Does this topic pick Flow versus Apex?",
+      "back": "No. It records the NFRs and trade-off; ARCH-005 owns the automation boundary."
+    },
+    {
+      "id": "F14",
+      "category": "boundary",
+      "front": "Requirements table versus LAB_ records?",
+      "back": "The table is design metadata. Rows the app stores are business data."
+    },
+    {
+      "id": "F15",
+      "category": "guides",
+      "front": "Role of Architecture Center Decision Guides here?",
+      "back": "They help evaluate trade-offs from requirements, data flows, and scale needs."
+    },
+    {
+      "id": "F16",
+      "category": "analogy",
+      "front": "Where does the bridge-spec analogy break?",
+      "back": "Salesforce orgs have edition and license gates; 'real-time' is not automatically a documented timeout."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Walk requirement, NFR, constraint, assumption, and trade-off on a Salesforce design.",
+      "answer_30_seconds": "Requirement is what the business does. NFR is how well. Constraint is a verified limit we cannot change. Assumption is a belief with a kill test. Trade-off is the recorded sacrifice using Well-Architected compasses.",
+      "answer_2_minutes": "I sort intake sentences into those five buckets before I touch objects. Intentional strategy says impacts and trade-offs must be visible, and a backlog is not a roadmap. I refuse invented governor numbers as constraints. I map NFRs onto Trusted, Easy, and Adaptable so maintainability is not an afterthought.",
+      "example": "LAB_ bed booking: capability is functional; 'real-time' and security are NFRs; signed sprint date may be a constraint; clean ADT feed is an assumption.",
+      "tradeoffs": [
+        "Speed of writing stories vs sorting buckets",
+        "Absolute slogans vs testable NFRs"
+      ],
+      "follow_ups": [
+        "How do you kill an assumption?",
+        "What if the constraint is wrong?"
+      ],
+      "weak_answer_warnings": [
+        "Calling everything a requirement",
+        "Library or labeled-drawer analogy"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why does Well-Architected Intentional care about roadmaps versus backlogs?",
+      "answer_30_seconds": "A roadmap is a prioritized, validated view of why work exists. The backlog is not that view; items should enter the backlog only when they tie to a roadmap deliverable.",
+      "answer_2_minutes": "If every wish is 'on the roadmap,' NFRs like maintainability never get a slot and trade-offs stay invisible. Intentional strategy also says urgent requests must still show impacts. I would rather refuse a wishlist LWC than pretend a 200-item list is a strategy.",
+      "example": "LAB_ intake v1 on the roadmap; a theme-color LWC stays off until it ties to a deliverable.",
+      "tradeoffs": [
+        "Stakeholder volume vs prioritized impact",
+        "Transparency vs saying yes"
+      ],
+      "follow_ups": [
+        "Who owns the roadmap?",
+        "How do you triage an urgent request?"
+      ],
+      "weak_answer_warnings": [
+        "Equating Jira with architecture"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Stakeholder: real-time, perfectly secure, this sprint, Finance will clean the data. Respond.",
+      "answer_30_seconds": "I split the sentence. Booking is functional. Real-time and security are NFRs to specify. The date is a constraint only if signed. Clean data is an assumption with a kill test.",
+      "answer_2_minutes": "I will not invent a millisecond SLA. I will name data class and access actors for Trusted. I will not start a global API on day one. If the sample file is dirty, matching and stewardship become first-class work, which is a different trade-off. Easy still asks who maintains the result after the sprint.",
+      "example": "LAB_ clinic sandbox with synthetic ADT-like rows only.",
+      "tradeoffs": [
+        "Sprint date vs Trusted completeness",
+        "Assume-clean vs design-for-dirty"
+      ],
+      "follow_ups": [
+        "What does real-time mean in an integration pattern?",
+        "Who signs the date constraint?"
+      ],
+      "weak_answer_warnings": [
+        "Starting to code before sorting buckets"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Admins cannot change a weekly business rule buried in Apex. What failed in the requirements work?",
+      "answer_30_seconds": "The maintainability NFR was missing or lost a trade-off. Easy Overview says a programmer-only design is not Easy for an admin-owned process.",
+      "answer_2_minutes": "I look at the original trade-off record. If there is none, the team picked a tool without stating what they gave up. I would re-open Easy versus complexity, possibly custom metadata or Flow plus a small invocable. I would not blame 'user training' as the only fix. Trusted still applies if the rule affects sensitive data.",
+      "example": "LAB_ discount percent changed weekly; hard-coded in a trigger with no metadata.",
+      "tradeoffs": [
+        "Complex branching vs admin change cadence",
+        "One service vs many declarative rules"
+      ],
+      "follow_ups": [
+        "What if the admin team is actually engineers?",
+        "How do you write the NFR so it is testable?"
+      ],
+      "weak_answer_warnings": [
+        "Saying Apex is always correct for architects"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "The build collapses when the nightly file is dirty. Diagnose the requirements error.",
+      "answer_30_seconds": "Feed quality was an unowned assumption treated like a constraint. There was no kill test, so matching logic was never in scope.",
+      "answer_2_minutes": "I check the design record for an assumption owner and a sample-file test. If absent, I add data stewardship as functional work or an integration NFR, and I re-score Easy (who remediates errors) and Trusted (what bad data could expose). I do not invent that Salesforce 'cannot handle files.'",
+      "example": "LAB_ nightly CSV with duplicate external ids; no duplicate NFR was written.",
+      "tradeoffs": [
+        "Happy-path speed vs dirty-data design",
+        "Reject file vs repair in Salesforce"
+      ],
+      "follow_ups": [
+        "Where do error records live?",
+        "Is this now an ARCH-006 failure-mode topic?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the API without checking assumptions"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A teammate uses an unsourced numeric limit to kill a design. What do you do?",
+      "answer_30_seconds": "I refuse the number as a constraint until it is cited from current official Limits or API documentation. Otherwise it is folklore.",
+      "answer_2_minutes": "I ask for the URL and the org edition. If they cannot produce it, I mark Needs verification and keep the option open. Architecture Center Decision Guides evaluate trade-offs from real requirements and scale needs, not invented caps. I still honor verified edition and regulatory constraints.",
+      "example": "Someone says 'API limit is 3' to block a LAB_ integration spike.",
+      "tradeoffs": [
+        "Caution vs false constraints",
+        "Delay for verification vs building on a myth"
+      ],
+      "follow_ups": [
+        "Which Limits page would you open?",
+        "What if the official cap is still too low?"
+      ],
+      "weak_answer_warnings": [
+        "Accepting any number that sounds official"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "How do you record a trade-off so a future architect can replay it?",
+      "answer_30_seconds": "I write the two goods, the compass that won, what we gave up, and the assumption that would reopen the choice.",
+      "answer_2_minutes": "I keep it next to the five-bucket table, not in a chat thread. I reference Well-Architected or a Decision Guide when a named pattern applies. I include who must own the result so Easy remains testable. I do not encode the trade-off only as a tool name ('we used Flow') because the next person cannot see the sacrifice.",
+      "example": "Easy admin-owned Flow over denser Apex; reopen if branching NFRs exceed what Flow can express—details in ARCH-005.",
+      "tradeoffs": [
+        "Short ADR vs tribal memory",
+        "Compass language vs product names"
+      ],
+      "follow_ups": [
+        "How often do you revisit assumptions?",
+        "Who is allowed to change the trade-off?"
+      ],
+      "weak_answer_warnings": [
+        "No artifact, only a meeting vibe"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this topic with the bridge specification, then break the analogy.",
+      "answer_30_seconds": "Crossing is the functional requirement; load rating is an NFR; river width is a constraint; the soil survey is an assumption; lanes versus piers is the trade-off. Salesforce then adds edition licenses the river never had.",
+      "answer_2_minutes": "I walk a LAB_ clinic through the same five buckets. I show Intentional roadmap versus backlog so inspection cadence (an NFR) gets a slot. I say the analogy breaks because 'real-time' is not automatically a documented callout timeout, and because invented load numbers are forbidden. I finish on compasses: Trusted, Easy, Adaptable decide which pier we strengthen.",
+      "example": "LAB_ bed booking mapped to the five buckets with a sample-file kill test.",
+      "tradeoffs": [
+        "Physical analogy vs multi-tenant software",
+        "Memorable story vs false precision"
+      ],
+      "follow_ups": [
+        "What NFR maps to wind rating?",
+        "What Salesforce constraint maps to river width?"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer analogy",
+        "Inventing a numeric load rating for Salesforce"
+      ]
+    }
+  ]
+}

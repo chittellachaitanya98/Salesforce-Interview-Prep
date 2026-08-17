@@ -1,0 +1,1055 @@
+{
+  "topic_id": "DATA-012",
+  "slug": "custom-metadata-types-custom-settings-custom-labels-and",
+  "title": "Custom metadata types, custom settings, custom labels, and named credentials overview",
+  "track": "Data model and configuration",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "DATA-011"
+  ],
+  "objectives": [
+    "Choose custom metadata types when configuration records should deploy and package as metadata.",
+    "Explain list versus hierarchy custom settings as cached configuration data, and why unprotected settings are a poor secret store.",
+    "Use custom labels for translatable UI text, not for endpoints or passwords.",
+    "Use named credentials (and external credentials) for callout endpoints and authentication, not for ordinary app mappings."
+  ],
+  "diagnostic_question": "A package needs deployable discount rates, a per-user debug flag, a translated error string, and an authenticated callout to a vendor API. Which of custom metadata types, custom settings, custom labels, and named credentials do you use for each—and where do you refuse to put the password?",
+  "definition": "Custom metadata types store deployable, packageable configuration as metadata records. Custom settings are similar to custom objects but cached: list settings are org-wide static data; hierarchy settings personalize by organization, profile, then user. Custom labels store translatable text. A named credential specifies a callout endpoint and authentication in one definition; Winter '23 introduced preferred named credentials paired with external credentials, and legacy named credentials are deprecated. Do not store secrets in ordinary custom settings. ([Custom Settings](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_customsettings.htm); [Get Started with Named Credentials](https://developer.salesforce.com/docs/platform/named-credentials/guide/get-started.html); [Storing Sensitive Data](https://developer.salesforce.com/docs/atlas.en-us.secure_coding_guide.meta/secure_coding_guide/secure_coding_storing_sensitive_data.htm); [Custom Metadata Types](https://help.salesforce.com/s/articleView?id=sf.custommetadatatypes_about.htm))",
+  "why_it_matters": "Interviewers listen for metadata versus data. Custom setting rows are data (definitions package, data does not). Custom metadata records travel with the deployment. Named credentials are the callout secret surface. Putting an OAuth token in a public custom setting is a Secure Coding fail—Help and the Apex guide warn that unprotected settings are readable, including by the guest user.",
+  "sixty_second_explanation": "Think of airport operations. Custom metadata types are the published flight schedule that deploys with the airline—configuration that should move between orgs. Custom settings are the cached gate board: list settings are the same for everyone; hierarchy settings can override at profile or user. Custom labels are the multilingual PA announcements. Named credentials are the jetway badge: endpoint plus authentication, not a discount-rate table. Do not tape the badge PIN to the public gate board.",
+  "deeper_explanation": [
+    "Custom settings: developers create data sets for the org, profile, or user. Data is in the application cache for efficient access without repeated SOQL. Formula fields, validation rules, flows, Apex, and SOAP API can use them. List settings are org-wide static data. Hierarchy settings return the most specific value: user overrides profile overrides organization. Only the custom setting definition packages, not the data; populate after install. Apex tests treat existing custom settings as data and need SeeAllData=true to see them—or create them in test setup. ([Custom Settings](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_customsettings.htm))",
+    "Protection: only custom settings marked protected and installed in a managed package are protected. Otherwise they are treated as public and readable for all profiles, including the guest user. Do not store secrets, PII, or private data there. Outside a managed package, use named credentials or encrypted custom fields for secrets. ([Custom Settings](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_customsettings.htm); [Storing Sensitive Data](https://developer.salesforce.com/docs/atlas.en-us.secure_coding_guide.meta/secure_coding_guide/secure_coding_storing_sensitive_data.htm))",
+    "Custom metadata types: configuration records that deploy and package as metadata, unlike custom setting data. Use them for mappings and rules that must move between sandboxes. Protected CMT in a managed package can hold package secrets readable from same-namespace Apex. Subscriber-org CMT is not a hiding place for tokens. ([Storing Sensitive Data](https://developer.salesforce.com/docs/atlas.en-us.secure_coding_guide.meta/secure_coding_guide/secure_coding_storing_sensitive_data.htm); [Custom Metadata Types](https://help.salesforce.com/s/articleView?id=sf.custommetadatatypes_about.htm))",
+    "Named credentials specify the callout URL and authentication. Preferred pattern: named credential (endpoint/transport) plus external credential (protocol and principals). Legacy named credentials are deprecated and will be discontinued. Users with Customize Application can view named credentials; if policy requires hiding secrets from subscribers, use protected CMT or protected custom settings in a managed package instead. ([Get Started](https://developer.salesforce.com/docs/platform/named-credentials/guide/get-started.html); [Storing Sensitive Data](https://developer.salesforce.com/docs/atlas.en-us.secure_coding_guide.meta/secure_coding_guide/secure_coding_storing_sensitive_data.htm))",
+    "Custom labels are translatable UI strings (error text, button labels). They are metadata, not a configuration table and not a credential store. Exact Help article IDs for labels are neighboring—treat labels as official Setup metadata and do not store endpoints in them."
+  ],
+  "mental_model": {
+    "analogy": "Airport operations: custom metadata is the published flight schedule that deploys with the airline, custom settings are the cached gate board (list vs hierarchy overrides), custom labels are multilingual PA announcements, and named credentials are the jetway badge.",
+    "useful_mapping": [
+      "custom metadata type + records → published schedule that deploys",
+      "list custom setting → org-wide cached board",
+      "hierarchy custom setting → user/profile/org override on the board",
+      "custom label → PA announcement in each language",
+      "named credential → jetway endpoint",
+      "external credential → the badge protocol and who may use it",
+      "public custom setting secret → PIN taped to the public board"
+    ],
+    "where_it_breaks": [
+      "Hierarchy getInstance() details are more specific than a paper board.",
+      "Legacy versus new named credentials is a platform deprecation, not an airport rule.",
+      "Protected package secrets are a namespace story the PA system does not show.",
+      "Custom labels are not error-message location (DATA-010) even if you store the text there."
+    ]
+  },
+  "teach_back_prompt": "Assign discount rates, a per-user flag, a translated string, and a callout password to CMT, settings, labels, or named credentials—and say why a public custom setting is the wrong secret store.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "CMT vs custom settings: what packages?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "List vs hierarchy custom settings."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Where do callout secrets go? Where do they not?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Why Apex tests may not see existing custom settings."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: four tools, one secret refusal."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-CSET",
+      "title": "Custom Settings",
+      "type": "Official Apex Developer Guide",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_customsettings.htm",
+      "supports": "List vs hierarchy; cache; formulas/validation/Flow/Apex/API; package definition not data; protection only for protected managed-package settings; guest-user warning; test isolation.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-NC-START",
+      "title": "Get Started | Named Credentials",
+      "type": "Official Salesforce Developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/named-credentials/guide/get-started.html",
+      "supports": "Named credential = endpoint and transport; external credential = protocol and principals; preferred vs deprecated legacy named credentials.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-SECURE-STORE",
+      "title": "Storing Sensitive Data",
+      "type": "Official Secure Coding Guide",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.secure_coding_guide.meta/secure_coding_guide/secure_coding_storing_sensitive_data.htm",
+      "supports": "Protected CMT and protected custom settings in managed packages; named credentials for callout auth; do not hide subscriber secrets in ordinary CMT; Customize Application can view named credentials.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    },
+    {
+      "source_id": "SF-HELP-CMT",
+      "title": "Custom Metadata Types",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.custommetadatatypes_about.htm",
+      "supports": "Custom metadata types as customizable, deployable, packageable application metadata for configuration.",
+      "release_or_version": "Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Edition, license, package, and org configuration can change availability. Reverify in the target org."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Help and Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Foundation",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "CMT deploys",
+        "Settings cached data",
+        "List vs hierarchy",
+        "Labels translate",
+        "Named credentials call out",
+        "No public secrets"
+      ],
+      "accessible_description": "Four configuration tools: deployable CMT, cached settings, translatable labels, and named credentials—with a no-secrets-in-public-settings warning."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-CSET",
+        "SF-NC-START",
+        "SF-SECURE-STORE",
+        "SF-HELP-CMT"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Need config → deployable CMT, cached setting, label, or named credential"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Need[Configuration need] --> CMT[Custom metadata type records]\n  Need --> CS[Custom settings cache]\n  CS --> List[List: org-wide]\n  CS --> Hier[Hierarchy: org profile user]\n  Need --> CL[Custom labels]\n  Need --> NC[Named credential + external credential]",
+      "decision": "flowchart TD\n  Need[Need to store something] --> Q1{Callout URL or secret?}\n  Q1 -->|Yes| NC[Named / external credential]\n  Q1 -->|No| Q2{Translatable UI text?}\n  Q2 -->|Yes| CL[Custom label]\n  Q2 -->|No| Q3{Must records deploy between orgs?}\n  Q3 -->|Yes| CMT[Custom metadata type]\n  Q3 -->|Cached org/profile/user data| CS[Custom setting]\n  CS --> Q4{Secret?}\n  Q4 -->|Yes public setting| No[Do not. Use named credential or protected packaged setting/CMT]\n  Q4 -->|No| Ok[List or hierarchy]",
+      "sequence": "sequenceDiagram\n  participant Apex\n  participant NC\n  participant Vendor\n  Apex->>NC: Callout to named credential endpoint\n  NC->>Vendor: Authenticated HTTP\n  Note over Apex: Discount rates read from CMT, not from the badge"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Custom settings data is cached. List settings are org-wide; hierarchy settings return the most specific user, then profile, then organization value. Formula fields, validation rules, flows, Apex, and SOAP API can use custom settings.",
+      "source_ids": [
+        "SF-APEX-CSET",
+        "SF-HELP-CMT"
+      ],
+      "scope": "Custom settings behavior",
+      "validation": "Apex Custom Settings topic; CMT Help as the deployable alternative.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Only the custom setting definition is included in packages, not the data. Protection applies only to protected settings in a managed package; otherwise settings are public and readable, including by the guest user. Do not store secrets there.",
+      "source_ids": [
+        "SF-APEX-CSET",
+        "SF-SECURE-STORE"
+      ],
+      "scope": "Packaging and secrets",
+      "validation": "Apex guide warning plus Secure Coding Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "A named credential specifies a callout endpoint and authentication. Prefer named credentials plus external credentials; legacy named credentials are deprecated. Named credentials are for callout auth, not arbitrary secrets if Customize Application users must not see them.",
+      "source_ids": [
+        "SF-NC-START",
+        "SF-SECURE-STORE"
+      ],
+      "scope": "Named credentials",
+      "validation": "Named Credentials Get Started plus Secure Coding Guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Custom metadata types hold deployable, packageable configuration metadata. Protected CMT in a managed package can store package-wide secrets for same-namespace Apex. Use custom labels for translatable text, not endpoints or passwords.",
+      "source_ids": [
+        "SF-HELP-CMT",
+        "SF-SECURE-STORE"
+      ],
+      "scope": "CMT and labels",
+      "validation": "CMT Help plus Secure Coding Guide; labels as translatable metadata.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Named credentials were redesigned (Winter '23 preferred model; legacy deprecated). Reverify Named Credentials Help and Get Started for Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact custom-label Help article body and Translation Workbench steps are neighboring—confirm in Setup.",
+    "Hierarchy custom-setting getInstance() edge cases and CMT relationship-field features should be looked up when designing a package."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Custom metadata type",
+      "telugu": "Deployable configuration records that travel as metadata."
+    },
+    {
+      "english": "Custom setting",
+      "telugu": "Cached configuration data; list or hierarchy; definition packages, data does not."
+    },
+    {
+      "english": "Named credential",
+      "telugu": "Callout endpoint plus authentication, not a discount table."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "CMT records deploy as metadata. Custom settings are cached data: list is org-wide, hierarchy is user/profile/org. Only the setting definition packages. Custom labels are translatable text. Named credentials are callout endpoint plus auth. Never put secrets in a public custom setting.",
+    "two_minutes": "Discount rates that must move sandbox-to-prod are CMT. A per-user debug flag is a hierarchy custom setting. The error string is a custom label. The vendor API uses a named credential and external credential. I cite the guest-user warning. I mention Apex tests do not see existing settings without SeeAllData or test setup. I prefer new named credentials over legacy."
+  },
+  "terminology": [
+    {
+      "term": "custom metadata type",
+      "plain": "Deployable configuration records.",
+      "precise": "A type whose records are metadata: customizable, deployable, packageable application configuration.",
+      "example": "LAB_DiscountRate__mdt rows deployed to sandbox.",
+      "non_example": "Account records.",
+      "confusable_neighbor": "Custom object used as config: data, not metadata, unless you migrate.",
+      "boundary": "Protected packaged CMT is a secret pattern for ISVs."
+    },
+    {
+      "term": "custom setting",
+      "plain": "Cached configuration similar to a custom object.",
+      "precise": "List or hierarchy data in the application cache; usable from formulas, validation, Flow, Apex, and SOAP API.",
+      "example": "LAB_CountryCode__c list setting.",
+      "non_example": "A normal custom object queried every time with SOQL.",
+      "confusable_neighbor": "CMT: deployable records vs setting data.",
+      "boundary": "Definition packages; data does not."
+    },
+    {
+      "term": "list custom setting",
+      "plain": "Org-wide cached rows.",
+      "precise": "Static data that does not vary by profile or user, such as country codes. Cached so you avoid repeated SOQL.",
+      "example": "United States / USA rows.",
+      "non_example": "A hierarchy flag per user.",
+      "confusable_neighbor": "Custom metadata list of rates that must deploy: prefer CMT.",
+      "boundary": "Still not for secrets if public."
+    },
+    {
+      "term": "hierarchy custom setting",
+      "plain": "Org, then profile, then user override.",
+      "precise": "Returns the most specific, lowest value. getInstance() reads that hierarchy.",
+      "example": "Debug_Enabled__c true for one user, false at org.",
+      "non_example": "A list setting of country codes.",
+      "confusable_neighbor": "Profile assignment of page layouts: different feature.",
+      "boundary": "Create test data in tests; do not rely on org data."
+    },
+    {
+      "term": "custom label",
+      "plain": "Translatable UI text.",
+      "precise": "Metadata strings for messages and labels, not endpoints or passwords.",
+      "example": "Error_Enter_Region custom label used by a validation message or LWC.",
+      "non_example": "A named credential URL.",
+      "confusable_neighbor": "Validation error message typed only in one language on the rule.",
+      "boundary": "Translation Workbench is neighboring."
+    },
+    {
+      "term": "named credential",
+      "plain": "Callout endpoint plus auth definition.",
+      "precise": "Specifies the URL and HTTP transport; pair with an external credential in the preferred model. Legacy named credentials are deprecated.",
+      "example": "callout:LAB_VendorNC/path in Apex.",
+      "non_example": "A custom label holding a password.",
+      "confusable_neighbor": "Remote site setting: older endpoint allow-list, neighboring.",
+      "boundary": "Customize Application users can view them."
+    },
+    {
+      "term": "external credential",
+      "plain": "The authentication protocol and principals.",
+      "precise": "Used by one or more named credentials; maps principals to permissions; stores encrypted tokens as user external credentials.",
+      "example": "OAuth external credential reused by two named credentials.",
+      "non_example": "A list custom setting of tokens.",
+      "confusable_neighbor": "Connected app: related identity topic (SEC/INT).",
+      "boundary": "Preferred Winter '23+ model."
+    },
+    {
+      "term": "protected packaged configuration",
+      "plain": "Secrets only in protected managed-package CMT or settings.",
+      "precise": "Secure Coding: protected CMT or protected custom settings inside a managed package. Public settings are readable, including by guest users.",
+      "example": "Managed package API key in protected CMT.",
+      "non_example": "Token in an unprotected hierarchy setting in the subscriber org.",
+      "confusable_neighbor": "Encrypted custom field: another allowed pattern the Apex guide mentions outside packages.",
+      "boundary": "Never tape the PIN to the public board."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Classify the payload",
+      "actor": "Architect + admin",
+      "trigger": "Need to store config",
+      "before": "One 'custom setting' for everything",
+      "after": "CMT vs setting vs label vs named credential",
+      "observe": "Written four-way choice",
+      "failure": "Password in a list setting"
+    },
+    {
+      "step": 2,
+      "transition": "Decide deploy vs cache vs hierarchy",
+      "actor": "Admin + developer",
+      "trigger": "Not a secret or label",
+      "before": "Unknown packaging",
+      "after": "CMT if records must deploy; setting if cached org/profile/user data is enough",
+      "observe": "Retrieve shows CMT records; settings data absent from package",
+      "failure": "Expecting setting rows to deploy like fields"
+    },
+    {
+      "step": 3,
+      "transition": "Store callout auth correctly",
+      "actor": "Developer",
+      "trigger": "HTTP callout",
+      "before": "Hardcoded URL and password",
+      "after": "Named credential + external credential",
+      "observe": "Apex uses callout:Name",
+      "failure": "Legacy named credential without a deprecation plan"
+    },
+    {
+      "step": 4,
+      "transition": "Keep tests honest",
+      "actor": "Developer",
+      "trigger": "Apex test on settings",
+      "before": "SeeAllData surprise",
+      "after": "Create settings in test setup",
+      "observe": "Test passes without org data",
+      "failure": "Relying on production setting rows in a test"
+    }
+  ],
+  "when_to_use": [
+    "When configuration records must deploy or package as metadata—use a custom metadata type.",
+    "When you need cached org-wide list data or hierarchy overrides by profile or user—use custom settings.",
+    "When UI text must be translated—use a custom label.",
+    "When Apex or automation must call an external HTTP endpoint with authentication—use a named credential (preferred: plus external credential).",
+    "When explaining why a public custom setting is the wrong place for a password or token."
+  ],
+  "when_not_to_use": [
+    "Do not store OAuth tokens or passwords in ordinary/public custom settings or custom labels.",
+    "Do not use a named credential as a general discount-rate or mapping table.",
+    "Do not use a custom setting when the rows must deploy between sandboxes—use CMT.",
+    "Do not use CMT or settings as a substitute for ordinary business objects, fields, or relationships (DATA-001–004).",
+    "Do not use hierarchy settings as a security model in place of profiles and sharing."
+  ],
+  "configuration_or_code_location": [
+    "Setup → Custom Metadata Types; Custom Settings; Custom Labels; Named Credentials.",
+    "Apex: custom setting getInstance/getAll; CMT SOQL; callout:NamedCredential.",
+    "Formulas and validation can reference custom settings (and some CMT—confirm current formula support).",
+    "Packaging: setting definition only; CMT records included as metadata."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab for a facilities app needs deployable inspection-severity mappings, a per-user debug flag, a translated validation message, and an authenticated vendor callout. No production secrets.",
+    "inputs": [
+      "Unlocked or unmanaged lab package mindset",
+      "Synthetic rates and flags",
+      "A fake endpoint in sandbox"
+    ],
+    "decisions": [
+      {
+        "decision": "LAB_SeverityMap__mdt for mappings that must deploy.",
+        "because": "CMT records are metadata.",
+        "rejected": "List custom setting rows we expect to deploy automatically"
+      },
+      {
+        "decision": "Hierarchy custom setting LAB_UserFlags__c.Debug__c.",
+        "because": "User overrides profile/org.",
+        "rejected": "A public setting field named Password__c"
+      },
+      {
+        "decision": "Custom label for the validation message; named credential + external credential for the vendor URL.",
+        "because": "Labels translate; named credentials authenticate callouts.",
+        "rejected": "URL and token in a custom label"
+      }
+    ],
+    "configuration_or_code": [
+      "Create the CMT and two LAB_ records; retrieve to prove they travel as metadata.",
+      "Create the hierarchy setting; set org false and one user true.",
+      "Create a named credential pointing at a sandbox-safe endpoint; do not put real tokens in chat logs."
+    ],
+    "output": "Four tools used on purpose; no public secret store.",
+    "verification": [
+      "CMT records appear in a metadata retrieve.",
+      "Custom setting data does not appear in that retrieve.",
+      "Apex test creates its own setting row instead of SeeAllData."
+    ],
+    "self_explanation": "I published the schedule, cached the flag, translated the PA, and used a badge—not a public PIN."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_ names only.",
+    "starting_state_checks": [
+      "You can create CMT, settings, labels, and named credentials.",
+      "No real customer tokens."
+    ],
+    "steps": [
+      "Create a CMT with one field and two LAB_ records.",
+      "Create a hierarchy custom setting with a checkbox and set org vs user values.",
+      "Create a custom label string.",
+      "Create a named credential to a non-production endpoint or skip the secret if the org blocks it, and write where a token must not go."
+    ],
+    "guided_completion": [
+      "If you put a token in the setting, delete it and use a named credential or a placeholder.",
+      "If a test fails to see settings, create them in test setup."
+    ],
+    "independent_challenge": "Write one sentence: only protected managed-package CMT/settings are a secret pattern.",
+    "evidence": [
+      "Retrieve snippet showing CMT records.",
+      "Written secret-refusal note."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ CMT, settings, labels, and credentials.",
+      "Do not deploy secrets."
+    ],
+    "limitations": "Does not configure a real OAuth provider."
+  },
+  "decision_table": [
+    {
+      "signal": "Discount rates must deploy from sandbox to sandbox.",
+      "choose": "Custom metadata type records.",
+      "not": "List custom setting data you hope a change set will carry.",
+      "why": "CMT records are metadata; custom setting data is not packaged."
+    },
+    {
+      "signal": "A debug flag should be on for one user and off for the org.",
+      "choose": "Hierarchy custom setting.",
+      "not": "A named credential, or a CMT row per user as the first design.",
+      "why": "Hierarchy returns the most specific user/profile/org value and is cached."
+    },
+    {
+      "signal": "Apex must call https://vendor.example with OAuth.",
+      "choose": "Named credential plus external credential (preferred, not legacy).",
+      "not": "Password in a public custom setting or custom label.",
+      "why": "Named credentials exist for callout endpoint and authentication; public settings are readable."
+    },
+    {
+      "signal": "A validation or LWC string must be translated.",
+      "choose": "Custom label.",
+      "not": "Hardcoded English in the validation rule only, or a named credential.",
+      "why": "Labels are translatable UI text, not credentials."
+    },
+    {
+      "signal": "An ISV needs a package-wide API key hidden from subscribers.",
+      "choose": "Protected custom metadata type or protected custom setting inside a managed package.",
+      "not": "An unprotected setting in the subscriber org, or a named credential if Customize Application users must not see it—match the Secure Coding Guide.",
+      "why": "Protection applies to protected packaged configuration; public settings include guest-user read."
+    }
+  ],
+  "limitations": [
+    "Does not implement OAuth handshake code.",
+    "CMT formula/validation support details are not fully listed.",
+    "Custom-label translation steps are neighboring.",
+    "Legacy named-credential retirement date is not quoted; reverify."
+  ],
+  "security_notes": [
+    "Never store secrets in public custom settings or labels.",
+    "Named credentials are visible to Customize Application; choose protected packaged CMT/settings when subscribers must not see the secret.",
+    "Do not log tokens. Do not use production credentials in this lesson."
+  ],
+  "common_mistakes": [
+    "Expecting custom setting data to deploy like fields.",
+    "Putting tokens in list settings.",
+    "Using named credentials as a mapping table.",
+    "Using CMT for ordinary business records (Accounts).",
+    "Relying on SeeAllData to see settings in tests."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Change set installed the setting but rows are missing.",
+      "check": [
+        "Only the definition packages.",
+        "Load data or switch those rows to CMT."
+      ],
+      "do_not_assume": "The package failed entirely."
+    },
+    {
+      "symptom": "Apex test cannot see the org's custom settings.",
+      "check": [
+        "Tests isolate data; create settings in test setup or understand SeeAllData=true cost."
+      ],
+      "do_not_assume": "getAll() is broken."
+    },
+    {
+      "symptom": "Callout fails with unauthenticated endpoint.",
+      "check": [
+        "Apex uses the named credential, not a hardcoded URL.",
+        "External credential principal is permitted."
+      ],
+      "do_not_assume": "A custom label URL is equivalent."
+    }
+  ],
+  "production_notes": [
+    "Prefer CMT for deployable config; plan a data load if you still use settings.",
+    "Migrate legacy named credentials to the preferred model; reverify deprecation.",
+    "No production secrets or deployments are authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "What is packaged for custom settings?",
+      "options": {
+        "A": "The definition, not the data",
+        "B": "Definition and all rows automatically",
+        "C": "Only hierarchy rows",
+        "D": "Only secrets"
+      },
+      "answer": "A",
+      "rationale": "Apex guide: only custom setting definitions are included in packages, not data.",
+      "distractor_explanations": {
+        "B": "Data is not included.",
+        "C": "Neither type's data packages.",
+        "D": "Secrets should not be there if public."
+      },
+      "concept": "Settings packaging",
+      "citation_ids": [
+        "SF-APEX-CSET",
+        "SF-SECURE-STORE"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Hierarchy custom settings resolve in which order of specificity?",
+      "options": {
+        "A": "User overrides profile, which overrides organization",
+        "B": "Organization always wins",
+        "C": "Profile always wins",
+        "D": "Random"
+      },
+      "answer": "A",
+      "rationale": "The hierarchy returns the most specific, lowest value: user, then profile, then org.",
+      "distractor_explanations": {
+        "B": "Org is the default, not the winner over user.",
+        "C": "User beats profile.",
+        "D": "It is deterministic."
+      },
+      "concept": "Hierarchy order",
+      "citation_ids": [
+        "SF-APEX-CSET",
+        "SF-HELP-CMT"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Unprotected custom setting in a subscriber org is readable by whom, per the warning?",
+      "options": {
+        "A": "All profiles, including the guest user",
+        "B": "Only the System Administrator",
+        "C": "Only Apex in a namespace",
+        "D": "Nobody"
+      },
+      "answer": "A",
+      "rationale": "Unless protected and in a managed package, settings are treated as public, including guest user.",
+      "distractor_explanations": {
+        "B": "Not admin-only.",
+        "C": "That is the protected packaged pattern.",
+        "D": "They are readable."
+      },
+      "concept": "Public settings",
+      "citation_ids": [
+        "SF-APEX-CSET",
+        "SF-SECURE-STORE"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Discount rates must deploy. Best store?",
+      "options": {
+        "A": "Custom metadata type records",
+        "B": "List custom setting data",
+        "C": "A named credential",
+        "D": "A compact layout"
+      },
+      "answer": "A",
+      "rationale": "CMT records are deployable metadata.",
+      "distractor_explanations": {
+        "B": "Setting data does not package.",
+        "C": "Named credentials are callouts.",
+        "D": "Unrelated."
+      },
+      "concept": "CMT deploy",
+      "citation_ids": [
+        "SF-HELP-CMT",
+        "SF-APEX-CSET"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "What does a named credential specify?",
+      "options": {
+        "A": "A callout endpoint and its required authentication parameters",
+        "B": "A roll-up operation",
+        "C": "A record type picklist",
+        "D": "A compact layout"
+      },
+      "answer": "A",
+      "rationale": "Get Started: URL of a callout endpoint and authentication in one definition.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "NC definition",
+      "citation_ids": [
+        "SF-NC-START",
+        "SF-SECURE-STORE"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Intermediate",
+      "prompt": "Preferred named credential model?",
+      "options": {
+        "A": "Named credential plus external credential; legacy named credentials are deprecated",
+        "B": "Hardcoded passwords in Apex",
+        "C": "Custom labels for tokens",
+        "D": "Public list settings for OAuth"
+      },
+      "answer": "A",
+      "rationale": "Winter '23 preferred model; legacy deprecated.",
+      "distractor_explanations": {
+        "B": "Secure Coding forbids hardcoding secrets.",
+        "C": "Labels are not credentials.",
+        "D": "Public settings are the anti-pattern."
+      },
+      "concept": "Preferred NC",
+      "citation_ids": [
+        "SF-NC-START",
+        "SF-SECURE-STORE"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Translated validation text. Best store?",
+      "options": {
+        "A": "Custom label",
+        "B": "Named credential",
+        "C": "Hierarchy setting password field",
+        "D": "JunctionIdList"
+      },
+      "answer": "A",
+      "rationale": "Labels are translatable UI strings.",
+      "distractor_explanations": {
+        "B": "Callouts, not UI text.",
+        "C": "Secrets anti-pattern.",
+        "D": "Unrelated."
+      },
+      "concept": "Labels",
+      "citation_ids": [
+        "SF-HELP-CMT",
+        "SF-SECURE-STORE"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Apex test does not see existing custom settings. Why?",
+      "options": {
+        "A": "Settings data is treated as data for test isolation; create it in test setup (SeeAllData=true is discouraged)",
+        "B": "Custom settings cannot be read in Apex",
+        "C": "Tests cannot run in sandbox",
+        "D": "Settings are named credentials"
+      },
+      "answer": "A",
+      "rationale": "Apex guide: tests must use SeeAllData=true to see existing settings, or create them in setup.",
+      "distractor_explanations": {
+        "B": "Apex can read them.",
+        "C": "Tests run in sandbox.",
+        "D": "They are not named credentials."
+      },
+      "concept": "Test isolation",
+      "citation_ids": [
+        "SF-APEX-CSET",
+        "SF-SECURE-STORE"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "ISV package-wide API key hidden from subscribers. Pattern from Secure Coding?",
+      "options": {
+        "A": "Protected custom metadata type or protected custom setting in the managed package",
+        "B": "Public hierarchy setting in the subscriber org",
+        "C": "Custom label",
+        "D": "Page layout"
+      },
+      "answer": "A",
+      "rationale": "Protected CMT or protected settings in a managed package.",
+      "distractor_explanations": {
+        "B": "Public and guest-readable.",
+        "C": "Not a secret store.",
+        "D": "Unrelated."
+      },
+      "concept": "Packaged secrets",
+      "citation_ids": [
+        "SF-SECURE-STORE",
+        "SF-APEX-CSET"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Who can view named credentials, per Secure Coding?",
+      "options": {
+        "A": "Users with Customize Application permission",
+        "B": "Only guest users",
+        "C": "Nobody",
+        "D": "Only formula fields"
+      },
+      "answer": "A",
+      "rationale": "Users with customized application permissions can view named credentials.",
+      "distractor_explanations": {
+        "B": "Opposite of a hide-from-subscriber pattern.",
+        "C": "They are viewable by that permission.",
+        "D": "Unrelated."
+      },
+      "concept": "NC visibility",
+      "citation_ids": [
+        "SF-SECURE-STORE",
+        "SF-NC-START"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Country codes used in formulas and Apex, same for everyone, rarely changing, do not need to deploy as records. Reasonable?",
+      "options": {
+        "A": "List custom setting (or CMT if you later need deployable rows)",
+        "B": "Named credential",
+        "C": "Compact layout",
+        "D": "Master-detail"
+      },
+      "answer": "A",
+      "rationale": "List settings are the guide's country-code example; CMT if deployability matters.",
+      "distractor_explanations": {
+        "B": "Not a callout.",
+        "C": "Unrelated.",
+        "D": "Unrelated."
+      },
+      "concept": "List example",
+      "citation_ids": [
+        "SF-APEX-CSET",
+        "SF-HELP-CMT"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Hardcode a vendor password in Apex?",
+      "options": {
+        "A": "No. Use named credentials or protected packaged CMT/settings per Secure Coding",
+        "B": "Yes, if the class is private",
+        "C": "Yes, in a comment",
+        "D": "Yes, in a custom label"
+      },
+      "answer": "A",
+      "rationale": "Secure Coding: do not hardcode secrets; use the documented stores.",
+      "distractor_explanations": {
+        "B": "Private is not encryption.",
+        "C": "Comments ship in metadata.",
+        "D": "Labels are not a secret store."
+      },
+      "concept": "No hardcoded secrets",
+      "citation_ids": [
+        "SF-SECURE-STORE",
+        "SF-NC-START"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "cmt",
+      "front": "What travels with a custom metadata type?",
+      "back": "The type and its records, because those records are metadata."
+    },
+    {
+      "id": "F2",
+      "category": "cs",
+      "front": "What packages for a custom setting?",
+      "back": "The definition only, not the data rows."
+    },
+    {
+      "id": "F3",
+      "category": "list",
+      "front": "List custom setting?",
+      "back": "Org-wide cached static data, such as country codes."
+    },
+    {
+      "id": "F4",
+      "category": "hier",
+      "front": "Hierarchy resolution?",
+      "back": "Most specific wins: user, then profile, then organization."
+    },
+    {
+      "id": "F5",
+      "category": "pub",
+      "front": "Public custom setting secrets?",
+      "back": "Do not. They are readable by all profiles, including the guest user."
+    },
+    {
+      "id": "F6",
+      "category": "nc",
+      "front": "Named credential is for?",
+      "back": "A callout endpoint and its authentication parameters."
+    },
+    {
+      "id": "F7",
+      "category": "ec",
+      "front": "External credential is for?",
+      "back": "Authentication protocol and principals reused by named credentials."
+    },
+    {
+      "id": "F8",
+      "category": "legacy",
+      "front": "Legacy named credentials?",
+      "back": "Deprecated; prefer the Winter '23 named plus external credential model."
+    },
+    {
+      "id": "F9",
+      "category": "label",
+      "front": "Custom label is for?",
+      "back": "Translatable UI text, not passwords or endpoints."
+    },
+    {
+      "id": "F10",
+      "category": "test",
+      "front": "Tests and existing custom settings?",
+      "back": "Treated as data; create settings in test setup rather than relying on org rows."
+    },
+    {
+      "id": "F11",
+      "category": "isv",
+      "front": "Package-wide secret pattern?",
+      "back": "Protected CMT or protected custom settings in a managed package."
+    },
+    {
+      "id": "F12",
+      "category": "view",
+      "front": "Who can view named credentials?",
+      "back": "Users with the Customize Application permission."
+    },
+    {
+      "id": "F13",
+      "category": "cache",
+      "front": "Why use custom settings for frequent reads?",
+      "back": "They are exposed in the application cache so you avoid repeated SOQL."
+    },
+    {
+      "id": "F14",
+      "category": "formula",
+      "front": "Can formulas use custom settings?",
+      "back": "Yes. Formula fields, validation rules, flows, Apex, and SOAP API can use them."
+    },
+    {
+      "id": "F15",
+      "category": "map",
+      "front": "Deployable mappings: CMT or list setting?",
+      "back": "CMT if the rows must deploy; list settings if you will load data after deploy."
+    },
+    {
+      "id": "F16",
+      "category": "hard",
+      "front": "Hardcode secrets in Apex?",
+      "back": "No. Use named credentials or protected packaged configuration."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Compare custom metadata types and custom settings.",
+      "answer_30_seconds": "CMT records are metadata that deploy and package. Custom settings are cached data: list or hierarchy. Only the setting definition packages, not the rows. Both can hold configuration; they differ in deploy and hierarchy.",
+      "answer_2_minutes": "I use CMT for rates that must move between orgs. I use hierarchy settings for per-user flags. I warn that public settings are guest-readable. I do not use either as Account storage. I mention Apex tests isolate setting data.",
+      "example": "LAB_SeverityMap__mdt deploys; LAB_UserFlags__c rows do not.",
+      "tradeoffs": [
+        "Deploy vs cache",
+        "List vs hierarchy"
+      ],
+      "follow_ups": [
+        "Can formulas read CMT?",
+        "What is getInstance()?"
+      ],
+      "weak_answer_warnings": [
+        "Saying they are identical"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "scenario",
+      "question": "Where do you put a vendor API password?",
+      "answer_30_seconds": "In a named credential / external credential for a callout. Not in a public custom setting, custom label, or Apex constant. ISV package-wide keys use protected packaged CMT or settings.",
+      "answer_2_minutes": "I cite Custom Settings and Secure Coding. Customize Application users can view named credentials, so subscriber-hidden secrets use protected packaged configuration. I prefer the new NC model. I never log the token.",
+      "example": "callout:LAB_VendorNC with an external credential; no Password__c on a setting.",
+      "tradeoffs": [
+        "NC vs protected CMT",
+        "Legacy vs preferred NC"
+      ],
+      "follow_ups": [
+        "Who can see the named credential?",
+        "What is an external credential principal?"
+      ],
+      "weak_answer_warnings": [
+        "Putting the password in a list setting"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "design",
+      "question": "Per-user debug flag. Which tool?",
+      "answer_30_seconds": "A hierarchy custom setting so user overrides profile overrides org. Not a named credential and not a CMT row per user as the first design.",
+      "answer_2_minutes": "I set org default false and enable one LAB_ user. Apex uses getInstance(). Tests create the setting. If the flag must deploy per user, that is a strange requirement—I would question it. I do not store a token next to the flag.",
+      "example": "LAB_UserFlags__c.Debug__c true only for the tester.",
+      "tradeoffs": [
+        "Hierarchy vs list",
+        "Setting vs permission set"
+      ],
+      "follow_ups": [
+        "Does getInstance() without a user use the running user?",
+        "Can validation rules read the flag?"
+      ],
+      "weak_answer_warnings": [
+        "A CMT record named after each user"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "foundational",
+      "question": "What is a custom label for, and what is it not for?",
+      "answer_30_seconds": "Translatable UI strings such as error text. Not endpoints, not passwords, not discount tables.",
+      "answer_2_minutes": "I may point a validation message or LWC at a label for Translation Workbench. I still write actionable message text (DATA-010). I do not hide a named credential URL in a label. I mark Workbench steps neighboring if asked for click-path.",
+      "example": "Label Error_Enter_Region used by a rule or component.",
+      "tradeoffs": [
+        "Label vs validation message field",
+        "Label vs named credential"
+      ],
+      "follow_ups": [
+        "How do you translate a label?",
+        "Can Apex read labels?"
+      ],
+      "weak_answer_warnings": [
+        "Storing a refresh token in a label"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "The package installed but country-code rows are missing.",
+      "answer_30_seconds": "You packaged a custom setting. Only the definition travels. Load the rows after install or switch deployable rows to a custom metadata type.",
+      "answer_2_minutes": "I check whether the component was a setting or CMT. I do not tell the subscriber the package is corrupt. I add a post-install script only if we stay on settings—and I remember that is extra work CMT avoids. I do not put secrets in those missing rows.",
+      "example": "Change set had LAB_CountryCode__c definition and zero rows; CMT would have included records.",
+      "tradeoffs": [
+        "Post-install data vs CMT",
+        "List setting vs CMT"
+      ],
+      "follow_ups": [
+        "Do unlocked packages include CMT records?",
+        "Can you include setting data somehow?"
+      ],
+      "weak_answer_warnings": [
+        "Reinstalling endlessly without checking type"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "scenario",
+      "question": "Apex test fails to read the org's hierarchy setting.",
+      "answer_30_seconds": "Tests isolate data. Create the custom setting in test setup. SeeAllData=true sees org settings but is a last resort the guide discourages as a best practice.",
+      "answer_2_minutes": "I write a @TestSetup method that inserts the hierarchy row. I do not depend on a sandbox admin's leftover data. I mention the guide's SeeAllData note so the interviewer hears I read it. I still do not store secrets in that test row.",
+      "example": "Test creates LAB_UserFlags__c org default without SeeAllData.",
+      "tradeoffs": [
+        "Test setup vs SeeAllData",
+        "Isolation vs convenience"
+      ],
+      "follow_ups": [
+        "Do CMT records need the same treatment?",
+        "What about SeeAllData in a managed package test?"
+      ],
+      "weak_answer_warnings": [
+        "Turning on SeeAllData as the first fix always"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Legacy named credential versus named plus external credential?",
+      "answer_30_seconds": "Prefer the newer named credential plus external credential. Legacy named credentials are deprecated and will be discontinued. I would not design a new integration on legacy.",
+      "answer_2_minutes": "I explain endpoint/transport versus protocol/principals. One external credential can serve several named credentials. I reverify the current deprecation notice rather than quoting a retirement date. I still would not put the password in a setting while we migrate.",
+      "example": "New LAB_ vendor callout uses NC + external credential; old legacy NC is on a migration list.",
+      "tradeoffs": [
+        "Reuse external credential vs one legacy NC each",
+        "Migrate now vs wait"
+      ],
+      "follow_ups": [
+        "What is a named principal?",
+        "Can you package named credentials?"
+      ],
+      "weak_answer_warnings": [
+        "Starting a new project on legacy NC"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "foundational",
+      "question": "How do these four tools differ from objects, fields, and relationships?",
+      "answer_30_seconds": "Objects and fields store business records (DATA-001–004). These four store configuration, text, or callout identity. Using a custom object as a config table is data you must migrate; CMT is metadata you deploy.",
+      "answer_2_minutes": "I keep the handbook split: schema versus configuration. I mention settings can be read from formulas and validation, so they sit next to DATA-006/010, but they are not a substitute for typed fields on Property. I refuse to model Accounts as CMT.",
+      "example": "LAB_Property__c remains an object; LAB_SeverityMap__mdt is configuration.",
+      "tradeoffs": [
+        "Business data vs configuration metadata",
+        "Custom object as config vs CMT"
+      ],
+      "follow_ups": [
+        "When is a custom object still the right config UI?",
+        "Can CMT have relationships?"
+      ],
+      "weak_answer_warnings": [
+        "Putting customer properties in a custom setting"
+      ]
+    }
+  ]
+}

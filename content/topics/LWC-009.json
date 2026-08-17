@@ -1,0 +1,952 @@
+{
+  "topic_id": "LWC-009",
+  "slug": "slds-accessibility-responsive-behavior-and-mobile-consi",
+  "title": "SLDS, accessibility, responsive behavior, and mobile considerations",
+  "track": "Lightning Web Components",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-008"
+  ],
+  "objectives": [
+    "Prefer Lightning base components and SLDS blueprints over unstyled HTML for accessibility and look-and-feel.",
+    "Explain shadow DOM CSS scoping, :host, and why a parent cannot style a child's internals.",
+    "Use styling hooks instead of hard-coded colors so themes and density still work.",
+    "Call out keyboard, focus, and Salesforce mobile constraints rather than desktop-only layouts."
+  ],
+  "diagnostic_question": "A custom LWC looks fine on a wide monitor but fails a keyboard audit, overflows on a phone, and ignores the org's brand colors. What do you inspect first: SLDS, accessibility, responsive behavior, or mobile considerations?",
+  "definition": "SLDS, accessibility, responsive behavior, and mobile considerations are how an LWC looks, can be used with assistive technology, reflows across widths, and behaves in the Salesforce mobile app. The Lightning Web Components Developer Guide tells you to follow WCAG, prefer base components with built-in Lightning Design System styling and accessibility, or build from an SLDS blueprint. Component CSS is scoped in shadow DOM; parents style a child as a single host element, not its internals. ([Component Accessibility](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-accessibility.html); [CSS Stylesheets](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-css.html))",
+  "why_it_matters": "Interviewers fail 'it looks like Salesforce' answers that ignore keyboard focus, contrast, and mobile. Hard-coded px and hex also break SLDS themes. Shadow DOM surprises candidates who try to reach into a child with a descendant selector from the parent.",
+  "sixty_second_explanation": "Think of a touring concert hall. SLDS is the house instrument spec so every night sounds like the same orchestra. Accessibility is ramps, hearing loops, and large-print programs so every guest can take part. Responsive behavior is reseating when the hall shrinks. Mobile is the van show: fewer seats, bigger tap targets, no assumption there is a mouse. You do not invent a new violin shape for one song when the house already has a standard.",
+  "deeper_explanation": [
+    "To create accessible components, use accessibility attributes and handle focus. Follow WCAG. Prefer a Lightning base component for built-in SLDS styling and accessibility. If none fits, use an SLDS blueprint. ([Component Accessibility](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-accessibility.html))",
+    "A component stylesheet is automatically applied when it shares the component name. Shadow DOM scopes those rules so they do not leak out or get overwritten by the page. A parent can style a child as one element (for example a border on c-child) but cannot reach into the child's h1. The child styles its host with :host. ID selectors are not supported as authored because IDs are transformed at runtime. Use styling hooks for colors and sizes instead of one-off hex values. ([CSS Stylesheets](https://developer.salesforce.com/docs/platform/lwc/guide/create-components-css.html))",
+    "Responsive behavior in Lightning uses SLDS grid, size classes, and layout that reflows. Do not assume a 1200px record page. Hide nonessential columns before they overflow. lightning-datatable and dense pages have extra cost on small viewports (LWC-011).",
+    "Mobile considerations: the Salesforce mobile app is a supported LWC target, but navigation and some modules differ from desktop (LWC-008). Follow accessible mobile design guidelines referenced from the accessibility topic. Large tap targets, avoid hover-only actions, and test on a phone form factor. Do not invent a second data model 'for mobile' when the same LWC can reflow."
+  ],
+  "mental_model": {
+    "analogy": "A touring concert hall: house instrument spec (SLDS), ramps and hearing loops (accessibility), reseating a smaller hall (responsive), van show (mobile).",
+    "useful_mapping": [
+      "house instrument spec → SLDS / base components / blueprints",
+      "ramps and hearing loops → WCAG, labels, focus, contrast",
+      "reseating a smaller hall → responsive grid and hidden columns",
+      "van show → Salesforce mobile: tap targets, no hover",
+      "each musician's mute → shadow DOM scoped CSS",
+      "conductor cannot retune a player's internal pegs from the podium → parent cannot style child internals"
+    ],
+    "where_it_breaks": [
+      "A hall can still shout tempo to every player; shadow DOM blocks parent descendant selectors on purpose.",
+      "SLDS does not automatically make custom SVG charts accessible.",
+      "Mobile is not only 'narrow CSS'; some lightning/navigation and toast modules have container rules."
+    ]
+  },
+  "teach_back_prompt": "Explain why you would pick a base component over custom HTML, how shadow CSS scoping works, and one mobile constraint, without using a catalog metaphor.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Name SLDS, accessibility, responsive, and mobile in one sentence each."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Can a parent CSS file style a child's inner h1? Why?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "When do you use :host versus a parent c-child selector?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "List three accessibility checks you would run on a custom combobox."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: base component vs blueprint vs custom CSS, plus mobile."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-A11Y",
+      "title": "Component Accessibility",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-accessibility.html",
+      "supports": "WCAG; accessibility attributes and focus; prefer base components or SLDS blueprints; link to mobile a11y guidelines.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace a full WCAG audit checklist."
+    },
+    {
+      "source_id": "SF-LWC-CSS",
+      "title": "Style Components with CSS Stylesheets",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-css.html",
+      "supports": "Shadow scoped CSS; parent cannot style child internals; :host; ID selectors transformed; styling hooks.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Synthetic versus native shadow token format changed historically; do not invent current token strings."
+    },
+    {
+      "source_id": "SF-LWC-A11Y-MOBILE",
+      "title": "Component Accessibility (mobile guidelines reference)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-components-accessibility.html",
+      "supports": "See also Follow Accessible Mobile Design Guidelines from the same accessibility topic.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Mobile hardware and Salesforce mobile app chrome differ by release; reverify gestures."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Base component first",
+        "SLDS blueprint",
+        "Shadow CSS",
+        "Styling hooks",
+        "Keyboard and focus",
+        "Mobile reflow"
+      ],
+      "accessible_description": "Portrait map from base components through SLDS, scoped CSS, accessibility, responsive reflow, and mobile tap targets."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-A11Y",
+        "SF-LWC-CSS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Who is allowed to style this node?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Need[Custom UI] --> Base{Base component exists?}\n  Base -->|Yes| UseBase[Use it: SLDS + a11y built in]\n  Base -->|No| Blueprint[SLDS blueprint]\n  Blueprint --> CSS[Component CSS + styling hooks]\n  CSS --> Shadow[Scoped to this shadow tree]\n  CSS --> Host[:host for the host element]\n  Parent[Parent CSS] --> ChildHost[May style child as one box]\n  Parent -.->|cannot| Inner[Child internals]",
+      "decision": "flowchart TD\n  Ask[Need custom look?] --> Q1{Is there a Lightning base component?}\n  Q1 -->|Yes| Base[Use the base component]\n  Q1 -->|No| Q2{Is there an SLDS blueprint?}\n  Q2 -->|Yes| Bp[Implement the blueprint + a11y attributes]\n  Q2 -->|No| Custom[Custom CSS with hooks, not random hex]\n  Ask2[Layout broken on phone?] --> R[Responsive SLDS grid / hide columns]\n  Ask3[Keyboard trap or missing label?] --> A11y[Fix focus and names before more CSS]\n  Ask4[Desktop-only hover?] --> Mob[Replace with explicit mobile actions]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Prefer Lightning base components for built-in SLDS styling and accessibility; otherwise use an SLDS blueprint. Follow WCAG.",
+      "source_ids": ["SF-LWC-A11Y"],
+      "scope": "Accessibility and SLDS",
+      "validation": "Component Accessibility topic.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Shadow DOM scopes component CSS. A parent cannot style a child's internal elements; it can style the child as a single host. Use :host in the child's stylesheet.",
+      "source_ids": ["SF-LWC-CSS"],
+      "scope": "CSS",
+      "validation": "CSS Stylesheets parent/child examples.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "ID selectors are not supported as authored because IDs are transformed into globally unique values at runtime. Prefer classes and styling hooks.",
+      "source_ids": ["SF-LWC-CSS"],
+      "scope": "Selectors",
+      "validation": "CSS Stylesheets specificity notes.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "CSS scope token format changed in past releases (noted in the CSS topic's video callout). Reverify styling hook names against current SLDS for Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact SLDS styling hook names for a given token are not frozen in this pack; look up the current SLDS hooks reference.",
+    "Needs verification: Salesforce mobile offline LWC limits for a given feature."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "SLDS",
+      "telugu": "సేల్స్‌ఫోర్స్ లైట్నింగ్ డిజైన్ సిస్టమ్ — UI భాగాల ప్రమాణం."
+    },
+    {
+      "english": "Accessibility",
+      "telugu": "అందరు వినియోగదారులు గ్రహించి నావిగేట్ చేయగలిగేలా చేయడం."
+    },
+    {
+      "english": "Responsive",
+      "telugu": "వేర్వేరు స్క్రీన్ వెడల్పులకు సరిపోయేలా లేఅవుట్ మారడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I start with a base component for SLDS and accessibility. If I must custom-build, I follow an SLDS blueprint, scope CSS in the component, style the host with :host, and use styling hooks. I test keyboard and a phone width, not only a desktop screenshot.",
+    "two_minutes": "Shadow DOM means my parent's h1 rule will not restyle a child's heading. I do not fight that with !important from the parent. I handle focus for custom widgets. Hover-only actions fail on mobile. Datatable density is a performance topic too, but overflow is an SLDS/responsive problem first."
+  },
+  "terminology": [
+    {
+      "term": "SLDS",
+      "plain": "Salesforce Lightning Design System: the visual and interaction language of Lightning.",
+      "precise": "Use base components or official blueprints rather than inventing controls. Pair with styling hooks so org themes still apply.",
+      "example": "lightning-button instead of a raw <button> with custom hex.",
+      "non_example": "A one-off CSS button that copies Slack's colors.",
+      "confusable_neighbor": "Aura design tokens from older Aura CSS.",
+      "boundary": "Token names live in SLDS docs; this lesson is the LWC consumption rules."
+    },
+    {
+      "term": "accessibility",
+      "plain": "Building so people can perceive, understand, navigate, and interact, including with assistive tech.",
+      "precise": "WCAG-oriented: names, roles, keyboard, focus management. Base components include much of this; custom widgets must add it.",
+      "example": "Visible label plus keyboard support on a custom LAB_ filter popover.",
+      "non_example": "Color-only error (red border, no text) on an input.",
+      "confusable_neighbor": "Sharing/FLS: who can see data, not who can operate the control.",
+      "boundary": "Full legal audit is outside this lesson."
+    },
+    {
+      "term": "responsive behavior",
+      "plain": "Layout that reflows when the viewport shrinks or density changes.",
+      "precise": "SLDS grid and size classes; hide or stack columns; do not assume desktop record-page width.",
+      "example": "Two-column field grid becoming one column on a narrow pane.",
+      "non_example": "Fixed 1400px wrapper with a horizontal scrollbar as the 'mobile solution.'",
+      "confusable_neighbor": "Salesforce mobile app container limits (modules, navigation).",
+      "boundary": "Datatable row virtualization is LWC-011."
+    },
+    {
+      "term": "mobile considerations",
+      "plain": "Designing the same LWC for phones and the Salesforce mobile app, not only a wide monitor.",
+      "precise": "Accessible mobile guidelines, tap targets, no hover-only, test in the mobile container. Some desktop modules are unsupported in other containers (LWC-008).",
+      "example": "An action that is a button, not a hover pencil, on a LAB_ list row.",
+      "non_example": "A separate Visualforce page 'because mobile' when LWC can reflow.",
+      "confusable_neighbor": "Responsive CSS only, without container testing.",
+      "boundary": "Offline mobile is a neighboring product area; do not invent sync rules here."
+    },
+    {
+      "term": "shadow DOM CSS",
+      "plain": "Styles in the component file apply inside that component's shadow tree.",
+      "precise": "Prevents leaks and incoming overrides. Parent may style the child host as one element. Child uses :host for its own host. Do not style the same component from both parent and child as a habit.",
+      "example": "parent.css cannot change c-child h1 font-size.",
+      "non_example": "Global static resource CSS intended to restyle every nested span.",
+      "confusable_neighbor": "LWS distortions (LWC-010), which are security, not CSS scoping.",
+      "boundary": "Native versus synthetic shadow history is noted; do not invent token strings."
+    },
+    {
+      "term": "styling hooks",
+      "plain": "CSS custom properties SLDS exposes so you theme without hard-coded hex.",
+      "precise": "The CSS topic tells you to use global styling hooks for values instead of static font sizes and colors in examples.",
+      "example": "background: var(--slds-g-color-palette-neutral-100, #fff); — exact token Needs verification in current SLDS.",
+      "non_example": "color: #0b5cab copied from a screenshot.",
+      "confusable_neighbor": "Aura tokens in an .css Aura bundle.",
+      "boundary": "Look up current hook names; do not memorize an unofficial list here."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose the lowest-custom surface",
+      "actor": "Developer",
+      "trigger": "UI requirement",
+      "before": "Blank template",
+      "after": "Base component, blueprint, or justified custom",
+      "observe": "Written reason a base component failed",
+      "failure": "Custom combobox when lightning-combobox exists"
+    },
+    {
+      "step": 2,
+      "transition": "Scope styles",
+      "actor": "Developer",
+      "trigger": "Custom CSS needed",
+      "before": "Unscoped or parent-piercing selectors",
+      "after": "Component CSS, :host, styling hooks, classes not IDs",
+      "observe": "Child internals unchanged by parent rules",
+      "failure": "Parent h1 { } expected to restyle nested headings"
+    },
+    {
+      "step": 3,
+      "transition": "Prove accessibility",
+      "actor": "Developer + reviewer",
+      "trigger": "Interactive custom UI",
+      "before": "Mouse-only demo",
+      "after": "Keyboard path, focus, names, contrast",
+      "observe": "Tab order and screen-reader name in a sandbox",
+      "failure": "Color-only error state"
+    },
+    {
+      "step": 4,
+      "transition": "Prove responsive and mobile",
+      "actor": "Developer",
+      "trigger": "Layout signed off on desktop",
+      "before": "1200px-only screenshot",
+      "after": "Narrow pane and Salesforce mobile check",
+      "observe": "No hover-only action; tap targets usable",
+      "failure": "Shipping a hover pencil as the only edit control"
+    }
+  ],
+  "when_to_use": [
+    "When building or reviewing an LWC's SLDS look, accessibility, responsive behavior, or mobile considerations before a UI design review.",
+    "When a parent stylesheet fails to restyle a nested heading and you need the shadow DOM rule, not a Salesforce bug report.",
+    "When a custom widget has no base component: implement an SLDS blueprint plus WCAG-oriented names and focus.",
+    "When a desktop-only hover action will be used in the Salesforce mobile app or a narrow console pane."
+  ],
+  "when_not_to_use": [
+    "Do not use this SLDS-and-accessibility lesson as a substitute for Lightning Web Security or CSP (LWC-010) or datatable row limits (LWC-011).",
+    "Do not fight shadow DOM by injecting global CSS to restyle child internals, or hard-code hex that ignores styling hooks.",
+    "Do not claim a screenshot on a wide monitor proves responsive behavior or mobile considerations.",
+    "Do not skip base components in favor of custom HTML just to 'match a Figma pixel' when lightning-* already meets the need."
+  ],
+  "configuration_or_code_location": [
+    "component.css next to component.js/html; optional stylesheets static property.",
+    "Template: lightning-* base components, SLDS classes such as slds-grid.",
+    "js-meta.xml: lightning__AppPage / RecordPage / Salesforce mobile targets as required.",
+    "Focus: this.template.querySelector and documented focus handling—not document.querySelector across shadows."
+  ],
+  "worked_example": {
+    "scenario": "A LAB_ work-queue LWC shows Cases. Design wants a custom status pill, a hover-only edit pencil, and parent CSS to make every nested h1 xx-large. It must work in a utility bar and Salesforce mobile.",
+    "inputs": [
+      "Narrow utility bar width",
+      "Keyboard-only admin user",
+      "Org using Lightning themes"
+    ],
+    "decisions": [
+      {
+        "decision": "Use lightning-badge or an SLDS badge blueprint, not a div with hex.",
+        "because": "Base/blueprint path from the accessibility topic.",
+        "rejected": "Unlabeled colored square"
+      },
+      {
+        "decision": "Replace hover pencil with an explicit lightning-button-icon.",
+        "because": "Hover fails accessibility and mobile.",
+        "rejected": "CSS :hover as the only edit affordance"
+      },
+      {
+        "decision": "Put heading size in the child's CSS via :host or a class, not parent h1.",
+        "because": "Parents cannot style child internals.",
+        "rejected": "parent.css h1 { font-size: xx-large }"
+      }
+    ],
+    "configuration_or_code": [
+      "Child uses lightning-button-icon with alternative text.",
+      "parent.css may set a border on c-lab-queue-item as a single element.",
+      "Grid classes stack the filter row on small widths."
+    ],
+    "output": "Keyboard-reachable edit, theme-friendly color, no parent-piercing heading rule.",
+    "verification": [
+      "Tab reaches the edit control on desktop and the button is tappable on a phone emulator.",
+      "Child heading size unchanged by parent h1 rule.",
+      "Contrast still holds in a dark-themed sandbox if hooks are used—Needs verification per org theme."
+    ],
+    "self_explanation": "I treated SLDS and accessibility as product requirements, not polish, and I respected shadow CSS boundaries."
+  },
+  "hands_on_lab": {
+    "environment": "Scratch org or Developer sandbox; LAB_ LWC only.",
+    "starting_state_checks": [
+      "You can deploy LWC.",
+      "You can open the component on a record page and resize the browser."
+    ],
+    "steps": [
+      "Create labThemeCard parent and labThemeChild with an inner h1. Set h1 { font-size: 2rem } only in the parent CSS and observe the child heading does not change.",
+      "Add :host { display: block; border: 1px solid; } in the child CSS and confirm the host is styled from inside.",
+      "Replace a hover-only span with lightning-button-icon that has alternative text; tab to it.",
+      "Add SLDS grid classes so two columns stack when the container is narrow; screenshot desktop versus ~400px."
+    ],
+    "guided_completion": [
+      "If the child's h1 grew from the parent rule, you are not in shadow-scoped CSS as documented.",
+      "If the only edit control is :hover, the lab is incomplete."
+    ],
+    "independent_challenge": "Swap a hard-coded color for a documented SLDS styling hook and reload under Lightning's default theme.",
+    "evidence": [
+      "Two screenshots: parent h1 rule does not restyle child text; button is keyboard reachable.",
+      "Note that ID selectors were not used."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ components.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not complete a WCAG certification or Salesforce mobile offline test."
+  },
+  "decision_table": [
+    {
+      "signal": "Need a button, input, or datatable that already exists as lightning-*.",
+      "choose": "Lightning base component for SLDS styling and built-in accessibility.",
+      "not": "A raw HTML control with custom hex and no name or keyboard support.",
+      "why": "The accessibility topic tells you to prefer base components."
+    },
+    {
+      "signal": "No base component, but SLDS has a blueprint for the pattern.",
+      "choose": "Implement the SLDS blueprint plus accessibility attributes and focus.",
+      "not": "Invent a new interaction that designers have not tested.",
+      "why": "Blueprints are the documented fallback when base components do not fit."
+    },
+    {
+      "signal": "Parent must visually frame a child card.",
+      "choose": "Style the child host as one element from the parent, or :host inside the child.",
+      "not": "Parent descendant selectors aimed at the child's inner h1 or spans.",
+      "why": "Shadow DOM CSS does not pierce into the child's internals."
+    },
+    {
+      "signal": "The only edit control appears on mouse hover.",
+      "choose": "A persistent button with a text alternative; verify on a narrow/mobile viewport.",
+      "not": "Hover-only pencils as the accessibility or mobile strategy.",
+      "why": "Keyboard and touch users never see hover; mobile guidelines apply."
+    }
+  ],
+  "limitations": [
+    "Does not replace a formal accessibility audit.",
+    "Does not list every SLDS class or styling hook.",
+    "Does not cover LWS or CSP.",
+    "Salesforce mobile offline behavior is not specified here."
+  ],
+  "security_notes": [
+    "Do not put secrets in visually hidden text that still exists in the DOM.",
+    "CSS does not enforce CRUD/FLS; hidden is not authorization.",
+    "Avoid injecting unsanitized HTML to 'fix' layout."
+  ],
+  "common_mistakes": [
+    "Parent CSS expected to restyle child internals.",
+    "Hard-coded colors ignoring styling hooks.",
+    "Hover-only actions.",
+    "Skipping base components for pixel-perfect Figma.",
+    "ID selectors in component CSS."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Your CSS does not apply to a nested child heading.",
+      "check": [
+        "Are you in the parent stylesheet targeting inner tags?",
+        "Move the rule to the child's CSS or style only the host."
+      ],
+      "do_not_assume": "SLDS is broken."
+    },
+    {
+      "symptom": "Keyboard users cannot reach an action.",
+      "check": [
+        "Is the control hover-only or a non-focusable div?",
+        "Use a base button or add tabindex/focus handling per the widget type."
+      ],
+      "do_not_assume": "A mouse demo is sufficient."
+    },
+    {
+      "symptom": "Layout overflows on a phone.",
+      "check": [
+        "Fixed widths, too many datatable columns, missing grid stacking.",
+        "Test Salesforce mobile, not only a resized desktop browser."
+      ],
+      "do_not_assume": "Users will pinch-zoom as the design."
+    }
+  ],
+  "production_notes": [
+    "Include keyboard and narrow-viewport checks in the definition of done.",
+    "Theme changes can break hard-coded colors; prefer hooks.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "What does the Component Accessibility topic recommend when a Lightning base component exists?",
+      "options": {
+        "A": "Use the base component for built-in SLDS styling and accessibility",
+        "B": "Always write custom HTML for control",
+        "C": "Disable shadow DOM",
+        "D": "Use Visualforce instead"
+      },
+      "answer": "A",
+      "rationale": "Prefer base components; they provide SLDS styling and accessibility.",
+      "distractor_explanations": {
+        "B": "Opposite of the guidance.",
+        "C": "Not an accessibility switch.",
+        "D": "This is an LWC topic."
+      },
+      "concept": "Base components first",
+      "citation_ids": ["SF-LWC-A11Y"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Can a parent component's CSS restyle an h1 inside a nested child LWC?",
+      "options": {
+        "A": "No; shadow DOM scopes the child's internals",
+        "B": "Yes, always, because CSS is global",
+        "C": "Only if the parent uses an ID selector",
+        "D": "Only in Aura"
+      },
+      "answer": "A",
+      "rationale": "The CSS topic's parent/child example shows the parent's h1 rule does not reach the child.",
+      "distractor_explanations": {
+        "B": "LWC component CSS is scoped.",
+        "C": "IDs are transformed and not the piercing tool.",
+        "D": "This is LWC shadow CSS."
+      },
+      "concept": "Shadow scoping",
+      "citation_ids": ["SF-LWC-CSS"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "How should a child style its own host element?",
+      "options": {
+        "A": ":host in the child's stylesheet",
+        "B": "document.body in connectedCallback",
+        "C": "A parent h1 descendant selector",
+        "D": "window.getComputedStyle only"
+      },
+      "answer": "A",
+      "rationale": "The CSS topic uses :host to style the host from the child's CSS.",
+      "distractor_explanations": {
+        "B": "Not the documented pattern.",
+        "C": "That does not pierce the child.",
+        "D": "Read-only inspection, not styling."
+      },
+      "concept": ":host",
+      "citation_ids": ["SF-LWC-CSS"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why does the CSS topic warn against ID selectors in LWC stylesheets?",
+      "options": {
+        "A": "IDs are transformed into globally unique values at runtime",
+        "B": "IDs are illegal in HTML",
+        "C": "SLDS forbids all classes",
+        "D": "Jest cannot see IDs"
+      },
+      "answer": "A",
+      "rationale": "ID selectors are not supported as authored because of runtime transformation.",
+      "distractor_explanations": {
+        "B": "HTML allows ids; LWC CSS is the constraint.",
+        "C": "Classes are the usual approach.",
+        "D": "Jest is unrelated to this CSS rule."
+      },
+      "concept": "ID selectors",
+      "citation_ids": ["SF-LWC-CSS"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which guidelines does the accessibility topic tell you to follow?",
+      "options": {
+        "A": "WCAG Guidelines",
+        "B": "Only internal hex palettes",
+        "C": "Apex governor limits",
+        "D": "SOQL selectivity"
+      },
+      "answer": "A",
+      "rationale": "We recommend that you follow the WCAG Guidelines for accessibility.",
+      "distractor_explanations": {
+        "B": "Colors without WCAG miss the point.",
+        "C": "Server limits are not a11y.",
+        "D": "Query design is not this lesson."
+      },
+      "concept": "WCAG",
+      "citation_ids": ["SF-LWC-A11Y"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "No base component matches a pattern, but SLDS has a blueprint. What next?",
+      "options": {
+        "A": "Create a component from the SLDS blueprint",
+        "B": "Skip accessibility because it is custom",
+        "C": "Use Aura only",
+        "D": "Hard-code hover-only controls"
+      },
+      "answer": "A",
+      "rationale": "If you cannot find a base component, consider creating a component from an SLDS blueprint.",
+      "distractor_explanations": {
+        "B": "Custom still needs a11y attributes and focus.",
+        "C": "This track prefers LWC.",
+        "D": "Worse for mobile and keyboard."
+      },
+      "concept": "SLDS blueprints",
+      "citation_ids": ["SF-LWC-A11Y"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A custom list row reveals Edit only on hover. Keyboard and phone users cannot activate it. Fix?",
+      "options": {
+        "A": "A visible, focusable button with a text alternative",
+        "B": "Larger hover hit area only",
+        "C": "Disable the Salesforce mobile app",
+        "D": "Parent CSS pointer-events"
+      },
+      "answer": "A",
+      "rationale": "Accessibility attributes, focus, and mobile all require an explicit control.",
+      "distractor_explanations": {
+        "B": "Still hover-only.",
+        "C": "Not a product strategy.",
+        "D": "Does not create a keyboard path."
+      },
+      "concept": "Hover vs explicit action",
+      "citation_ids": ["SF-LWC-A11Y"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Parent CSS sets a red border on c-lab-child. Inner text color in the child does not change. Is that expected?",
+      "options": {
+        "A": "Yes; the parent styles the child as a single element, not internals",
+        "B": "No; Salesforce should pierce automatically",
+        "C": "Only if LWS is off",
+        "D": "Only in Jest"
+      },
+      "answer": "A",
+      "rationale": "A parent can style a child as a single element (for example a border) but cannot reach inside.",
+      "distractor_explanations": {
+        "B": "Piercing is not the model.",
+        "C": "LWS is not CSS scoping.",
+        "D": "Runtime CSS rule."
+      },
+      "concept": "Parent styles child host",
+      "citation_ids": ["SF-LWC-CSS"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Hard-coded hex versus SLDS styling hooks?",
+      "options": {
+        "A": "Hooks keep theme and density; hex fights the design system",
+        "B": "Hex is required for accessibility",
+        "C": "Hooks only work in Visualforce",
+        "D": "They are identical"
+      },
+      "answer": "A",
+      "rationale": "The CSS topic tells you to use global styling hooks instead of static values in real component code.",
+      "distractor_explanations": {
+        "B": "Contrast still matters, but hooks are the theming tool.",
+        "C": "This is LWC CSS.",
+        "D": "Different maintenance and theme behavior."
+      },
+      "concept": "Styling hooks",
+      "citation_ids": ["SF-LWC-CSS"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Responsive CSS versus Salesforce mobile considerations?",
+      "options": {
+        "A": "Responsive is viewport reflow; mobile also includes container, tap, and hover constraints",
+        "B": "They are the same word",
+        "C": "Mobile only means a new Apex class",
+        "D": "Responsive requires Lightning Out"
+      },
+      "answer": "A",
+      "rationale": "Narrow CSS is necessary but not sufficient for the mobile app and touch.",
+      "distractor_explanations": {
+        "B": "Interviewers want both.",
+        "C": "Data access is not the definition.",
+        "D": "Out is a different container."
+      },
+      "concept": "Responsive vs mobile",
+      "citation_ids": ["SF-LWC-A11Y"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "The CSS topic says it is not a good practice to style a component from both parent and child. Why mention that?",
+      "options": {
+        "A": "Combined rules are confusing and can yield unexpected results",
+        "B": "Salesforce forbids all parent borders",
+        "C": "Jest will fail CI",
+        "D": "Apex sharing breaks"
+      },
+      "answer": "A",
+      "rationale": "The parent/child CSS walkthrough warns against styling from both sides as a habit.",
+      "distractor_explanations": {
+        "B": "A parent may still style the host as one box.",
+        "C": "Not a Jest rule.",
+        "D": "Unrelated."
+      },
+      "concept": "Single styling owner",
+      "citation_ids": ["SF-LWC-CSS"]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Besides using accessibility attributes, what else does the accessibility topic list as required work?",
+      "options": {
+        "A": "Handle focus",
+        "B": "Disable SLDS",
+        "C": "Use ID selectors",
+        "D": "Put all text in canvas"
+      },
+      "answer": "A",
+      "rationale": "To create accessible components: use accessibility attributes; handle focus.",
+      "distractor_explanations": {
+        "B": "SLDS helps a11y.",
+        "C": "IDs are a CSS trap.",
+        "D": "Canvas text is worse for a11y."
+      },
+      "concept": "Focus handling",
+      "citation_ids": ["SF-LWC-A11Y"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "First choice for a standard control in LWC?",
+      "back": "A Lightning base component with built-in SLDS styling and accessibility."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "If no base component exists?",
+      "back": "Implement an SLDS blueprint, then add accessibility attributes and focus."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "Does parent CSS restyle a child's inner h1?",
+      "back": "No. Shadow DOM scopes internals. Style the host as one element instead."
+    },
+    {
+      "id": "F4",
+      "category": "decision",
+      "front": "How does a child style itself as a box?",
+      "back": "Use :host in the child's stylesheet."
+    },
+    {
+      "id": "F5",
+      "category": "decision",
+      "front": "Why avoid ID selectors in LWC CSS?",
+      "back": "IDs are transformed at runtime into globally unique values."
+    },
+    {
+      "id": "F6",
+      "category": "limitation_security",
+      "front": "Hover-only edit on mobile?",
+      "back": "Fails touch and keyboard. Use a visible focusable control."
+    },
+    {
+      "id": "F7",
+      "category": "scenario",
+      "front": "Hard-coded hex vs styling hooks?",
+      "back": "Hooks follow SLDS theme and density; hex fights the design system."
+    },
+    {
+      "id": "F8",
+      "category": "terminology",
+      "front": "WCAG in this topic?",
+      "back": "The accessibility topic recommends following WCAG Guidelines."
+    },
+    {
+      "id": "F9",
+      "category": "scenario",
+      "front": "Utility bar overflows. First CSS move?",
+      "back": "SLDS grid stacking and fewer columns—responsive behavior, not a new object."
+    },
+    {
+      "id": "F10",
+      "category": "terminology",
+      "front": "Two ingredients the a11y topic lists?",
+      "back": "Use accessibility attributes, and handle focus."
+    },
+    {
+      "id": "F11",
+      "category": "decision",
+      "front": "Parent wants a red frame around a child card.",
+      "back": "A selector on the child host (c-child) or the child's :host, not inner spans."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Hiding a field with CSS. Is that FLS?",
+      "back": "No. CSS is not authorization. Field-level security still applies."
+    },
+    {
+      "id": "F13",
+      "category": "scenario",
+      "front": "Custom combobox. What must you still do?",
+      "back": "Names, roles, keyboard, and focus—base lightning-combobox would have included much of this."
+    },
+    {
+      "id": "F14",
+      "category": "terminology",
+      "front": "Responsive vs mobile in one line?",
+      "back": "Responsive is reflow; mobile adds container, tap targets, and no hover-only."
+    },
+    {
+      "id": "F15",
+      "category": "decision",
+      "front": "Style from both parent and child?",
+      "back": "Avoid as a habit; combined rules are confusing and unexpected."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do SLDS, accessibility, responsive behavior, and mobile considerations show up in an LWC review?",
+      "answer_30_seconds": "Base components first, WCAG-oriented names and focus, layout that reflows, and no hover-only on phones. Shadow CSS stays in the component.",
+      "answer_2_minutes": "I ask whether a lightning-* control already exists. If not, I want an SLDS blueprint, not a one-off. I check keyboard and contrast. I resize the page and think about Salesforce mobile. I treat parent CSS that tries to restyle child internals as a defect in understanding, not a platform bug.",
+      "example": "labQueue: lightning-datatable plus an explicit action column, not hover pencils.",
+      "tradeoffs": [
+        "Pixel-perfect Figma versus base components",
+        "Custom widget versus blueprint"
+      ],
+      "follow_ups": [
+        "What is :host?",
+        "What is a styling hook?"
+      ],
+      "weak_answer_warnings": [
+        "It looks like Salesforce so it must be accessible"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why can't the parent stylesheet change a child's heading size?",
+      "answer_30_seconds": "Shadow DOM scopes the child's CSS. The parent may style the child as one host element, not its inner h1.",
+      "answer_2_minutes": "I cite the Guide's c-parent / c-child h1 example. The fix is to style in the child, use :host, or pass a variant via a public property. I do not recommend global static resources as a piercing strategy. I also avoid styling the same component from both parent and child.",
+      "example": "parent.css h1 { font-size: xx-large } leaves c-child's heading unchanged.",
+      "tradeoffs": [
+        "Variant property versus duplicated CSS",
+        "Host border from parent versus child :host"
+      ],
+      "follow_ups": [
+        "Are ID selectors a workaround?",
+        "What about styling hooks?"
+      ],
+      "weak_answer_warnings": [
+        "Just use !important from the parent"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Design hands you a hover-only pencil on a list row. What do you change for accessibility and mobile?",
+      "answer_30_seconds": "Make a visible, focusable button with a text alternative. Hover is not a keyboard or touch strategy.",
+      "answer_2_minutes": "I explain WCAG-oriented operable UI. I use lightning-button-icon or a row action in lightning-datatable. I test tab order and a narrow viewport. I do not grow the hover zone and call it done. If space is tight, I use an overflow menu that still opens with a tap or keyboard.",
+      "example": "LAB_ Case queue row: explicit Edit action instead of CSS :hover pencil.",
+      "tradeoffs": [
+        "Always-visible action versus overflow menu",
+        "Datatable row actions versus custom HTML"
+      ],
+      "follow_ups": [
+        "How do you label the icon?",
+        "What about swipe in the mobile app? (Needs verification)"
+      ],
+      "weak_answer_warnings": [
+        "Mobile users will learn to hover"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "The org theme changes and your LWC looks wrong. What did you probably hard-code?",
+      "answer_30_seconds": "Hex colors or px that ignored SLDS styling hooks, so the component did not follow the theme.",
+      "answer_2_minutes": "The CSS topic's examples even tell you not to copy static values into production components. I switch to hooks, retest contrast, and stop matching a screenshot from a different theme. Accessibility still requires contrast; hooks are not a free pass to tiny gray text.",
+      "example": "Brand-updated org; custom card still navy from a 2022 hex.",
+      "tradeoffs": [
+        "Brand one-off versus design-system alignment",
+        "Hook fallbacks versus exact marketing hex"
+      ],
+      "follow_ups": [
+        "Where do you look up hook names?",
+        "Does this affect density?"
+      ],
+      "weak_answer_warnings": [
+        "Salesforce themes are cosmetic only"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Your #submit button styles never apply. What CSS rule did you forget?",
+      "answer_30_seconds": "ID selectors are transformed at runtime. Use a class (and SLDS) instead.",
+      "answer_2_minutes": "I replace #submit with a class and lightning-button if possible. I do not fight the transform. I also check whether the rule lived in the parent trying to pierce a child. Those are two different misses interviewers like to combine.",
+      "example": "labForm.css #save { } does nothing useful; .slds-m-top_small on lightning-button does.",
+      "tradeoffs": [
+        "Class versus base component",
+        "Host styling versus inner styling"
+      ],
+      "follow_ups": [
+        "How do you raise specificity without IDs?",
+        "What about :host(.active)?"
+      ],
+      "weak_answer_warnings": [
+        "Salesforce stripped my CSS file"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "A custom combobox is mouse-pretty but a screen-reader user cannot operate it. Where do you start?",
+      "answer_30_seconds": "Ask why it is not lightning-combobox. Then check accessible name, keyboard, and focus. Custom means you own WCAG work.",
+      "answer_2_minutes": "I try to revert to the base component. If the blueprint is mandatory, I implement roles, labels, arrow-key behavior, and focus return. I do not add aria-label soup on a div and call it done without a keyboard pass. I mention the Guide's 'handle focus' line so the interviewer hears the official phrase.",
+      "example": "Custom multi-select rebuilt on lightning-dual-listbox instead.",
+      "tradeoffs": [
+        "Design uniqueness versus base component",
+        "Blueprint time versus product delay"
+      ],
+      "follow_ups": [
+        "Which SLDS blueprint?",
+        "How do you test?"
+      ],
+      "weak_answer_warnings": [
+        "aria-label on everything without keyboard support"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you not spend a sprint on custom SLDS CSS?",
+      "answer_30_seconds": "When a base component already meets the need, or when the real issue is data volume (LWC-011) or security (LWC-010), not paint.",
+      "answer_2_minutes": "I separate look-and-feel from performance and LWS. A 5,000-row table will not be saved by nicer badges. A missing label is not fixed by a new palette. I use this lesson when the UI is the product risk: keyboard, theme, overflow, mobile container.",
+      "example": "Rejecting a custom datatable skin when lightning-datatable plus fewer columns is the actual fix.",
+      "tradeoffs": [
+        "Brand polish versus operability",
+        "CSS sprint versus query/limit work"
+      ],
+      "follow_ups": [
+        "Who owns SLDS in your org?",
+        "How do you review Figma against base components?"
+      ],
+      "weak_answer_warnings": [
+        "Custom CSS as the default plan"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach shadow CSS with a concert-hall analogy, then break it.",
+      "answer_30_seconds": "Each musician's mute is their shadow tree. The conductor can frame the whole player as one box but cannot twist an internal peg. That is parent versus child CSS.",
+      "answer_2_minutes": "I then break it: a real conductor can still shout tempo to everyone; shadow CSS will not shout into internals, and that is intentional. SLDS is the house instrument spec. Accessibility is ramps. Mobile is the van show with no hover. I never call this a library catalog.",
+      "example": "Whiteboard c-parent / c-child h1 from the Guide.",
+      "tradeoffs": [
+        "Analogy speed versus showing the actual CSS",
+        "Host border versus inner restyle"
+      ],
+      "follow_ups": [
+        "Draw :host",
+        "Where do styling hooks sit?"
+      ],
+      "weak_answer_warnings": [
+        "catalog-shelf metaphor"
+      ]
+    }
+  ]
+}

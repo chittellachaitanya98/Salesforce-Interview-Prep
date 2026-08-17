@@ -1,0 +1,1009 @@
+{
+  "topic_id": "INT-010",
+  "slug": "integration-testing-observability-reconciliation-securi",
+  "title": "Integration testing, observability, reconciliation, security, and incident diagnosis",
+  "track": "Integration and APIs",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "INT-009"
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer official Help and Developer Guides over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "objectives": [
+    "Test integrations with mocks, sandbox contracts, and synthetic LAB_ data—not production tokens.",
+    "Observe HTTP statuses, Limits Remaining, event Replay lag, and logs without printing secrets.",
+    "Reconcile using documented keys (Salesforce Id vs remote surrogate) from Integration Patterns state management.",
+    "Diagnose incidents by layer: auth (INT-004), contract (INT-005), style (INT-003), then remote vs Salesforce."
+  ],
+  "diagnostic_question": "Prod integration drifted 200 extra ERP invoices, Remaining API is low, and a callout test only passed in production. What tests, signals, reconciliation keys, and security mistakes do you name first?",
+  "definition": "Operating Salesforce integrations means proving them with tests, watching them with observability, aligning copies with reconciliation, keeping tokens and payloads safe, and diagnosing incidents by contract—not by guesswork. Apex callouts are tested with HttpCalloutMock. REST Limits and status codes are the live signals. Integration Patterns stress keys for state tracking. ([Apex callouts](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts.htm); [Limits](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_limits.htm); [Error codes](https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/errorcodes.htm); [Integration Patterns](https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns))",
+  "why_it_matters": "Untested callouts, silent drift, and tokens in logs are how integrations become incidents. Interviewers want a diagnosis order and a key strategy, not 'check the server'.",
+  "sixty_second_explanation": "Think of a flight recorder plus a warehouse cycle count. Tests are simulator flights with fake radios (mocks). Observability is the black box: statuses, Remaining quota, replay lag—never the passenger passport numbers (tokens). Reconciliation is counting crates with agreed serials (keys). Security is locking the cockpit. Incident diagnosis reads the recorder in layers: badge, packing list, flight plan, then the other airport.",
+  "deeper_explanation": [
+    "Testing: HttpCalloutMock / Test.setMock for Apex (INT-006). Contract tests in sandbox against LAB_ data. Do not use SeeAllData production. Event subscribers need idempotency tests (INT-008). Connect tests need a lab OData or a documented limitation if unlicensed (INT-009).",
+    "Observability: log HTTP status and errorCode, not Authorization headers (INT-005). GET /limits Remaining. For events, monitor time-to-72-hour cliff (INT-007). Debug logs and Event Monitoring exist; SKU/fields Needs verification—do not invent event types.",
+    "Reconciliation: Integration Patterns state-management sidebars: Salesforce stores the remote key, or the remote stores the Salesforce Id (or another surrogate). Drift jobs compare those keys. Virtualization paths have nothing to reconcile unless you also copied (INT-009).",
+    "Security: named credentials, least scopes, no tokens in git/logs, inbound connected apps reviewed. Incident order: 401 auth, 400 contract, 403 limits, then remote vs Salesforce clocks/keys, then style mismatch (sync vs batch)."
+  ],
+  "mental_model": {
+    "analogy": "Flight recorder plus warehouse cycle count: mocks are simulators, black box is observability, serial counts are reconciliation, cockpit locks are security, layered readout is diagnosis.",
+    "useful_mapping": [
+      "HttpCalloutMock → simulator radio",
+      "HTTP status / errorCode → recorder stamps",
+      "Limits Remaining → fuel gauge",
+      "Replay lag → time-to-tape-end",
+      "External Id / Salesforce Id → crate serials",
+      "named credential → locked cockpit switch",
+      "token in log → passport left in the aisle",
+      "diagnosis order → badge, packing list, flight plan, other airport"
+    ],
+    "where_it_breaks": [
+      "Not a full APM product catalog.",
+      "Event Monitoring editions vary—Needs verification.",
+      "Cycle count does not apply to pure virtualization.",
+      "Do not invent SLA milliseconds."
+    ]
+  },
+  "teach_back_prompt": "Walk a drifted-invoice incident through testing gaps, observability signals, reconciliation keys, security, and diagnosis order.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Mock vs live tests."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "What never to log."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Two key strategies."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "401 vs 400 vs 403 vs drift."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute incident interview."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-CALLOUTS",
+      "title": "Invoking Callouts Using Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts.htm",
+      "supports": "Apex HTTP callout testing context; callout mechanism.",
+      "release_or_version": "Apex Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Mock class names on sibling test topics."
+    },
+    {
+      "source_id": "SF-REST-LIMITS",
+      "title": "List Org Limits",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/dome_limits.htm",
+      "supports": "Max/Remaining observability for API usage.",
+      "release_or_version": "REST API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Keys versioned."
+    },
+    {
+      "source_id": "SF-REST-ERRORS",
+      "title": "Status Codes and Error Responses",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/errorcodes.htm",
+      "supports": "Incident diagnosis via HTTP codes including 401/403/400.",
+      "release_or_version": "REST API Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Not a full runbook."
+    },
+    {
+      "source_id": "SF-INT-PATTERNS",
+      "title": "Integration Patterns (keys / error handling)",
+      "type": "Official architect documentation",
+      "url": "https://architect.salesforce.com/docs/architect/fundamentals/guide/integration-patterns",
+      "supports": "State tracking via Salesforce Id or remote surrogate keys; error handling belongs in the solution.",
+      "release_or_version": "Architects Fundamentals",
+      "last_verified": "2026-08-16",
+      "limits": "Does not name a reconciliation product."
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Mock tests",
+        "Black box signals",
+        "Key cycle count",
+        "No tokens in logs",
+        "Layered diagnosis"
+      ],
+      "accessible_description": "Test with mocks, observe statuses and limits, reconcile keys, secure tokens, diagnose by layer."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-CALLOUTS",
+        "SF-REST-LIMITS",
+        "SF-REST-ERRORS",
+        "SF-INT-PATTERNS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Test, watch, count, lock, diagnose"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Test[Tests mocks sandbox LAB_] --> Run[Runtime integration]\n  Run --> Obs[Status Limits Replay logs]\n  Run --> Rec[Key reconciliation]\n  Run --> Sec[Named credentials scopes no token logs]\n  Fail[Incident] --> Diag[401 then 400 then 403 then keys then style]",
+      "decision": "flowchart TD\n  Inc[Incident] --> Q1{HTTP 401?}\n  Q1 -->|Yes| Auth[INT-004 token/credential]\n  Q1 -->|No| Q2{400 malformed?}\n  Q2 -->|Yes| Contract[INT-005 JSON/XML]\n  Q2 -->|No| Q3{403 REQUEST_LIMIT_EXCEEDED?}\n  Q3 -->|Yes| Quota[Backoff Limits Remaining]\n  Q3 -->|No| Q4{Counts drift?}\n  Q4 -->|Yes| Keys[Reconcile Salesforce Id vs remote key]\n  Q4 -->|No| Style[Wrong pattern INT-001 INT-003]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Apex HTTP integrations should be tested with callout mocks rather than live production endpoints.",
+      "source_ids": [
+        "SF-APEX-CALLOUTS"
+      ],
+      "scope": "Testing",
+      "validation": "Callout testing is part of the Apex callout model (HttpCalloutMock in INT-006).",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "The Limits resource (Max/Remaining) and REST HTTP status/error codes are primary observability and diagnosis signals.",
+      "source_ids": [
+        "SF-REST-LIMITS",
+        "SF-REST-ERRORS"
+      ],
+      "scope": "Observability",
+      "validation": "Limits and error-codes guides.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Ongoing state tracking uses keys: Salesforce stores the remote unique key, or the remote stores the Salesforce Id (or another surrogate).",
+      "source_ids": [
+        "SF-INT-PATTERNS"
+      ],
+      "scope": "Reconciliation",
+      "validation": "State management sidebars in Integration Patterns.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Error handling is part of applying integration patterns; silent drop is not the official result section's intent.",
+      "source_ids": [
+        "SF-INT-PATTERNS"
+      ],
+      "scope": "Incidents",
+      "validation": "Pattern results/error-handling commentary.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify Event Monitoring availability and Limits keys for Summer '26.",
+  "unresolved_uncertainty": [
+    "Event Monitoring SKU and log event names.",
+    "Exact debug log retention.",
+    "Which dashboards an org has licensed."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Reconciliation",
+      "telugu": "కీల ద్వారా రెండు సిస్టమ్‌ల కౌంట్ సరిపోల్చడం."
+    },
+    {
+      "english": "Observability",
+      "telugu": "స్టేటస్, లిమిట్స్, లాగ్‌లతో కనిపించేలా ఉంచడం."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "I test with mocks and sandbox LAB_ data. I watch status, Remaining, and replay lag—never tokens. I reconcile on agreed keys. I diagnose 401 then 400 then 403 then drift then style.",
+    "two_minutes": "Production-only tests are a security and reliability fail. Virtualization has no row cycle count unless we also copied. Idempotency tests belong with INT-008. I will not invent Event Monitoring fields. Named credentials stay the secret store."
+  },
+  "terminology": [
+    {
+      "term": "integration testing",
+      "plain": "Prove the envelope and contract without burning production.",
+      "precise": "Automated mocks (HttpCalloutMock), sandbox contract tests, synthetic LAB_ records; no production tokens.",
+      "example": "LAB_HttpBinClientTest asserts 200 from a mock.",
+      "non_example": "SeeAllData live customer callout as the only test.",
+      "confusable_neighbor": "UAT by clicking once.",
+      "boundary": "Vendor contract tests optional and still non-prod."
+    },
+    {
+      "term": "observability",
+      "plain": "The black box: what you can see while it flies.",
+      "precise": "HTTP status/errorCode, Limits Remaining, job states, Replay lag, debug logs—without secrets.",
+      "example": "Dashboard of Remaining plus 403 counts.",
+      "non_example": "System.debug of Bearer.",
+      "confusable_neighbor": "Full Splunk product pitch.",
+      "boundary": "Event Monitoring Needs verification."
+    },
+    {
+      "term": "reconciliation",
+      "plain": "Cycle count with agreed serial numbers.",
+      "precise": "Compare Salesforce and remote using stored keys (remote key in Salesforce or Salesforce Id in remote) as Integration Patterns describe.",
+      "example": "Nightly count of Invoice External Id vs ERP.",
+      "non_example": "Virtualization-only path with no copy and no keys to count.",
+      "confusable_neighbor": "Duplicate management on Leads.",
+      "boundary": "Frequency is a business choice."
+    },
+    {
+      "term": "security (integrations)",
+      "plain": "Lock tokens, scopes, logs, and inbound apps.",
+      "precise": "Named/external credentials, least OAuth scopes, no secrets in source/logs, connected-app review (INT-004).",
+      "example": "Code scan forbids Bearer literals.",
+      "non_example": "Shared human password in middleware.",
+      "confusable_neighbor": "OWD/sharing (SEC track) which still applies to data exposed."
+    },
+    {
+      "term": "incident diagnosis",
+      "plain": "Read the recorder in layers instead of rebooting Salesforce.",
+      "precise": "Order: auth 401, contract 400, limits 403, then key drift, then pattern/style mismatch, then remote outage.",
+      "example": "401 after secret rotation before blaming JSON.",
+      "non_example": "Only 'network is slow' with no status code.",
+      "confusable_neighbor": "Apex exception in a trigger unrelated to HTTP."
+    },
+    {
+      "term": "synthetic LAB_ data",
+      "plain": "Fake rows named so they never look like customers.",
+      "precise": "Handbook convention: LAB_ objects/fields in disposable orgs.",
+      "example": "LAB_Invoice__c in sandbox.",
+      "non_example": "Cloned production named accounts in a public git fixture.",
+      "confusable_neighbor": "Full sandbox copies—still sensitive."
+    },
+    {
+      "term": "key strategy",
+      "plain": "Who stores whose serial.",
+      "precise": "Either Salesforce stores remote unique/surrogate key, or remote stores Salesforce Id/other surrogate.",
+      "example": "Account.ERP_Cust__c unique External Id.",
+      "non_example": "Matching on Name only.",
+      "confusable_neighbor": "Duplicate rules."
+    },
+    {
+      "term": "drift",
+      "plain": "Counts or fields no longer match.",
+      "precise": "Copy-based integrations diverge without reconcile jobs; virtualization drift is usually filter/permission/outage, not a stale store.",
+      "example": "200 extra ERP invoices not in Salesforce.",
+      "non_example": "Connect __x empty because ERP is down (not copy drift)."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Write tests first",
+      "actor": "Developer",
+      "trigger": "New integration",
+      "before": "Prod-only proof",
+      "after": "Mocks + sandbox LAB_",
+      "observe": "CI green without internet secrets",
+      "failure": "SeeAllData production"
+    },
+    {
+      "step": 2,
+      "transition": "Emit safe signals",
+      "actor": "Developer + ops",
+      "trigger": "Runtime",
+      "before": "Silent or leaky logs",
+      "after": "Status, Remaining, lag; redacted payloads",
+      "observe": "No Bearer in logs",
+      "failure": "Debug tokens"
+    },
+    {
+      "step": 3,
+      "transition": "Schedule reconcile if copies exist",
+      "actor": "Ops + data owner",
+      "trigger": "Data integration",
+      "before": "Hope",
+      "after": "Keyed compare + exceptions queue",
+      "observe": "Drift report",
+      "failure": "Name-only matching"
+    },
+    {
+      "step": 4,
+      "transition": "Diagnose by layer",
+      "actor": "On-call",
+      "trigger": "Incident",
+      "before": "Random restarts",
+      "after": "401/400/403/keys/style",
+      "observe": "Timeline with status codes",
+      "failure": "Blaming Salesforce generally"
+    }
+  ],
+  "when_to_use": [
+    "When you must design integration testing, observability, reconciliation, security, and incident diagnosis for a Salesforce interface.",
+    "When copies can drift and keys from Integration Patterns must be compared.",
+    "When an incident needs a layered 401/400/403 diagnosis instead of guesswork.",
+    "When tests still call production or logs still print tokens.",
+    "When Remaining API or replay lag is the missing signal."
+  ],
+  "when_not_to_use": [
+    "Do not treat this as Event Monitoring SKU documentation—Needs verification.",
+    "Do not reconcile a pure Connect virtualization path as if rows were stored.",
+    "Do not log tokens 'for diagnosis'.",
+    "Do not run production-only tests as the quality gate.",
+    "Do not invent allocation numbers while reading Remaining."
+  ],
+  "configuration_or_code_location": [
+    "Apex tests with mocks",
+    "Sandbox Limits GET",
+    "External Id fields",
+    "Named credentials",
+    "LAB_ only"
+  ],
+  "worked_example": {
+    "scenario": "Sandbox-to-ERP invoice integration created duplicates in a rehearsal and later would have used a production token in a test. Remaining dropped. Counts drifted by 200.",
+    "inputs": [
+      "Missing mock",
+      "Token in debug",
+      "Name-matched invoices",
+      "Low Remaining"
+    ],
+    "decisions": [
+      {
+        "decision": "Add HttpCalloutMock tests and delete token logs.",
+        "because": "Testing and security objectives.",
+        "rejected": "Keep SeeAllData live test"
+      },
+      {
+        "decision": "Reconcile on External Id, not Name; watch Remaining; diagnose 403 vs drift separately.",
+        "because": "Patterns keys plus Limits/status.",
+        "rejected": "One dashboard labeled 'errors' without codes"
+      }
+    ],
+    "configuration_or_code": [
+      "Unique External Id on LAB_Invoice__c.",
+      "Log status only."
+    ],
+    "output": "Test pack, key, signals, redacted logs.",
+    "verification": [
+      "Tests pass offline.",
+      "Grep finds no Bearer.",
+      "Drift query uses External Id."
+    ],
+    "self_explanation": "Simulator, serials, and layered stamps beat a production-only hope test."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_Invoice__c.",
+    "starting_state_checks": [
+      "Can create fields and Apex tests",
+      "No production tokens"
+    ],
+    "steps": [
+      "Add unique External Id ExtKey__c to LAB_Invoice__c.",
+      "Write a test that mocks a callout 200 and a second test that mocks 400 and asserts a dead-letter or error flag (INT-008).",
+      "Write a reconcile query comment: COUNT mismatched ExtKey__c versus a stub list; do not use Name.",
+      "Grep project for Bearer and fail the lab if found; GET /limits in Workbench and note Remaining without publishing it as a universal cap."
+    ],
+    "guided_completion": [
+      "If tests require internet, add mocks.",
+      "If reconcile uses Name, rewrite to ExtKey__c."
+    ],
+    "independent_challenge": "Write the five-layer diagnosis order on a 401-then-drift story.",
+    "evidence": [
+      "Passing mock tests.",
+      "Grep clean of Bearer.",
+      "Reconcile note using ExtKey__c."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_Invoice__c and tests.",
+      "Revoke any sandbox secrets."
+    ],
+    "limitations": "Does not enable Event Monitoring."
+  },
+  "decision_table": [
+    {
+      "signal": "Apex callout with no tests or only production tests.",
+      "choose": "HttpCalloutMock in CI plus sandbox LAB_ contract tests.",
+      "not": "SeeAllData live customer call as the gate.",
+      "why": "Callouts are testable without production tokens."
+    },
+    {
+      "signal": "Counts differ between Salesforce and ERP on a copy.",
+      "choose": "Reconcile on stored keys (External Id or Salesforce Id as designed).",
+      "not": "Match on Name/email only.",
+      "why": "Integration Patterns state management uses unique keys."
+    },
+    {
+      "signal": "HTTP 401 during an incident.",
+      "choose": "Auth/named credential/connected app (INT-004) first.",
+      "not": "Rewrite JSON first or replay events first.",
+      "why": "Error-codes: 401 is unauthorized."
+    },
+    {
+      "signal": "HTTP 403 REQUEST_LIMIT_EXCEEDED.",
+      "choose": "Inspect Limits Remaining; backoff; reduce chattiness.",
+      "not": "Hot retry or treat as JSON 400.",
+      "why": "Official limit error plus Limits resource."
+    },
+    {
+      "signal": "Connect __x related list empty while ERP is up.",
+      "choose": "Diagnose adapter/keys/perms (INT-009), not a cycle count of stored rows.",
+      "not": "Nightly reconcile job on rows that were never stored.",
+      "why": "Virtualization holds no copy to count."
+    }
+  ],
+  "limitations": [
+    "Event Monitoring not fully specified.",
+    "No invented SLAs.",
+    "Debug log retention org-specific.",
+    "Not a SIEM design."
+  ],
+  "security_notes": [
+    "Never log tokens.",
+    "Least scopes.",
+    "LAB_ data only.",
+    "Review connected apps."
+  ],
+  "common_mistakes": [
+    "Production-only tests.",
+    "Token logs.",
+    "Name matching.",
+    "Reconciling Connect copies that do not exist.",
+    "Skipping 401 in diagnosis.",
+    "Inventing Monitoring event names."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Tests pass only in one admin's org with real internet.",
+      "check": [
+        "Missing mocks.",
+        "Hard-coded host."
+      ],
+      "do_not_assume": "Salesforce testing framework is broken."
+    },
+    {
+      "symptom": "Drift of 200 invoices.",
+      "check": [
+        "Key strategy.",
+        "Idempotency (INT-008).",
+        "Partial 403 failures."
+      ],
+      "do_not_assume": "ERP randomly created them without a key gap."
+    }
+  ],
+  "production_notes": [
+    "Alert on Remaining and DLQ.",
+    "Reconcile cadence agreed.",
+    "No production tokens in this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Preferred Apex callout test?",
+      "options": {
+        "A": "HttpCalloutMock / Test.setMock with synthetic responses",
+        "B": "SeeAllData production only",
+        "C": "Log the Bearer in the test",
+        "D": "Metadata API deploy of Account rows"
+      },
+      "answer": "A",
+      "rationale": "Callout tests should not need live production.",
+      "distractor_explanations": {
+        "B": "Unsafe.",
+        "C": "Security fail.",
+        "D": "Wrong family."
+      },
+      "concept": "Mock",
+      "citation_ids": [
+        "SF-APEX-CALLOUTS"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Limits Remaining is for?",
+      "options": {
+        "A": "Observing remaining org API (and other) allocations",
+        "B": "OAuth grant_type",
+        "C": "Replay ID math",
+        "D": "Connect row storage"
+      },
+      "answer": "A",
+      "rationale": "Limits resource Max/Remaining.",
+      "distractor_explanations": {
+        "B": "INT-004.",
+        "C": "INT-007.",
+        "D": "INT-009 stores none."
+      },
+      "concept": "Remaining",
+      "citation_ids": [
+        "SF-REST-LIMITS"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Key strategy from Integration Patterns?",
+      "options": {
+        "A": "Salesforce stores remote unique key, or remote stores Salesforce Id/surrogate",
+        "B": "Match on Name only",
+        "C": "Always Metadata API Id",
+        "D": "No keys needed for copies"
+      },
+      "answer": "A",
+      "rationale": "State management sidebars.",
+      "distractor_explanations": {
+        "B": "Fragile.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Keys",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "First check on HTTP 401 incident?",
+      "options": {
+        "A": "Token/connected app/named credential (INT-004)",
+        "B": "JSON schema only",
+        "C": "Bulk job state only",
+        "D": "Indirect lookup only"
+      },
+      "answer": "A",
+      "rationale": "401 unauthorized.",
+      "distractor_explanations": {
+        "B": "400 path.",
+        "C": "Maybe later.",
+        "D": "INT-009."
+      },
+      "concept": "401",
+      "citation_ids": [
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "403 REQUEST_LIMIT_EXCEEDED in an incident?",
+      "options": {
+        "A": "Read Remaining; stop hot retries",
+        "B": "Log the access token",
+        "C": "Treat as 201",
+        "D": "Compute Replay +1"
+      },
+      "answer": "A",
+      "rationale": "Limits plus error-codes.",
+      "distractor_explanations": {
+        "B": "Forbidden.",
+        "C": "False.",
+        "D": "INT-007."
+      },
+      "concept": "403",
+      "citation_ids": [
+        "SF-REST-ERRORS",
+        "SF-REST-LIMITS"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Pure Connect __x path 'invoice drift'. First mental model?",
+      "options": {
+        "A": "There are no stored rows to cycle-count; check live filters/auth/remote",
+        "B": "Nightly Name match",
+        "C": "Must be Bulk 2.0",
+        "D": "Must be OM SOAP"
+      },
+      "answer": "A",
+      "rationale": "Virtualization holds no copy.",
+      "distractor_explanations": {
+        "B": "Wrong pattern.",
+        "C": "Not necessarily.",
+        "D": "INT-008."
+      },
+      "concept": "No copy",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What never belongs in debug logs?",
+      "options": {
+        "A": "Access tokens / Bearer / client secrets",
+        "B": "HTTP status 400",
+        "C": "errorCode REQUEST_LIMIT_EXCEEDED",
+        "D": "ExtKey__c of a LAB_ row"
+      },
+      "answer": "A",
+      "rationale": "Token safety.",
+      "distractor_explanations": {
+        "B": "Useful.",
+        "C": "Useful.",
+        "D": "OK in sandbox LAB_."
+      },
+      "concept": "No token logs",
+      "citation_ids": [
+        "SF-APEX-CALLOUTS"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "CI cannot reach the vendor. Tests?",
+      "options": {
+        "A": "Mocks still prove Apex; live sandbox is a separate optional check",
+        "B": "Skip all tests",
+        "C": "Use production tokens in CI",
+        "D": "Disable named credentials"
+      },
+      "answer": "A",
+      "rationale": "Testing objective.",
+      "distractor_explanations": {
+        "B": "Regressions.",
+        "C": "Security fail.",
+        "D": "Wrong."
+      },
+      "concept": "CI",
+      "citation_ids": [
+        "SF-APEX-CALLOUTS"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "200 extra ERP invoices, Salesforce missing them. Copy-based design.",
+      "options": {
+        "A": "Reconcile on External Id/keys; check failed retries/403s",
+        "B": "Match on Account Name",
+        "C": "Raise OAuth scopes blindly",
+        "D": "Delete Remaining"
+      },
+      "answer": "A",
+      "rationale": "Keys plus failure signals.",
+      "distractor_explanations": {
+        "B": "Fragile.",
+        "C": "Unrelated first step.",
+        "D": "Nonsense."
+      },
+      "concept": "Drift",
+      "citation_ids": [
+        "SF-INT-PATTERNS",
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Diagnosis order after a failed POST?",
+      "options": {
+        "A": "Status first (401/400/403), then keys/style, not 'reboot Salesforce'",
+        "B": "Always Metadata retrieve",
+        "C": "Always Replay +1",
+        "D": "Always Connect"
+      },
+      "answer": "A",
+      "rationale": "Layered diagnosis.",
+      "distractor_explanations": {
+        "B": "Wrong family.",
+        "C": "INT-007 trap.",
+        "D": "INT-009."
+      },
+      "concept": "Order",
+      "citation_ids": [
+        "SF-REST-ERRORS"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Testing vs observability?",
+      "options": {
+        "A": "Tests prove before/while building; observability watches production-like runtime safely",
+        "B": "Identical",
+        "C": "Observability replaces mocks",
+        "D": "Tests require production"
+      },
+      "answer": "A",
+      "rationale": "Both required.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Test vs watch",
+      "citation_ids": [
+        "SF-APEX-CALLOUTS",
+        "SF-REST-LIMITS"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Reconciliation vs virtualization?",
+      "options": {
+        "A": "Reconcile stored copies via keys; virtualization has no stored copy to count",
+        "B": "Always the same job",
+        "C": "Virtualization uses nextRecordsUrl for events",
+        "D": "Reconciliation is OAuth"
+      },
+      "answer": "A",
+      "rationale": "INT-009 vs this topic.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "INT-007 mix.",
+        "D": "False."
+      },
+      "concept": "Count vs telescope",
+      "citation_ids": [
+        "SF-INT-PATTERNS"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "te",
+      "front": "Callout test double?",
+      "back": "HttpCalloutMock and Test.setMock."
+    },
+    {
+      "id": "F2",
+      "category": "ob",
+      "front": "Two live signals?",
+      "back": "HTTP status/errorCode and Limits Remaining."
+    },
+    {
+      "id": "F3",
+      "category": "re",
+      "front": "Reconciliation keys?",
+      "back": "Remote unique key in Salesforce or Salesforce Id in remote."
+    },
+    {
+      "id": "F4",
+      "category": "se",
+      "front": "Log Bearer?",
+      "back": "Never log a Bearer token, refresh token, or named-credential secret in debug or APM."
+    },
+    {
+      "id": "F5",
+      "category": "di",
+      "front": "401 first meaning?",
+      "back": "Auth/token/credential problem."
+    },
+    {
+      "id": "F6",
+      "category": "di",
+      "front": "400 first meaning?",
+      "back": "JSON/XML contract problem."
+    },
+    {
+      "id": "F7",
+      "category": "di",
+      "front": "403 REQUEST_LIMIT_EXCEEDED?",
+      "back": "Quota; inspect Remaining; no hot retry."
+    },
+    {
+      "id": "F8",
+      "category": "vi",
+      "front": "Reconcile Connect __x rows?",
+      "back": "There are no stored rows; do not cycle-count a fridge that is not there."
+    },
+    {
+      "id": "F9",
+      "category": "lab",
+      "front": "LAB_ data?",
+      "back": "Synthetic names in disposable orgs."
+    },
+    {
+      "id": "F10",
+      "category": "ci",
+      "front": "CI without internet?",
+      "back": "HttpCalloutMock tests still run in CI without internet or a live named-credential host."
+    },
+    {
+      "id": "F11",
+      "category": "name",
+      "front": "Match on Name?",
+      "back": "Too weak for invoice reconcile."
+    },
+    {
+      "id": "F12",
+      "category": "em",
+      "front": "Invent Event Monitoring fields?",
+      "back": "No. Needs verification."
+    },
+    {
+      "id": "F13",
+      "category": "lag",
+      "front": "Replay lag risk?",
+      "back": "Approaching 72-hour cliff (INT-007)."
+    },
+    {
+      "id": "F14",
+      "category": "idemp",
+      "front": "Incident duplicates?",
+      "back": "Check INT-008 keys plus retries."
+    },
+    {
+      "id": "F15",
+      "category": "sec",
+      "front": "Secret store?",
+      "back": "Named/external credentials, not Apex."
+    },
+    {
+      "id": "F16",
+      "category": "ord",
+      "front": "Diagnosis slogan?",
+      "back": "Badge, packing list, fuel, serials, flight plan."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "How do you cover testing, observability, reconciliation, security, and incident diagnosis?",
+      "answer_30_seconds": "Mocks and sandbox LAB_ tests. Watch status, Remaining, replay lag—never tokens. Reconcile copies on keys. Diagnose 401/400/403 then drift then style.",
+      "answer_2_minutes": "Virtualization is not a cycle count. Event Monitoring fields I will not invent. Named credentials stay the secret store. Patterns require error handling, not silent drop.",
+      "example": "Invoice integration rehearsal with 200-row drift.",
+      "tradeoffs": [
+        "Signal vs noise"
+      ],
+      "follow_ups": [
+        "Which key?"
+      ],
+      "weak_answer_warnings": [
+        "Prod-only test"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "What is your incident diagnosis order?",
+      "answer_30_seconds": "401 auth, 400 contract, 403 limits, then key drift, then pattern mismatch, then remote outage.",
+      "answer_2_minutes": "I want a timestamped status code before opinions. I will not reboot Salesforce as step one. Connect emptiness is not copy drift.",
+      "example": "Failed POST then a later count mismatch.",
+      "tradeoffs": [
+        "Speed vs accuracy"
+      ],
+      "follow_ups": [
+        "Where do logs live?"
+      ],
+      "weak_answer_warnings": [
+        "Always Bulk"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "CI used a production refresh token to 'make tests real'.",
+      "answer_30_seconds": "Revoke token, rotate, move to mocks, treat as a security incident.",
+      "answer_2_minutes": "That is an INT-004 token-safety incident. Apex tests must use HttpCalloutMock, not a production refresh token in CI. I add a secret scan for Bearer strings, rotate the leaked credential, and I do not keep the production token as a backup in the pipeline.",
+      "example": "GitHub secret scan finds a production refresh token inside an Apex HttpCallout test class.",
+      "tradeoffs": [
+        "Realism vs blast radius"
+      ],
+      "follow_ups": [
+        "Sandbox contract test?"
+      ],
+      "weak_answer_warnings": [
+        "Leave token until Monday"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Finance says Salesforce is missing 200 ERP invoices.",
+      "answer_30_seconds": "If we copy: reconcile External Id, check 403/retries/DLQ. If we only virtualize: we never stored them—look at filters and ERP.",
+      "answer_2_minutes": "I reconcile on the documented external key from the integration pattern, not on Name. Two hundred missing invoices may be sharing, an ignored done=false page, or HTTP 403 drops. I separate Remaining quota from true key mismatch before I accuse Salesforce of deleting rows.",
+      "example": "LAB_Invoice__c ExtKey__c versus the ERP invoice list shows 200 keys present only on ERP.",
+      "tradeoffs": [
+        "Copy vs telescope"
+      ],
+      "follow_ups": [
+        "Idempotency?"
+      ],
+      "weak_answer_warnings": [
+        "Match Name"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Logs are huge and still useless.",
+      "answer_30_seconds": "They probably logged payloads/tokens and not status/errorCode/Remaining.",
+      "answer_2_minutes": "I redraft logging: status, errorCode, correlation id, key—not Bearer. I sample, I do not print every JSON body with PII.",
+      "example": "Debug log full of Authorization headers.",
+      "tradeoffs": [
+        "Verbosity vs leak"
+      ],
+      "follow_ups": [
+        "Correlation id?"
+      ],
+      "weak_answer_warnings": [
+        "More System.debug"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Tests green, production 400s.",
+      "answer_30_seconds": "Mock body drifted from the vendor contract. Add a sandbox contract test; still no production tokens.",
+      "answer_2_minutes": "Green tests with production HTTP 400s usually mean the mock drifted from the vendor JSON/XML contract (INT-005). I update the mock after change control and add observability on 400 rate. A required field the vendor added will pass an old 200 mock and fail live.",
+      "example": "Vendor added a required JSON field; sandbox mock still returns 200 with the old body.",
+      "tradeoffs": [
+        "Mock fidelity vs isolation"
+      ],
+      "follow_ups": [
+        "Schema lint?"
+      ],
+      "weak_answer_warnings": [
+        "SeeAllData prod"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "What do you monitor on an event-driven integration?",
+      "answer_30_seconds": "Replay lag versus 72 hours, error handler DLQ, subscriber heartbeat—not SOQL nextRecordsUrl.",
+      "answer_2_minutes": "INT-007 retention cliff is the unique signal. I will not invent Event Monitoring names. Idempotency metrics catch duplicates.",
+      "example": "CDC cache subscriber lag, last Replay ID age, and a dead-letter count on failed handlers.",
+      "tradeoffs": [
+        "Lag vs throughput"
+      ],
+      "follow_ups": [
+        "Managed subscribe?"
+      ],
+      "weak_answer_warnings": [
+        "Query More for events"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach flight-recorder plus cycle-count analogy and where it breaks.",
+      "answer_30_seconds": "Mocks are simulators, black box is status/Remaining, serials are keys, cockpit locks are credentials. It breaks for virtualization (no crates) and invented APM SKUs.",
+      "answer_2_minutes": "The flight recorder is status codes, Limits Remaining, and Replay IDs; the cycle count is reconciliation on business keys. It breaks if I treat virtualization as a copy to count, or if I invent OAuth grant bodies while diagnosing. I walk 401, then 400, then 403, then keys, then style.",
+      "example": "Whiteboard HTTP 401 on the callout, then 200 invoices missing after a weekend batch.",
+      "tradeoffs": [
+        "Teaching vs fake SKUs"
+      ],
+      "follow_ups": [
+        "Where is Remaining?"
+      ],
+      "weak_answer_warnings": [
+        "Generic furniture metaphor"
+      ]
+    }
+  ]
+}

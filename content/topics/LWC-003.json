@@ -1,0 +1,994 @@
+{
+  "topic_id": "LWC-003",
+  "slug": "reactive-state-properties-getters-directives-conditiona",
+  "title": "Reactive state, properties, getters, directives, conditional rendering, and lists",
+  "track": "Lightning Web Components",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-002"
+  ],
+  "objectives": [
+    "Explain when an LWC template rerenders: a field used in the template or in a getter used in the template changes.",
+    "Choose a getter for computed template values instead of complex expressions in markup.",
+    "Use lwc:if, lwc:elseif, and lwc:else for conditional rendering, not legacy if:true / if:false.",
+    "Render lists with for:each or iterator and a unique key that is not the array index."
+  ],
+  "diagnostic_question": "A list in the template does not update when you push onto an array, a computed full name will not bind as firstName + lastName in HTML, and if:true still appears in a review. Which reactive state, getter, directive, conditional rendering, and list rules did the author miss?",
+  "definition": "If a field’s value changes, and the field is used in a template or in a getter of a property that’s used in a template, the component rerenders. Bind {property} or a getter—not computed expressions—in the HTML template. Conditional rendering uses lwc:if / lwc:elseif / lwc:else. Lists use for:each or iterator with a unique key. ([Reactivity](https://developer.salesforce.com/docs/platform/lwc/guide/reactivity-fields.html); [Bind Data](https://developer.salesforce.com/docs/platform/lwc/guide/js-props-getter.html); [Conditional rendering](https://developer.salesforce.com/docs/platform/lwc/guide/create-conditional.html); [Render Lists](https://developer.salesforce.com/docs/platform/lwc/guide/create-lists.html))",
+  "why_it_matters": "Interviewers watch for mutating an object in place and wondering why the template is stale, stuffing expressions into markup, and using array index as key. Those bugs look like 'LWC is broken' and are really reactive state and directive rules.",
+  "sixty_second_explanation": "Treat the template as a stadium scoreboard. Primitive scores update when the statistician posts a new number (assign a new field value). If the score is a clipboard of objects, shoving a new line onto the same clipboard may not move the lights unless you @track that clipboard or replace it. Getters are the computed line score. lwc:if lights a section; for:each is the roster, and every player needs a unique jersey key—not their lineup index.",
+  "deeper_explanation": [
+    "Primitive fields are reactive. LWC tracks field changes shallowly with ===. For objects and arrays, assign a new object or array, or decorate a plain object/array with @track to observe internal mutations. @track does not observe Date, Map, Set, or class instances. A component rerenders only if a property accessed in the previous render is updated. ([Reactivity](https://developer.salesforce.com/docs/platform/lwc/guide/reactivity-fields.html))",
+    "In the template, bind {property} with no spaces. Use a JavaScript getter to compute values. LWC does not allow computed expressions such as person[2].name['John'] in the template. Getters reevaluate when the component rerenders. ([Bind Data](https://developer.salesforce.com/docs/platform/lwc/guide/js-props-getter.html))",
+    "lwc:if, lwc:elseif, and lwc:else supersede if:true and if:false, which are no longer recommended. Complex expressions such as !condition are not supported on lwc:if; use a getter. lwc:elseif and lwc:else must immediately follow a sibling lwc:if or lwc:elseif. ([Conditional rendering](https://developer.salesforce.com/docs/platform/lwc/guide/create-conditional.html); [Directives](https://developer.salesforce.com/docs/platform/lwc/guide/reference-directives.html))",
+    "for:each iterates an array with for:item and for:index. iterator adds first and last. Every item needs key as a string or number, not an object, and you cannot use index as the key. The key is for rerender optimization and is not reflected in the DOM. ([Render Lists](https://developer.salesforce.com/docs/platform/lwc/guide/create-lists.html))"
+  ],
+  "mental_model": {
+    "analogy": "A stadium scoreboard: assigning a new primitive is posting a new number; object clipboards need a fresh clipboard or a tracked clipboard; getters compute the line score; lwc:if lights a section; for:each is the roster with unique jersey keys.",
+    "useful_mapping": [
+      "reactive field → score the lights watch",
+      "=== assignment → posting a new number",
+      "@track on {} or [] → watching marks on the same clipboard",
+      "getter → computed line score",
+      "lwc:if / elseif / else → which scoreboard section is lit",
+      "for:each → roster rows",
+      "key → unique jersey, not lineup index"
+    ],
+    "where_it_breaks": [
+      "@track does not watch Date/Map/Set internals even if you decorate them.",
+      "Rerender happens only for properties accessed last render, even with @track.",
+      "The jersey-key rule is a framework identity rule, not sports policy.",
+      "Legacy if:true is still parsed today but is not the recommended directive."
+    ]
+  },
+  "teach_back_prompt": "Explain why pushing onto an array may not update the template, why a getter belongs in the JavaScript class instead of an expression in the HTML template, and why list keys cannot be the index.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "When does an LWC template rerender? Primitive versus object fields."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Rewrite if:true as lwc:if and move !isEmpty into a getter."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Write for:each with a string key and say why index is illegal as key."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Debug a Date field that does not rerender after setMinutes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: reactive state, getters, directives, lists."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-REACTIVITY",
+      "title": "Reactivity for Fields, Objects, and Arrays",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/reactivity-fields.html",
+      "supports": "Shallow === tracking, @track for plain objects and arrays, non-trackable Date/Map/Set, rerender only for accessed properties.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace wire-service reactivity (LWC-006)."
+    },
+    {
+      "source_id": "SF-LWC-BIND",
+      "title": "Bind Data in a Template",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/js-props-getter.html",
+      "supports": "{property} binding, no spaces, getters for computed values, no computed expressions in the template.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Event handling is introduced only as onchange binding; events are LWC-005."
+    },
+    {
+      "source_id": "SF-LWC-CONDITIONAL",
+      "title": "Render DOM Elements Conditionally",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-conditional.html",
+      "supports": "lwc:if, lwc:elseif, lwc:else; legacy if:true/if:false no longer recommended.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Loading/empty/error UI patterns are LWC-007."
+    },
+    {
+      "source_id": "SF-LWC-LISTS",
+      "title": "Render Lists",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/create-lists.html",
+      "supports": "for:each, iterator first/last, key must be string or number, not index.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Large-list performance is LWC-011."
+    },
+    {
+      "source_id": "SF-LWC-DIRECTIVES",
+      "title": "HTML Template Directives",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/reference-directives.html",
+      "supports": "Directive catalog; lwc:if expressions are simple dot notation; complex expressions belong in getters.",
+      "release_or_version": "Lightning Web Components Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Not every directive (lwc:spread, slots) is taught in this lesson."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Reactive primitives",
+        "@track vs replace object",
+        "Getters not template expressions",
+        "lwc:if family",
+        "for:each plus key",
+        "Do not key on index"
+      ],
+      "accessible_description": "Portrait map: fields used in the template rerender the component; getters compute values; lwc:if conditionally inserts DOM; lists require unique keys."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-REACTIVITY",
+        "SF-LWC-BIND",
+        "SF-LWC-CONDITIONAL",
+        "SF-LWC-LISTS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Template rerender: fields, getters, directives, lists"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Field[JavaScript field] -->|used in template or getter| Tpl[HTML template]\n  Field -->|assign new primitive| RR[Component rerenders]\n  Obj[Object or array] -->|replace or @track plain {} []| RR\n  Getter[Getter in class] --> Tpl\n  Tpl --> IfDir[lwc:if elseif else]\n  Tpl --> Each[for:each or iterator]\n  Each --> Key[key string or number not index]",
+      "decision": "flowchart TD\n  Change[UI should update] --> Q1{Is it a primitive field used in the template?}\n  Q1 -->|Yes| Assign[Assign a new value]\n  Q1 -->|Object or array| Q2{Plain {} or [] internals?}\n  Q2 -->|Yes| Track[Use @track or assign a copy]\n  Q2 -->|Date Map Set class| Clone[Clone and assign a new object]\n  Change --> Q3{Need computed text?}\n  Q3 -->|Yes| Getter[JavaScript getter — not a template expression]\n  Change --> Q4{Show hide or list?}\n  Q4 -->|Conditional| Ifs[lwc:if family not if:true]\n  Q4 -->|List| Keys[for:each with unique key not index]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "If a field’s value changes and the field is used in a template or in a getter used in a template, the component rerenders. Primitive tracking is shallow ===. Use @track or a new assignment for plain objects and arrays; Date/Map/Set internals are not observed.",
+      "source_ids": ["SF-LWC-REACTIVITY"],
+      "scope": "Reactive state",
+      "validation": "Reactivity for Fields, Objects, and Arrays.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Bind {property} with no spaces. Compute values with getters. The template does not allow computed expressions such as person[2].name['John'].",
+      "source_ids": ["SF-LWC-BIND"],
+      "scope": "Properties and getters",
+      "validation": "Bind Data in a Template.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Use lwc:if, lwc:elseif, and lwc:else. if:true and if:false are no longer recommended. Complex expressions belong in getters.",
+      "source_ids": ["SF-LWC-CONDITIONAL", "SF-LWC-DIRECTIVES"],
+      "scope": "Conditional rendering directives",
+      "validation": "Render DOM Elements Conditionally and HTML Template Directives.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Lists use for:each or iterator. Every item needs a key that is a string or number. You cannot use index as key.",
+      "source_ids": ["SF-LWC-LISTS"],
+      "scope": "List rendering",
+      "validation": "Render Lists.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "lwc:if family supersedes if:true/if:false (Spring ’23 onward). Reverify directive guidance on the current LWC Developer Guide.",
+  "unresolved_uncertainty": [
+    "Exact deprecation timeline for if:true/if:false is 'may be deprecated and removed'; treat as do-not-use in new code.",
+    "Template expression capabilities can expand by API version; this lesson uses the documented no-computed-expression rule."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Reactive field",
+      "telugu": "టెంప్లేట్‌లో వాడినప్పుడు మారితే UI తిరిగి గీసే ఫీల్డ్."
+    },
+    {
+      "english": "for:each key",
+      "telugu": "జాబితా అంశానికి ప్రత్యేక జెర్సీ నంబర్—ఇండెక్స్ కాదు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Fields used in the template or in a getter rerender the component. Compute with getters. Hide with lwc:if. Lists need for:each and a unique key, never the index.",
+    "two_minutes": "I separate primitives from objects: assign new values, or @track plain {}/[] . I do not expect Date mutation to rerender. I refuse template expressions like !flag; I write a getter. I migrate if:true to lwc:if. I key lists with Ids, not i."
+  },
+  "terminology": [
+    {
+      "term": "reactive field",
+      "plain": "A JavaScript field the template watches so a new value repaints the UI.",
+      "precise": "If the field is used in the template or in a getter used in the template, assigning a new value (===) rerenders the component.",
+      "example": "greeting = 'LAB_' bound as {greeting}.",
+      "non_example": "A local const inside a handler that the template never reads.",
+      "confusable_neighbor": "@wire provisioned data, which is a later data-access topic.",
+      "boundary": "Public @api properties are LWC-004."
+    },
+    {
+      "term": "@track",
+      "plain": "A decorator that watches inside a plain object or array.",
+      "precise": "Observes mutations to {} and [] recursively. Does not observe Date, Map, Set, or class instances.",
+      "example": "@track fullName = { firstName: '', lastName: '' }; then fullName.firstName = 'Ada' rerenders.",
+      "non_example": "@track x = new Date(); then x.setMinutes(1) — not observed.",
+      "confusable_neighbor": "@api, which exposes a public property, not deep observation.",
+      "boundary": "Do not decorate every primitive; primitives are already reactive."
+    },
+    {
+      "term": "getter",
+      "plain": "A JavaScript get method the template binds like a property.",
+      "precise": "Computes a value in the class. Preferred over template expressions. Reevaluated when the component rerenders.",
+      "example": "get uppercasedFullName() { return `${this.firstName} ${this.lastName}`.toUpperCase(); }",
+      "non_example": "{firstName + lastName} in the HTML template.",
+      "confusable_neighbor": "Apex getter property, which is server-side.",
+      "boundary": "Keep getters pure enough to unit test; side effects belong in handlers."
+    },
+    {
+      "term": "lwc:if",
+      "plain": "The directive that inserts or removes DOM when a property is truthy.",
+      "precise": "lwc:if, lwc:elseif, and lwc:else supersede if:true/if:false. Expressions are simple; complex logic goes in a getter. elseif/else must be immediate siblings.",
+      "example": "<template lwc:if={hasRows}>...</template><template lwc:else>...</template>",
+      "non_example": "if:true={hasRows} in new code.",
+      "confusable_neighbor": "CSS display:none that leaves the nodes in the DOM.",
+      "boundary": "Loading/error empty states as a UX pattern are LWC-007."
+    },
+    {
+      "term": "for:each",
+      "plain": "The directive that repeats markup for each item in an array.",
+      "precise": "Use for:item and for:index on a nested template or element. Requires key on the first element.",
+      "example": "<template for:each={contacts} for:item=\"c\"><p key={c.Id}>{c.Name}</p></template>",
+      "non_example": "Building the list with innerHTML in the class.",
+      "confusable_neighbor": "iterator, which also yields first and last flags.",
+      "boundary": "Virtualization of huge lists is LWC-011."
+    },
+    {
+      "term": "key directive",
+      "plain": "The unique identity for a list item so LWC can rerender only what changed.",
+      "precise": "Must be a string or number, not an object. You cannot use index as key. Not reflected in the DOM at runtime.",
+      "example": "key={contact.Id}",
+      "non_example": "key={index}",
+      "confusable_neighbor": "HTML id attributes, which CSS/JS should not rely on.",
+      "boundary": "Generating keys for new local rows is allowed via a private counter, not via index."
+    },
+    {
+      "term": "iterator directive",
+      "plain": "A list directive that also tells you first and last items.",
+      "precise": "iterator:iteratorname={array} on a template tag. iteratorname is lowercase. Exposes value, index, first, last.",
+      "example": "iterator:it={contacts} with lwc:if={it.first} for special styling.",
+      "non_example": "Using for:each when you only needed first/last without iterator.",
+      "confusable_neighbor": "JavaScript Array.entries(), which is not a template directive.",
+      "boundary": "Still requires a unique key."
+    },
+    {
+      "term": "template expression limits",
+      "plain": "The HTML template binds identifiers and simple dots, not formulas.",
+      "precise": "{data} and {data.name} are valid. Spaces inside braces are invalid. Computed expressions are not allowed; use a getter.",
+      "example": "{person.firstName} in the template.",
+      "non_example": "{ person } with spaces, or {items[0].name}.",
+      "confusable_neighbor": "Apex formula fields, which are a different expression language.",
+      "boundary": "Reverify if a later API version documents richer template expressions."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Put state on reactive fields",
+      "actor": "Developer",
+      "trigger": "UI must change when values change",
+      "before": "Values trapped in non-template locals",
+      "after": "Fields the template or a getter reads",
+      "observe": "Assigning a new primitive updates the HTML template",
+      "failure": "Mutating a Date or Map in place and expecting a rerender"
+    },
+    {
+      "step": 2,
+      "transition": "Compute with getters",
+      "actor": "Developer",
+      "trigger": "Need derived text or booleans",
+      "before": "Temptation to write expressions in HTML",
+      "after": "get property() in the JavaScript class bound as {property}",
+      "observe": "Template has no + or ! expressions",
+      "failure": "{firstName + lastName} in the template"
+    },
+    {
+      "step": 3,
+      "transition": "Branch with lwc:if",
+      "actor": "Developer",
+      "trigger": "Need conditional rendering",
+      "before": "Legacy if:true or CSS-only hiding as the only tool",
+      "after": "lwc:if / elseif / else on adjacent siblings",
+      "observe": "Only one branch in the DOM",
+      "failure": "Text nodes between lwc:if and lwc:else"
+    },
+    {
+      "step": 4,
+      "transition": "Render lists with keys",
+      "actor": "Developer",
+      "trigger": "Need repeating rows",
+      "before": "Array in JS with no template loop",
+      "after": "for:each or iterator plus string/number key",
+      "observe": "Reordering does not reuse the wrong row",
+      "failure": "key={index}"
+    }
+  ],
+  "when_to_use": [
+    "When an LWC HTML template must update from reactive state on properties in the JavaScript class.",
+    "When you need a getter because the template cannot evaluate a complex expression.",
+    "When conditional rendering should use lwc:if directives instead of if:true.",
+    "When a list in the template needs for:each or iterator with a unique key, not the index.",
+    "When an object or array mutation does not rerender and you must choose @track versus assigning a copy."
+  ],
+  "when_not_to_use": [
+    "Do not use this reactive-state lesson as a substitute for parent @api properties (LWC-004) or Lightning Data Service wire (LWC-006).",
+    "Do not treat lwc:if directives as a complete loading-empty-error UX pattern (LWC-007).",
+    "Do not use for:each list keys as a performance-tuning course for huge datasets (LWC-011).",
+    "Do not mutate production records from a template-binding lab; keep LAB_ synthetic data.",
+    "Do not put business rules that belong in Apex or Flow into a getter just because the template needed a boolean."
+  ],
+  "configuration_or_code_location": [
+    "lwc/labScoreboard/labScoreboard.js fields, getters, and @track.",
+    "labScoreboard.html bindings, lwc:if, and for:each.",
+    "Browser console warning when assigning a non-trackable object.",
+    "Jest later (LWC-012); this lab is manual template checks."
+  ],
+  "worked_example": {
+    "scenario": "A sandbox lab shows LAB_ contacts. The author pushes onto this.contacts, writes {firstName + lastName} in the template, uses if:true, and keys rows with index. The UI is stale and a reviewer rejects the PR.",
+    "inputs": [
+      "Array of synthetic contacts with Id",
+      "Need uppercase full name",
+      "Need empty versus populated branches"
+    ],
+    "decisions": [
+      {
+        "decision": "Replace the array or @track it; do not rely on push alone without @track.",
+        "because": "Without @track, only assigning a new array identity rerenders.",
+        "rejected": "contacts.push(row) on an untracked field as the only update"
+      },
+      {
+        "decision": "Add get displayName() in the class and bind {displayName}.",
+        "because": "Templates do not allow computed expressions.",
+        "rejected": "{firstName + lastName} in HTML"
+      },
+      {
+        "decision": "Switch to lwc:if={hasRows} with a getter, and key={contact.Id}.",
+        "because": "if:true is not recommended; index is an illegal key.",
+        "rejected": "if:true and key={index}"
+      }
+    ],
+    "configuration_or_code": [
+      "get hasRows() { return this.contacts && this.contacts.length > 0; }",
+      "<template lwc:if={hasRows}><template for:each={contacts} for:item=\"c\"><p key={c.Id}>{c.Name}</p></template></template>",
+      "this.contacts = [...this.contacts, newRow];"
+    ],
+    "output": "Adding a contact updates the list. Empty state uses lwc:else. Names come from a getter if computed.",
+    "verification": [
+      "push-without-copy does not update until the array is replaced or tracked.",
+      "Template contains no if:true.",
+      "Keys are Ids, not indexes."
+    ],
+    "self_explanation": "Reactivity, getters, directives, and list keys were four separate rules, not one 'refresh' button."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable scratch org; labScoreboard LWC only.",
+    "starting_state_checks": [
+      "You can deploy LWCs.",
+      "No production data in the list."
+    ],
+    "steps": [
+      "Create labScoreboard with a primitive field bound in the HTML template and confirm assignment rerenders.",
+      "Add an array of LAB_ items. Demonstrate that push does not update until you copy the array or add @track, matching the Guide.",
+      "Add get hasItems() and lwc:if/lwc:else. Replace any if:true.",
+      "Render the list with for:each and key={item.id} where id is a string. Attempting key={index} should be treated as a failed check in code review."
+    ],
+    "guided_completion": [
+      "If Date mutation does not rerender, clone the Date and assign it.",
+      "If lwc:else is rejected, ensure it immediately follows lwc:if with no extra sibling element."
+    ],
+    "independent_challenge": "Use iterator to style the first and last rows with lwc:if={it.first} and lwc:if={it.last}.",
+    "evidence": [
+      "HTML template showing lwc:if, for:each, and key on a string field.",
+      "JS showing a getter and either @track or array copy on update."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete labScoreboard.",
+      "Do not deploy to production."
+    ],
+    "limitations": "Does not wire Salesforce records; lists are in-memory LAB_ arrays."
+  },
+  "decision_table": [
+    {
+      "signal": "A string or boolean on the class should show in the template.",
+      "choose": "Assign a new primitive value to a field the template reads.",
+      "not": "Keep the value in a handler-local variable the template never sees.",
+      "why": "Only fields used in the template or a getter drive rerender."
+    },
+    {
+      "signal": "You change a property on a nested object and the UI stays stale.",
+      "choose": "Assign a new object copy, or @track a plain {} / [].",
+      "not": "Expect @track on a Date or class instance to see internals.",
+      "why": "Tracking is shallow unless @track on plain objects/arrays; Date is not observed."
+    },
+    {
+      "signal": "The template needs uppercase combined names or !empty.",
+      "choose": "A JavaScript getter bound as {property}.",
+      "not": "A computed expression inside the HTML template.",
+      "why": "Bind Data: no computed expressions; getters are the computation point."
+    },
+    {
+      "signal": "Show a list or an empty branch.",
+      "choose": "lwc:if family plus for:each/iterator with a string or number key.",
+      "not": "if:true and key={index}.",
+      "why": "Legacy conditionals are not recommended; index is an illegal key."
+    }
+  ],
+  "limitations": [
+    "Does not teach @wire or LDS cache.",
+    "Does not teach parent-to-child @api.",
+    "Does not guarantee future if:true removal date.",
+    "Huge-list virtualization is out of scope."
+  ],
+  "security_notes": [
+    "Do not bind untrusted HTML via innerHTML as a reactivity workaround.",
+    "List keys should be stable identifiers, not secrets displayed in the DOM (keys are not reflected, but Ids in markup still need FLS).",
+    "Synthetic LAB_ data only in labs."
+  ],
+  "common_mistakes": [
+    "Mutating arrays in place without @track or copy.",
+    "Template expressions instead of getters.",
+    "if:true in new components.",
+    "key={index}.",
+    "Expecting unused @track properties to rerender."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "UI does not update after object change.",
+      "check": [
+        "Was a new object/array assigned?",
+        "Is @track on a plain object/array?",
+        "Was the property read in the last render?"
+      ],
+      "do_not_assume": "The template engine is disabled."
+    },
+    {
+      "symptom": "Compiler error on lwc:else.",
+      "check": [
+        "Immediate sibling of lwc:if/elseif",
+        "No extra element between branches"
+      ],
+      "do_not_assume": "lwc:else takes an expression."
+    }
+  ],
+  "production_notes": [
+    "Prefer lwc:if in new templates; plan to replace if:true.",
+    "Stable keys from Salesforce Ids when listing records.",
+    "No production deployment is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "When does an LWC rerender after a field change?",
+      "options": {
+        "A": "When the field is used in the template or in a getter used in the template",
+        "B": "On every JavaScript assignment in the org",
+        "C": "Only after a full page reload",
+        "D": "Only if the field is in Apex"
+      },
+      "answer": "A",
+      "rationale": "The reactivity guide ties rerender to template or getter use.",
+      "distractor_explanations": {
+        "B": "Unused fields do not rerender the component.",
+        "C": "Rerender is incremental.",
+        "D": "This lesson is client field reactivity."
+      },
+      "concept": "Rerender trigger",
+      "citation_ids": ["SF-LWC-REACTIVITY"]
+    },
+    {
+      "id": "Q2",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "fullName.firstName = 'Ada' does not rerender. fullName is a plain object, not @track. Why?",
+      "options": {
+        "A": "Without @track, only assigning a new fullName identity is observed",
+        "B": "Strings are never reactive",
+        "C": "Templates cannot bind objects",
+        "D": "@api is required on every field"
+      },
+      "answer": "A",
+      "rationale": "The framework observes assigning a new value to the field, not nested properties, unless @track is used.",
+      "distractor_explanations": {
+        "B": "Primitives are reactive when assigned.",
+        "C": "Dot notation {fullName.firstName} is valid.",
+        "D": "@api is for public properties."
+      },
+      "concept": "@track vs replace",
+      "citation_ids": ["SF-LWC-REACTIVITY"]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How should you compute an uppercase full name for the template?",
+      "options": {
+        "A": "A getter in the JavaScript class bound as {uppercasedFullName}",
+        "B": "{firstName + lastName} in the HTML template",
+        "C": "An Apex formula only",
+        "D": "innerHTML concatenation"
+      },
+      "answer": "A",
+      "rationale": "Bind Data: use a JavaScript getter, not a computed template expression.",
+      "distractor_explanations": {
+        "B": "Computed expressions are not allowed in the template.",
+        "C": "Apex is not required for this UI computation.",
+        "D": "Let the template bind the getter."
+      },
+      "concept": "Getters",
+      "citation_ids": ["SF-LWC-BIND"]
+    },
+    {
+      "id": "Q4",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which conditional directives should new LWC templates use?",
+      "options": {
+        "A": "lwc:if, lwc:elseif, and lwc:else",
+        "B": "if:true and if:false only",
+        "C": "aura:if",
+        "D": "apex:outputPanel rendered="
+      },
+      "answer": "A",
+      "rationale": "lwc:if family supersedes if:true/if:false, which are no longer recommended.",
+      "distractor_explanations": {
+        "B": "Legacy and not recommended.",
+        "C": "Aura.",
+        "D": "Visualforce."
+      },
+      "concept": "lwc:if",
+      "citation_ids": ["SF-LWC-CONDITIONAL"]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Why is key={index} wrong on a for:each list?",
+      "options": {
+        "A": "You cannot use index as a value for key; keys must be a string or number identity",
+        "B": "Lists cannot have keys",
+        "C": "index is required as the only legal key",
+        "D": "Keys must be objects"
+      },
+      "answer": "A",
+      "rationale": "Render Lists: key must be string or number, not an object, and you cannot use index as key.",
+      "distractor_explanations": {
+        "B": "Keys are required.",
+        "C": "Index is explicitly disallowed as key.",
+        "D": "Objects are illegal keys."
+      },
+      "concept": "List key",
+      "citation_ids": ["SF-LWC-LISTS"]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "lwc:if={expression} cannot express !isEmpty. What do you do?",
+      "options": {
+        "A": "Put the logic in a getter and bind that boolean",
+        "B": "Write !isEmpty in the template anyway",
+        "C": "Switch the component to Aura",
+        "D": "Use if:true which allows any JS"
+      },
+      "answer": "A",
+      "rationale": "Directives: complex expressions are not supported; use a getter.",
+      "distractor_explanations": {
+        "B": "Not supported.",
+        "C": "Unrelated.",
+        "D": "Legacy directives are not the fix."
+      },
+      "concept": "Getter for directive expressions",
+      "citation_ids": ["SF-LWC-DIRECTIVES", "SF-LWC-CONDITIONAL"]
+    },
+    {
+      "id": "Q7",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which extra properties does iterator expose besides value and index?",
+      "options": {
+        "A": "first and last booleans",
+        "B": "wire and api",
+        "C": "bubbles and composed",
+        "D": "global and private"
+      },
+      "answer": "A",
+      "rationale": "iterator provides value, index, first, and last.",
+      "distractor_explanations": {
+        "B": "Decorators, not iterator.",
+        "C": "Event init, not lists.",
+        "D": "Apex modifiers."
+      },
+      "concept": "iterator",
+      "citation_ids": ["SF-LWC-LISTS"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "@track x = new Date(); then x.setMinutes(5). Template stays old. Why?",
+      "options": {
+        "A": "LWC does not observe Date internals even with @track; assign a cloned Date",
+        "B": "Dates are illegal in LWC",
+        "C": "@track always watches Date",
+        "D": "You must use if:true"
+      },
+      "answer": "A",
+      "rationale": "The reactivity guide uses Date as a non-trackable object example.",
+      "distractor_explanations": {
+        "B": "Date fields are allowed; mutation is not observed.",
+        "C": "The opposite of the cited behavior.",
+        "D": "Unrelated."
+      },
+      "concept": "Non-trackable objects",
+      "citation_ids": ["SF-LWC-REACTIVITY"]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Is { greeting } with spaces valid in an LWC template?",
+      "options": {
+        "A": "No. Do not add spaces around the property inside braces",
+        "B": "Yes, spaces are required",
+        "C": "Only in Aura",
+        "D": "Only inside for:each"
+      },
+      "answer": "A",
+      "rationale": "Bind Data: { data } is not valid HTML for LWC bindings.",
+      "distractor_explanations": {
+        "B": "Spaces are invalid.",
+        "C": "This is an LWC rule.",
+        "D": "Spacing is invalid anywhere in LWC braces."
+      },
+      "concept": "Binding syntax",
+      "citation_ids": ["SF-LWC-BIND"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "for:each versus iterator?",
+      "options": {
+        "A": "Both loop arrays with keys; iterator also provides first and last",
+        "B": "iterator does not need keys",
+        "C": "for:each is Aura-only",
+        "D": "iterator replaces getters"
+      },
+      "answer": "A",
+      "rationale": "Render Lists documents both; iterator adds first/last; both need key.",
+      "distractor_explanations": {
+        "B": "Keys are required regardless.",
+        "C": "for:each is LWC.",
+        "D": "Getters remain for computed values."
+      },
+      "concept": "List directives",
+      "citation_ids": ["SF-LWC-LISTS"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A teammate still writes if:true. What do you recommend?",
+      "options": {
+        "A": "Replace with lwc:if because if:true is no longer recommended and may be removed",
+        "B": "if:true is required in Summer '26",
+        "C": "Convert the component to Visualforce",
+        "D": "Remove the HTML template"
+      },
+      "answer": "A",
+      "rationale": "Official conditional-rendering topic: legacy directives are no longer recommended.",
+      "distractor_explanations": {
+        "B": "Opposite of the Guide.",
+        "C": "Unrelated.",
+        "D": "UI still needs a template."
+      },
+      "concept": "Legacy conditionals",
+      "citation_ids": ["SF-LWC-CONDITIONAL"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "@track obj is used, but adding obj.value2 does not rerender. The template only reads obj.value1. Why can that happen?",
+      "options": {
+        "A": "Rerender occurs only if a property accessed in the previous render is updated",
+        "B": "@track never works on objects",
+        "C": "Templates cannot read obj.value1",
+        "D": "You must use Aura iteration"
+      },
+      "answer": "A",
+      "rationale": "Even with @track, unused properties do not trigger rerender.",
+      "distractor_explanations": {
+        "B": "@track does observe plain object mutations that were accessed.",
+        "C": "Dot notation is valid.",
+        "D": "Aura is unrelated."
+      },
+      "concept": "Accessed properties",
+      "citation_ids": ["SF-LWC-REACTIVITY"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "reactivity",
+      "front": "When does a field change rerender the template?",
+      "back": "When that field is used in the template or in a getter used in the template."
+    },
+    {
+      "id": "F2",
+      "category": "reactivity",
+      "front": "How are primitive field changes detected?",
+      "back": "Shallowly, by assigning a new value compared with ===."
+    },
+    {
+      "id": "F3",
+      "category": "reactivity",
+      "front": "When do you need @track?",
+      "back": "To observe mutations inside plain objects {} or arrays [] without replacing them."
+    },
+    {
+      "id": "F4",
+      "category": "reactivity",
+      "front": "Does @track observe Date internals?",
+      "back": "No. Clone and assign a new Date. Map and Set are also not observed."
+    },
+    {
+      "id": "F5",
+      "category": "getters",
+      "front": "Where do computed template values live?",
+      "back": "In a JavaScript getter, not as an expression in the HTML template."
+    },
+    {
+      "id": "F6",
+      "category": "binding",
+      "front": "Is { name } with spaces valid?",
+      "back": "No. LWC bindings cannot have spaces inside the braces."
+    },
+    {
+      "id": "F7",
+      "category": "directives",
+      "front": "Recommended conditional directives?",
+      "back": "lwc:if, lwc:elseif, and lwc:else — not if:true/if:false."
+    },
+    {
+      "id": "F8",
+      "category": "directives",
+      "front": "Can lwc:if use !condition?",
+      "back": "No. Complex expressions are unsupported; compute a boolean getter."
+    },
+    {
+      "id": "F9",
+      "category": "lists",
+      "front": "What must every for:each item have?",
+      "back": "A key that is a string or number, unique per item."
+    },
+    {
+      "id": "F10",
+      "category": "lists",
+      "front": "Can key be the array index?",
+      "back": "No. You cannot use index as the key value."
+    },
+    {
+      "id": "F11",
+      "category": "lists",
+      "front": "Why does iterator exist?",
+      "back": "It exposes first and last booleans as well as value and index."
+    },
+    {
+      "id": "F12",
+      "category": "directives",
+      "front": "lwc:else placement rule?",
+      "back": "It must immediately follow a sibling lwc:if or lwc:elseif."
+    },
+    {
+      "id": "F13",
+      "category": "reactivity",
+      "front": "Unused property on a @track object changes. Rerender?",
+      "back": "Not if it was not accessed in the previous render cycle."
+    },
+    {
+      "id": "F14",
+      "category": "binding",
+      "front": "Valid template property forms?",
+      "back": "{data} or {data.name} — not computed index expressions."
+    },
+    {
+      "id": "F15",
+      "category": "lists",
+      "front": "Is the key shown in the DOM?",
+      "back": "No. The key is a render optimization and is not reflected in the DOM."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What makes LWC fields reactive?",
+      "answer_30_seconds": "A field used in the template or in a getter used in the template rerenders the component when its assigned value changes by ===. Primitives are easy; objects need a new assignment or @track.",
+      "answer_2_minutes": "I quote the reactivity guide. I mention @track only for plain {} and []. I call out Date/Map/Set. I mention that unused tracked properties do not rerender. I do not confuse this with @wire.",
+      "example": "greeting = 'LAB_' updates {greeting}; contacts.push does not unless tracked or copied.",
+      "tradeoffs": [
+        "Replace array vs @track",
+        "Deep track vs immutable copies"
+      ],
+      "follow_ups": [
+        "What does the console warn for non-trackable objects?",
+        "Does @api change this?"
+      ],
+      "weak_answer_warnings": [
+        "Everything is magically deeply reactive"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why getters instead of expressions in the HTML template?",
+      "answer_30_seconds": "The template allows identifiers and simple dots, not computed expressions. Getters are JavaScript, testable, and reevaluated on rerender.",
+      "answer_2_minutes": "I show uppercasedFullName from the Bind Data topic. I mention no spaces in braces. I use getters for lwc:if booleans like !empty. I do not invent a formula language inside LWC HTML.",
+      "example": "get hasRows() { return this.rows.length > 0; } with lwc:if={hasRows}.",
+      "tradeoffs": [
+        "Getter vs precomputing in the handler",
+        "Readability vs extra properties"
+      ],
+      "follow_ups": [
+        "Can getters have side effects?",
+        "What about {data.name}?"
+      ],
+      "weak_answer_warnings": [
+        "Writing {a + b} in the template"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "A PR still uses if:true and key={index}. What do you change?",
+      "answer_30_seconds": "Switch to lwc:if/lwc:else and key off a stable Id string. Index is not a legal key; if:true is not recommended.",
+      "answer_2_minutes": "I explain immediate-sibling rules for elseif/else. I explain why index keys reuse the wrong row when the list sorts. I keep for:item. If first/last styling is needed I switch to iterator.",
+      "example": "Replace if:true={hasRows} and key={index} with lwc:if={hasRows} and key={contact.Id} on each row.",
+      "tradeoffs": [
+        "Id as key vs generated local keys for new rows",
+        "for:each vs iterator"
+      ],
+      "follow_ups": [
+        "What if the row has no Id yet?",
+        "Is key visible in the DOM?"
+      ],
+      "weak_answer_warnings": [
+        "Defending index keys for simplicity"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "You @track a Date and call setMinutes. The template does not move. What is your fix?",
+      "answer_30_seconds": "Date internals are not observed. Clone the Date, mutate the clone, assign it back to the field.",
+      "answer_2_minutes": "I treat this as the Guide's non-trackable object warning. Same story for Map and Set. For plain {} I could @track. I check the browser console for the non-trackable warning. I do not bump apiVersion as a superstition.",
+      "example": "this.due = new Date(this.due.getTime()); this.due.setMinutes(5) still fails—assign after clone with the new minutes.",
+      "tradeoffs": [
+        "Store epoch numbers vs Date objects",
+        "Replace vs mutate"
+      ],
+      "follow_ups": [
+        "Does @track help arrays of primitives?",
+        "What is shallow tracking?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming the HTML template syntax"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "lwc:else fails compile. What do you look for?",
+      "answer_30_seconds": "A non-whitespace sibling between lwc:if and lwc:else, or an expression on lwc:else. elseif/else must immediately follow if/elseif.",
+      "answer_2_minutes": "I also check that the boolean is a simple property or getter, not !flag in the markup. I migrate if:false patterns to a getter plus lwc:if. I do not wrap the else in a random extra template without the directive pairing.",
+      "example": "Invalid: lwc:if block, then a stray div, then lwc:else.",
+      "tradeoffs": [
+        "Nested conditionals vs flattened getters",
+        "template tags vs directives on elements"
+      ],
+      "follow_ups": [
+        "Can lwc:if sit on a custom element tag?",
+        "What about nested conditionals?"
+      ],
+      "weak_answer_warnings": [
+        "Putting a value on lwc:else"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "for:each renders but sorting scrambles input values in rows. What key mistake is likely?",
+      "answer_30_seconds": "Using index as key so LWC reuses the wrong row identity. Use a stable string or number Id.",
+      "answer_2_minutes": "The Guide says the key is how the framework rerenders only the item that changed. Index is not that identity. I also confirm key is not an object. I mention keys are not DOM attributes. I do not 'fix' it with innerHTML.",
+      "example": "key={c.Id} after a sort keeps each row's component state.",
+      "tradeoffs": [
+        "Salesforce Id vs local uuid for unsaved rows",
+        "Destroy/recreate vs reuse"
+      ],
+      "follow_ups": [
+        "Can key be a number?",
+        "What is for:index for if not keys?"
+      ],
+      "weak_answer_warnings": [
+        "Using index because it is handy"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you not put list filtering in a getter?",
+      "answer_30_seconds": "When the filter is a server query, sharing-sensitive, or belongs in LDS/Apex. Getters compute presentation from state already on the component.",
+      "answer_2_minutes": "This lesson's getters are for template expressions. Filtering 50 in-memory LAB_ rows can be a getter. Filtering org-wide Accounts is LWC-006 data access. I also will not hide unauthorized fields with lwc:if as a substitute for FLS.",
+      "example": "get openRows() filters this.rows status for the template; SOQL belongs in Apex/LDS.",
+      "tradeoffs": [
+        "Client filter vs wire query",
+        "Getter vs derived tracked copy"
+      ],
+      "follow_ups": [
+        "Where do empty states go?",
+        "What about @wire error?"
+      ],
+      "weak_answer_warnings": [
+        "SOQL inside a getter"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach reactive state with the scoreboard analogy and where it breaks.",
+      "answer_30_seconds": "The template is a scoreboard. New primitives are new numbers. Object clipboards need @track or a new clipboard. Getters are line scores. lwc:if lights sections. Keys are jerseys, not lineup index. It breaks on Date and on unused tracked properties.",
+      "answer_2_minutes": "I map each Guide rule to the stadium picture, then drop the picture for Date/Map/Set and for the accessed-property rule. I mention legacy if:true as a banned play. I never use a generic catalog metaphor.",
+      "example": "labScoreboard with contacts, hasRows getter, for:each keys, lwc:else empty section.",
+      "tradeoffs": [
+        "Analogy vs precise === language",
+        "Teaching @track vs teaching immutability"
+      ],
+      "follow_ups": [
+        "What is iterator for?",
+        "What is not in this lesson?"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphors",
+        "Saying LWC has no reactivity model"
+      ]
+    }
+  ]
+}

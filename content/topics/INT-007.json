@@ -1,0 +1,1014 @@
+{
+  "topic_id": "INT-007",
+  "slug": "platform-events-change-data-capture-pub-sub-api-and-rep",
+  "title": "Platform events, change data capture, Pub/Sub API, and replay concepts",
+  "track": "Integration and APIs",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "INT-006"
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer official Help and Developer Guides over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "objectives": [
+    "Distinguish custom platform events from Change Data Capture record-change events.",
+    "Describe Pub/Sub API as the gRPC interface to the event bus for publish/subscribe and schema.",
+    "Use Replay ID as an opaque pointer into the retained stream—never compute the next ID.",
+    "State that events are retained on the bus for 72 hours (three days) as documented, then missed events need another recovery path."
+  ],
+  "diagnostic_question": "A subscriber was down for four hours. How do you resume with a stored Replay ID, what must you never compute, and when is 72-hour retention not enough?",
+  "definition": "Platform events and Change Data Capture (CDC) events are published to the Salesforce event bus, a time-ordered log. Pub/Sub API (gRPC, protocol buffers, Avro payloads) publishes, subscribes, and retrieves schema. Each delivered event includes an opaque Replay ID locating it in the stream so a subscriber can resume inside the retention window—documented as 72 hours / three days. Do not synthesize new Replay IDs. ([Event durability](https://developer.salesforce.com/docs/platform/pub-sub-api/guide/event-message-durability.html); [Event bus](https://developer.salesforce.com/docs/platform/pub-sub-api/guide/expanded-event-bus.html); [CDC delivery](https://developer.salesforce.com/docs/atlas.en-us.change_data_capture.meta/change_data_capture/cdc_subscribe_delivery.htm))",
+  "why_it_matters": "Interviewers fail people who treat events as guaranteed forever queues, who compute Replay IDs, or who use CDC when they needed a custom platform event (or the reverse).",
+  "sixty_second_explanation": "Picture a radio station with a 72-hour DVR. Platform events are shows you scheduled. CDC is the automatic recording of record-change headlines. Pub/Sub API is the studio feed. The Replay ID is an opaque ticket stub printed on each clip—you can rewind to a stub you kept, but you must not invent the next stub number. After 72 hours the DVR overwrites; you need another recovery path.",
+  "deeper_explanation": [
+    "The event bus stores platform events and CDC events in arrival order for 72 hours. Pub/Sub API is the modern external client interface (gRPC/HTTP2, Avro). Clients request event counts per Subscribe fetch. ([Event bus](https://developer.salesforce.com/docs/platform/pub-sub-api/guide/expanded-event-bus.html))",
+    "Replay ID is opaque, populated on delivery, not guaranteed contiguous. Subscribers store it and resubscribe after that ID. Do not compute new IDs. Replay ID uniqueness can break across org-migration maintenance; use the event id field to identify a platform event message. ([Durability](https://developer.salesforce.com/docs/platform/pub-sub-api/guide/event-message-durability.html))",
+    "CDC events represent committed record changes and share storage characteristics with platform events (three days). Order follows committed transactions. ([CDC delivery](https://developer.salesforce.com/docs/atlas.en-us.change_data_capture.meta/change_data_capture/cdc_subscribe_delivery.htm))",
+    "Managed subscriptions (beta/managed subscribe) can store committed Replay IDs on the server—confirm current GA/beta status before an interview deep-dive. CometD/EMP is a neighboring subscribe path; prefer Pub/Sub for new external clients unless a documented constraint says otherwise. Custom platform event definitions are metadata; the messages are data."
+  ],
+  "mental_model": {
+    "analogy": "A radio DVR with opaque ticket stubs: 72-hour tape, scheduled shows (platform events), news headlines of record changes (CDC), studio gRPC feed (Pub/Sub), stubs you keep (Replay ID).",
+    "useful_mapping": [
+      "event bus → time-ordered tape",
+      "platform event → show you defined",
+      "CDC → automatic headline of a record change",
+      "Pub/Sub API → studio feed",
+      "Replay ID → opaque stub; do not mint the next number",
+      "event id → identity when stubs collide after maintenance",
+      "72 hours → tape window",
+      "event definition → program listing (metadata); messages → broadcasts (data)"
+    ],
+    "where_it_breaks": [
+      "Not a durable enterprise queue with infinite retention.",
+      "CDC is not a full row replica API like Bulk query.",
+      "Replay does not replace nightly batch reconciliation (INT-003/INT-010).",
+      "Do not invent CometD field lists here."
+    ]
+  },
+  "teach_back_prompt": "Explain platform events vs CDC vs Pub/Sub vs Replay ID, including the 72-hour window and why you must not compute Replay IDs.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "72-hour retention from memory."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Opaque Replay ID rules."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "CDC vs custom platform event."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Subscriber down 4 hours vs 5 days."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: replay concepts."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-PUBSUB-DUR",
+      "title": "Event Message Durability (Pub/Sub API)",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/pub-sub-api/guide/event-message-durability.html",
+      "supports": "Opaque Replay ID; do not compute IDs; resubscribe after stored ID; event id for uniqueness; replay_preset; managed subscribe pointer.",
+      "release_or_version": "Pub/Sub API",
+      "last_verified": "2026-08-16",
+      "limits": "ManagedSubscribe GA/beta: reverify."
+    },
+    {
+      "source_id": "SF-PUBSUB-BUS",
+      "title": "Pub/Sub API and the Expanded Event Bus",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/pub-sub-api/guide/expanded-event-bus.html",
+      "supports": "Event bus time-ordered log; PE and CDC stored 72 hours; Replay ID; gRPC/protobuf/Avro context in sibling pages.",
+      "release_or_version": "Pub/Sub API",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every event type."
+    },
+    {
+      "source_id": "SF-CDC-DELIVER",
+      "title": "Change Event Storage and Delivery",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.change_data_capture.meta/change_data_capture/cdc_subscribe_delivery.htm",
+      "supports": "CDC stored three days; ReplayId; order of committed transactions; Pub/Sub as subscribe path.",
+      "release_or_version": "CDC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Object enablement and allocations are org-specific."
+    },
+    {
+      "source_id": "SF-TH-WHICH-API",
+      "title": "Trailhead API Basics (Pub/Sub row)",
+      "type": "Official Trailhead",
+      "url": "https://trailhead.salesforce.com/content/learn/modules/api_basics/api_basics_overview",
+      "supports": "Pub/Sub API: gRPC and protocol buffers, binary, asynchronous stream; includes PE and CDC.",
+      "release_or_version": "Live Trailhead",
+      "last_verified": "2026-08-16",
+      "limits": "Orientation table only."
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Event bus 72h",
+        "Platform event vs CDC",
+        "Pub/Sub gRPC",
+        "Opaque Replay ID",
+        "event id vs replay"
+      ],
+      "accessible_description": "Event bus retains platform and CDC events 72 hours. Pub/Sub subscribes with opaque Replay IDs."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-PUBSUB-DUR",
+        "SF-CDC-DELIVER",
+        "SF-PUBSUB-BUS"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Event bus, Pub/Sub, and replay"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Pub[Publisher] --> Bus[Event bus 72h log]\n  PE[Platform event definition] --> Pub\n  DML[Committed record change] --> CDC[CDC event]\n  CDC --> Bus\n  Bus --> Sub[Pub/Sub subscriber]\n  Sub --> Store[Store Replay ID]\n  Store --> Resume[Resubscribe after that ID]",
+      "decision": "flowchart TD\n  Need[Need events] --> Q1{Custom business signal vs record change stream?}\n  Q1 -->|Custom signal| PE[Define platform event]\n  Q1 -->|Record CRUD headlines| CDC[Enable CDC]\n  Need --> Q2{External subscriber?}\n  Q2 -->|Yes| PS[Pub/Sub API]\n  Need --> Q3{Missed events?}\n  Q3 -->|Inside 72h| Replay[Replay from stored Replay ID]\n  Q3 -->|Older| Batch[Batch reconcile INT-003 INT-010]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Platform events and CDC events are stored on the event bus for 72 hours (CDC topic also says three days) and can be retrieved; each message has a Replay ID locating it in the stream.",
+      "source_ids": [
+        "SF-PUBSUB-BUS",
+        "SF-CDC-DELIVER"
+      ],
+      "scope": "Retention",
+      "validation": "Event bus and CDC delivery pages.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Replay ID is opaque, assigned on delivery, not guaranteed contiguous. Subscribers must not compute new Replay IDs. Store a Replay ID and resubscribe after it to catch missed events in the window.",
+      "source_ids": [
+        "SF-PUBSUB-DUR"
+      ],
+      "scope": "Replay",
+      "validation": "Event Message Durability.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Replay ID may not stay unique across org-migration maintenance; use the event id field to uniquely identify a platform event message.",
+      "source_ids": [
+        "SF-PUBSUB-DUR"
+      ],
+      "scope": "Identity",
+      "validation": "Durability uniqueness note.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Pub/Sub API is the gRPC/protocol-buffer interface to publish/subscribe (Trailhead: binary, asynchronous stream) including platform events and CDC.",
+      "source_ids": [
+        "SF-TH-WHICH-API",
+        "SF-PUBSUB-BUS"
+      ],
+      "scope": "Pub/Sub",
+      "validation": "Trailhead table plus event bus intro.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify ManagedSubscribe status and 72-hour window for Summer '26.",
+  "unresolved_uncertainty": [
+    "High-volume vs standard volume allocations.",
+    "Exact CometD vs Pub/Sub feature matrix.",
+    "ManagedSubscribe GA."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Replay ID",
+      "telugu": "ఈవెంట్ స్ట్రీమ్‌లో అపారదర్శక టికెట్."
+    },
+    {
+      "english": "Change Data Capture",
+      "telugu": "రికార్డు మార్పు హెడ్‌లైన్ ఈవెంట్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Custom platform events are signals you define. CDC is the bus recording record changes. Pub/Sub is how external systems tap the 72-hour log. Replay ID is an opaque stub you store and resume from—never add one.",
+    "two_minutes": "If a subscriber is down four hours, replay from the last stub. If down five days, the tape is gone; I need batch reconciliation. CDC follows committed transactions. Event definitions are metadata; messages are data. I will not invent delivery SLAs."
+  },
+  "terminology": [
+    {
+      "term": "platform event",
+      "plain": "A message type you define for business signals.",
+      "precise": "Event published to the event bus (often custom). Distinct from CDC, which is generated from record changes.",
+      "example": "LAB_Shipment_Ready__e published when a lab shipment is packed.",
+      "non_example": "AccountChangeEvent when you really wanted a custom packed signal with extra payload.",
+      "confusable_neighbor": "Outbound Message SOAP (INT-008).",
+      "boundary": "Publish-immediate vs after-commit options: verify current PE guide."
+    },
+    {
+      "term": "Change Data Capture",
+      "plain": "Automatic headlines of record creates/updates/deletes.",
+      "precise": "Change events stored like platform events for three days; order follows committed transactions; ReplayId for replay.",
+      "example": "Subscribe to LAB_Item__c changes to sync a cache.",
+      "non_example": "Bulk query of all items as if it were CDC.",
+      "confusable_neighbor": "Tracking fields / last-modified polling.",
+      "boundary": "Which objects are enabled is org configuration."
+    },
+    {
+      "term": "Pub/Sub API",
+      "plain": "The modern feed to publish and subscribe on the bus.",
+      "precise": "gRPC API with protocol buffers; Avro event payloads; subscribe/publish/schema; binary async stream per Trailhead.",
+      "example": "External Java client Subscribe RPC for a CDC channel.",
+      "non_example": "REST Query nextRecordsUrl for events.",
+      "confusable_neighbor": "Google Pub/Sub product—different vendor.",
+      "boundary": "Proto file lives in Salesforce's pubsub repo; do not invent RPCs."
+    },
+    {
+      "term": "Replay ID",
+      "plain": "Opaque ticket stub on each delivered clip.",
+      "precise": "ConsumerEvent.replay_id / ReplayId identifying position; not contiguous; do not compute new values; store and resume after it.",
+      "example": "Persist last processed Replay ID in the subscriber store.",
+      "non_example": "lastReplay + 1 arithmetic.",
+      "confusable_neighbor": "SOQL query locator (INT-005).",
+      "boundary": "Not unique across some maintenance; use event id."
+    },
+    {
+      "term": "event bus",
+      "plain": "The 72-hour tape.",
+      "precise": "Multitenant time-ordered event log storing PE and CDC for 72 hours.",
+      "example": "Retrieve missed events after a four-hour outage.",
+      "non_example": "Infinite Kafka-like retention you assume without a contract.",
+      "confusable_neighbor": "Platform cache.",
+      "boundary": "Retention is documented as 72 hours/three days—reverify if asked for minutes."
+    },
+    {
+      "term": "event id",
+      "plain": "The identity of the message when stubs collide.",
+      "precise": "Use event id (ProducerEvent.id / ConsumerEvent.event.id) to uniquely identify a platform event, especially across org migration when replay_id uniqueness is not guaranteed.",
+      "example": "Deduplicate on event id after a maintenance window.",
+      "non_example": "Using Replay ID as a primary key forever.",
+      "confusable_neighbor": "Salesforce record Id of the changed Account.",
+      "boundary": "CDC payload still includes record identifiers separately."
+    },
+    {
+      "term": "replay_preset",
+      "plain": "How a Subscribe call chooses where to start on the tape.",
+      "precise": "Subscribe RPC option to receive events after a Replay ID (or other documented presets). Confirm enum names in the current proto/docs.",
+      "example": "Resume after stored Replay ID following a restart.",
+      "non_example": "SOQL OFFSET.",
+      "confusable_neighbor": "ManagedSubscribe server-side commit (verify status).",
+      "boundary": "Do not invent enum values."
+    },
+    {
+      "term": "retention window",
+      "plain": "How long the DVR keeps clips.",
+      "precise": "72 hours / three days for PE and CDC as cited. After that, replay cannot recover; use batch (INT-003/010).",
+      "example": "Outage of five days needs a backfill job.",
+      "non_example": "Assuming seven-year archive on the bus.",
+      "confusable_neighbor": "Field History retention.",
+      "boundary": "Do not invent longer windows."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Choose PE vs CDC",
+      "actor": "Architect",
+      "trigger": "Need events",
+      "before": "One 'event' blob",
+      "after": "Custom signal vs record change stream",
+      "observe": "Written reason",
+      "failure": "CDC for a payload CDC will not contain"
+    },
+    {
+      "step": 2,
+      "transition": "Subscribe with Pub/Sub",
+      "actor": "Developer",
+      "trigger": "External consumer",
+      "before": "REST polling only",
+      "after": "Subscribe RPC + stored Replay ID",
+      "observe": "Opaque ID persisted",
+      "failure": "Computing replay+1"
+    },
+    {
+      "step": 3,
+      "transition": "Handle gaps",
+      "actor": "Ops + developer",
+      "trigger": "Outage",
+      "before": "Assume infinite bus",
+      "after": "Replay if <72h else batch",
+      "observe": "Runbook timestamps vs window",
+      "failure": "Silence after five days"
+    },
+    {
+      "step": 4,
+      "transition": "Metadata vs messages",
+      "actor": "Developer",
+      "trigger": "Deploy",
+      "before": "Confusing definitions and payloads",
+      "after": "Deploy PE/CDC setup; operate on messages as data",
+      "observe": "Retrieve of event metadata vs bus traffic",
+      "failure": "Expecting Metadata API to replay events"
+    }
+  ],
+  "when_to_use": [
+    "When you need platform events, Change Data Capture, Pub/Sub API, and replay concepts for event-driven integration.",
+    "When an external system should subscribe with an opaque Replay ID inside the 72-hour window.",
+    "When record-change headlines (CDC) fit better than a custom platform event, or the reverse.",
+    "When a subscriber outage is measured in hours versus days (replay vs batch backfill).",
+    "When you must refuse computed Replay IDs in a code review."
+  ],
+  "when_not_to_use": [
+    "Do not use the event bus as infinite storage or as Bulk query replacement.",
+    "Do not page events with nextRecordsUrl (INT-005) or invent Replay ID arithmetic.",
+    "Do not put secrets in event payloads.",
+    "Do not skip INT-008 retries/idempotency because 'events are reliable forever'.",
+    "Do not enable CDC on every object in production from this lesson."
+  ],
+  "configuration_or_code_location": [
+    "Sandbox platform event LAB_Shipment_Ready__e",
+    "CDC enablement on a LAB_ object",
+    "Pub/Sub client storing Replay ID",
+    "No production bus load tests without a plan"
+  ],
+  "worked_example": {
+    "scenario": "Sandbox: LAB_Shipment_Ready__e for packed shipments; CDC on LAB_Item__c for cache sync. Subscriber restarts after three hours and after five days.",
+    "inputs": [
+      "Custom packed signal",
+      "Item change stream",
+      "3-hour vs 5-day gap"
+    ],
+    "decisions": [
+      {
+        "decision": "Packed signal is a platform event; item cache uses CDC.",
+        "because": "CDC is record-change headlines; packed extra payload is a custom event.",
+        "rejected": "One CDC channel for a non-field packed flag that is not on the item"
+      },
+      {
+        "decision": "Three-hour outage: replay from stored Replay ID. Five-day outage: batch backfill, not replay.",
+        "because": "72-hour retention.",
+        "rejected": "Compute lastReplay+1"
+      }
+    ],
+    "configuration_or_code": [
+      "Persist Replay ID as bytes/opaque blob per docs, not an integer +1.",
+      "Do not publish production customer events."
+    ],
+    "output": "Two channels plus a gap runbook.",
+    "verification": [
+      "Design record forbids Replay arithmetic.",
+      "Five-day path names batch reconcile.",
+      "PE vs CDC split written."
+    ],
+    "self_explanation": "The DVR window decided replay versus batch."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; synthetic LAB_ event and object.",
+    "starting_state_checks": [
+      "Can create a platform event",
+      "No production subscribers"
+    ],
+    "steps": [
+      "Create platform event LAB_Shipment_Ready__e with one custom field LabNote__c.",
+      "Write Apex or anonymous publish of one test event (EventBus.publish) with a LAB_ note.",
+      "In a text runbook, record: store Replay ID opaquely; never +1; if gap > 72 hours use batch.",
+      "Optional: enable CDC on LAB_Item__c if the org allows, and write one sentence why item cache uses CDC not the shipment event."
+    ],
+    "guided_completion": [
+      "If the runbook adds 1 to Replay ID, fail.",
+      "If shipment packed is modeled only as CDC on Account, revisit payload."
+    ],
+    "independent_challenge": "Explain event id vs Replay ID after org migration using the durability page.",
+    "evidence": [
+      "Screenshot of LAB_Shipment_Ready__e metadata.",
+      "Runbook paragraph on 72 hours and opaque IDs."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete lab event and Apex publishers.",
+      "Disable CDC on LAB_ objects."
+    ],
+    "limitations": "Does not require a live external Pub/Sub client."
+  },
+  "decision_table": [
+    {
+      "signal": "Business signal with a payload you define, not just field diffs.",
+      "choose": "Custom platform event.",
+      "not": "CDC alone if the payload is not a record change.",
+      "why": "CDC headlines committed record changes; PE is a defined message type."
+    },
+    {
+      "signal": "Downstream cache must follow Salesforce record CRUD.",
+      "choose": "CDC (plus Pub/Sub subscribe).",
+      "not": "Polling SOQL every second as the first design.",
+      "why": "CDC is the documented change-event stream with replay."
+    },
+    {
+      "signal": "External subscriber restart after a few hours.",
+      "choose": "Resubscribe after stored opaque Replay ID.",
+      "not": "Arithmetic lastId+1 or REST query locators.",
+      "why": "Durability guide: store Replay ID; do not compute new ones."
+    },
+    {
+      "signal": "Gap longer than the 72-hour window.",
+      "choose": "Batch reconciliation (INT-003/INT-010), not replay.",
+      "not": "Assume the bus kept a week of events.",
+      "why": "Documented retention is 72 hours / three days."
+    },
+    {
+      "signal": "New external worker on the bus.",
+      "choose": "Pub/Sub API as the gRPC stream API.",
+      "not": "nextRecordsUrl paging of events.",
+      "why": "Trailhead and event-bus docs position Pub/Sub for PE and CDC streams."
+    }
+  ],
+  "limitations": [
+    "No invented Replay enums.",
+    "Allocations org-specific.",
+    "ManagedSubscribe status uncertain.",
+    "Not a full PE developer-guide reprint."
+  ],
+  "security_notes": [
+    "Minimize PII in event payloads.",
+    "Subscribe permissions matter.",
+    "Replay stores are sensitive operational data."
+  ],
+  "common_mistakes": [
+    "Replay +1.",
+    "Infinite retention myth.",
+    "CDC vs PE mix-up.",
+    "Using query locators for events.",
+    "Secrets in payloads.",
+    "Skipping backfill after long outages."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Duplicate processing after restart.",
+      "check": [
+        "Replay ID uniqueness vs event id after maintenance.",
+        "Idempotency (INT-008)."
+      ],
+      "do_not_assume": "The bus retried incorrectly without checking your store."
+    },
+    {
+      "symptom": "Missing events after a week.",
+      "check": [
+        "Retention window elapsed.",
+        "Need batch backfill."
+      ],
+      "do_not_assume": "Pub/Sub is down forever."
+    }
+  ],
+  "production_notes": [
+    "Monitor lag vs 72h.",
+    "Store Replay IDs durably.",
+    "No production flood from this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How long are PE/CDC events retained on the bus as cited?",
+      "options": {
+        "A": "72 hours / three days",
+        "B": "Seven years",
+        "C": "Until Metadata deploy",
+        "D": "One SOQL page"
+      },
+      "answer": "A",
+      "rationale": "Event bus 72 hours; CDC three days.",
+      "distractor_explanations": {
+        "B": "Invented.",
+        "C": "Wrong.",
+        "D": "INT-005."
+      },
+      "concept": "Retention",
+      "citation_ids": [
+        "SF-PUBSUB-DUR",
+        "SF-PUBSUB-BUS",
+        "SF-CDC-DELIVER"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Replay ID arithmetic last+1?",
+      "options": {
+        "A": "Forbidden; Replay IDs are opaque and not guaranteed contiguous",
+        "B": "Required by Pub/Sub",
+        "C": "Same as query locator OFFSET",
+        "D": "Used to extend retention"
+      },
+      "answer": "A",
+      "rationale": "Durability: do not compute new Replay IDs.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Different concept.",
+        "D": "False."
+      },
+      "concept": "Opaque",
+      "citation_ids": [
+        "SF-PUBSUB-DUR"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Pub/Sub API communication (Trailhead)?",
+      "options": {
+        "A": "gRPC and protocol buffers; asynchronous stream",
+        "B": "SOAP WSDL only",
+        "C": "CSV Bulk ingest",
+        "D": "Metadata retrieve"
+      },
+      "answer": "A",
+      "rationale": "Which API table.",
+      "distractor_explanations": {
+        "B": "INT-002 SOAP.",
+        "C": "Bulk.",
+        "D": "Metadata."
+      },
+      "concept": "gRPC",
+      "citation_ids": [
+        "SF-TH-WHICH-API"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Need a packed-shipment signal with custom fields. First choice?",
+      "options": {
+        "A": "Custom platform event",
+        "B": "CDC on User",
+        "C": "REST Query More",
+        "D": "Named credential"
+      },
+      "answer": "A",
+      "rationale": "Defined business signal.",
+      "distractor_explanations": {
+        "B": "Wrong object/stream.",
+        "C": "Not events.",
+        "D": "Auth."
+      },
+      "concept": "PE",
+      "citation_ids": [
+        "SF-PUBSUB-BUS"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Need Salesforce field-change headlines for a cache. Choice?",
+      "options": {
+        "A": "Change Data Capture",
+        "B": "Metadata API",
+        "C": "UI API list views",
+        "D": "OAuth PKCE"
+      },
+      "answer": "A",
+      "rationale": "CDC is record-change events.",
+      "distractor_explanations": {
+        "B": "Shapes.",
+        "C": "UI.",
+        "D": "Auth."
+      },
+      "concept": "CDC",
+      "citation_ids": [
+        "SF-CDC-DELIVER"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Subscriber down 4 hours. Resume how?",
+      "options": {
+        "A": "Resubscribe after the stored Replay ID inside the 72-hour window",
+        "B": "Wait for Metadata deploy",
+        "C": "Compute replay+1",
+        "D": "Use nextRecordsUrl"
+      },
+      "answer": "A",
+      "rationale": "Durability resume pattern.",
+      "distractor_explanations": {
+        "B": "Wrong.",
+        "C": "Forbidden.",
+        "D": "SOQL paging."
+      },
+      "concept": "Resume",
+      "citation_ids": [
+        "SF-PUBSUB-DUR"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Subscriber down 5 days. Replay enough?",
+      "options": {
+        "A": "No. Retention elapsed; use batch reconciliation",
+        "B": "Yes, bus keeps 30 days by default here",
+        "C": "Yes if you add 1 to Replay ID",
+        "D": "Yes via Limits resource"
+      },
+      "answer": "A",
+      "rationale": "72-hour window.",
+      "distractor_explanations": {
+        "B": "Not documented here.",
+        "C": "Forbidden.",
+        "D": "INT-005."
+      },
+      "concept": "Gap",
+      "citation_ids": [
+        "SF-PUBSUB-DUR",
+        "SF-PUBSUB-BUS",
+        "SF-CDC-DELIVER"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Org migration makes Replay IDs collide. Identity field?",
+      "options": {
+        "A": "Event id on the platform event message",
+        "B": "SOQL query locator",
+        "C": "HTTP 201",
+        "D": "Named credential developer name"
+      },
+      "answer": "A",
+      "rationale": "Durability uniqueness note.",
+      "distractor_explanations": {
+        "B": "INT-005.",
+        "C": "REST create.",
+        "D": "INT-004."
+      },
+      "concept": "event id",
+      "citation_ids": [
+        "SF-PUBSUB-DUR"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "CDC delivery order is based on?",
+      "options": {
+        "A": "Order of corresponding committed transactions",
+        "B": "Random hash",
+        "C": "Metadata API order",
+        "D": "OAuth scope order"
+      },
+      "answer": "A",
+      "rationale": "CDC delivery topic.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Commit order",
+      "citation_ids": [
+        "SF-CDC-DELIVER"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Using REST nextRecordsUrl to subscribe to CDC?",
+      "options": {
+        "A": "Wrong contract; use Pub/Sub (or documented event subscribe APIs), not SOQL paging",
+        "B": "Correct official method",
+        "C": "Required for 72-hour replay",
+        "D": "Replaces Replay ID"
+      },
+      "answer": "A",
+      "rationale": "Different APIs.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Not query more",
+      "citation_ids": [
+        "SF-PUBSUB-BUS",
+        "SF-TH-WHICH-API"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Platform event vs CDC?",
+      "options": {
+        "A": "PE: defined signal; CDC: generated record-change event",
+        "B": "They are REST status codes",
+        "C": "CDC deploys layouts",
+        "D": "PE is Bulk CSV"
+      },
+      "answer": "A",
+      "rationale": "Catalog distinction.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "PE vs CDC",
+      "citation_ids": [
+        "SF-PUBSUB-DUR",
+        "SF-PUBSUB-BUS",
+        "SF-CDC-DELIVER"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Replay ID vs SOQL query locator?",
+      "options": {
+        "A": "Replay ID positions an event on the bus; query locator pages Query results",
+        "B": "Identical bytes always",
+        "C": "Both are OAuth tokens",
+        "D": "Both last seven years"
+      },
+      "answer": "A",
+      "rationale": "INT-007 vs INT-005.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "Two locators",
+      "citation_ids": [
+        "SF-PUBSUB-DUR"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "ret",
+      "front": "Event bus retention cited?",
+      "back": "72 hours (CDC also: three days)."
+    },
+    {
+      "id": "F2",
+      "category": "rid",
+      "front": "Replay ID contiguous?",
+      "back": "Not guaranteed. Do not compute new IDs."
+    },
+    {
+      "id": "F3",
+      "category": "pe",
+      "front": "Custom business signal?",
+      "back": "Platform event you define."
+    },
+    {
+      "id": "F4",
+      "category": "cdc",
+      "front": "Record CRUD headlines?",
+      "back": "Change Data Capture events."
+    },
+    {
+      "id": "F5",
+      "category": "ps",
+      "front": "External stream API?",
+      "back": "Pub/Sub API (gRPC / protocol buffers)."
+    },
+    {
+      "id": "F6",
+      "category": "id",
+      "front": "Uniqueness after migration?",
+      "back": "Use event id, not Replay ID as eternal PK."
+    },
+    {
+      "id": "F7",
+      "category": "gap",
+      "front": "Outage longer than retention?",
+      "back": "Batch backfill, not replay."
+    },
+    {
+      "id": "F8",
+      "category": "ord",
+      "front": "CDC order?",
+      "back": "Committed transaction order."
+    },
+    {
+      "id": "F9",
+      "category": "meta",
+      "front": "Event definition vs message?",
+      "back": "Definition is metadata; messages on the bus are data."
+    },
+    {
+      "id": "F10",
+      "category": "trap",
+      "front": "Replay +1?",
+      "back": "Do not add one to a Replay ID. Treat the value as opaque and store it as returned."
+    },
+    {
+      "id": "F11",
+      "category": "trap",
+      "front": "Infinite queue?",
+      "back": "The event bus is not an infinite queue. Official retention is about 72 hours (three days)."
+    },
+    {
+      "id": "F12",
+      "category": "page",
+      "front": "nextRecordsUrl for events?",
+      "back": "No. That is SOQL Query More."
+    },
+    {
+      "id": "F13",
+      "category": "store",
+      "front": "What to persist on consume?",
+      "back": "The opaque Replay ID of the last processed event."
+    },
+    {
+      "id": "F14",
+      "category": "sub",
+      "front": "Managed subscribe idea?",
+      "back": "Server-side committed Replay ID—verify current GA/beta."
+    },
+    {
+      "id": "F15",
+      "category": "avro",
+      "front": "Pub/Sub payload format mentioned?",
+      "back": "Avro (with protobuf RPC). Confirm proto docs."
+    },
+    {
+      "id": "F16",
+      "category": "sec",
+      "front": "PII on events?",
+      "back": "Minimize; subscribers may be many."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain platform events, CDC, Pub/Sub API, and replay.",
+      "answer_30_seconds": "PE is a defined signal. CDC is record-change events. Pub/Sub is the gRPC feed. Replay ID is an opaque 72-hour stub you store and resume from.",
+      "answer_2_minutes": "I never add one to Replay ID. After 72 hours I backfill. Event id identifies PE messages across maintenance. Definitions are metadata; messages are data.",
+      "example": "LAB_Shipment_Ready__e plus CDC on LAB_Item__c.",
+      "tradeoffs": [
+        "Latency vs retention"
+      ],
+      "follow_ups": [
+        "CometD?"
+      ],
+      "weak_answer_warnings": [
+        "Events last forever"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why must Replay IDs not be computed?",
+      "answer_30_seconds": "They are opaque and not guaranteed contiguous. Computing last+1 can skip or invent positions.",
+      "answer_2_minutes": "The durability guide is explicit. I store the bytes/value I received. For identity I use event id when uniqueness of Replay ID is not guaranteed.",
+      "example": "Code review that used Integer.valueOf(replay)+1.",
+      "tradeoffs": [
+        "Simplicity vs correctness"
+      ],
+      "follow_ups": [
+        "Managed subscribe?"
+      ],
+      "weak_answer_warnings": [
+        "OFFSET on the bus"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Warehouse wants packed notifications; analytics wants item field changes.",
+      "answer_30_seconds": "Packed: platform event. Item fields: CDC. Both can use Pub/Sub. Different channels, different payloads.",
+      "answer_2_minutes": "I will not overload CDC to carry a packed flag that is not a field change. I will not publish a platform event for every field edit if CDC already exists. Replay stores are per subscription.",
+      "example": "Two LAB_ channels in one sandbox design.",
+      "tradeoffs": [
+        "Payload fit vs reuse"
+      ],
+      "follow_ups": [
+        "One topic for both?"
+      ],
+      "weak_answer_warnings": [
+        "REST poll both"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "Subscriber crashed Friday and returned Wednesday.",
+      "answer_30_seconds": "That gap exceeds 72 hours. Replay cannot recover the weekend. Schedule a batch reconcile, then resume live subscribe.",
+      "answer_2_minutes": "I timestamp the last successful Replay ID but I do not pretend the bus kept five days. INT-010 owns reconciliation keys. I communicate data-loss risk honestly.",
+      "example": "Cache of LAB_Item__c stale after a long outage.",
+      "tradeoffs": [
+        "Honesty vs magic"
+      ],
+      "follow_ups": [
+        "Partial backfill?"
+      ],
+      "weak_answer_warnings": [
+        "Increase retention in Apex"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Duplicates after an org migration weekend.",
+      "answer_30_seconds": "Replay IDs may not be unique across maintenance. Deduplicate with event id and idempotency keys (INT-008).",
+      "answer_2_minutes": "I do not blame Pub/Sub first. Official durability notes say Replay IDs may not stay unique across some org changes, so I deduplicate with event id plus an idempotency key (INT-008). CDC still follows commit order for new deliveries going forward.",
+      "example": "Two deliveries with different Replay IDs and same event id.",
+      "tradeoffs": [
+        "Exactly-once myth vs at-least-once"
+      ],
+      "follow_ups": [
+        "Store design?"
+      ],
+      "weak_answer_warnings": [
+        "Disable CDC"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Client uses REST query to 'subscribe'.",
+      "answer_30_seconds": "Wrong API. Point them to Pub/Sub. Query locators are INT-005.",
+      "answer_2_minutes": "Polling SOQL can approximate badly and burns API limits (INT-005). CDC/PE on the bus is the event-driven style (INT-003).",
+      "example": "ETL that ran SELECT every 30 seconds instead of CDC.",
+      "tradeoffs": [
+        "Limits vs lag"
+      ],
+      "follow_ups": [
+        "When is polling OK (INT-008)?"
+      ],
+      "weak_answer_warnings": [
+        "nextRecordsUrl as replay"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "Where do you store Replay IDs?",
+      "answer_30_seconds": "In the subscriber's durable store, opaque. Optionally ManagedSubscribe if current docs say it is available.",
+      "answer_2_minutes": "I treat the store as operational data, backed up, not in a public custom object without security. I will not invent Salesforce-side default tables unless documenting ManagedSubscribe.",
+      "example": "Redis/SQL table of channel plus replay bytes.",
+      "tradeoffs": [
+        "Client store vs managed"
+      ],
+      "follow_ups": [
+        "Multi-instance consumers?"
+      ],
+      "weak_answer_warnings": [
+        "Custom object of tokens"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach the radio-DVR analogy and where it breaks.",
+      "answer_30_seconds": "72-hour tape, shows vs headlines, gRPC feed, opaque stubs. It breaks if I promise infinite tape or Replay arithmetic.",
+      "answer_2_minutes": "I map platform events, CDC, Pub/Sub, and replay, then say a batch backfill is the recovery truck after the 72-hour tape is overwritten. Governors and API allocations are not station wattage I invent, and Replay IDs stay opaque.",
+      "example": "Whiteboard a four-hour outage versus a five-day outage on the same CDC channel.",
+      "tradeoffs": [
+        "Teaching vs false SLAs"
+      ],
+      "follow_ups": [
+        "Where is event id?"
+      ],
+      "weak_answer_warnings": [
+        "Generic furniture metaphor"
+      ]
+    }
+  ]
+}

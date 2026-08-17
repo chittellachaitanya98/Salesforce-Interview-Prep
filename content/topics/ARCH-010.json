@@ -1,0 +1,1024 @@
+{
+  "topic_id": "ARCH-010",
+  "slug": "maintainability-modularity-packageability-observability",
+  "title": "Maintainability, modularity, packageability, observability, and technical debt",
+  "track": "Architecture, scale, and advanced design",
+  "level": "Architect",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "ARCH-009"
+  ],
+  "objectives": [
+    "Define maintainability as change with predictable blast radius, using Well-Architected composable habits.",
+    "Separate concerns into business-capability modules rather than one mega-flow or mega-class.",
+    "Choose unlocked 2GP packageability for internal apps, with VCS as source of truth, and know org-dependent packages as a transition—not the end state.",
+    "Treat observability (Scale Center, Event Monitoring) as how you see debt and runtime behavior, not as a substitute for modular design."
+  ],
+  "diagnostic_question": "A 2,000-element 'monoflow' and unpackaged metadata make every release scary, and nobody can tell which Apex owns quote tax. How do maintainability, modularity, packageability, observability, and technical debt show up in your first 30 days?",
+  "definition": "Maintainability is the ability to change a Salesforce solution without surprising blast radius. Modularity is separation of concerns into business-capability units. Packageability is delivering those units as second-generation packages (unlocked for internal apps) with version control as source of truth. Observability is seeing runtime and user behavior (Scale Center, Event Monitoring). Technical debt is the gap from that composable end-state—monoflows, duplicated metadata, unmanaged packages. ([Composable](https://architect.salesforce.com/docs/architect/well-architected/guide/composable); [Unlocked Packages](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_unlocked_pkg_intro.htm))",
+  "why_it_matters": "Interviewers hire architects who can retire a mega-flow, name a package boundary, and say how they will observe the result. 'We will clean it up later' without a module and package plan is how orgs freeze. Observability without modularity just produces better dashboards of a tangle.",
+  "sixty_second_explanation": "Think of a hotel renovated wing by wing. Each wing (module) has its own pipes so you do not shut the whole hotel to fix one shower. Unlocked packages are the work permits and labeled wings you can upgrade independently; git is the blueprint vault, not the front desk org. Sensors on the HVAC (Scale Center, Event Monitoring) are observability. Technical debt is the leaking roof you keep patching with another Flow element instead of isolating the wing.",
+  "deeper_explanation": [
+    "Well-Architected Composable (Adaptable) says composable systems are built from units that can be swapped with stability. Three habits: separation of concerns, interoperability, and packageability. Separate by business capability (jobs to be done), not by reporting structure. Anti-patterns include monoflows that orchestrate everything and massive Apex classes of single-use methods. ([Composable](https://architect.salesforce.com/docs/architect/well-architected/guide/composable))",
+    "Packageability means units that can be developed and deployed independently as 2GP—unlocked packages for internal apps, managed 2GP for AppExchange ISVs. First-generation managed packages are out of Well-Architected scope. Source of truth is version control, not the org. Do not duplicate metadata across packages. Start with one meaningful package; too many packages create new bottlenecks. ([Composable](https://architect.salesforce.com/docs/architect/well-architected/guide/composable); [Unlocked Packages](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_unlocked_pkg_intro.htm))",
+    "Org-dependent unlocked packages defer dependency validation to install time so you can extract metadata that still depends on unpackaged org shape. Well-Architected tools treat them as early-stage or experiment—not the target end-state. Unmanaged packages in production/sandboxes are an anti-pattern. ([Unlocked Packages](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_unlocked_pkg_intro.htm); [Packageability tools](https://architect.salesforce.com/docs/architect/well-architected-tools/guide/adaptable-packageability))",
+    "Observability: Scale Center/ApexGuru for throughput and Apex hotspots (ARCH-009); Event Monitoring (often Shield) for user and system activity logs and real-time events. Use them to find debt's runtime cost (slow page, noisy Apex, unused automation), then pay debt by modularizing—not by adding another overlay Flow. Event Monitoring license and event types are edition-sensitive—Needs verification."
+  ],
+  "mental_model": {
+    "analogy": "Hotel renovated wing by wing: modules are wings, unlocked packages are work permits for a wing, git is the blueprint vault, HVAC sensors are observability, the leaking roof you keep taping is technical debt.",
+    "useful_mapping": [
+      "business capability module → one hotel wing with its own risers",
+      "monoflow / mega-class → shutting the whole hotel to fix one shower",
+      "unlocked 2GP → wing that can be refurbished and upgraded independently",
+      "VCS source of truth → blueprint vault, not the front-desk org copy",
+      "org-dependent package → temporary scaffold still tied to the old building",
+      "duplicate metadata in two packages → two wings claiming the same room number",
+      "Scale Center / Event Monitoring → HVAC and occupancy sensors",
+      "technical debt → leaking roof patches that multiply"
+    ],
+    "where_it_breaks": [
+      "Packages still share an org's governor and data model; wings are not separate hotels (that is multi-org, ARCH-011).",
+      "Event Monitoring is not a substitute for debug logs in a developer sandbox.",
+      "Unlocked does not mean 'no governance'; CoE still sets standards (ARCH-011).",
+      "Sensor data does not remodel the wing by itself."
+    ]
+  },
+  "teach_back_prompt": "Explain how you would split a quote-tax monoflow into a modular unlocked package, what you would observe after release, and one place the hotel-wing analogy fails.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Composable three habits; unlocked vs managed 2GP."
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Org-dependent package: when and why not forever."
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Name two observability tools and what debt they cannot fix alone."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Draft a package boundary for quote tax without notes."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: maintainability, modularity, packageability, observability, technical debt."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-WA-COMPOSABLE",
+      "title": "Well-Architected — Composable",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/composable",
+      "supports": "Separation of concerns, interoperability, packageability; monoflow/mega-class anti-patterns; 2GP unlocked/managed; start with few packages.",
+      "release_or_version": "Well-Architected / Summer '26 review",
+      "last_verified": "2026-08-16",
+      "limits": "Ideal package count is subjective; do not invent a mandatory number of packages."
+    },
+    {
+      "source_id": "SF-UNLOCKED",
+      "title": "Unlocked Packages",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_unlocked_pkg_intro.htm",
+      "supports": "Unlocked 2GP for internal apps; VCS as source of truth; not AppExchange managed distribution.",
+      "release_or_version": "Salesforce DX Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Supported metadata types and profile handling are versioned."
+    },
+    {
+      "source_id": "SF-WA-PACKAGE",
+      "title": "Composable — Packageability tools",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected-tools/guide/adaptable-packageability",
+      "supports": "No duplicate metadata across packages; scratch-org development; org-dependent unlocked as experiment; unmanaged packages as anti-pattern.",
+      "release_or_version": "Well-Architected tools",
+      "last_verified": "2026-08-16",
+      "limits": "LATEST aliasing guidance is tooling-specific; reverify sfdx-project.json practices."
+    },
+    {
+      "source_id": "SF-WA-RELIABLE",
+      "title": "Well-Architected — Reliable",
+      "type": "Official Salesforce Architecture Center",
+      "url": "https://architect.salesforce.com/docs/architect/well-architected/guide/reliable",
+      "supports": "Scale Center and ApexGuru as observability for performance debt.",
+      "release_or_version": "Well-Architected",
+      "last_verified": "2026-08-16",
+      "limits": "Does not replace Event Monitoring for user-activity telemetry."
+    },
+    {
+      "source_id": "SF-EVENT-MON",
+      "title": "Event Monitoring (Help)",
+      "type": "Official Salesforce Help",
+      "url": "https://help.salesforce.com/s/articleView?id=sf.event_monitoring.htm",
+      "supports": "Event Monitoring as activity and performance telemetry (license-sensitive).",
+      "release_or_version": "Summer '26 help",
+      "last_verified": "2026-08-16",
+      "limits": "If this Help id redirects, confirm the live Event Monitoring overview in the target org's Help. License required for many features."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Well-Architected Composable and DX unlocked-package guide",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Architect",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Business capability units",
+        "No monoflow",
+        "Unlocked 2GP + git",
+        "Org-dependent is a bridge",
+        "Scale Center + Event Monitoring",
+        "Pay down debt in slices"
+      ],
+      "accessible_description": "Portrait map: modular business capabilities packaged as unlocked 2GP from git, observed via Scale Center and Event Monitoring, with technical debt retired wing by wing."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-WA-COMPOSABLE",
+        "SF-UNLOCKED",
+        "SF-WA-PACKAGE",
+        "SF-WA-RELIABLE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Quote-tax module versus the rest of the org"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Cap[Business capability] --> Meta[Metadata in one module]\n  Meta --> Pkg[Unlocked 2GP version]\n  Pkg --> Git[VCS source of truth]\n  Git --> Org[Install/upgrade subscriber org]\n  Org --> Obs[Scale Center / Event Monitoring]\n  Obs --> Debt[Technical debt backlog]",
+      "decision": "flowchart TD\n  Change[Need to change quote tax?] --> Q1{Is it a tangled monoflow or mega-class?}\n  Q1 -->|Yes| Mod[Extract a capability module first]\n  Q1 -->|Already a unit| Q2{Can it be a 2GP unlocked package?}\n  Q2 -->|Depends on unpackaged org spaghetti| Bridge[Org-dependent unlocked as a bridge]\n  Q2 -->|Dependencies packable| Unlocked[Unlocked package from git]\n  Q2 -->|Selling on AppExchange| Managed[Managed 2GP — not internal unlocked]\n  Unlocked --> Q3{Need runtime evidence?}\n  Q3 -->|Perf/Apex| SC[Scale Center / ApexGuru]\n  Q3 -->|User/API activity| EM[Event Monitoring if licensed]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Composable Salesforce solutions use separation of concerns, interoperability, and packageability. Units should map to business capabilities. Monoflows and massive single-use Apex classes are anti-patterns that hurt maintainability.",
+      "source_ids": ["SF-WA-COMPOSABLE"],
+      "scope": "Maintainability and modularity",
+      "validation": "Well-Architected Composable.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Internal business apps should use unlocked second-generation packages; AppExchange distribution uses managed 2GP. Version control is the source of truth, not the org. 1GP managed is not covered as well-architected packageability.",
+      "source_ids": ["SF-WA-COMPOSABLE", "SF-UNLOCKED"],
+      "scope": "Packageability",
+      "validation": "Composable packageability plus Unlocked Packages intro.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "Do not duplicate metadata across packages. Prefer scratch-org package development. Org-dependent unlocked packages are a bridge for unpackaged dependencies, not the ideal end-state. Unmanaged packages in prod/sandboxes are an anti-pattern.",
+      "source_ids": ["SF-WA-PACKAGE", "SF-UNLOCKED"],
+      "scope": "Package standards",
+      "validation": "Packageability tools plus DX unlocked guide.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Observability for this lesson includes Scale Center/ApexGuru for runtime performance debt and Event Monitoring for user/system activity telemetry (license-sensitive). Observability finds cost; modular packages reduce blast radius.",
+      "source_ids": ["SF-WA-RELIABLE", "SF-EVENT-MON"],
+      "scope": "Observability",
+      "validation": "Reliable Scale Center plus Event Monitoring Help.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-005",
+      "claim": "Start with a few meaningful packages and iterate. Over-modularizing can slow releases. Refactor packages when business needs or release quality change.",
+      "source_ids": ["SF-WA-COMPOSABLE"],
+      "scope": "Technical debt / pace",
+      "validation": "Composable package end-state guidance.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Reverify unlocked-package supported metadata and Event Monitoring Help id for Summer '26.",
+  "unresolved_uncertainty": [
+    "Exact Event Monitoring event-type counts and retention are license- and product-line sensitive.",
+    "Whether a Help article id for Event Monitoring redirects in a given org should be confirmed at authoring time in that org."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Unlocked package",
+      "telugu": "అంతర్గత యాప్‌ల కోసం సోర్స్ నియంత్రణతో అప్‌గ్రేడ్ చేయదగిన ప్యాకేజీ."
+    },
+    {
+      "english": "Technical debt",
+      "telugu": "తర్వాత ఖరీదైన మార్పులకు కారణమయ్యే తాత్కాలిక పాచెస్."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "Maintainability is small blast radius. Split by business capability, ship unlocked 2GP from git, observe with Scale Center and Event Monitoring, and retire monoflows as debt—not with another overlay.",
+    "two_minutes": "I map jobs-to-be-done to modules. I refuse a 2,000-element Flow as architecture. Internal apps get unlocked packages; ISV gets managed 2GP. Org-dependent is a scaffold. I will not duplicate objects across packages. After a slice ships, I look at Scale Center and, if licensed, Event Monitoring to see if the debt actually shrank. I start with one package, not fifty."
+  },
+  "terminology": [
+    {
+      "term": "maintainability",
+      "plain": "You can change one thing without breaking twelve others.",
+      "precise": "Composable units with clear capability mapping, tests, and a known blast radius. Opposite of undocumented monoflows.",
+      "example": "Tax logic lives in LAB_TaxService and a small autolaunched Flow, not in Quote, Order, and CPQ overlay Flows.",
+      "non_example": "Editing a 2,000-element Flow because 'that is where everything is.'",
+      "confusable_neighbor": "Availability: uptime versus ease of change.",
+      "boundary": "Does not mean zero customization."
+    },
+    {
+      "term": "modularity",
+      "plain": "Pieces you can understand and replace.",
+      "precise": "Separation of concerns by business capability, plus interoperability contracts (events/APIs) so units are not silos.",
+      "example": "Quote-tax capability with a documented invocable method.",
+      "non_example": "Folders named after teams (Sales Ops vs IT) with no capability map.",
+      "confusable_neighbor": "Microservices off-platform: not required for Salesforce modularity.",
+      "boundary": "Stateful vs stateless patterns are in Composable state management."
+    },
+    {
+      "term": "packageability",
+      "plain": "You can build and ship a unit as a versioned package.",
+      "precise": "2GP unlocked for internal apps; managed 2GP for AppExchange. Git is source of truth. No metadata duplicated across packages.",
+      "example": "unlocked package lab-tax 1.3.0 installed in a sandbox.",
+      "non_example": "Change-set-only metadata with no package identity.",
+      "confusable_neighbor": "Unmanaged package: Well-Architected anti-pattern in prod/sandboxes.",
+      "boundary": "DEVOPS track owns pipeline mechanics; this lesson owns the architecture choice."
+    },
+    {
+      "term": "observability",
+      "plain": "You can see what the org is doing when it misbehaves.",
+      "precise": "Scale Center/ApexGuru for runtime performance; Event Monitoring for activity telemetry. Not the same as a design review (ARCH-012).",
+      "example": "ApexGuru still flags the leftover loop in unpackaged automation.",
+      "non_example": "A Confluence page with no runtime data.",
+      "confusable_neighbor": "Debug logs: tactical, not fleet observability.",
+      "boundary": "Shield/Event Monitoring licensing Needs verification."
+    },
+    {
+      "term": "technical debt",
+      "plain": "Shortcuts that make the next change more expensive.",
+      "precise": "Monoflows, mega-classes, unpackaged spaghetti, duplicated metadata, unmanaged packages, org-dependent packages left forever.",
+      "example": "Three Flows updating LAB_Quote__c Status__c with no owner.",
+      "non_example": "A documented, tested unlocked package that is simply old.",
+      "confusable_neighbor": "Backlog features: not all backlog is debt.",
+      "boundary": "Pay debt in capability slices, not a freeze-the-org rewrite unless NFRs demand it."
+    },
+    {
+      "term": "unlocked package",
+      "plain": "The usual 2GP container for internal Salesforce apps.",
+      "precise": "Source-driven, upgradable, metadata editable in the subscriber org (unlike locked managed ISV). Not the AppExchange default.",
+      "example": "lab-quote-tax unlocked package.",
+      "non_example": "A 1GP managed package from a decade-old packaging org as the well-architected model.",
+      "confusable_neighbor": "Org-dependent unlocked: same type, weaker dependency validation timing.",
+      "boundary": "Profile packing behavior is special-cased in DX docs."
+    },
+    {
+      "term": "org-dependent unlocked package",
+      "plain": "A package that still leans on unpackaged metadata in the install org.",
+      "precise": "Validation at install, not version-create. Cannot depend on other packages the same way. Bridge for tangled orgs.",
+      "example": "Extracting LAB_ tax Flow that still references unpackaged fields.",
+      "non_example": "The long-term target of 'build once, install anywhere.'",
+      "confusable_neighbor": "Scratch-org unlocked with declared dependencies.",
+      "boundary": "Well-Architected: early-stage/experiment, not all packages."
+    },
+    {
+      "term": "monoflow",
+      "plain": "One giant Flow that tries to run the whole business process.",
+      "precise": "Composable anti-pattern: stateful spaghetti, hard to test, huge blast radius. Prefer subflows/invocable Apex per capability.",
+      "example": "Quote_Master_Flow with quote, tax, inventory, and email in one canvas.",
+      "non_example": "A small record-triggered Flow that calls a subflow.",
+      "confusable_neighbor": "Flow Orchestrator: a structured alternative, not another 2,000 elements.",
+      "boundary": "AUTO track owns Flow mechanics; this lesson owns the architecture smell."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Name the capability",
+      "actor": "Architect + business",
+      "trigger": "Painful change request",
+      "before": "Work described as 'the big Flow'",
+      "after": "A job-to-be-done name (for example, calculate quote tax)",
+      "observe": "Capability list in design standards",
+      "failure": "Module named after a reporting line"
+    },
+    {
+      "step": 2,
+      "transition": "Draw the blast radius",
+      "actor": "Architect",
+      "trigger": "Capability named",
+      "before": "Unknown dependencies",
+      "after": "List of metadata that must move together",
+      "observe": "Dependency graph / org scanner",
+      "failure": "Splitting a field used by six unpackaged automations without a plan"
+    },
+    {
+      "step": 3,
+      "transition": "Package the slice",
+      "actor": "Developer",
+      "trigger": "Boundary agreed",
+      "before": "Unpackaged or unmanaged",
+      "after": "Unlocked 2GP from git, or org-dependent only as a bridge",
+      "observe": "Package version install in a sandbox",
+      "failure": "Copy-paste the object into a second package"
+    },
+    {
+      "step": 4,
+      "transition": "Observe and retire debt",
+      "actor": "Architect",
+      "trigger": "After first upgrade",
+      "before": "No baseline",
+      "after": "Scale Center/Event Monitoring comparison; overlay Flow removed",
+      "observe": "Hotspots down; one automation owner",
+      "failure": "Adding a fourth Flow 'just in case'"
+    }
+  ],
+  "when_to_use": [
+    "When a change's blast radius is unknown: invest in maintainability and modularity before more features.",
+    "When internal metadata should version and upgrade: packageability via unlocked 2GP with git as source of truth.",
+    "When you need evidence that debt costs runtime: observability with Scale Center and Event Monitoring, then a slice of refactor.",
+    "When a monoflow or mega-class is the bottleneck: treat it as technical debt and extract a capability, not another overlay."
+  ],
+  "when_not_to_use": [
+    "Do not create dozens of tiny packages on day one; Composable warns that over-modularizing slows delivery.",
+    "Do not use managed 2GP packageability for a typical internal app that should be unlocked.",
+    "Do not leave org-dependent unlocked packages as the forever model, or ship unmanaged packages as the architecture.",
+    "Do not confuse observability dashboards with a completed modularity program—sensors do not remodel the wing."
+  ],
+  "configuration_or_code_location": [
+    "sfdx-project.json package directories; Dev Hub / package versions.",
+    "Setup installed packages in subscriber sandboxes.",
+    "Scale Center; Event Monitoring Setup (license-sensitive).",
+    "Design standards listing functional units (Composable pattern)."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox lab: Quote_Master_Flow (synthetic) sets tax, inventory, and email. Tax rules must change weekly. Metadata is unpackaged. Leadership wants safer releases. No production org edits.",
+    "inputs": [
+      "LAB_Quote__c",
+      "Tax logic used from two other Flows",
+      "Git repo available",
+      "Scale Center available in the enterprise org (may be N/A in a Trailhead Playground—Needs verification)"
+    ],
+    "decisions": [
+      {
+        "decision": "Extract calculate-quote-tax as a capability with invocable Apex or a subflow, owned as one module.",
+        "because": "Composable: capability units, not a monoflow.",
+        "rejected": "Add a fourth overlay Flow on Quote"
+      },
+      {
+        "decision": "Ship that module as an unlocked package from git.",
+        "because": "DX: unlocked is the internal-app package type; VCS is source of truth.",
+        "rejected": "Unmanaged package 'for speed'"
+      },
+      {
+        "decision": "If tax Flow still references unpackaged fields, use org-dependent unlocked only as a listed bridge with an exit date.",
+        "because": "Packageability tools: org-dependent is experiment/early, not end-state.",
+        "rejected": "All future packages org-dependent"
+      }
+    ],
+    "configuration_or_code": [
+      "Create unlocked package lab-quote-tax with LAB_TaxService.",
+      "Replace monoflow tax branch with a subflow/invocable call.",
+      "Install version 0.1.0 in a sandbox; upgrade to 0.2.0 with a tax-rule change.",
+      "Record a Scale Center or debug baseline before/after if the tool exists."
+    ],
+    "output": "Tax changes ship by package upgrade; email/inventory remain outside the package until their slice.",
+    "verification": [
+      "Tax rule change does not require editing the email Flow.",
+      "Package install succeeds in a second sandbox from the same version.",
+      "No duplicate LAB_Quote__c fields created in a second package."
+    ],
+    "self_explanation": "I paid tax-logic debt as a packageable module and left a written bridge if org-dependent was required."
+  },
+  "hands_on_lab": {
+    "environment": "Scratch org or Developer sandbox plus a Dev Hub if packaging is allowed. LAB_ names only.",
+    "starting_state_checks": [
+      "You can create Apex/Flow.",
+      "If you cannot create 2GP, document the blocker and still draw the module boundary."
+    ],
+    "steps": [
+      "List metadata that belongs to a LAB_ quote-tax capability versus everything else.",
+      "Create (or mock-create) an unlocked package directory in a project file—do not use production aliases.",
+      "Write why org-dependent would or would not be needed for one unpackaged field.",
+      "Name one Scale Center metric and one Event Monitoring question you would ask after the first upgrade."
+    ],
+    "guided_completion": [
+      "If Dev Hub is unavailable, the written boundary still counts; packaging is blocked, not the architecture.",
+      "If Event Monitoring is unlicensed, say Needs verification and keep Scale Center/debug."
+    ],
+    "independent_challenge": "Find a duplicate-automation smell (two automations on the same field) and assign one owner.",
+    "evidence": [
+      "Capability inventory table.",
+      "Package-type decision (unlocked vs org-dependent vs cannot-package-yet)."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ metadata from the scratch org.",
+      "Do not promote experimental packages to production."
+    ],
+    "limitations": "Packaging licenses and Event Monitoring may be absent."
+  },
+  "decision_table": [
+    {
+      "signal": "A 2,000-element Flow or a 4,000-line Apex class owns multiple jobs.",
+      "choose": "Split by business capability (modularity) before adding features.",
+      "not": "Another overlay Flow on the same object.",
+      "why": "Composable names monoflows and mega-classes as maintainability anti-patterns."
+    },
+    {
+      "signal": "Internal app metadata should upgrade across sandboxes from git.",
+      "choose": "Unlocked 2GP packageability with VCS as source of truth.",
+      "not": "Unmanaged packages in production, or managed 2GP as if you were an ISV.",
+      "why": "DX unlocked intro plus Well-Architected package types."
+    },
+    {
+      "signal": "The slice still references unpackaged org metadata you cannot move yet.",
+      "choose": "Org-dependent unlocked package as a time-boxed bridge.",
+      "not": "Declare org-dependent as the forever standard for every package.",
+      "why": "Packageability tools: experiment/early-stage, not end-state."
+    },
+    {
+      "signal": "You need proof the tangle is hurting users or CPU.",
+      "choose": "Observability: Scale Center/ApexGuru and Event Monitoring if licensed.",
+      "not": "Only a slide that says the org is 'complex.'",
+      "why": "Runtime evidence funds the debt conversation."
+    },
+    {
+      "signal": "Someone proposes 40 packages in the first quarter.",
+      "choose": "Start with one meaningful package and iterate.",
+      "not": "Maximum fragmentation on day one.",
+      "why": "Composable: too many packages create new bottlenecks."
+    }
+  ],
+  "limitations": [
+    "Does not teach sf project commands in depth (DEVOPS).",
+    "Does not replace CoE governance (ARCH-011).",
+    "Event Monitoring may be unlicensed.",
+    "Supported packaged metadata types change; reverify."
+  ],
+  "security_notes": [
+    "Packages can ship profiles/permission slices; review least privilege.",
+    "Event Monitoring logs can contain sensitive usage patterns; restrict who can query them.",
+    "Do not put secrets in unpackaged custom settings that every package depends on."
+  ],
+  "common_mistakes": [
+    "Overlay Flow instead of extracting a module.",
+    "Unmanaged package as architecture.",
+    "Duplicating an object in two packages.",
+    "Org-dependent forever.",
+    "Dashboards without a package boundary."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Package version create fails on missing dependencies.",
+      "check": [
+        "Whether org-dependent is the honest bridge.",
+        "Duplicated metadata.",
+        "Unsupported metadata type."
+      ],
+      "do_not_assume": "Unlocked packages cannot contain Flow."
+    },
+    {
+      "symptom": "Upgrade overwrote unexpected metadata.",
+      "check": [
+        "Package ownership of that component.",
+        "Unpackaged local edits.",
+        "Duplicate API names."
+      ],
+      "do_not_assume": "Git is out of date while the org is source of truth."
+    },
+    {
+      "symptom": "No one can see whether the refactor helped.",
+      "check": [
+        "Scale Center baseline missing.",
+        "Event Monitoring not licensed or not enabled.",
+        "No capability owner."
+      ],
+      "do_not_assume": "Observability is optional for an architecture review."
+    }
+  ],
+  "production_notes": [
+    "Time-box org-dependent packages on the CoE backlog (ARCH-011).",
+    "Align package upgrades with the release calendar.",
+    "No production package install is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which three habits does Well-Architected Composable name?",
+      "options": {
+        "A": "Separation of concerns, interoperability, and packageability",
+        "B": "OWD, roles, and sharing rules",
+        "C": "Batch, bulk, and CDC only",
+        "D": "CPU, heap, and SOQL only"
+      },
+      "answer": "A",
+      "rationale": "Composable introduction lists those three habits.",
+      "distractor_explanations": {
+        "B": "Sharing is SEC.",
+        "C": "Integration patterns, not composable habits.",
+        "D": "Governors are ARCH-009."
+      },
+      "concept": "Composable habits",
+      "citation_ids": ["SF-WA-COMPOSABLE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Preferred package type for most internal Salesforce apps?",
+      "options": {
+        "A": "Unlocked second-generation packages",
+        "B": "Unmanaged packages in production as the standard",
+        "C": "1GP managed as the Well-Architected model",
+        "D": "Change sets as a package type"
+      },
+      "answer": "A",
+      "rationale": "Unlocked Packages intro: internal apps; AppExchange uses managed 2GP. Unmanaged in prod is an anti-pattern.",
+      "distractor_explanations": {
+        "B": "Packageability tools anti-pattern.",
+        "C": "1GP not covered as well-architected packageability.",
+        "D": "Change sets are not 2GP packages."
+      },
+      "concept": "Unlocked packages",
+      "citation_ids": ["SF-UNLOCKED", "SF-WA-COMPOSABLE"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What is the source of truth for unlocked package metadata?",
+      "options": {
+        "A": "Version control, not what happens to sit in an org",
+        "B": "Production always",
+        "C": "A random sandbox",
+        "D": "AppExchange reviews"
+      },
+      "answer": "A",
+      "rationale": "DX unlocked intro: source-driven; VCS is source of truth.",
+      "distractor_explanations": {
+        "B": "Org-based ALM is the opposite model.",
+        "C": "Sandboxes are subscribers.",
+        "D": "ISV process, not internal unlocked."
+      },
+      "concept": "Source of truth",
+      "citation_ids": ["SF-UNLOCKED"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Duplicating the same custom object in two packages is?",
+      "options": {
+        "A": "A packageability anti-pattern",
+        "B": "Required for unlocked packages",
+        "C": "How Event Monitoring works",
+        "D": "The definition of modularity"
+      },
+      "answer": "A",
+      "rationale": "Packageability tools: no metadata duplicated across packages.",
+      "distractor_explanations": {
+        "B": "Opposite of the standard.",
+        "C": "Unrelated.",
+        "D": "Modularity is capability units, not clones."
+      },
+      "concept": "No duplicate metadata",
+      "citation_ids": ["SF-WA-PACKAGE"]
+    },
+    {
+      "id": "Q5",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A slice still depends on unpackaged fields. Honest first package?",
+      "options": {
+        "A": "Org-dependent unlocked as a bridge, with an exit plan",
+        "B": "Managed 2GP for an internal tax Flow",
+        "C": "Unmanaged production package as end-state",
+        "D": "Forty packages this sprint"
+      },
+      "answer": "A",
+      "rationale": "Org-dependent exists for tangled orgs; tools say not the forever model.",
+      "distractor_explanations": {
+        "B": "Wrong package type for internal.",
+        "C": "Anti-pattern.",
+        "D": "Over-modularizing."
+      },
+      "concept": "Org-dependent",
+      "citation_ids": ["SF-WA-PACKAGE", "SF-UNLOCKED"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "A 'monoflow' in Composable language is?",
+      "options": {
+        "A": "One giant Flow orchestrating a complex process—an anti-pattern for maintainability",
+        "B": "The recommended way to package Apex",
+        "C": "A Scale Center dashboard",
+        "D": "A sandbox type"
+      },
+      "answer": "A",
+      "rationale": "Composable state-management section calls out large monoflows.",
+      "distractor_explanations": {
+        "B": "Packaging is 2GP.",
+        "C": "Observability tool.",
+        "D": "Environment, not Flow."
+      },
+      "concept": "Monoflow",
+      "citation_ids": ["SF-WA-COMPOSABLE"]
+    },
+    {
+      "id": "Q7",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Scale Center versus Event Monitoring in this lesson?",
+      "options": {
+        "A": "Scale Center/ApexGuru for runtime performance debt; Event Monitoring for activity telemetry (licensed)",
+        "B": "They are the same Setup menu",
+        "C": "Event Monitoring replaces unlocked packages",
+        "D": "Scale Center is only for CDC"
+      },
+      "answer": "A",
+      "rationale": "Reliable vs Event Monitoring Help: different telemetry.",
+      "distractor_explanations": {
+        "B": "Different products.",
+        "C": "Observability ≠ packageability.",
+        "D": "Scale Center is performance/scale."
+      },
+      "concept": "Observability",
+      "citation_ids": ["SF-WA-RELIABLE", "SF-EVENT-MON"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You are an ISV shipping to AppExchange. Packageability choice?",
+      "options": {
+        "A": "Second-generation managed packages",
+        "B": "Unlocked packages as the AppExchange default",
+        "C": "Unmanaged only",
+        "D": "Org-dependent unlocked for every customer"
+      },
+      "answer": "A",
+      "rationale": "Composable/DX: managed 2GP for AppExchange; unlocked for internal.",
+      "distractor_explanations": {
+        "B": "Unlocked is internal.",
+        "C": "Not ISV distribution.",
+        "D": "Not a customer-install model."
+      },
+      "concept": "Managed 2GP",
+      "citation_ids": ["SF-WA-COMPOSABLE", "SF-UNLOCKED"]
+    },
+    {
+      "id": "Q9",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Why not create as many packages as possible immediately?",
+      "options": {
+        "A": "Over-modularizing can slow releases and add bottlenecks; start with a few meaningful packages",
+        "B": "Salesforce forbids more than one package",
+        "C": "Git cannot store packages",
+        "D": "Observability requires a monoflow"
+      },
+      "answer": "A",
+      "rationale": "Composable package end-state guidance.",
+      "distractor_explanations": {
+        "B": "False.",
+        "C": "Opposite of source-driven.",
+        "D": "False."
+      },
+      "concept": "Package count",
+      "citation_ids": ["SF-WA-COMPOSABLE"]
+    },
+    {
+      "id": "Q10",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Early package development should happen where, per packageability patterns?",
+      "options": {
+        "A": "Scratch orgs from source control",
+        "B": "Directly in production",
+        "C": "Only Full sandbox scale tests",
+        "D": "Only Classic"
+      },
+      "answer": "A",
+      "rationale": "Packageability tools: early-stage package work in scratch orgs.",
+      "distractor_explanations": {
+        "B": "Risky and not source-driven.",
+        "C": "Full is for scale testing (ARCH-009/011).",
+        "D": "Irrelevant."
+      },
+      "concept": "Scratch orgs",
+      "citation_ids": ["SF-WA-PACKAGE"]
+    },
+    {
+      "id": "Q11",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "Which statement separates package metadata from business data?",
+      "options": {
+        "A": "The unlocked package version is metadata you install; LAB_Quote__c rows remain business data",
+        "B": "Packages store all Account rows",
+        "C": "Event Monitoring is a custom object you package as data",
+        "D": "Git commits insert Opportunity records"
+      },
+      "answer": "A",
+      "rationale": "Packages ship metadata. Records are data.",
+      "distractor_explanations": {
+        "B": "Data is not the package payload.",
+        "C": "EM is a licensed feature, not a row you package.",
+        "D": "VCS is metadata/source."
+      },
+      "concept": "Metadata vs data",
+      "citation_ids": ["SF-UNLOCKED"]
+    },
+    {
+      "id": "Q12",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Functional units should be labeled how, according to Composable?",
+      "options": {
+        "A": "In business-friendly capability terms, searchable in the org/docs",
+        "B": "Only as internal engineering ticket numbers",
+        "C": "Only as sandbox names",
+        "D": "Only as governor limit names"
+      },
+      "answer": "A",
+      "rationale": "Composable patterns: business-friendly functional units, findable components.",
+      "distractor_explanations": {
+        "B": "Anti-pattern: engineering-only labels.",
+        "C": "Environments are not capabilities.",
+        "D": "Limits are ARCH-009."
+      },
+      "concept": "Capability naming",
+      "citation_ids": ["SF-WA-COMPOSABLE"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "definition",
+      "front": "Three Composable habits?",
+      "back": "Separation of concerns, interoperability, packageability."
+    },
+    {
+      "id": "F2",
+      "category": "packages",
+      "front": "Internal app package type?",
+      "back": "Unlocked 2GP. Managed 2GP is for AppExchange ISVs."
+    },
+    {
+      "id": "F3",
+      "category": "packages",
+      "front": "Source of truth for unlocked packages?",
+      "back": "Version control, not the org."
+    },
+    {
+      "id": "F4",
+      "category": "debt",
+      "front": "What is a monoflow?",
+      "back": "A giant Flow that orchestrates a complex process—an anti-pattern."
+    },
+    {
+      "id": "F5",
+      "category": "packages",
+      "front": "Duplicate metadata across packages?",
+      "back": "Anti-pattern. Do not do it."
+    },
+    {
+      "id": "F6",
+      "category": "packages",
+      "front": "Org-dependent unlocked forever?",
+      "back": "No. It is a bridge/experiment, not the end-state."
+    },
+    {
+      "id": "F7",
+      "category": "packages",
+      "front": "Unmanaged packages in prod?",
+      "back": "Well-Architected anti-pattern."
+    },
+    {
+      "id": "F8",
+      "category": "observe",
+      "front": "Scale Center's role in this topic?",
+      "back": "Show runtime performance cost of debt (hotspots, ApexGuru)."
+    },
+    {
+      "id": "F9",
+      "category": "observe",
+      "front": "Event Monitoring's role?",
+      "back": "User/system activity telemetry (often licensed/Shield)."
+    },
+    {
+      "id": "F10",
+      "category": "pace",
+      "front": "How many packages on day one?",
+      "back": "Start with a few meaningful ones; too many slow you down."
+    },
+    {
+      "id": "F11",
+      "category": "modularity",
+      "front": "Separate concerns by what?",
+      "back": "Business capabilities / jobs to be done, not reporting structure."
+    },
+    {
+      "id": "F12",
+      "category": "dev",
+      "front": "Where to develop packages early?",
+      "back": "Scratch orgs from source control."
+    },
+    {
+      "id": "F13",
+      "category": "debt",
+      "front": "Overlay Flow on a monoflow?",
+      "back": "Usually more debt. Extract a capability instead."
+    },
+    {
+      "id": "F14",
+      "category": "interop",
+      "front": "Events vs messages in Composable?",
+      "back": "Events are stateless/async; messages are more stateful/destination-specific."
+    },
+    {
+      "id": "F15",
+      "category": "metadata",
+      "front": "Package version versus quote rows?",
+      "back": "Package is metadata; quote rows are business data."
+    },
+    {
+      "id": "F16",
+      "category": "1gp",
+      "front": "Is 1GP the Well-Architected package model?",
+      "back": "No. Composable covers 2GP unlocked/managed, not 1GP."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "What does maintainability mean on Salesforce?",
+      "answer_30_seconds": "You can change a capability with a known blast radius. That comes from modular units, packages, and tests—not from a monoflow nobody owns.",
+      "answer_2_minutes": "I use Composable language: capabilities, interoperability, packageability. I contrast a 2,000-element Flow with an invocable tax module. I mention observability as how we see the cost of debt, not as the fix itself.",
+      "example": "LAB_TaxService unlocked package versus Quote_Master_Flow.",
+      "tradeoffs": [
+        "Extraction cost versus every-release risk",
+        "Few packages versus many"
+      ],
+      "follow_ups": [
+        "How do you name a capability?",
+        "What is a mega-class?"
+      ],
+      "weak_answer_warnings": [
+        "Maintainability means no custom code"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Unlocked versus managed versus unmanaged packages?",
+      "answer_30_seconds": "Unlocked 2GP for internal apps, git as source of truth. Managed 2GP for AppExchange. Unmanaged in prod is an anti-pattern.",
+      "answer_2_minutes": "I say 1GP is not the well-architected model. Org-dependent unlocked is a bridge. I do not duplicate objects across packages. Subscriber orgs install versions; they are not the source of truth.",
+      "example": "Internal lab-quote-tax ships as unlocked package 1.2.0 from source.",
+      "tradeoffs": [
+        "Editability of unlocked versus ISV IP protection",
+        "Org-dependent speed versus install-anywhere"
+      ],
+      "follow_ups": [
+        "Namespaces?",
+        "Profiles in packages?"
+      ],
+      "weak_answer_warnings": [
+        "Change sets are a package type"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Leadership wants safer weekly tax-rule changes. The tax sits in a giant Quote Flow. Plan?",
+      "answer_30_seconds": "Extract quote-tax as a module, ship unlocked 2GP, observe hotspots, do not add an overlay Flow.",
+      "answer_2_minutes": "I inventory metadata, pick a capability name, create lab-quote-tax, replace the tax branch with a subflow/invocable, and time-box org-dependent if fields cannot move. I set an observability baseline. I leave email/inventory for later slices so we do not boil the ocean.",
+      "example": "Weekly tax upgrade 0.2.0 without touching email Flow.",
+      "tradeoffs": [
+        "Bridge package versus waiting to untangle all fields",
+        "Apex vs subflow for tax"
+      ],
+      "follow_ups": [
+        "Who owns the package?",
+        "How do you test the upgrade?"
+      ],
+      "weak_answer_warnings": [
+        "Rewrite the whole org this quarter"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "A team proposes 40 unlocked packages next month. Your architecture answer?",
+      "answer_30_seconds": "Composable says start with a few meaningful packages. Too many create bottlenecks. Sequence by painful capabilities.",
+      "answer_2_minutes": "I would approve one or two vertical slices with clear APIs, not a package per object. I would keep a CoE standard for naming and dependencies (ARCH-011). I would watch release cadence; if quality drops, merge or refactor packages.",
+      "example": "lab-quote-tax then lab-quote-pricing, not 40.",
+      "tradeoffs": [
+        "Independence versus integration test cost",
+        "Team autonomy versus shared objects"
+      ],
+      "follow_ups": [
+        "How do you detect too many packages?",
+        "LATEST dependency alias?"
+      ],
+      "weak_answer_warnings": [
+        "One package per custom object always"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "Package version create fails because of unpackaged references. Options?",
+      "answer_30_seconds": "Either move the dependency into the package graph or use org-dependent unlocked as a listed bridge—not unmanaged, not duplicate metadata.",
+      "answer_2_minutes": "I read the missing type. If it is supported, I add it to the module. If the org is spaghetti, org-dependent with an exit date. I do not copy the object into two packages. I develop in scratch orgs once dependencies are packable.",
+      "example": "Tax Flow references unpackaged LAB_Flag__c.",
+      "tradeoffs": [
+        "Bridge versus delay",
+        "Custom metadata in the package versus unpackaged"
+      ],
+      "follow_ups": [
+        "Can org-dependent depend on other packages?",
+        "Install-time versus create-time validation?"
+      ],
+      "weak_answer_warnings": [
+        "Just use unmanaged"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "After a 'cleanup' release, CPU is worse. How does observability help?",
+      "answer_30_seconds": "Compare Scale Center/ApexGuru before and after. You may have added an overlay Flow. Dashboards without a module owner will not fix it.",
+      "answer_2_minutes": "I treat observability as evidence. If Event Monitoring is licensed, I check whether users hit a slower page. I look for duplicate automations. I revert or extract, I do not add a fifth Flow. Maintainability work should reduce hotspots, not hide them.",
+      "example": "ApexGuru still flags SOQL in the leftover overlay.",
+      "tradeoffs": [
+        "Feature freeze versus slice refactor",
+        "Debug logs versus Scale Center"
+      ],
+      "follow_ups": [
+        "What if Event Monitoring is not licensed?",
+        "How long is a baseline window?"
+      ],
+      "weak_answer_warnings": [
+        "Observability is only for security teams"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When is packaging the wrong next step?",
+      "answer_30_seconds": "When you cannot name a capability, when you would duplicate metadata, or when you would create 40 empty packages. Also when the real issue is a production hotfix with no git.",
+      "answer_2_minutes": "I stabilize the hotfix process, then package. I do not package secrets. I do not use managed 2GP for a one-off internal script. I do not pretend change sets are 2GP. If Dev Hub is blocked, I still draw modules.",
+      "example": "Emergency validation rule today; package tax module next sprint.",
+      "tradeoffs": [
+        "Safety versus purity",
+        "Org-based emergency versus source-driven"
+      ],
+      "follow_ups": [
+        "What is a minimum package?",
+        "How do profiles get stripped?"
+      ],
+      "weak_answer_warnings": [
+        "Everything must be packaged before any bugfix"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this topic with a hotel-wing analogy, then break it.",
+      "answer_30_seconds": "Wings are modules, work permits are unlocked packages, blueprint vault is git, HVAC sensors are observability, taped roof is debt. It breaks because wings still share one org's governors and data model.",
+      "answer_2_minutes": "I add org-dependent as scaffolding, unmanaged as an anti-pattern, and 'start with one wing.' Multi-org is a different hotel chain (ARCH-011). Interviewers want 2GP names, not only the metaphor.",
+      "example": "lab-quote-tax wing versus Quote_Master_Flow hotel shutdown.",
+      "tradeoffs": [
+        "Metaphor versus citing Composable",
+        "One org versus multi-org"
+      ],
+      "follow_ups": [
+        "Map Event Monitoring",
+        "Map ISV managed packages"
+      ],
+      "weak_answer_warnings": [
+        "Library or labeled-drawer filler"
+      ]
+    }
+  ]
+}

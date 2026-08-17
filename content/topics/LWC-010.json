@@ -1,0 +1,1017 @@
+{
+  "topic_id": "LWC-010",
+  "slug": "security-lightning-web-security-csp-data-exposure-and-a",
+  "title": "Security: Lightning Web Security, CSP, data exposure, and Apex access",
+  "track": "Lightning Web Components",
+  "level": "Advanced",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "LWC-009"
+  ],
+  "objectives": [
+    "Explain Lightning Web Security as an org-wide architecture, not a per-component flag or API version.",
+    "Separate LWS distortions from Content Security Policy and from Apex CRUD/FLS.",
+    "Treat wired and Apex data as immutable and avoid exposing extra fields or secrets in the browser.",
+    "Call Apex only through @AuraEnabled methods you intend to expose, preferring cacheable=true for read-only wire access."
+  ],
+  "diagnostic_question": "A third-party script works in a scratch org, fails in production, and an Apex method returns fields the UI never shows. Which of Lightning Web Security, CSP, data exposure, or Apex access do you inspect first?",
+  "definition": "Lightning Web Security (LWS) is the current Lightning UI security architecture that isolates namespaces and applies JavaScript distortions so components can use third-party code with less XSS risk. It is enabled by default for orgs created in Winter ’23 and later and is generally available for LWC and Aura as of Summer ’23. LWS is org-wide: it cannot be disabled per component and is not tied to an API version. Content Security Policy (CSP) is a neighboring browser policy for which resources may load. Data exposure is what you put in the browser. Apex access is which @AuraEnabled methods a component may import. ([Lightning Web Security](https://developer.salesforce.com/docs/platform/lwc/guide/security-lwsec-intro.html); [Call Apex Methods](https://developer.salesforce.com/docs/platform/lwc/guide/apex.html); [Client-Side Caching](https://developer.salesforce.com/docs/platform/lwc/guide/apex-result-caching.html))",
+  "why_it_matters": "Candidates collapse LWS, Locker, CSP, and sharing into one word 'secure.' Enabling LWS-only features then discovering another component cannot run under LWS is an org-wide trap. Returning extra fields from Apex is data exposure even if the template hides them. @AuraEnabled is an API surface.",
+  "sixty_second_explanation": "Think of an airport checkpoint. LWS is the scanner that isolates each airline's bags (namespaces) and distorts dangerous tools. CSP is the posted list of what you may carry on. Data exposure is leaving a boarding pass on a cafe table—the browser already has it. Apex access is the airside door: only badge methods you marked @AuraEnabled get through, and a read-only door can be cacheable. The scanner is for the whole terminal, not one gate.",
+  "deeper_explanation": [
+    "LWS is modeled after TC39 usable-security ideas. Components run in an isolated JavaScript environment per namespace but can import from other namespaces as if they shared an environment. Most Locker-compliant code keeps working. You may refactor to LWS-only features, but that is a one-way org decision. ([Lightning Web Security](https://developer.salesforce.com/docs/platform/lwc/guide/security-lwsec-intro.html))",
+    "LWS cannot be disabled on individual components and is not associated with an API version. If you adopt an LWS-only feature (for example importing a module from another namespace) you cannot roll one component back to Lightning Locker later. Test every custom Lightning component before production enablement. ([Considerations Before Using LWS-Only Features](https://developer.salesforce.com/docs/platform/lwc/guide/security-lwsec-refactor.html))",
+    "LWS applies distortions to JavaScript APIs. LWS Distortion Viewer documents which APIs are blocked or modified. CSP is a separate control that restricts script, style, and remote hosts. Do not treat a CSP block as an LWS distortion or the reverse. ([LWS Distortion Viewer](https://developer.salesforce.com/docs/platform/lwc/guide/security-lwsec-tools-distortion-viewer.html))",
+    "Call Apex by importing @AuraEnabled methods and wiring or invoking them. Treat provisioned data as immutable; copy before mutate. Prefer the least data: UI API wires honor CRUD, FLS, and sharing, while Apex returns whatever the method queries unless you enforce user mode/FLS in Apex (APEX-014). cacheable=true is required for @wire to Apex and is only legal on methods that do not mutate data. ([Call Apex Methods](https://developer.salesforce.com/docs/platform/lwc/guide/apex.html); [Client-Side Caching](https://developer.salesforce.com/docs/platform/lwc/guide/apex-result-caching.html))"
+  ],
+  "mental_model": {
+    "analogy": "An airport checkpoint: scanner (LWS), carry-on list (CSP), boarding pass left on a table (data exposure), airside badge door (Apex access).",
+    "useful_mapping": [
+      "whole-terminal scanner → LWS is org-wide, not per component",
+      "namespace isolation → each airline's bags",
+      "distortion → a tool that is allowed but changed so it cannot cut the fence",
+      "CSP poster → which scripts and hosts may load",
+      "boarding pass on the table → fields in JS memory / extra Apex columns",
+      "badge door → @AuraEnabled import surface; cacheable=true is a read-only door"
+    ],
+    "where_it_breaks": [
+      "A real airport can close one gate; you cannot disable LWS for one component.",
+      "CSP is not a scanner distortion; it is a different control plane.",
+      "A closed door does not replace sharing: Apex can still over-query if the method is careless."
+    ]
+  },
+  "teach_back_prompt": "Explain LWS versus CSP versus Apex access to a teammate using the airport checkpoint, then name one place the analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Is LWS per component or org-wide? Is it an API version?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "Why is adopting an LWS-only import a one-way org decision?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "What does cacheable=true require, and when is it mandatory?"
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Give one data-exposure example that CSS hiding does not fix."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: LWS, CSP, extra Apex fields, @AuraEnabled."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-LWC-LWS-INTRO",
+      "title": "Lightning Web Security",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/security-lwsec-intro.html",
+      "supports": "LWS definition, Winter ’23 default, Summer ’23 GA for LWC and Aura, namespace isolation, Locker coexistence.",
+      "release_or_version": "LWC Developer Guide / Security for Lightning Components",
+      "last_verified": "2026-08-16",
+      "limits": "Org-by-org enablement UI clicks are Help, not fully specified here."
+    },
+    {
+      "source_id": "SF-LWC-LWS-REFACTOR",
+      "title": "Considerations Before Using LWS-Only Features",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/security-lwsec-refactor.html",
+      "supports": "LWS cannot be disabled per component; not API-versioned; LWS-only features block a Locker rollback.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not list every LWS-only API."
+    },
+    {
+      "source_id": "SF-LWC-LWS-DISTORT",
+      "title": "LWS Distortion Viewer",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/security-lwsec-tools-distortion-viewer.html",
+      "supports": "LWS distortions modify or block JavaScript APIs; viewer lists them; CSP is a sibling topic in the same security set.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Exact distortion of a given API must be looked up in the viewer."
+    },
+    {
+      "source_id": "SF-LWC-APEX",
+      "title": "Call Apex Methods",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/apex.html",
+      "supports": "Import @AuraEnabled methods; wire or imperative; treat data as immutable; Apex limits per invocation; batching 413 note.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "CRUD/FLS enforcement details are APEX-014."
+    },
+    {
+      "source_id": "SF-LWC-APEX-CACHE",
+      "title": "Client-Side Caching of Apex Method Results",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/apex-result-caching.html",
+      "supports": "cacheable=true for non-mutating methods; required for @wire; do not assume cache duration; refreshApex when stale.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Default cache seconds are not to be hard-coded."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer LWC Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Advanced",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "LWS org-wide",
+        "Locker vs LWS",
+        "Distortions vs CSP",
+        "Browser data exposure",
+        "@AuraEnabled surface",
+        "cacheable=true"
+      ],
+      "accessible_description": "Portrait map separating Lightning Web Security, CSP, browser data exposure, and Apex access."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-LWC-LWS-INTRO",
+        "SF-LWC-LWS-REFACTOR",
+        "SF-LWC-APEX",
+        "SF-LWC-APEX-CACHE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "What actually enforces this LWC security claim?"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Browser[Browser LWC] --> LWS[LWS namespace sandbox + distortions]\n  Browser --> CSP[CSP allowed hosts and scripts]\n  Browser --> Data[JS memory: whatever Apex or LDS returned]\n  Browser --> ApexDoor[@AuraEnabled methods]\n  ApexDoor --> Cache[cacheable=true client cache if read-only]\n  ApexDoor --> Mutate[Imperative non-cacheable DML]\n  LWS --> OrgWide[Entire org, not one component]",
+      "decision": "flowchart TD\n  Fail[Something is blocked] --> Q1{Script or host refused by the browser?}\n  Q1 -->|Yes| Csp[Inspect CSP, not LWS first]\n  Q1 -->|No JS API behaves oddly| Dist[LWS Distortion Viewer]\n  Fail2[Fields visible in DevTools] --> Exp[Data exposure: stop returning them from Apex]\n  Fail3[Need server data] --> Q2{Does a UI API wire suffice?}\n  Q2 -->|Yes| Lds[LDS honors CRUD FLS sharing]\n  Q2 -->|No| Apex[Import a narrow @AuraEnabled method]\n  Apex --> Q3{Read only?}\n  Q3 -->|Yes| Wire[cacheable=true and @wire]\n  Q3 -->|Mutates| Imp[Imperative, not cacheable=true]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "LWS is enabled by default for orgs created in Winter ’23 and later, and LWS for LWC and Aura is generally available as of Summer ’23.",
+      "source_ids": [
+        "SF-LWC-LWS-INTRO"
+      ],
+      "scope": "LWS availability",
+      "validation": "Lightning Web Security introduction.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "LWS cannot be disabled per component and is not associated with an API version. LWS-only features prevent a later Locker rollback for that component.",
+      "source_ids": [
+        "SF-LWC-LWS-REFACTOR"
+      ],
+      "scope": "Org-wide LWS",
+      "validation": "Considerations Before Using LWS-Only Features.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "LWS distortions block or modify JavaScript APIs; look them up in LWS Distortion Viewer. CSP is a sibling security topic, not the same control.",
+      "source_ids": [
+        "SF-LWC-LWS-DISTORT"
+      ],
+      "scope": "Distortions vs CSP",
+      "validation": "Distortion Viewer topic and security nav that lists CSP separately.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "LWC calls Apex by importing exposed methods; treat returned data as immutable. cacheable=true is required for @wire and only allowed on non-mutating methods.",
+      "source_ids": [
+        "SF-LWC-APEX",
+        "SF-LWC-APEX-CACHE"
+      ],
+      "scope": "Apex access and cache",
+      "validation": "Call Apex Methods and Client-Side Caching.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "LWS is the default architecture for newer orgs. Reverify whether a given org still has Locker and whether LWS-only features are in use before a production change.",
+  "unresolved_uncertainty": [
+    "Exact CSP header values and trusted-URL setup clicks vary by org and Experience Cloud; confirm in current Help before quoting a header.",
+    "Needs verification: current list of LWS-only features beyond cross-namespace import."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Lightning Web Security",
+      "telugu": "LWC and Aura kosam namespace isolation security architecture."
+    },
+    {
+      "english": "Content Security Policy",
+      "telugu": "Browser evi scripts mariyu hosts load cheyavacho limit chese vidhanam."
+    },
+    {
+      "english": "Data exposure",
+      "telugu": "Browser ki avasaram leni fields leda secrets pampadam."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "LWS is org-wide namespace isolation plus JS distortions, not a per-component flag. CSP is which resources load. Data exposure is extra fields in the browser. Apex access is the @AuraEnabled door, with cacheable=true only for reads you wire.",
+    "two_minutes": "I never say 'Locker is dead in every org' without checking. I will not adopt an LWS-only import until every component is tested, because I cannot disable LWS for one bundle. I prefer UI API wires when they suffice because they honor CRUD, FLS, and sharing. If I write Apex, I return the minimum fields and treat the payload as immutable. Hiding a field in the template is not security."
+  },
+  "terminology": [
+    {
+      "term": "Lightning Web Security",
+      "plain": "The current Lightning UI security architecture that sandboxes JavaScript by namespace.",
+      "precise": "Default for orgs created Winter ’23+. GA for LWC and Aura as of Summer ’23. Org-wide, not per component, not an API version. Distorts or blocks some JS APIs.",
+      "example": "A third-party chart library that needs a listed distortion reviewed in Distortion Viewer.",
+      "non_example": "A profile permission that hides a tab.",
+      "confusable_neighbor": "Lightning Locker: the previous default architecture.",
+      "boundary": "Sharing and CRUD are not LWS."
+    },
+    {
+      "term": "Lightning Locker",
+      "plain": "The older Lightning component security architecture LWS replaces as the default.",
+      "precise": "Some Locker restrictions are unnecessary under LWS. Adopting LWS-only features means you cannot put that component back on Locker.",
+      "example": "An org created before Winter ’23 that still has Locker until an admin enables LWS.",
+      "non_example": "CSP trusted URLs.",
+      "confusable_neighbor": "LWS.",
+      "boundary": "Do not invent a Locker API version."
+    },
+    {
+      "term": "Content Security Policy",
+      "plain": "Browser rules for which scripts, styles, and hosts a page may load.",
+      "precise": "A sibling of LWS in the Lightning security documentation set. A blocked CDN is often CSP, not an LWS distortion.",
+      "example": "A remote font host refused by CSP.",
+      "non_example": "eval distorted by LWS.",
+      "confusable_neighbor": "LWS Distortion Viewer entries.",
+      "boundary": "Exact header strings Need verification per org type."
+    },
+    {
+      "term": "data exposure",
+      "plain": "Putting fields, IDs, or secrets in the browser that the UI does not need.",
+      "precise": "Anything Apex or a wire returns can be read in DevTools. CSS hide and lwc:if are not authorization. Prefer UI API adapters that honor FLS, or Apex that returns a narrow DTO.",
+      "example": "Apex returning SSN while the card shows only Name.",
+      "non_example": "A user without FLS not receiving a field from getRecord.",
+      "confusable_neighbor": "Error-message stacks (LWC-007).",
+      "boundary": "User-mode Apex is APEX-014."
+    },
+    {
+      "term": "Apex access",
+      "plain": "Which Apex methods an LWC is allowed to import and call.",
+      "precise": "Methods must be exposed (@AuraEnabled). Import and @wire or call imperatively. cacheable=true required for wire and forbidden for DML. Treat results as immutable.",
+      "example": "import getOpenCases from '@salesforce/apex/LAB_CaseService.getOpenCases';",
+      "non_example": "SOQL written in the LWC JavaScript file.",
+      "confusable_neighbor": "LDS ui*Api wires that do not use your Apex.",
+      "boundary": "Governor numbers are APEX-007; do not invent them."
+    },
+    {
+      "term": "LWS distortion",
+      "plain": "A change LWS makes to a JavaScript API so unsafe behavior cannot run as-is.",
+      "precise": "Viewer lists blocked or modified APIs. If an API is not listed, native behavior is allowed. Third-party libraries may need updates.",
+      "example": "Looking up document.cookie behavior in Distortion Viewer after a library fails.",
+      "non_example": "A 413 from too many batched Apex actions.",
+      "confusable_neighbor": "CSP script-src refusal.",
+      "boundary": "Look up the current API; do not memorize an unofficial list."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Identify the control plane",
+      "actor": "Developer + admin",
+      "trigger": "Blocked script, odd JS, extra fields, or Apex error",
+      "before": "One word 'security'",
+      "after": "LWS, CSP, data exposure, or Apex access",
+      "observe": "Written control-plane choice",
+      "failure": "Disabling LWS to 'fix' a CSP host block"
+    },
+    {
+      "step": 2,
+      "transition": "Prefer LDS when it fits",
+      "actor": "Developer",
+      "trigger": "Need record data",
+      "before": "Default Apex wrapper",
+      "after": "UI API wire or a narrow @AuraEnabled method",
+      "observe": "Field list matches the template",
+      "failure": "SELECT * style Apex for a name badge"
+    },
+    {
+      "step": 3,
+      "transition": "Mark cacheability honestly",
+      "actor": "Developer",
+      "trigger": "Apex method for LWC",
+      "before": "Unknown mutation",
+      "after": "cacheable=true only if read-only; required for @wire",
+      "observe": "DML methods are imperative and not cacheable",
+      "failure": "cacheable=true on a method that updates Case"
+    },
+    {
+      "step": 4,
+      "transition": "Test LWS as an org switch",
+      "actor": "Developer",
+      "trigger": "Considering an LWS-only feature",
+      "before": "One component refactored",
+      "after": "All custom Lightning components verified under LWS",
+      "observe": "No Locker rollback plan for that feature",
+      "failure": "Importing another namespace then asking to disable LWS for one bundle"
+    }
+  ],
+  "when_to_use": [
+    "When a security review asks how Lightning Web Security, CSP, data exposure, and Apex access differ for an LWC.",
+    "When a third-party library fails and you must choose Distortion Viewer versus a CSP host block.",
+    "When Apex returns fields the UI never shows and you need to reduce data exposure.",
+    "When deciding whether an @AuraEnabled method may be cacheable=true and wired, or must stay imperative."
+  ],
+  "when_not_to_use": [
+    "Do not use this security lesson as a substitute for org-wide sharing design, MFA, or Apex user-mode details (SEC and APEX-014).",
+    "Do not treat LWS as a per-component flag or an API version, or disable it to paper over a CSP or library problem.",
+    "Do not hide extra Apex fields in the template and call that data exposure solved.",
+    "Do not mark a DML method cacheable=true so you can @wire it."
+  ],
+  "configuration_or_code_location": [
+    "Setup: Lightning Web Security enablement is org-wide—confirm current Help path; do not invent clicks.",
+    "Apex: @AuraEnabled and optional cacheable=true on read methods.",
+    "LWC JS: import from @salesforce/apex/Class.method; never SOQL in JS.",
+    "Tools: LWS Distortion Viewer in the LWC / DX developer tools area."
+  ],
+  "worked_example": {
+    "scenario": "labCaseBadge shows Case Number and Status. A teammate added Apex that also returns Account.AnnualRevenue and a named-credential token 'for later.' A chart library fails in production where LWS is on. No production customer data in the lab.",
+    "inputs": [
+      "Read-only badge fields",
+      "Third-party chart static resource",
+      "Org with LWS enabled"
+    ],
+    "decisions": [
+      {
+        "decision": "Replace the Apex DTO with getRecord for Number and Status, or a two-field Apex wrapper.",
+        "because": "Extra fields are data exposure in DevTools.",
+        "rejected": "lwc:if to hide revenue and keep returning it"
+      },
+      {
+        "decision": "Remove the token from the Apex return entirely.",
+        "because": "Named-credential secrets do not belong in the browser.",
+        "rejected": "Store the token in a private JS field"
+      },
+      {
+        "decision": "Check Distortion Viewer and CSP separately for the chart library; do not disable LWS for one component.",
+        "because": "LWS is org-wide and not per bundle.",
+        "rejected": "Request Locker just for the chart"
+      }
+    ],
+    "configuration_or_code": [
+      "@AuraEnabled(cacheable=true) public static CaseBadge dto(Id id) { /* Number, Status only */ }",
+      "No token properties on the DTO.",
+      "Library test plan under LWS before any LWS-only import."
+    ],
+    "output": "Browser payload matches the badge; library issue classified as distortion vs CSP.",
+    "verification": [
+      "Network/Apex response JSON has no AnnualRevenue and no token.",
+      "cacheable=true present because the method does not DML.",
+      "Written note: LWS cannot be disabled for labCaseBadge only."
+    ],
+    "self_explanation": "I split LWS, CSP, exposure, and Apex access. I did not hide fields in CSS."
+  },
+  "hands_on_lab": {
+    "environment": "Scratch org or Developer sandbox; LAB_ names only.",
+    "starting_state_checks": [
+      "You can deploy LWC and Apex.",
+      "You know whether LWS is enabled in this org (do not toggle production)."
+    ],
+    "steps": [
+      "Write LAB_BadgeService with a cacheable @AuraEnabled method that returns only Case Number and Status for a LAB_ record.",
+      "Wire it from labCaseBadge and confirm in the browser that extra fields are absent.",
+      "Attempt cacheable=true on a method that performs DML and record the compile or runtime failure—do not leave that method deployed.",
+      "Open Distortion Viewer documentation and write one sentence distinguishing a distortion from a CSP host block."
+    ],
+    "guided_completion": [
+      "If the JSON includes unused Account fields, data exposure remains.",
+      "If you planned to disable LWS for one component, reread the org-wide rule."
+    ],
+    "independent_challenge": "Compare the same badge using getRecord versus Apex and list which control plane enforces FLS in each path.",
+    "evidence": [
+      "Apex method signature with cacheable=true and a two-field return.",
+      "Note that LWS is not an API version and not per component."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ Apex and LWC.",
+      "Do not deploy to production; do not toggle LWS in a shared prod org."
+    ],
+    "limitations": "Does not configure CSP headers or prove every distortion."
+  },
+  "decision_table": [
+    {
+      "signal": "A remote script or font is refused by the browser as an untrusted host.",
+      "choose": "Inspect Content Security Policy and trusted URLs.",
+      "not": "Disable Lightning Web Security for the whole org to 'let the script through.'",
+      "why": "CSP is a sibling control plane; LWS is not a per-host allow list."
+    },
+    {
+      "signal": "A JavaScript API behaves differently than on a raw HTML page.",
+      "choose": "Look up the API in LWS Distortion Viewer and adapt the library.",
+      "not": "Assume CSP blocked it, or request a per-component LWS off switch.",
+      "why": "LWS distorts or blocks APIs org-wide; there is no per-component disable."
+    },
+    {
+      "signal": "Apex returns unused confidential fields the template does not render.",
+      "choose": "Stop querying them; shrink the DTO or switch to an LDS wire for those fields.",
+      "not": "Hide the fields with CSS or lwc:if and call the page secure.",
+      "why": "Data exposure is what reached the browser, not what the user sees."
+    },
+    {
+      "signal": "LWC needs read-only Case fields via Apex and @wire.",
+      "choose": "@AuraEnabled(cacheable=true) on a non-mutating method, then @wire.",
+      "not": "cacheable=true on a method that updates records so the wire compiles.",
+      "why": "The caching guide allows cacheable only when the method does not mutate data, and wire requires it."
+    }
+  ],
+  "limitations": [
+    "Does not replace sharing, profiles, or MFA.",
+    "Does not enumerate every LWS distortion or CSP header.",
+    "Does not teach user-mode Apex in full (APEX-014).",
+    "Does not authorize toggling LWS in production."
+  ],
+  "security_notes": [
+    "Never return secrets, session IDs, or named-credential tokens to LWC.",
+    "Template hide is not FLS.",
+    "LWS-only features are an org-wide commitment.",
+    "Apex limits apply per invocation; do not invent a number beyond the documented 2,500-action batch / 413 note."
+  ],
+  "common_mistakes": [
+    "Calling LWS a per-component setting.",
+    "Adopting LWS-only imports before testing the org.",
+    "Hiding extra Apex fields in the UI.",
+    "cacheable=true on DML.",
+    "Treating CSP and LWS as the same switch."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Third-party library works locally in a plain HTML page, fails in Lightning.",
+      "check": [
+        "LWS Distortion Viewer for the APIs it uses.",
+        "CSP for the hosts it loads.",
+        "Whether the library is LWS-compliant."
+      ],
+      "do_not_assume": "You can disable LWS for that one component."
+    },
+    {
+      "symptom": "@wire to Apex will not compile or run.",
+      "check": [
+        "Is the method @AuraEnabled(cacheable=true)?",
+        "Does the method DML? Then it cannot be cacheable."
+      ],
+      "do_not_assume": "The import path is the only issue."
+    },
+    {
+      "symptom": "Users can see a field in DevTools they cannot see on the layout.",
+      "check": [
+        "Did Apex return it?",
+        "Would getRecord have omitted it under FLS?"
+      ],
+      "do_not_assume": "lwc:if hid it from attackers."
+    }
+  ],
+  "production_notes": [
+    "Test LWS in a full-copy or partial sandbox with every custom Lightning component before production enablement.",
+    "Review @AuraEnabled methods as published APIs.",
+    "No production LWS toggle is authorized by this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Can Lightning Web Security be disabled for a single component?",
+      "options": {
+        "A": "No; LWS is org-wide and not associated with an API version",
+        "B": "Yes, via the component API version",
+        "C": "Yes, via js-meta.xml",
+        "D": "Yes, via a CSS class"
+      },
+      "answer": "A",
+      "rationale": "LWS cannot be disabled on individual components and is not associated with an API version.",
+      "distractor_explanations": {
+        "B": "Explicitly not API-versioned.",
+        "C": "No such target flag in this topic.",
+        "D": "CSS is not LWS."
+      },
+      "concept": "Org-wide LWS",
+      "citation_ids": [
+        "SF-LWC-LWS-REFACTOR"
+      ]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "For orgs created in Winter ’23 and later, what is the default Lightning UI security architecture?",
+      "options": {
+        "A": "Lightning Web Security",
+        "B": "Classic only",
+        "C": "No security architecture",
+        "D": "Visualforce remote objects"
+      },
+      "answer": "A",
+      "rationale": "LWS is enabled by default for all orgs created in Winter ’23 and later.",
+      "distractor_explanations": {
+        "B": "Not the documented default.",
+        "C": "False.",
+        "D": "Unrelated."
+      },
+      "concept": "LWS default",
+      "citation_ids": [
+        "SF-LWC-LWS-INTRO"
+      ]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "You refactor one LWC to an LWS-only cross-namespace import. Another component then fails under LWS. Can you turn LWS off for just the failing component?",
+      "options": {
+        "A": "No; the refactored component now requires LWS, and LWS is org-wide",
+        "B": "Yes, set apiVersion 40 on the failing bundle",
+        "C": "Yes, wrap it in Aura",
+        "D": "Yes, add cacheable=true"
+      },
+      "answer": "A",
+      "rationale": "LWS-only features are incompatible with Locker, and LWS cannot be disabled per component.",
+      "distractor_explanations": {
+        "B": "LWS is not API-versioned.",
+        "C": "LWS applies to Aura as well (GA Summer ’23).",
+        "D": "Caching is Apex, not LWS."
+      },
+      "concept": "LWS-only one-way door",
+      "citation_ids": [
+        "SF-LWC-LWS-REFACTOR"
+      ]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "What must be true to set @AuraEnabled(cacheable=true)?",
+      "options": {
+        "A": "The method only gets data and does not mutate data",
+        "B": "The method must perform DML",
+        "C": "The method must be global",
+        "D": "The method must run without sharing"
+      },
+      "answer": "A",
+      "rationale": "To set cacheable=true, a method must only get data; it cannot mutate data.",
+      "distractor_explanations": {
+        "B": "Opposite of the rule.",
+        "C": "Access modifiers are APEX-001.",
+        "D": "Sharing is a different keyword."
+      },
+      "concept": "cacheable=true",
+      "citation_ids": [
+        "SF-LWC-APEX-CACHE"
+      ]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "To @wire an Apex method, what annotation setting is required?",
+      "options": {
+        "A": "cacheable=true",
+        "B": "SeeAllData=true",
+        "C": "@future",
+        "D": "webservice"
+      },
+      "answer": "A",
+      "rationale": "To use @wire to call an Apex method, you must set cacheable=true.",
+      "distractor_explanations": {
+        "B": "Test annotation, not LWC wire.",
+        "C": "Async Apex, not wire.",
+        "D": "SOAP, not LWC."
+      },
+      "concept": "Wire requires cacheable",
+      "citation_ids": [
+        "SF-LWC-APEX-CACHE"
+      ]
+    },
+    {
+      "id": "Q6",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Apex returns SSN but the template never binds it. Is that safe?",
+      "options": {
+        "A": "No; that is data exposure in the browser payload",
+        "B": "Yes; lwc:if hides it from attackers",
+        "C": "Yes; LWS strips unused fields",
+        "D": "Yes; CSP encrypts Apex JSON"
+      },
+      "answer": "A",
+      "rationale": "Anything returned can be inspected. LWS and CSP do not trim your DTO.",
+      "distractor_explanations": {
+        "B": "Template hide is not authorization.",
+        "C": "LWS does not field-filter Apex.",
+        "D": "CSP does not encrypt your method return."
+      },
+      "concept": "Data exposure",
+      "citation_ids": [
+        "SF-LWC-APEX"
+      ]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A CDN script is blocked. Distortion Viewer does not list the API. First control plane?",
+      "options": {
+        "A": "Content Security Policy / trusted hosts",
+        "B": "Disable LWS",
+        "C": "cacheable=true",
+        "D": "errorCallback"
+      },
+      "answer": "A",
+      "rationale": "Host/script load failures are CSP territory; distortions are JS API behavior.",
+      "distractor_explanations": {
+        "B": "Org-wide and the wrong plane.",
+        "C": "Apex cache.",
+        "D": "Component throws."
+      },
+      "concept": "CSP vs LWS",
+      "citation_ids": [
+        "SF-LWC-LWS-DISTORT"
+      ]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "You need record fields and a base form would work. Security-minded default?",
+      "options": {
+        "A": "lightning-record-* or a UI API wire that honors CRUD, FLS, and sharing",
+        "B": "Apex without sharing that returns the whole Case",
+        "C": "SOQL in the LWC file",
+        "D": "window.fetch to /services/data with a hard-coded session"
+      },
+      "answer": "A",
+      "rationale": "Call Apex Methods and Data Guidelines: prefer base components; UI API wires honor CRUD/FLS/sharing.",
+      "distractor_explanations": {
+        "B": "Over-exposes and skips user FLS unless you add it.",
+        "C": "Impossible; Apex/LDS belong on the server.",
+        "D": "Session theft pattern; never."
+      },
+      "concept": "Least privilege data path",
+      "citation_ids": [
+        "SF-LWC-APEX"
+      ]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "LWS distortion versus CSP?",
+      "options": {
+        "A": "Distortions change JS APIs in the sandbox; CSP restricts which resources load",
+        "B": "They are the same header",
+        "C": "CSP is per-component LWS",
+        "D": "Distortions only apply to Apex"
+      },
+      "answer": "A",
+      "rationale": "Distortion Viewer describes API behavior; CSP is listed as a sibling Lightning security topic.",
+      "distractor_explanations": {
+        "B": "Different mechanisms.",
+        "C": "LWS is not per component.",
+        "D": "Distortions are client JS."
+      },
+      "concept": "Two control planes",
+      "citation_ids": [
+        "SF-LWC-LWS-DISTORT"
+      ]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Why treat Apex and LDS results as immutable in LWC?",
+      "options": {
+        "A": "The Guide says assume immutable data and copy before mutate",
+        "B": "JavaScript forbids object assignment",
+        "C": "cacheable=true freezes the heap",
+        "D": "LWS deletes mutated objects"
+      },
+      "answer": "A",
+      "rationale": "Call Apex Methods: assume Apex methods provision immutable data; make a shallow copy to mutate.",
+      "distractor_explanations": {
+        "B": "JS allows mutation; the platform contract does not want it.",
+        "C": "Cache is not Object.freeze.",
+        "D": "Not how LWS is described."
+      },
+      "concept": "Immutable provisioned data",
+      "citation_ids": [
+        "SF-LWC-APEX"
+      ]
+    },
+    {
+      "id": "Q11",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "As of Summer ’23, LWS for Lightning web components and Aura components is:",
+      "options": {
+        "A": "Generally available for all orgs",
+        "B": "Pilot only for Experience Cloud",
+        "C": "Removed from the product",
+        "D": "Limited to Visualforce"
+      },
+      "answer": "A",
+      "rationale": "As of Summer ’23, LWS for LWC and Aura is generally available for all orgs.",
+      "distractor_explanations": {
+        "B": "GA, not a remaining pilot in that sentence.",
+        "C": "False.",
+        "D": "False."
+      },
+      "concept": "LWS GA",
+      "citation_ids": [
+        "SF-LWC-LWS-INTRO"
+      ]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "If cached Apex data is stale after a mutation, what does the caching topic tell you to use (for wired Apex)?",
+      "options": {
+        "A": "refreshApex() from @salesforce/apex",
+        "B": "setInterval polling every second",
+        "C": "Disable LWS",
+        "D": "window.location.reload only"
+      },
+      "answer": "A",
+      "rationale": "If a component knows cached data is invalid, refresh the cache with refreshApex().",
+      "distractor_explanations": {
+        "B": "The wire topic separately warns against polling refresh.",
+        "C": "Wrong plane.",
+        "D": "A blunt hammer, not the cache API."
+      },
+      "concept": "refreshApex",
+      "citation_ids": [
+        "SF-LWC-APEX-CACHE"
+      ]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "Is LWS per component?",
+      "back": "No. Org-wide, not an API version, cannot be disabled per component."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "Default security architecture for Winter ’23+ orgs?",
+      "back": "Lightning Web Security. Locker was the previous default."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "LWS distortion versus CSP?",
+      "back": "Distortions change JS APIs; CSP restricts which resources the browser loads."
+    },
+    {
+      "id": "F4",
+      "category": "decision",
+      "front": "Where do you look up a blocked JS API under LWS?",
+      "back": "LWS Distortion Viewer. If the API is not listed, native behavior is allowed."
+    },
+    {
+      "id": "F5",
+      "category": "decision",
+      "front": "Requirement to @wire Apex?",
+      "back": "@AuraEnabled(cacheable=true) on a non-mutating method."
+    },
+    {
+      "id": "F6",
+      "category": "limitation_security",
+      "front": "Template hides SSN that Apex returned. Secure?",
+      "back": "No. That is still data exposure in the browser payload."
+    },
+    {
+      "id": "F7",
+      "category": "limitation_security",
+      "front": "LWS-only import risk?",
+      "back": "You cannot roll that component back to Locker; LWS stays org-wide."
+    },
+    {
+      "id": "F8",
+      "category": "scenario",
+      "front": "CDN font blocked, Distortion Viewer silent. Check?",
+      "back": "Content Security Policy / trusted hosts, not an LWS disable."
+    },
+    {
+      "id": "F9",
+      "category": "terminology",
+      "front": "Treat Apex/LDS data as what?",
+      "back": "Immutable. Make a shallow copy if you must mutate."
+    },
+    {
+      "id": "F10",
+      "category": "scenario",
+      "front": "Stale wired Apex after DML. API?",
+      "back": "refreshApex() from @salesforce/apex. Do not poll it."
+    },
+    {
+      "id": "F11",
+      "category": "decision",
+      "front": "Need two Case fields. Security default path?",
+      "back": "UI API / record form if it fits; otherwise a narrow @AuraEnabled DTO."
+    },
+    {
+      "id": "F12",
+      "category": "terminology",
+      "front": "Summer ’23 LWS status for Aura and LWC?",
+      "back": "Generally available for all orgs."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "Named credential token in Apex return?",
+      "back": "Never. Secrets do not belong in LWC JSON."
+    },
+    {
+      "id": "F14",
+      "category": "decision",
+      "front": "Method performs DML. cacheable?",
+      "back": "No. Call it imperatively without cacheable=true."
+    },
+    {
+      "id": "F15",
+      "category": "terminology",
+      "front": "Does LWS replace sharing?",
+      "back": "No. LWS sandboxes JS. Record access is still sharing, CRUD, and FLS."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Separate Lightning Web Security, CSP, data exposure, and Apex access.",
+      "answer_30_seconds": "LWS sandboxes JS org-wide. CSP limits loaded resources. Data exposure is extra payload in the browser. Apex access is the @AuraEnabled door.",
+      "answer_2_minutes": "I refuse a single word 'secure.' LWS distortions are API behavior. CSP is hosts and scripts. If SSN is in the XHR, that is exposure even when hidden. If the method is not @AuraEnabled, LWC cannot import it. cacheable=true is a read-only cache contract, not a security fairy.",
+      "example": "Chart CDN blocked by CSP; eval distorted by LWS; extra Apex column in DevTools.",
+      "tradeoffs": [
+        "LDS versus Apex",
+        "LWS-only features versus Locker compatibility"
+      ],
+      "follow_ups": [
+        "Is LWS per component?",
+        "What is Distortion Viewer?"
+      ],
+      "weak_answer_warnings": [
+        "LWS equals sharing"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why is LWS a one-way org decision once you use LWS-only features?",
+      "answer_30_seconds": "LWS is org-wide and not per component. An LWS-only import cannot run under Locker, so you cannot flip one bundle back.",
+      "answer_2_minutes": "I test every custom Lightning component before production LWS enablement. I delay cross-namespace LWS-only imports until that gate passes. Interviewers listen for 'not an API version' and 'not js-meta.xml.'",
+      "example": "One unlocked-package widget imports another namespace; a legacy Aura chart then fails under LWS.",
+      "tradeoffs": [
+        "LWS-only convenience versus rollback",
+        "Sandbox coverage versus speed"
+      ],
+      "follow_ups": [
+        "Winter ’23 default?",
+        "Does Aura also run under LWS?"
+      ],
+      "weak_answer_warnings": [
+        "We will disable LWS on the broken component"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Apex returns unused confidential fields. How do you fix data exposure?",
+      "answer_30_seconds": "Stop returning them. Shrink the DTO or use an LDS wire. Hiding in the template is not a fix.",
+      "answer_2_minutes": "I open the network payload, not the screenshot. I prefer getRecord when FLS should strip fields. If Apex stays, I select only UI fields and add a review that new properties need a reason. I never stash a token 'for later' on the DTO.",
+      "example": "labCaseBadge dropped AnnualRevenue and a named-credential token from the wrapper.",
+      "tradeoffs": [
+        "Generic sObject return versus DTO",
+        "Apex versus UI API"
+      ],
+      "follow_ups": [
+        "What about with sharing?",
+        "What about user mode?"
+      ],
+      "weak_answer_warnings": [
+        "lwc:if is encryption"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "You want to @wire an Apex updater that closes a Case. What is wrong?",
+      "answer_30_seconds": "Wire requires cacheable=true, and cacheable methods cannot mutate data. Close the Case imperatively instead.",
+      "answer_2_minutes": "I split reads and writes. The closer is an imperative method without cacheable. After it succeeds I refreshApex on the read wire or notify LDS. I do not mark DML cacheable to silence the compiler.",
+      "example": "closeCase(Id) imperative; getBadge(Id) cacheable wired.",
+      "tradeoffs": [
+        "Two methods versus one god method",
+        "refreshApex versus notifyRecordUpdateAvailable"
+      ],
+      "follow_ups": [
+        "What if the read is LDS not Apex?",
+        "What is the 413 batch note?"
+      ],
+      "weak_answer_warnings": [
+        "cacheable=true on DML"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "A library works in a gist and fails in the org. Walk LWS versus CSP.",
+      "answer_30_seconds": "If a host or script is refused, CSP. If a JS API misbehaves, Distortion Viewer. Do not disable LWS for one component.",
+      "answer_2_minutes": "I reproduce with debug mode. I check the console for CSP. I look up APIs in Distortion Viewer. I read third-party library LWS notes. I may fork or replace the library. I will not recommend a production LWS off switch from this lesson.",
+      "example": "Chart fetch to an unlisted CDN versus document.cookie distortion.",
+      "tradeoffs": [
+        "Replace library versus adapt to distortions",
+        "Static resource versus remote CDN"
+      ],
+      "follow_ups": [
+        "What is LWS-compliant library guidance?",
+        "Who owns CSP in the org?"
+      ],
+      "weak_answer_warnings": [
+        "Turn off LWS in production"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Users without FLS still see a field in your LWC. What do you inspect?",
+      "answer_30_seconds": "Whether Apex returned it. UI API wires omit inaccessible fields; careless Apex does not.",
+      "answer_2_minutes": "I compare getRecord versus the Apex JSON. I check the method's sharing and FLS handling—that detail is APEX-014, but the LWC lesson is: do not over-query. I treat this as data exposure plus an authorization bug, not an SLDS issue.",
+      "example": "LAB_ Apex wrapper selected a hidden custom field the layout never showed.",
+      "tradeoffs": [
+        "LDS versus Apex",
+        "with sharing versus user mode"
+      ],
+      "follow_ups": [
+        "Does LWS strip the field?",
+        "Would CSS hide be enough?"
+      ],
+      "weak_answer_warnings": [
+        "LWS equals FLS"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When would you not write Apex for an LWC data need, for security reasons?",
+      "answer_30_seconds": "When a record form or UI API wire already returns the least data and honors CRUD, FLS, and sharing.",
+      "answer_2_minutes": "The Call Apex Methods topic starts with 'make sure there isn’t an easier way.' Security is part of that easier way. I write Apex when I need a join, an action, or logic LDS cannot express—and then I still return a narrow DTO. I do not write Apex to bypass FLS.",
+      "example": "Name and Phone on LAB_ Contact via lightning-record-view-form, not a custom SOQL class.",
+      "tradeoffs": [
+        "Admin-owned form versus developer DTO",
+        "Cacheable Apex versus LDS cache"
+      ],
+      "follow_ups": [
+        "What if I need a related aggregate?",
+        "What about without sharing?"
+      ],
+      "weak_answer_warnings": [
+        "Apex for every field"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach LWS, CSP, exposure, and Apex access with an airport checkpoint, then break it.",
+      "answer_30_seconds": "Scanner is LWS for the whole terminal. Poster is CSP. Boarding pass on the table is extra fields. Badge door is @AuraEnabled. You cannot close the scanner for one gate.",
+      "answer_2_minutes": "The break: a real airport can shut one gate; LWS cannot be disabled per component. Another break: a locked door does not stop a careless method from handing over extra bags—Apex can over-query. I never call this a library catalog.",
+      "example": "Whiteboard four boxes plus 'org-wide' stamped on LWS.",
+      "tradeoffs": [
+        "Analogy speed versus naming cacheable=true",
+        "LDS versus Apex door"
+      ],
+      "follow_ups": [
+        "Winter ’23 default?",
+        "What is Distortion Viewer?"
+      ],
+      "weak_answer_warnings": [
+        "catalog-shelf metaphor"
+      ]
+    }
+  ]
+}

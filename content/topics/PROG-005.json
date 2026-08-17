@@ -1,0 +1,1003 @@
+{
+  "topic_id": "PROG-005",
+  "slug": "client-vs-server-synchronous-vs-asynchronous-state-tran",
+  "title": "Client vs server, synchronous vs asynchronous, state, transactions, and idempotency",
+  "track": "Programming foundations for Salesforce",
+  "level": "Intermediate",
+  "type": "Concept",
+  "quality_status": "interview_ready",
+  "estimated_minutes": 30,
+  "release_verified": "Summer '26",
+  "api_version": "67.0",
+  "last_verified": "2026-08-16",
+  "prerequisites": [
+    "PROG-004"
+  ],
+  "objectives": [
+    "Place LWC JavaScript on the client and Apex on the Salesforce server.",
+    "Contrast synchronous request-wait with asynchronous jobs that run later with their own transaction.",
+    "Explain Apex transaction atomicity: all DML succeeds or the unit rolls back.",
+    "Define idempotency so a retried request does not create a second side effect."
+  ],
+  "diagnostic_question": "A Lightning button calls Apex to insert a LAB_ Payment__c, then the user double-clicks, and a nightly job later posts the same payload. Where is client versus server, what is synchronous, what is a new transaction, and how would idempotency prevent two payments?",
+  "definition": "Lightning web component JavaScript runs in the browser (client) and calls Apex on the Salesforce Platform server. Synchronous code waits for a result in the same user or request path; asynchronous Apex (Queueable, Batch, Scheduled, future) runs later in its own transaction when resources allow. An Apex transaction is an atomic unit of DML. Idempotency means repeating the same logical request does not create a second effect. ([Apex Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm); [Call Apex Methods](https://developer.salesforce.com/docs/platform/lwc/guide/apex.html); [Apex Transactions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_transaction.htm); [Asynchronous Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_async_overview.htm))",
+  "why_it_matters": "Interviewers fail people who put SOQL in LWC, who think @future still shares the clicking user's open transaction, who retry a POST and create duplicate records, or who store server state in a browser variable and call it a database. Double-submit and integration retries are everyday Salesforce bugs.",
+  "sixty_second_explanation": "Think of a restaurant ticket rail. The dining room is the client: the guest (browser) holds a menu and a pager. The kitchen is the server: Apex cooks on the platform. Synchronous is waiting at the counter until the plate returns. Asynchronous is taking a pager—the kitchen fires the ticket later in a new ticket (transaction). State is what is written on the open ticket versus what the guest remembers. Idempotency is the rule that the same ticket number must not fire two identical steaks if the runner resubmits.",
+  "deeper_explanation": [
+    "Apex executes flow and transaction control on the Salesforce Platform server with API calls—not in the browser. LWC imports Apex methods and calls them via @wire or imperatively; each invocation is a server trip with its own Apex limits. Prefer base components before custom Apex. ([Apex Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm); [Call Apex Methods](https://developer.salesforce.com/docs/platform/lwc/guide/apex.html))",
+    "Synchronous Apex runs in the triggering request (button, trigger, Visualforce, anonymous). Asynchronous Apex—Queueable, Batch, Scheduled, future—runs later. Salesforce recommends Queueable over future when they share use cases. Future jobs queued by a transaction are not processed if that transaction rolls back. ([Asynchronous Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_async_overview.htm); [Future Methods](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_invoking_future_methods.htm))",
+    "An Apex transaction is a set of operations as one unit. All DML must succeed or the transaction rolls back (payments-gateway note is a documented exception). Boundaries include a trigger, class method, anonymous block, Visualforce page, or custom web service. ([Apex Transactions](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_transaction.htm))",
+    "Idempotency is a design property: a retry with the same client key should not insert a second row. HTTP GET is defined as safe/idempotent in web architecture; POST create is not, unless you add an idempotency key or External Id upsert. Do not invent a platform-wide Salesforce idempotency header here—Needs verification per API. Governors differ for sync vs async; exact numbers live in APEX-007."
+  ],
+  "mental_model": {
+    "analogy": "Restaurant ticket rail: dining room (client), kitchen (server), wait-at-counter (synchronous), pager (asynchronous), open ticket writing (state), one ticket all-or-nothing (transaction), same ticket number must not fire two steaks (idempotency).",
+    "useful_mapping": [
+      "client → dining room / browser LWC",
+      "server → kitchen / Apex on the platform",
+      "synchronous → wait at the counter for the plate",
+      "asynchronous → pager; kitchen fires later",
+      "state → what is written on the ticket versus guest memory",
+      "transaction → one ticket: all items fire or none",
+      "idempotency key → ticket number that blocks a double fire",
+      "rollback of the click → future jobs from that click never cook"
+    ],
+    "where_it_breaks": [
+      "Async Apex is not a kitchen pager you can always cancel from the table.",
+      "LWC client state is not an Apex static variable.",
+      "Payments DML exception note is a real documented exception to 'all DML rolls back'.",
+      "Governor numbers differ by sync vs async; this lesson does not replace APEX-007."
+    ]
+  },
+  "teach_back_prompt": "Using the ticket rail, explain why an LWC double-click is two client requests, why @future is a new kitchen ticket, and how an idempotency key stops two steaks. Name where the analogy breaks.",
+  "review_schedule": [
+    {
+      "interval": "1 day",
+      "prompt": "Where does LWC JS run versus Apex? What is an Apex transaction?"
+    },
+    {
+      "interval": "3 days",
+      "prompt": "If the clicking transaction rolls back, do queued future jobs still run?"
+    },
+    {
+      "interval": "7 days",
+      "prompt": "Design an External Id or request key so a retried insert is idempotent."
+    },
+    {
+      "interval": "14 days",
+      "prompt": "Wire versus imperative Apex: still server trips, still per-invocation limits."
+    },
+    {
+      "interval": "30 days",
+      "prompt": "Two-minute interview: client/server, sync/async, state, transactions, idempotency."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "SF-APEX-DEVGUIDE",
+      "title": "Apex Developer Guide",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dev_guide.htm",
+      "supports": "Apex is a strongly typed language that executes on the Salesforce Platform server with API calls.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Opening definition; not the async feature table."
+    },
+    {
+      "source_id": "SF-LWC-APEX",
+      "title": "Call Apex Methods",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/platform/lwc/guide/apex.html",
+      "supports": "LWC imports Apex and calls via @wire or imperatively; Apex limits apply per invocation; prefer base components first.",
+      "release_or_version": "LWC Developer Guide",
+      "last_verified": "2026-08-16",
+      "limits": "Does not define Apex transaction rollback."
+    },
+    {
+      "source_id": "SF-APEX-TXN",
+      "title": "Apex Transactions",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_transaction.htm",
+      "supports": "A transaction is one atomic unit of operations; DML errors roll back the unit, with a documented payments exception.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Savepoints are a neighboring topic (APEX-010)."
+    },
+    {
+      "source_id": "SF-APEX-ASYNC",
+      "title": "Asynchronous Apex",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_async_overview.htm",
+      "supports": "Queueable, Scheduled, Batch, and future: when to use each; Queueable preferred over future for shared cases.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Job-type deep dive is APEX-011."
+    },
+    {
+      "source_id": "SF-APEX-FUTURE",
+      "title": "Future Methods",
+      "type": "Official developer documentation",
+      "url": "https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_invoking_future_methods.htm",
+      "supports": "Future runs asynchronously when resources allow; jobs queued by a rolled-back transaction are not processed.",
+      "release_or_version": "Apex Developer Guide / Summer '26 / API 67.0",
+      "last_verified": "2026-08-16",
+      "limits": "Do not recite unofficial daily limits here; see governors topic."
+    }
+  ],
+  "videos": [
+    {
+      "status": "not_verified",
+      "title": "No verified official exact-topic video claimed in this pack",
+      "channel": "Prefer Salesforce Developer Guide over unverified video",
+      "url": "",
+      "language": "English",
+      "duration": "",
+      "level": "Intermediate",
+      "teaches_well": "",
+      "gaps": "Needs verification before recommending a specific recording.",
+      "free_or_paid": "Unknown",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "visuals": {
+    "infographic": {
+      "format": "4:5 SVG",
+      "size": "1600x2000",
+      "zones": [
+        "Browser client vs Apex server",
+        "Wait vs pager",
+        "New async transaction",
+        "Atomic DML",
+        "Retry key",
+        "Rollback drops queued future"
+      ],
+      "accessible_description": "Portrait map: LWC is client, Apex is server, sync waits, async later, transactions are atomic, retries need idempotency."
+    },
+    "cheat_sheet": {
+      "format": "A4 HTML",
+      "source_footer": [
+        "SF-APEX-DEVGUIDE",
+        "SF-LWC-APEX",
+        "SF-APEX-TXN",
+        "SF-APEX-ASYNC",
+        "SF-APEX-FUTURE"
+      ]
+    },
+    "system_map": {
+      "format": "zoomable SVG",
+      "title": "Client request to server transaction"
+    },
+    "mermaid": {
+      "structure": "flowchart TD\n  Client[LWC JavaScript in browser] --> Call[Wire or imperative Apex call]\n  Call --> SyncTx[Synchronous Apex transaction]\n  SyncTx --> Dml[DML all or rollback]\n  SyncTx --> Async[Enqueue Queueable or future]\n  Async --> Later[Later async transaction]\n  Client --> UiState[Client UI state: not the database]",
+      "decision": "flowchart TD\n  Need[Work to run] --> Q1{Must the user wait for the result?}\n  Q1 -->|Yes short| Sync[Synchronous Apex in this request]\n  Q1 -->|Long callout or later| Async[Async Apex: prefer Queueable]\n  Sync --> Q2{DML must be atomic?}\n  Q2 -->|Yes| Tx[One Apex transaction; errors roll back]\n  Async --> Q3{Click transaction rolled back?}\n  Q3 -->|Yes| Drop[Queued future jobs are not processed]\n  Tx --> Q4{Client may retry?}\n  Q4 -->|Yes| Idem[Idempotency key or External Id upsert]\n  Q4 -->|No unique key| Risk[Duplicate rows on double-click]"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "C-001",
+      "claim": "Apex runs on the Salesforce Platform server. Lightning web components import Apex and call it via @wire or imperatively; Apex limits apply per method invocation.",
+      "source_ids": ["SF-APEX-DEVGUIDE", "SF-LWC-APEX"],
+      "scope": "Client vs server",
+      "validation": "Apex Developer Guide opening plus Call Apex Methods.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-002",
+      "claim": "Asynchronous Apex (Queueable, Batch, Scheduled, future) runs later, not by blocking the original request. Salesforce recommends Queueable over future for shared use cases. Future jobs queued by a transaction are not processed if that transaction rolls back.",
+      "source_ids": ["SF-APEX-ASYNC", "SF-APEX-FUTURE"],
+      "scope": "Synchronous vs asynchronous",
+      "validation": "Asynchronous Apex overview and Future Methods.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-003",
+      "claim": "An Apex transaction is a set of operations executed as a single unit. All DML in the transaction must complete successfully or the transaction is rolled back (documented payments-gateway exception).",
+      "source_ids": ["SF-APEX-TXN"],
+      "scope": "Transactions",
+      "validation": "Apex Transactions page.",
+      "last_verified": "2026-08-16"
+    },
+    {
+      "claim_id": "C-004",
+      "claim": "Client UI state in the browser is not the Salesforce database. Retrying a create without an idempotency strategy can insert duplicate rows; design a unique key (for example External Id upsert) when clients may double-submit. Exact HTTP idempotency headers for every Salesforce API are Needs verification.",
+      "source_ids": ["SF-LWC-APEX", "SF-APEX-TXN"],
+      "scope": "State and idempotency",
+      "validation": "Client calls are separate server invocations; transactions commit DML that retries would repeat without a uniqueness design.",
+      "last_verified": "2026-08-16"
+    }
+  ],
+  "changed_in_release": "Queueable remains the recommended replacement for many future-method use cases. Reverify async feature choice on the current Asynchronous Apex table.",
+  "unresolved_uncertainty": [
+    "Whether a specific Salesforce REST header provides automatic idempotency for POST sObject create—confirm in the current REST API guide before claiming it."
+  ],
+  "telugu_glossary": [
+    {
+      "english": "Client",
+      "telugu": "బ్రౌజర్ వైపు; LWC JavaScript."
+    },
+    {
+      "english": "Transaction",
+      "telugu": "ఒక యూనిట్; DML అన్నీ లేదా రోల్‌బ్యాక్."
+    },
+    {
+      "english": "Idempotency",
+      "telugu": "అదే అభ్యర్థన మళ్లీ వస్తే రెండో ఎఫెక్ట్ రాకూడదు."
+    }
+  ],
+  "interview_explanation": {
+    "thirty_seconds": "LWC is client; Apex is server. Sync waits in this request; async is a later transaction. DML in a transaction is atomic. Retries need an idempotency key so double-click does not insert twice.",
+    "two_minutes": "I never query the database from LWC as if it were Apex. Each Apex call is a server invocation with its own limits. If the user must wait, I stay synchronous and keep work small. If I enqueue future and the click rolls back, those jobs do not run. I store durable state in records, not in a JS variable. For creates, I use External Id or a request-id unique field so retries are upserts."
+  },
+  "terminology": [
+    {
+      "term": "client",
+      "plain": "The browser side—the dining room—where LWC JavaScript runs.",
+      "precise": "Lightning web components run in the user agent and call Apex over the wire. They do not execute SOQL themselves.",
+      "example": "A button handler that calls an imported Apex method imperatively.",
+      "non_example": "An Apex trigger is server-side, not client.",
+      "confusable_neighbor": "Experience Cloud site visitor: still a client of Salesforce servers.",
+      "boundary": "Mobile native apps are also clients; same split."
+    },
+    {
+      "term": "server",
+      "plain": "The kitchen—the Salesforce Platform where Apex runs.",
+      "precise": "Apex executes transaction control on the platform server together with API calls.",
+      "example": "public class LAB_PayService { @AuraEnabled public static Id charge() { ... } }",
+      "non_example": "A formula field calculation is not an Apex server class, though it also runs on platform.",
+      "confusable_neighbor": "Middleware such as MuleSoft: another server, INT track.",
+      "boundary": "This lesson does not design Named Credentials."
+    },
+    {
+      "term": "synchronous",
+      "plain": "The caller waits at the counter until this request finishes.",
+      "precise": "Work runs in the current Apex transaction/request path (button Apex, trigger, anonymous). The user or caller is blocked until it returns or fails.",
+      "example": "Imperative Apex from LWC awaiting the promise of a short insert.",
+      "non_example": "Database.executeBatch returning a job Id immediately.",
+      "confusable_neighbor": "JavaScript async/await: still a client wait for a server round trip.",
+      "boundary": "Sync CPU/heap numbers are APEX-007."
+    },
+    {
+      "term": "asynchronous",
+      "plain": "The pager: work is queued and runs later.",
+      "precise": "Queueable, Batch, Scheduled, or future. Runs when resources allow, in a separate transaction. Queueable is recommended over future for many shared cases.",
+      "example": "System.enqueueJob(new LAB_PayJob(requestId));",
+      "non_example": "A long synchronous HTTP callout that still blocks the request.",
+      "confusable_neighbor": "Platform Events: event-driven, later INT/APEX topics.",
+      "boundary": "Job-type selection details are APEX-011."
+    },
+    {
+      "term": "state",
+      "plain": "What is remembered: ticket writing versus guest memory.",
+      "precise": "Durable state is records (and some platform caches). LWC fields are client memory and vanish on refresh. Apex statics are per-transaction, not a database.",
+      "example": "LAB_Payment__c.Status__c on the record versus a JS boolean paid.",
+      "non_example": "CSS :hover is not application state.",
+      "confusable_neighbor": "View state in Visualforce: a different client-state mechanism.",
+      "boundary": "Static Apex across requests is not guaranteed; do not design that way."
+    },
+    {
+      "term": "transaction",
+      "plain": "One kitchen ticket: all items fire or the ticket is voided.",
+      "precise": "A set of operations as one unit. DML errors roll back the unit. Boundaries include trigger, class method, anonymous, Visualforce, custom web service.",
+      "example": "Insert invoice and lines in one method; if lines fail, invoice rolls back.",
+      "non_example": "Two separate button clicks are two transactions.",
+      "confusable_neighbor": "Payment gateway exception documented on the Transactions page.",
+      "boundary": "Savepoints/rollback APIs are APEX-010."
+    },
+    {
+      "term": "idempotency",
+      "plain": "Doing the same logical request twice does not create a second steak.",
+      "precise": "A retry with the same client key should not insert a second row. Use a unique External Id or request-id field. Do not claim an undocumented Salesforce POST header.",
+      "example": "Upsert LAB_Payment__c on Request_Id__c = 'lab-req-77'.",
+      "non_example": "Blind insert on every button click.",
+      "confusable_neighbor": "HTTP GET safety: a web property, not automatic for Apex insert.",
+      "boundary": "Exact REST idempotency features: Needs verification per API."
+    },
+    {
+      "term": "invocation",
+      "plain": "One call from client to an Apex method.",
+      "precise": "LWC: Apex limits apply per invocation of an Apex method, whether @wire or imperative.",
+      "example": "Two button clicks: two invocations, two limit buckets.",
+      "non_example": "Two JS functions that never call Apex.",
+      "confusable_neighbor": "Apex CPU time inside one transaction versus two invocations.",
+      "boundary": "Batching of Apex actions and 413 errors: see Call Apex Methods; do not invent counts."
+    }
+  ],
+  "mechanics": [
+    {
+      "step": 1,
+      "transition": "Place the work",
+      "actor": "Developer",
+      "trigger": "UI needs data or DML",
+      "before": "Temptation to query in the browser",
+      "after": "LWC calls Apex or a base component; Apex runs on the server",
+      "observe": "Network call in the browser debugger; Apex in debug logs",
+      "failure": "Assuming LWC JavaScript can run SOQL"
+    },
+    {
+      "step": 2,
+      "transition": "Choose sync or async",
+      "actor": "Developer",
+      "trigger": "Work may be long",
+      "before": "Everything in the click transaction",
+      "after": "Short wait stays sync; long/callout/later uses Queueable/Batch/future",
+      "observe": "Job Id in Apex Jobs if async",
+      "failure": "Callout in a trigger without async, or future for a 50ms update"
+    },
+    {
+      "step": 3,
+      "transition": "Keep one atomic ticket",
+      "actor": "Developer",
+      "trigger": "Multiple DML statements",
+      "before": "Partial rows committed in the mind of the designer",
+      "after": "One transaction; failure rolls back (payments exception noted)",
+      "observe": "No orphan parent when child insert throws",
+      "failure": "Catching DML and continuing as if the first insert stayed"
+    },
+    {
+      "step": 4,
+      "transition": "Make retries safe",
+      "actor": "Developer",
+      "trigger": "Button or integration may fire twice",
+      "before": "Blind insert",
+      "after": "Unique request key / External Id upsert",
+      "observe": "Second click updates or no-ops instead of a second payment",
+      "failure": "Two LAB_Payment__c rows for one ticket number"
+    }
+  ],
+  "when_to_use": [
+    "When explaining why LWC JavaScript is client and Apex is server before writing a button-to-DML path.",
+    "When choosing synchronous Apex versus asynchronous Queueable/Batch/future for work the user should not wait for.",
+    "When multiple DML statements must share one Apex transaction and roll back together.",
+    "When a client or integration may retry and you need idempotency so state is not doubled."
+  ],
+  "when_not_to_use": [
+    "Do not use this client-versus-server lesson as a Queueable-versus-Batch feature catalog (APEX-011).",
+    "Do not recite unofficial governor numbers as if they were this topic's core; cite APEX-007.",
+    "Do not treat browser state as the Salesforce database of record.",
+    "Do not claim an undocumented platform idempotency header for every REST POST."
+  ],
+  "configuration_or_code_location": [
+    "LWC JS importing @salesforce/apex/Class.method.",
+    "Apex class with @AuraEnabled for UI, or enqueueJob for async.",
+    "Apex Jobs page in Setup to observe async work.",
+    "External Id field on a LAB_ object for upsert idempotency."
+  ],
+  "worked_example": {
+    "scenario": "Sandbox LWC LAB_PayButton calls Apex to insert LAB_Payment__c. Users double-click. A Queueable later notifies a fake endpoint. No production money movement.",
+    "inputs": [
+      "Client requestId generated once per user intent",
+      "Short insert the user waits for",
+      "Later notify job"
+    ],
+    "decisions": [
+      {
+        "decision": "Keep the insert synchronous in @AuraEnabled Apex so the UI can show the Id.",
+        "because": "The user is waiting at the counter; the work is a single insert.",
+        "rejected": "@future for the insert so the UI has no Id"
+      },
+      {
+        "decision": "Upsert on Request_Id__c External Id so a second click does not insert twice.",
+        "because": "Two client invocations are two transactions; idempotency must be data-unique.",
+        "rejected": "Blind insert on every click"
+      },
+      {
+        "decision": "Enqueue Queueable only after successful DML, knowing a rollback would drop a future enqueue.",
+        "because": "Future jobs queued by a rolled-back transaction are not processed; Queueable is the recommended async shape for this class of work.",
+        "rejected": "Enqueue in a catch block after a failed insert"
+      }
+    ],
+    "configuration_or_code": [
+      "@AuraEnabled public static Id labCharge(String requestId) { LAB_Payment__c p = new LAB_Payment__c(Request_Id__c = requestId); upsert p Request_Id__c; System.enqueueJob(new LAB_PayNotify(p.Id)); return p.Id; }",
+      "LWC: generate requestId once in connectedCallback; disable the button after first click as extra UX, not as the only idempotency.",
+      "Test: call labCharge twice with the same requestId; assert one row."
+    ],
+    "output": "One payment row per requestId; notify job enqueued after success; UI receives the Id from the sync call.",
+    "verification": [
+      "Two Apex calls, same requestId, one LAB_Payment__c row.",
+      "Debug log shows a server Apex class, not SOQL in JS.",
+      "Failed insert test does not leave a notify job—Needs verification of Queueable enqueue-on-rollback; future is explicitly documented not to run."
+    ],
+    "self_explanation": "Client waited for a short server transaction. Async notify was a second ticket. The External Id made retries idempotent."
+  },
+  "hands_on_lab": {
+    "environment": "Disposable sandbox; LAB_Payment__c optional—may simulate with a LAB_ Apex object field in tests only.",
+    "starting_state_checks": [
+      "Can create Apex and a test.",
+      "No real payment gateway."
+    ],
+    "steps": [
+      "Write LAB_PayService.labCharge(String requestId) that upserts on a unique field and returns Id.",
+      "In a test, call it twice with 'lab-req-1' and assert one row (or one static counter if you use a fake store).",
+      "Add a comment citing Apex Transactions atomicity and Future Methods rollback note.",
+      "From a test, enqueue a no-op Queueable and query AsyncApexJob rather than waiting in the UI."
+    ],
+    "guided_completion": [
+      "If two rows appear, you inserted instead of upserting on the request id.",
+      "If you queried from imagined LWC JS, move the query into Apex."
+    ],
+    "independent_challenge": "Explain in comments why disabling a button is UX, not idempotency, if the user has two tabs.",
+    "evidence": [
+      "Test showing one row after two labCharge calls.",
+      "Job or enqueue compile success for the async class."
+    ],
+    "stop_recovery_cleanup": [
+      "Delete LAB_ classes and any LAB_Payment__c test rows.",
+      "Do not deploy."
+    ],
+    "limitations": "Does not process real payments or prove every REST header."
+  },
+  "decision_table": [
+    {
+      "signal": "UI needs a record Id before the spinner stops.",
+      "choose": "Synchronous Apex in the click's server invocation.",
+      "not": "Fire-and-forget future with no Id for the client.",
+      "why": "The user is waiting; Apex still runs on the server, not in LWC JS."
+    },
+    {
+      "signal": "Work is a callout or a long job the user should not block on.",
+      "choose": "Asynchronous Apex; prefer Queueable over future when use cases overlap.",
+      "not": "A 30-second synchronous callout in the button transaction.",
+      "why": "Async overview: run later; Queueable recommended versus future."
+    },
+    {
+      "signal": "Two DML statements must not leave orphans.",
+      "choose": "One Apex transaction so errors roll back the unit.",
+      "not": "Catch-and-continue after the first insert as if it were committed separately.",
+      "why": "Transactions page: all DML succeeds or the transaction rolls back."
+    },
+    {
+      "signal": "The client or middleware may retry the same create.",
+      "choose": "Idempotency via External Id upsert or a unique request key.",
+      "not": "Blind insert plus 'users will not double-click'.",
+      "why": "Each invocation is a new server transaction; uniqueness must be in data."
+    }
+  ],
+  "limitations": [
+    "Does not list sync vs async governor numbers.",
+    "Does not choose Batch versus Queueable in depth.",
+    "Does not document a universal Salesforce idempotency HTTP header.",
+    "Payments DML exception is a special case on the Transactions page."
+  ],
+  "security_notes": [
+    "Never send card numbers in client logs or Apex debug.",
+    "Idempotency keys should not be guessable payment tokens.",
+    "@AuraEnabled methods still need CRUD/FLS and sharing later."
+  ],
+  "common_mistakes": [
+    "SOQL in LWC JavaScript.",
+    "Treating @future as the same transaction as the click.",
+    "Blind insert on retry.",
+    "Storing 'paid' only in a JS property.",
+    "Empty catch that hides a rollback."
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Two payment rows after one user intent.",
+      "check": [
+        "Two client invocations (double-click or two tabs).",
+        "Insert instead of upsert on a unique key."
+      ],
+      "do_not_assume": "Salesforce automatically dedupes POSTs."
+    },
+    {
+      "symptom": "Async job never ran after an error on the button.",
+      "check": [
+        "Did the enqueueing transaction roll back?",
+        "Future jobs from a rolled-back transaction are not processed."
+      ],
+      "do_not_assume": "The job is still in the queue."
+    },
+    {
+      "symptom": "UI shows success but the record is missing.",
+      "check": [
+        "Client state versus database.",
+        "Did a later error roll back the transaction?"
+      ],
+      "do_not_assume": "The LWC property is the system of record."
+    }
+  ],
+  "production_notes": [
+    "Disable buttons for UX and still enforce unique keys.",
+    "Review async jobs in Apex Jobs after release.",
+    "No production payment processing from this lesson."
+  ],
+  "mcqs": [
+    {
+      "id": "Q1",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Where does Apex execute according to the Developer Guide?",
+      "options": {
+        "A": "On the Salesforce Platform server",
+        "B": "Only in the browser with LWC",
+        "C": "Only on the user's laptop CPU",
+        "D": "Only in Git"
+      },
+      "answer": "A",
+      "rationale": "Apex executes flow and transaction control on the platform server.",
+      "distractor_explanations": {
+        "B": "LWC JS is client-side; it calls Apex.",
+        "C": "Not local Apex runtime.",
+        "D": "Git is source control."
+      },
+      "concept": "client vs server",
+      "citation_ids": ["SF-APEX-DEVGUIDE"]
+    },
+    {
+      "id": "Q2",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "How can LWC call Apex?",
+      "options": {
+        "A": "@wire or imperatively after importing the method",
+        "B": "By writing SOQL in the HTML template",
+        "C": "By extending two Apex classes from JS",
+        "D": "LWC cannot call Apex"
+      },
+      "answer": "A",
+      "rationale": "Call Apex Methods: import, then @wire or imperative.",
+      "distractor_explanations": {
+        "B": "Templates are not SOQL.",
+        "C": "JS does not extend Apex classes.",
+        "D": "It can, via the documented import."
+      },
+      "concept": "client vs server",
+      "citation_ids": ["SF-LWC-APEX"]
+    },
+    {
+      "id": "Q3",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "A future method is queued, then the calling transaction rolls back. What happens to that future job?",
+      "options": {
+        "A": "It is not processed",
+        "B": "It always runs anyway",
+        "C": "It becomes Batch Apex",
+        "D": "It runs in the browser"
+      },
+      "answer": "A",
+      "rationale": "Future jobs queued by a transaction are not processed if the transaction rolls back.",
+      "distractor_explanations": {
+        "B": "The guide says they are not processed.",
+        "C": "Wrong job type.",
+        "D": "Future is server-side async."
+      },
+      "concept": "asynchronous",
+      "citation_ids": ["SF-APEX-FUTURE"]
+    },
+    {
+      "id": "Q4",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "If one DML in an Apex transaction fails (typical case), what happens to the unit?",
+      "options": {
+        "A": "The transaction is rolled back; no data committed",
+        "B": "Earlier inserts always remain",
+        "C": "Only async jobs roll back",
+        "D": "The client automatically retries"
+      },
+      "answer": "A",
+      "rationale": "All DML must succeed or the transaction is rolled back (payments exception documented separately).",
+      "distractor_explanations": {
+        "B": "That would not be atomic.",
+        "C": "The whole unit rolls back.",
+        "D": "Retry is a client design, not automatic."
+      },
+      "concept": "transactions",
+      "citation_ids": ["SF-APEX-TXN"]
+    },
+    {
+      "id": "Q5",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Which async feature does Salesforce recommend instead of future for many shared use cases?",
+      "options": {
+        "A": "Queueable Apex",
+        "B": "Anonymous Apex",
+        "C": "Formula fields",
+        "D": "CSS animations"
+      },
+      "answer": "A",
+      "rationale": "Queueable is recommended over future; extra benefits include job IDs and chaining.",
+      "distractor_explanations": {
+        "B": "Anonymous is still sync in that request.",
+        "C": "Not async Apex.",
+        "D": "Client-only."
+      },
+      "concept": "asynchronous",
+      "citation_ids": ["SF-APEX-ASYNC"]
+    },
+    {
+      "id": "Q6",
+      "category": "recall",
+      "difficulty": "Foundation",
+      "prompt": "Apex limits when LWC calls two Apex methods?",
+      "options": {
+        "A": "Applied separately to each method invocation",
+        "B": "Shared as one browser limit only",
+        "C": "None, because LWC is client",
+        "D": "Only heap, never SOQL"
+      },
+      "answer": "A",
+      "rationale": "Apex limits are applied per invocation of an Apex method.",
+      "distractor_explanations": {
+        "B": "Each call is a server invocation.",
+        "C": "Apex still has limits.",
+        "D": "All Apex governors apply per the limits topic."
+      },
+      "concept": "client vs server",
+      "citation_ids": ["SF-LWC-APEX"]
+    },
+    {
+      "id": "Q7",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "User double-clicks Pay. Two inserts occur. What was missing?",
+      "options": {
+        "A": "Idempotency: a unique request key or External Id upsert",
+        "B": "A second LWC",
+        "C": "Making the method future so clicks merge",
+        "D": "Putting SOQL in the template"
+      },
+      "answer": "A",
+      "rationale": "Each click is a separate server transaction; uniqueness must be designed.",
+      "distractor_explanations": {
+        "B": "Unrelated.",
+        "C": "Async does not merge clicks.",
+        "D": "Invalid."
+      },
+      "concept": "idempotency",
+      "citation_ids": ["SF-APEX-TXN", "SF-LWC-APEX"]
+    },
+    {
+      "id": "Q8",
+      "category": "scenario",
+      "difficulty": "Intermediate",
+      "prompt": "A paid flag lives only in an LWC property. User refreshes. What happens to that state?",
+      "options": {
+        "A": "It is lost; durable state belongs in records",
+        "B": "Apex statics restore it automatically",
+        "C": "Git restores it",
+        "D": "Transactions replay the JS heap"
+      },
+      "answer": "A",
+      "rationale": "Client UI state is not the database.",
+      "distractor_explanations": {
+        "B": "Statics are per transaction.",
+        "C": "Git is source, not runtime state.",
+        "D": "No."
+      },
+      "concept": "state",
+      "citation_ids": ["SF-LWC-APEX"]
+    },
+    {
+      "id": "Q9",
+      "category": "compare",
+      "difficulty": "Foundation",
+      "prompt": "Synchronous versus asynchronous Apex?",
+      "options": {
+        "A": "Sync runs in this request; async is queued to run later",
+        "B": "Async runs in the browser",
+        "C": "Sync cannot perform DML",
+        "D": "They share one transaction always"
+      },
+      "answer": "A",
+      "rationale": "Async features run later in their own execution when resources allow.",
+      "distractor_explanations": {
+        "B": "Apex is server-side.",
+        "C": "Sync DML is common.",
+        "D": "Async is a later transaction."
+      },
+      "concept": "synchronous vs asynchronous",
+      "citation_ids": ["SF-APEX-ASYNC"]
+    },
+    {
+      "id": "Q10",
+      "category": "compare",
+      "difficulty": "Intermediate",
+      "prompt": "Client memory versus Apex transaction state?",
+      "options": {
+        "A": "JS properties vanish on refresh; transaction DML commits or rolls back as a unit",
+        "B": "They are the same storage",
+        "C": "Client memory is more durable",
+        "D": "Transactions run only in CSS"
+      },
+      "answer": "A",
+      "rationale": "Split of client state and server atomic DML.",
+      "distractor_explanations": {
+        "B": "Classic fail.",
+        "C": "Opposite.",
+        "D": "Unrelated."
+      },
+      "concept": "state and transactions",
+      "citation_ids": ["SF-APEX-TXN", "SF-LWC-APEX"]
+    },
+    {
+      "id": "Q11",
+      "category": "application",
+      "difficulty": "Foundation",
+      "prompt": "Name a documented transaction boundary.",
+      "options": {
+        "A": "A trigger, class method, anonymous block, Visualforce page, or custom web service",
+        "B": "A CSS hover",
+        "C": "A Git commit",
+        "D": "A list index"
+      },
+      "answer": "A",
+      "rationale": "Apex Transactions lists those boundaries.",
+      "distractor_explanations": {
+        "B": "Client styling.",
+        "C": "Source control.",
+        "D": "Collections."
+      },
+      "concept": "transactions",
+      "citation_ids": ["SF-APEX-TXN"]
+    },
+    {
+      "id": "Q12",
+      "category": "application",
+      "difficulty": "Intermediate",
+      "prompt": "Prefer base Lightning record form before custom Apex when?",
+      "options": {
+        "A": "When it already loads or saves the data you need",
+        "B": "Never; always write Apex first",
+        "C": "Only in Classic",
+        "D": "Only for async Batch"
+      },
+      "answer": "A",
+      "rationale": "Call Apex Methods: make sure there is not an easier way, for example lightning-record-form.",
+      "distractor_explanations": {
+        "B": "The guide says check easier paths.",
+        "C": "LWC is Lightning.",
+        "D": "Unrelated."
+      },
+      "concept": "client vs server",
+      "citation_ids": ["SF-LWC-APEX"]
+    }
+  ],
+  "flashcards": [
+    {
+      "id": "F1",
+      "category": "terminology",
+      "front": "Client versus server in Salesforce UI code?",
+      "back": "LWC JavaScript is client (browser). Apex runs on the platform server."
+    },
+    {
+      "id": "F2",
+      "category": "terminology",
+      "front": "Synchronous Apex means what for the caller?",
+      "back": "Work runs in this request; the caller waits until it finishes or fails."
+    },
+    {
+      "id": "F3",
+      "category": "terminology",
+      "front": "Name four asynchronous Apex features.",
+      "back": "Queueable, Batch, Scheduled, and future methods."
+    },
+    {
+      "id": "F4",
+      "category": "terminology",
+      "front": "What is an Apex transaction?",
+      "back": "A set of operations as one unit; typical DML failure rolls back the unit."
+    },
+    {
+      "id": "F5",
+      "category": "terminology",
+      "front": "What is idempotency for a create?",
+      "back": "A retry of the same logical request must not insert a second row."
+    },
+    {
+      "id": "F6",
+      "category": "decision",
+      "front": "User needs the new record Id on screen now?",
+      "back": "Synchronous Apex in the click invocation, not fire-and-forget future."
+    },
+    {
+      "id": "F7",
+      "category": "decision",
+      "front": "Long callout the user should not block on?",
+      "back": "Asynchronous Apex; prefer Queueable over future when use cases overlap."
+    },
+    {
+      "id": "F8",
+      "category": "decision",
+      "front": "Double-submit of Pay?",
+      "back": "Unique request key / External Id upsert—idempotency in data."
+    },
+    {
+      "id": "F9",
+      "category": "decision",
+      "front": "Where to store 'paid' for refresh survival?",
+      "back": "On the record (server state), not only an LWC property."
+    },
+    {
+      "id": "F10",
+      "category": "decision",
+      "front": "Future enqueued then caller rolls back?",
+      "back": "Those future jobs are not processed, per Future Methods."
+    },
+    {
+      "id": "F11",
+      "category": "limitation_security",
+      "front": "May card numbers live in client logs?",
+      "back": "No. Never log payment secrets in LWC or Apex debug."
+    },
+    {
+      "id": "F12",
+      "category": "limitation_security",
+      "front": "Does @AuraEnabled skip CRUD/FLS?",
+      "back": "No. Security is a later Apex topic; do not assume UI calls are privileged."
+    },
+    {
+      "id": "F13",
+      "category": "limitation_security",
+      "front": "Is there a universal Salesforce POST idempotency header in this lesson?",
+      "back": "Needs verification per API. Design uniqueness in data instead of inventing a header."
+    },
+    {
+      "id": "F14",
+      "category": "scenario",
+      "front": "Two LWC Apex calls: how are governors applied?",
+      "back": "Per invocation of each Apex method, not as one browser bucket."
+    },
+    {
+      "id": "F15",
+      "category": "scenario",
+      "front": "Invoice insert succeeds, line insert throws, no catch. Parent row?",
+      "back": "Rolled back with the transaction (typical DML atomicity)."
+    },
+    {
+      "id": "F16",
+      "category": "terminology",
+      "front": "Name a transaction boundary from the guide.",
+      "back": "Trigger, class method, anonymous block, Visualforce page, or custom web service."
+    }
+  ],
+  "interview_questions": [
+    {
+      "id": "I1",
+      "category": "foundational",
+      "question": "Explain client vs server, synchronous vs asynchronous, state, transactions, and idempotency on Salesforce.",
+      "answer_30_seconds": "LWC is client, Apex is server. Sync waits in this request; async is a later job. Transactions are atomic DML. Idempotency stops duplicate creates on retry.",
+      "answer_2_minutes": "I place SOQL and DML on the server. Each LWC Apex call is an invocation with its own limits. I stay synchronous when the UI needs the result now. I enqueue Queueable for later work and I remember future jobs die if the click rolls back. I persist state on records. I upsert on a request id so double-click is one row.",
+      "example": "LAB_PayButton plus External Id upsert and a notify Queueable.",
+      "tradeoffs": [
+        "UX wait vs async complexity",
+        "Button disable vs data uniqueness"
+      ],
+      "follow_ups": [
+        "Why Queueable over future?",
+        "Payments exception?"
+      ],
+      "weak_answer_warnings": [
+        "SOQL in JavaScript"
+      ]
+    },
+    {
+      "id": "I2",
+      "category": "foundational",
+      "question": "Why is a browser variable not Salesforce state?",
+      "answer_30_seconds": "It dies on refresh and is not in the transaction. Durable state is records (and documented platform stores).",
+      "answer_2_minutes": "LWC properties are client memory. Two tabs do not share them. Apex statics last for one transaction. If I tell an interviewer 'the component remembers paid', they will ask what happens after F5. I write Status__c on LAB_Payment__c. Caching via @wire is still a client cache of server data, not a second database.",
+      "example": "paid=true in JS versus Status__c = 'Paid' on the record.",
+      "tradeoffs": [
+        "Optimistic UI vs server confirmation"
+      ],
+      "follow_ups": [
+        "refreshApex?",
+        "Platform Cache—later topic?"
+      ],
+      "weak_answer_warnings": [
+        "Calling localStorage the org database"
+      ]
+    },
+    {
+      "id": "I3",
+      "category": "scenario",
+      "question": "Design Pay so double-click and a later notify job both behave.",
+      "answer_30_seconds": "Sync upsert on requestId, return Id, enqueue Queueable after success, do not rely on the button disable alone.",
+      "answer_2_minutes": "Client generates requestId once per intent. Apex upserts so two invocations share one row—that is idempotency. The insert stays synchronous so the UI gets the Id. Notify is async. If I used future and the transaction failed, the job would not run. I mention the Transactions atomicity rule for any extra DML in charge().",
+      "example": "Sandbox button calls LAB_PayService.labCharge twice with the same requestId; only one invoice row exists and notify is queued once.",
+      "tradeoffs": [
+        "External Id vs unique custom field",
+        "Queueable vs platform event"
+      ],
+      "follow_ups": [
+        "Two tabs, two requestIds?",
+        "How to share one intent id?"
+      ],
+      "weak_answer_warnings": [
+        "Future insert with no unique key"
+      ]
+    },
+    {
+      "id": "I4",
+      "category": "scenario",
+      "question": "When would you refuse to put a callout in the button's synchronous Apex?",
+      "answer_30_seconds": "When it would block the user or hit callout/trigger rules; enqueue async instead.",
+      "answer_2_minutes": "Callouts have timeouts and cannot always run in trigger context. The async overview lists future/Queueable for callouts and long work. I still keep a short insert sync if the UI needs the Id. I do not quote unofficial timeout numbers unless I open the governors table. I never pretend the browser can call the external bank API with org credentials.",
+      "example": "Insert payment sync; Queueable performs the outbound notify.",
+      "tradeoffs": [
+        "User waits for notify vs eventual consistency"
+      ],
+      "follow_ups": [
+        "Mixed DML and future?",
+        "Named Credentials later?"
+      ],
+      "weak_answer_warnings": [
+        "Callout from LWC with a secret in JS"
+      ]
+    },
+    {
+      "id": "I5",
+      "category": "troubleshooting",
+      "question": "UI said success, record missing. Walk client, transaction, async.",
+      "answer_30_seconds": "The client may have shown local state. Or a later error rolled back the transaction. Or success was an async job that never ran.",
+      "answer_2_minutes": "I check debug logs for the Apex invocation, not only the LWC toast. I look for DML exceptions after a partial try/catch mistake. I check whether enqueue happened in a transaction that rolled back—future would not process. I query the record by request id. I do not trust the JS flag.",
+      "example": "Toast from catch that swallowed DmlException while the transaction rolled back.",
+      "tradeoffs": [
+        "Optimistic toast vs wait for server Id"
+      ],
+      "follow_ups": [
+        "How to query AsyncApexJob?",
+        "Payments exception?"
+      ],
+      "weak_answer_warnings": [
+        "Blaming Lightning cache only"
+      ]
+    },
+    {
+      "id": "I6",
+      "category": "troubleshooting",
+      "question": "Two identical integration POSTs created two rows. What do you inspect?",
+      "answer_30_seconds": "Two server transactions, no unique key. Idempotency was missing. Middleware retry is expected.",
+      "answer_2_minutes": "Integrations retry. POST create is not inherently idempotent. I look for External Id, unique constraint, or a request-id field. I do not invent a Salesforce header unless I can cite the current REST guide. I add upsert and a test that posts twice. Client versus server still applies: the ESB is another client.",
+      "example": "Same payload twice, two LAB_Payment__c without Request_Id__c uniqueness.",
+      "tradeoffs": [
+        "HTTP 409 vs upsert 200"
+      ],
+      "follow_ups": [
+        "Composite API?",
+        "Platform Events replay?"
+      ],
+      "weak_answer_warnings": [
+        "Telling them to disable retries forever"
+      ]
+    },
+    {
+      "id": "I7",
+      "category": "design",
+      "question": "When is synchronous the wrong default?",
+      "answer_30_seconds": "When work is long, callout-heavy, bulk, or not needed for the user's next pixel.",
+      "answer_2_minutes": "The async table: Queueable for long work with a job Id, Batch for large volumes, Scheduled for clocks, future for callouts/mixed DML isolation—with Queueable preferred when overlapping. I still use sync for small reads/writes the UI needs. I do not async a 10ms field update just to look distributed. State then becomes eventual: the UI must not lie.",
+      "example": "Nightly LAB_ cleanup as Scheduled/Batch, not a button sync loop.",
+      "tradeoffs": [
+        "Immediate consistency vs throughput"
+      ],
+      "follow_ups": [
+        "Cursors plus Queueable note?",
+        "Scheduled uses sync limits—Needs verification from governors table"
+      ],
+      "weak_answer_warnings": [
+        "Everything @future"
+      ]
+    },
+    {
+      "id": "I8",
+      "category": "challenge",
+      "question": "Teach this with the restaurant ticket rail and where it breaks.",
+      "answer_30_seconds": "Dining room is client, kitchen is server, counter-wait is sync, pager is async, ticket is transaction, ticket number is idempotency. It breaks on uncancelable jobs and the payments exception.",
+      "answer_2_minutes": "The guest holds a pager (async) or waits (sync). The kitchen ticket is atomic. The same ticket number must not fire two steaks. I then say Apex future is not a pager you always cancel, LWC memory is not the ticket pad, and the Transactions page documents a payments exception. I write the upsert signature.",
+      "example": "labCharge(requestId) upsert plus enqueueJob.",
+      "tradeoffs": [
+        "Analogy vs citing rollback-of-future"
+      ],
+      "follow_ups": [
+        "Map @wire",
+        "Map Batch"
+      ],
+      "weak_answer_warnings": [
+        "Generic catalog metaphor"
+      ]
+    }
+  ]
+}
